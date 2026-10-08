@@ -2,9 +2,13 @@
 
 Working outline for a possible article in *Computer Physics Communications*
 (Computer Programs in Physics). It is a plan, not a manuscript: it lists what
-each section would contain and which material already exists. Authors,
-citations, and results are deliberately left open; nothing here is a
-publication claim.
+each section would contain and which material already exists. No such paper
+has been written or submitted; nothing here is a publication claim.
+
+Proposed software authors, as in `CITATION.cff`: Jeil Jung, Rafael
+Martinez-Gordillo, Nicolas Leconte. The author list of the article, the
+author roles, and any contribution statement are for the authors to decide
+and are not anticipated here. Citations and results are left open.
 
 Legend for the state of the supporting material:
 
@@ -16,7 +20,7 @@ Legend for the state of the supporting material:
 ## Program summary (CPC front matter)
 
 To be filled in: program title, repository and archive link, licensing
-provisions (open, see `licensing-audit.md`), programming language (Fortran 90
+provisions (GPL-3.0-or-later, see `licensing-audit.md`), programming language (Fortran 90
 and later, Python for tests and tools), external libraries (MPI, BLAS/LAPACK,
 ARPACK), nature of the problem, solution method, restrictions (one MPI
 process; OpenMP with one compiler family).
@@ -132,10 +136,9 @@ process; OpenMP with one compiler family).
 
 ## Material still needed before writing
 
-1. Author list, affiliations, and license (see `citation-checklist.md`,
-   `licensing-audit.md`).
+1. Affiliations and identifiers of the authors, and an archived release with
+   a DOI (see `citation-checklist.md`).
 2. Confirmed literature sources for every parameter set quoted.
 3. Solver timings and thread scaling.
 4. A decision on which implemented capabilities are described, and for each
    one the validation that would allow results to be shown.
-5. An archived release with a DOI.

@@ -64,24 +64,25 @@ capabilities outside that set are released as research code.
 
 | Item | Status | Note |
 | --- | --- | --- |
-| Workflow file `.github/workflows/regression.yml` | Complete | syntax checked; uses only repository files and Ubuntu packages |
-| First execution on GitHub | Technical work | never run; it could not be reproduced locally (no usable container runtime). Expect to adjust package names or the Open MPI launcher on the first run |
+| Workflow `.github/workflows/regression.yml` | Complete | builds with GNU Fortran and Open MPI on Ubuntu 22.04, runs the four examples and the regression checks against the reference data, then the TAPW tests; read-only permissions |
+| Result of the workflow on GitHub | Technical work | first run pending |
 
 ## Licensing, copyright, third-party code
 
 | Item | Status | Note |
 | --- | --- | --- |
-| Audit of notices and third-party code | Complete | `licensing-audit.md` |
-| Choice of license; `LICENSE` file; consistent `pyproject.toml` | Maintainer decision | **release blocker**; needs agreement with the copyright holder of the GPL-marked libraries |
-| Copyright holder and headers of the solver sources | Maintainer decision | |
-| Commented-out Numerical Recipes routines in `kubo.F90` | Maintainer decision | removal recommended; touches a frozen source file |
+| License chosen and added | Complete | `GPL-3.0-or-later`; `LICENSE`, `COPYING.LESSER`, `THIRD_PARTY_LICENSES.md`; `pyproject.toml` consistent |
+| Third-party notices preserved | Complete | GPL (MIO, math), LGPL (four routines), BSD (`fracToCart.py`) |
+| Commented-out Numerical Recipes routines | Complete | removed from `kubo.F90` (comments only) |
+| Written agreement of the co-authors with the license for the sources without notice | Maintainer decision | see "Open points" in `licensing-audit.md` |
+| Copyright headers in the solver sources | Optional | |
 
 ## Citation
 
 | Item | Status | Note |
 | --- | --- | --- |
-| Checklist and template for `CITATION.cff` | Complete | `citation-checklist.md` |
-| Author list, version, release date, DOI | Maintainer decision | **release blocker** for a citable release |
+| `CITATION.cff` | Complete | three authors, maintainer as contact, schema-valid |
+| Version, release date, DOI, ORCID identifiers, affiliations | Maintainer decision | to be added with the first release; not invented |
 
 ## Repository cleanliness
 
@@ -89,7 +90,7 @@ capabilities outside that set are released as research code.
 | --- | --- | --- |
 | Tracked executables removed | Complete | 45 `a.out` files |
 | Duplicated notebook checkpoints and `.DS_Store` removed; `.gitignore` extended | Complete | |
-| `LAMMPSNotebooks/` (about 380 MB) and `PyBinding/` (about 120 MB) in the software repository | Maintainer decision | research material, not used by the solver or the tests; a separate repository would make the code repository about 20 times smaller. Not moved here |
+| `LAMMPSNotebooks/` (about 380 MB) and `PyBinding/` (about 120 MB) in the software repository | Optional | research material, not used by the solver or the tests; kept for this release by decision of the maintainer. A separate repository would make the code repository about 20 times smaller |
 | Two notebook checkpoints without a live notebook | Maintainer decision | `PyBinding/twistedBilayerGraphene/.ipynb_checkpoints/` |
 | Absolute paths in three tutorial notebooks | Optional | outputs of earlier runs |
 | Size of the Git history | Optional | unchanged; rewriting history was not attempted |
@@ -121,9 +122,10 @@ capabilities outside that set are released as research code.
 
 ## Minimum actions before the announcement
 
-1. Choose and add the license (with the copyright holder of the GPL-marked
-   code), and make `pyproject.toml` consistent.
-2. Supply the author list and create `CITATION.cff`.
-3. Push the branch, let the CI workflow run once, and fix what it reports.
-4. Decide whether `LAMMPSNotebooks/` and `PyBinding/` ship with the code.
-5. Tag the release.
+1. Obtain the co-authors' agreement with the license (a written record is
+   sufficient).
+2. Merge the development branch into `main` once the CI run is green.
+3. Tag the first release, archive it to obtain a DOI, and add version, date,
+   and DOI to `CITATION.cff`.
+
+Maintainer: Nicolas Leconte.

@@ -163,8 +163,14 @@ details, measured results, and limitations are in
 - **Documents added:** new root README, `release-readiness.md`,
   `licensing-audit.md`, `citation-checklist.md`, `software-paper-outline.md`,
   and an index of the development documentation.
-- **Open:** license, author list and citation file, first run of the CI
-  workflow, and whether the notebook collections stay in this repository.
+- **License and citation (same day).** GRABNES is distributed under
+  `GPL-3.0-or-later`: `LICENSE`, `COPYING.LESSER`, and
+  `THIRD_PARTY_LICENSES.md` added, `pyproject.toml` made consistent, the
+  commented-out Numerical Recipes routines removed from `kubo.F90`.
+  `CITATION.cff` names the authors Jeil Jung, Rafael Martinez-Gordillo, and
+  Nicolas Leconte; Nicolas Leconte is the current developer and maintainer.
+- **CI.** The workflow now runs on pushes to the development and main
+  branches and on pull requests to main.
 
 Sections 1, 5, and 6 below describe the state before this work; where they
 mention the test copy or a `grabnes_testrun` executable, this section

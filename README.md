@@ -14,8 +14,7 @@ of atoms).
 > **Status.** This repository is a release candidate that has not yet been
 > announced. Four example calculations are supported and reproducible; the
 > remaining functionality is research code of varying maturity (see
-> [What is supported](#what-is-supported)). No license has been chosen yet
-> (see [License](#license)).
+> [What is supported](#what-is-supported)).
 
 ## Capabilities
 
@@ -109,6 +108,9 @@ seconds on one core. See the [examples guide](examples/README.md).
 python3 -m pytest tests/tapw         # TAPW linear-algebra conventions (Python only)
 ```
 
+The same commands run automatically on GitHub for every push to the
+development and main branches (`.github/workflows/regression.yml`).
+
 The scripts build the solver in a temporary directory, never in the source
 tree, run the example inputs, and compare the results numerically with the
 reference data (bands within 2e-6 eV, DOS within 1e-9 relative). They also
@@ -152,21 +154,42 @@ describes every check; measured results for both compilers are in
 - `PyBinding/`, `LAMMPSNotebooks/`, `usefulGeneralScripts/`: research material
   of the group that is not part of the supported interface.
 
+## Authors and maintenance
+
+The authors of GRABNES are Jeil Jung, Rafael Martinez-Gordillo, and Nicolas
+Leconte. The code grew out of a tight-binding and Kubo transport program
+written by Rafael Martinez-Gordillo, whose input/output and math libraries it
+still uses, and was developed further in the group of Jeil Jung.
+
+Nicolas Leconte is the current developer and the maintainer of this
+repository; questions and reports should be addressed to him through the
+issue tracker.
+
 ## Citation
 
-No citable reference for GRABNES exists yet. Until one does, cite the
-repository URL together with the exact Git commit you used. Publications that
-underlie individual models are named in the example READMEs. The information
-still needed for a citation file is listed in
-[`docs/development/citation-checklist.md`](docs/development/citation-checklist.md).
+Please cite GRABNES by its authors, the repository, and the exact version or
+Git commit you used. The metadata are in [`CITATION.cff`](CITATION.cff), which
+GitHub displays under "Cite this repository":
+
+> J. Jung, R. Martinez-Gordillo, and N. Leconte, *GRABNES: Graphene and Boron
+> Nitride Electronic Structure*, https://github.com/gjung-group/grabnes,
+> commit `<hash>`.
+
+A software paper and an archived release with a DOI do not exist yet; this
+section will name them when they do. Please also cite the publications behind
+the models you use; those of the supported examples are named in their
+READMEs.
 
 ## License
 
-**No license has been selected, and the repository must not be assumed to be
-open source.** The existing statements conflict: `pyproject.toml` declares the
-project proprietary, while the bundled `MIO` and `math` libraries carry GNU
-General Public License notices and some routines are under the GNU LGPL. The
-findings and the decisions required from the maintainers are in
+GRABNES is free software, distributed under the terms of the GNU General
+Public License, version 3 or (at your option) any later version. The full
+text is in [`LICENSE`](LICENSE). The program comes without any warranty.
+
+Some files were written by other authors and keep their own notices (GNU GPL,
+GNU LGPL, two-clause BSD); they are listed in
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md). The reasoning behind
+the choice of license is recorded in
 [`docs/development/licensing-audit.md`](docs/development/licensing-audit.md).
 
 ## Contact and contributions
