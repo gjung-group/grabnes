@@ -99,18 +99,22 @@ then checks that
 | `generate.bands` | 2e-6 | 0 | written with six decimals; allows one last-digit rounding flip |
 | `generate.diag.DOS` | 1e-12 | 1e-9 | written with 17 significant digits; limited by BLAS/LAPACK and math-library rounding |
 
-`run_examples.sh` then runs three checks that are not public examples:
+`run_examples.sh` then runs checks that do not depend on stored solver output:
 
 | Check | Requirement |
 | --- | --- |
-| `hamiltonian_tables` | Example 03 is rerun with `WriteDataFiles .true.` and [`tools/hamiltonian/verify_tables.py`](../tools/hamiltonian/) rebuilds its bands in Python: from the solver's own tables within 2e-5 eV, and from an independent model with a complete neighbor set within 3e-4 eV. Needs NumPy; skipped without it. |
-| `kubo_graphene_dos` | The stochastic Kubo (Lanczos recursion) DOS of a 180000-atom graphene cell with a fixed seed must match the exact broadened DOS in `kubo_graphene_dos/reference/exact_dos.dat` (analytic, written by `make_reference.py`): maximum deviation below 0.03, rms below 0.006. About 3 s and 0.5 GB. |
+| `dirac_point_degeneracy` | The four Dirac states of example 03 at the moire K point form two pairs degenerate within 1e-6 eV (a symmetry the historical neighbor search violated by 1e-4 eV). |
+| `hamiltonian_example03`, `hamiltonian_f2g2`, `hamiltonian_small_cell` | The solver is run with `WriteDataFiles .true.` on example 03, on its F2G2 variant (`TB.NeighLevels 5`), and on a 28-atom cell smaller than the interlayer search radius. [`tools/hamiltonian/verify_tables.py`](../tools/hamiltonian/) compares the tables it writes with a Hamiltonian enumerated independently from the atomic positions: no missing, extra, duplicate, or unpaired entry; matrix elements, Hermiticity, and eigenvalues at Gamma, K, M, generic and random k-points within 1e-9 eV; bands within 1e-6 eV of the six-decimal band file. Needs NumPy; skipped without it. |
+| `neighlevels_0`, `neighlevels_9` | `TB.NeighLevels` outside 1 to 8 must be refused with its error message. |
+| `legacy_cutatnn3` | The deprecated `Neigh.CutAtNN3 .true.` with `TB.NeighLevels 5` must give the same band file as `TB.NeighLevels 3`. |
+| `kubo_graphene_dos` | The stochastic Kubo (Lanczos recursion) DOS of a 180000-atom graphene cell with a fixed seed must match the exact broadened DOS in `kubo_graphene_dos/reference/exact_dos.dat` (analytic, written by `make_reference.py`): maximum deviation below 0.03, rms below 0.006. About 2 s and 0.5 GB. |
 | `two_mpi_processes` | Started with `mpirun -np 2`, the solver must refuse to run with its single-process error. Skipped when no `mpirun` is found; set `GRABNES_MPIRUN` to use another launcher. |
 
-The Kubo check is statistical because the random numbers depend on the
-compiler; its limits are about twice the deviation observed with GNU and Intel
-Fortran. The limits of the Hamiltonian check record the present accuracy of
-the neighbor search, see the validation document.
+The Hamiltonian checks use tolerances set by floating-point precision
+(observed: 4e-16 eV with GNU Fortran, 2e-14 eV with Intel Fortran) and by the
+six decimals of the band file (observed: 5.0e-7 eV). The Kubo check is
+statistical because the random numbers depend on the compiler; its limits are
+about twice the deviation observed with GNU and Intel Fortran.
 
 Byte identity is reported for information. `--exact` additionally requires it
 for the band files, which have been byte-identical for every compiler tested

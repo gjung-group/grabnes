@@ -223,28 +223,115 @@ run_kubo_check() {
     fi
 }
 
-# Independent reconstruction of the example-03 Hamiltonian from the tables the
-# solver writes with WriteDataFiles (needs NumPy; skipped without it).
+# variant_input NAME SED_EXPRESSION...
+# Writes $work_dir/inputs/NAME.in, a modified copy of the example-03 input.
+variant_input() {
+    variant_name=$1; shift
+    mkdir -p "$work_dir/inputs"
+    sed "$@" "$examples_dir/03_twisted_bilayer_bands/Gendata.in" > "$work_dir/inputs/$variant_name.in"
+}
+
+# run_hamiltonian_check NAME INTRALAYER_ELEMENTS
+# Runs $work_dir/inputs/NAME.in and compares the tables the solver writes with
+# WriteDataFiles against the independent Hamiltonian of
+# tools/hamiltonian/verify_tables.py (needs NumPy; skipped without it).
 run_hamiltonian_check() {
     if ! python3 -c 'import numpy' >/dev/null 2>&1; then
-        printf '\n%s\n%s\n' "== hamiltonian_tables" "  SKIP: NumPy is not available"
+        printf '\n%s\n%s\n' "== $1" "  SKIP: NumPy is not available"
         return 0
     fi
-    mkdir -p "$work_dir/inputs"
-    sed 's/^WriteDataFiles .*/WriteDataFiles .true./' \
-        "$examples_dir/03_twisted_bilayer_bands/Gendata.in" > "$work_dir/inputs/hamiltonian_tables.in"
-    run_solver hamiltonian_tables "$work_dir/inputs/hamiltonian_tables.in" generate.s.mag || return 0
+    run_solver "$1" "$work_dir/inputs/$1.in" generate.s.mag || return 0
     verify_status=0
-    python3 "$repo_root/tools/hamiltonian/verify_tables.py" "$run_dir" \
-        --max-table-dev "$tables_max_dev" --max-model-dev "$model_max_dev" \
+    python3 "$repo_root/tools/hamiltonian/verify_tables.py" "$run_dir" --intralayer="$2" \
         > "$run_dir/verify_tables.log" 2>&1 || verify_status=$?
-    sed 's/^/  /' "$run_dir/verify_tables.log"
-    if [ "$verify_status" -eq 0 ] &&
-       python3 "$harness_dir/compare_output.py" --kind bands --atol "$bands_atol" --rtol "$bands_rtol" \
-            "$run_dir/generate.bands" "$examples_dir/03_twisted_bilayer_bands/reference/bands.dat"; then
+    grep -E 'neighbor entries:|missing from|without the reverse|max \|H_solver - H_model|largest (Hermiticity|eigenvalue)|E_model - E_solver|MISMATCH|Error|Traceback' \
+        "$run_dir/verify_tables.log" | sed 's/^ */  /'
+    if [ "$verify_status" -eq 0 ]; then
         printf '%s\n' "  PASS"
     else
-        printf '%s\n' "  FAIL: the Hamiltonian tables are not consistent with the bands"
+        printf '%s\n' "  FAIL: see $run_dir/verify_tables.log"
+        failures=$((failures + 1))
+    fi
+}
+
+# Symmetry check without stored reference: the four Dirac states of example 03
+# at the moire K point (first k-point, bands 37-40) form two degenerate pairs.
+# The historical neighbor search split them by 1e-4 eV.
+run_degeneracy_check() {
+    printf '\n%s\n' "== dirac_point_degeneracy"
+    bands="$work_dir/run/03_twisted_bilayer_bands/generate.bands"
+    if [ ! -s "$bands" ]; then
+        printf '%s\n' "  FAIL: no bands from example 03"
+        failures=$((failures + 1))
+        return 0
+    fi
+    if python3 - "$bands" <<'PYEOF'
+import sys
+lines = open(sys.argv[1]).read().split("\n")
+bands = int(lines[3].split()[0])
+values = [float(x) for line in lines[4:] for x in line.split()][1:1 + bands]
+e = values[bands // 2 - 2:bands // 2 + 2]
+split = max(e[1] - e[0], e[3] - e[2])
+print(f"  Dirac states at K (eV): {e[0]:.6f} {e[1]:.6f} {e[2]:.6f} {e[3]:.6f}   largest pair splitting: {split:.1e}")
+sys.exit(0 if split <= 1e-6 else 1)
+PYEOF
+    then
+        printf '%s\n' "  PASS"
+    else
+        printf '%s\n' "  FAIL: the Dirac states at K are not pairwise degenerate within 1e-6 eV"
+        failures=$((failures + 1))
+    fi
+}
+
+# The Hamiltonian of example 03, of its F2G2 variant, and of a cell smaller
+# than the interlayer search radius, each against the independent model.
+run_hamiltonian_checks() {
+    variant_input hamiltonian_example03 -e 's/^WriteDataFiles .*/WriteDataFiles .true./'
+    run_hamiltonian_check hamiltonian_example03 "$nn_elements"
+    variant_input hamiltonian_f2g2 -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
+        -e 's/^TB.NeighLevels .*/TB.NeighLevels 5/'
+    run_hamiltonian_check hamiltonian_f2g2 "$f2g2_elements"
+    variant_input hamiltonian_small_cell -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
+        -e 's/^TB.NeighLevels .*/TB.NeighLevels 5/' \
+        -e 's/^MoireCellParameters .*/MoireCellParameters 2 1 1 2/'
+    run_hamiltonian_check hamiltonian_small_cell "$f2g2_elements"
+}
+
+# run_expect_error NAME PATTERN: $work_dir/inputs/NAME.in must be refused with
+# an error message matching PATTERN.
+run_expect_error() {
+    printf '\n%s\n' "== $1"
+    run_dir="$work_dir/run/$1"
+    rm -rf "$run_dir"
+    mkdir -p "$run_dir"
+    cp "$work_dir/inputs/$1.in" "$run_dir/Gendata.in"
+    status=0
+    (cd "$run_dir" && ${GRABNES_LAUNCHER:-} "$grabnes_bin" Gendata.in > job.out 2> job.err) || status=$?
+    if [ "$status" -ne 0 ] && grep -q "$2" "$run_dir/job.out"; then
+        printf '%s\n' "  PASS: refused with '$2'"
+    else
+        printf '%s\n' "  FAIL: expected the error '$2', got status $status (see $run_dir)"
+        failures=$((failures + 1))
+    fi
+}
+
+# TB.NeighLevels is the single shell control: values outside 1..8 are refused,
+# and the deprecated Neigh.CutAtNN3 still means "three shells".
+run_shell_control_checks() {
+    variant_input neighlevels_0 -e 's/^TB.NeighLevels .*/TB.NeighLevels 0/'
+    run_expect_error neighlevels_0 'TB.NeighLevels must be at least 1'
+    variant_input neighlevels_9 -e 's/^TB.NeighLevels .*/TB.NeighLevels 9/'
+    run_expect_error neighlevels_9 'TB.NeighLevels must be between 1 and 8'
+
+    variant_input neighlevels_3 -e 's/^TB.NeighLevels .*/TB.NeighLevels 3/'
+    variant_input legacy_cutatnn3 -e 's/^TB.NeighLevels .*/TB.NeighLevels 5/' -e '$a Neigh.CutAtNN3 .true.'
+    run_solver neighlevels_3 "$work_dir/inputs/neighlevels_3.in" generate.bands || return 0
+    run_solver legacy_cutatnn3 "$work_dir/inputs/legacy_cutatnn3.in" generate.bands || return 0
+    if cmp -s "$work_dir/run/neighlevels_3/generate.bands" "$work_dir/run/legacy_cutatnn3/generate.bands" &&
+       grep -q 'Neigh.CutAtNN3 is deprecated' "$run_dir/job.out"; then
+        printf '%s\n' "  PASS: Neigh.CutAtNN3 with TB.NeighLevels 5 gives the bands of TB.NeighLevels 3"
+    else
+        printf '%s\n' "  FAIL: the legacy Neigh.CutAtNN3 input does not reproduce TB.NeighLevels 3"
         failures=$((failures + 1))
     fi
 }
@@ -311,9 +398,10 @@ dos_rtol=1e-9
 kubo_max_dev=0.03
 kubo_rms_dev=0.006
 
-# Example-03 bands rebuilt in Python: from the solver's own tables (measured
-# 4e-6 eV, limited by the five-decimal displacement files) and from an
-# independent model with a complete neighbor set (measured 1.0e-4 eV, the
-# known size of the neighbor-search approximations in this small cell).
-tables_max_dev=2e-5
-model_max_dev=3e-4
+# Intralayer matrix elements (eV, one per neighbor shell) of the models checked
+# by run_hamiltonian_checks; they restate the solver's default parameters and
+# are passed to the independent Python model. verify_tables.py requires the
+# matrix elements to agree within 1e-9 eV and the six-decimal band file within
+# 1e-6 eV.
+nn_elements=-2.9888
+f2g2_elements=-2.9888,0.2354,-0.1877,0,0.0633

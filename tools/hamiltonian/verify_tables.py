@@ -1,64 +1,88 @@
 #!/usr/bin/env python3
 """Independent check of the tight-binding Hamiltonian assembled by GRABNES.
 
-Run a band calculation with ``WriteDataFiles .true.`` and point this script at
-the run directory. From the tables the solver writes (neighbor list ``v``,
-displacements ``dx``/``dy``/``dz``, hoppings ``<prefix>.s.mag``, positions,
-cell, on-site energies) it
+Run a band calculation with ``WriteDataFiles .true.`` and pass the run
+directory. The script reads the tables written by the solver
 
-1. lists the intralayer neighbor shells and the matrix element on each;
-2. checks the interlayer elements against the two-center formula
-   H = Vpi exp(-(d-a_cc)/delta) (1 - (dz/d)^2) + Vsigma exp(-(d-d0)/delta) (dz/d)^2;
-3. reports how complete and how symmetric the neighbor list is;
-4. rebuilds H(k) from the tables, once with the lattice image of every
-   neighbor taken from its displacement vector and once with the image rule of
-   ``neigh.F90`` (matching by distance only), and compares both with the bands
-   the solver wrote;
-5. builds H(k) from scratch on the solver's atomic positions, with a complete
-   and Hermitian neighbor set, and compares again.
+    v, neighCell.dat, neighD.dat   neighbor list, lattice translations, displacements
+    <prefix>.s.mag                 hopping of every neighbor entry (units of g0, sign reversed)
+    <prefix>.pos, .cell, .e        positions, lattice vectors, on-site energies and layers
+    <prefix>.bands                 eigenvalues along the band path
 
-Step 4 with the solver's rule validates the diagonalization and the reading of
-the tables; step 5 measures the total effect of the neighbor-search
-approximations. Requires NumPy. The band path is assumed to be the one of the
-public examples (K - Gamma - M - K').
+and compares them with a Hamiltonian that is built here from the atomic
+positions alone: every pair (i, m, R) inside the search radii is enumerated
+exhaustively and its matrix element is evaluated from the model parameters
+given on the command line. Nothing of the solver's neighbor list, lattice
+translations, or hopping values enters this second Hamiltonian.
+
+Bloch convention of GRABNES (``DiagHam``): with R the lattice translation of
+neighbor entry j of atom i (the neighbor sits at r_m + R),
+
+    H[m, i](k) = sum_j H_j exp(-i k.R),      H_j = -hopp(j, i) * g0 .
+
+The phases only contain lattice vectors, so H(k + G) = H(k) element by element.
+Moving an atom by a lattice vector T multiplies its row and column by
+exp(+-i k.T): a unitary change of basis that leaves the eigenvalues unchanged.
+Both properties are tested, as is the convention with phases exp(i k.d) of the
+full displacement d, which has the same spectrum.
+
+Checks, with the residual of each one printed:
+
+1. stored displacement = r_m + R - r_i for every entry;
+2. solver entries = exhaustive enumeration (missing, extra, duplicates);
+3. every entry (i, m, R) has the partner (m, i, -R) with the conjugate value;
+4. every stored matrix element = the independent model value;
+5. H(k) Hermitian, and equal to the independent H(k), at Gamma, K, M, generic
+   and seeded random k-points;
+6. invariance under reciprocal lattice vectors and under moving atoms to other
+   unit cells;
+7. eigenvalues of the independent H(k) = bands written by the solver.
+
+Requires NumPy. Exit status 1 if a residual exceeds its limit.
 """
 
 import argparse
-import collections
 import re
 import sys
 
 import numpy as np
 
+# Neighbor shells of the honeycomb lattice in units of the bond length; the
+# ninth value only places the outermost search radius. Kept independent of the
+# table in neigh.F90 on purpose.
+SHELL_RADIUS = np.sqrt(np.array([1.0, 3.0, 4.0, 7.0, 9.0, 12.0, 13.0, 16.0, 19.0]))
+DZ_INTRA, DZ_INTER, DZ_SECOND = 1.5, 4.5, 7.5
+
 
 def load(run, prefix):
     lines = open(f"{run}/v").read().split("\n")
-    count, neighbors = [], []
-    i = 0
-    while i < len(lines) and lines[i].strip():
-        count.append(int(lines[i]))
-        neighbors.append([int(x) - 1 for x in lines[i + 1].split()])
-        i += 2
+    neighbors = []
+    for i in range(0, len(lines) - 1, 2):
+        if not lines[i].strip():
+            break
+        row = [int(x) - 1 for x in lines[i + 1].split()]
+        assert len(row) == int(lines[i]), "inconsistent neighbor file v"
+        neighbors.append(row)
 
-    def rows(name):
-        return [[float(x) for x in line.split()] for line in open(f"{run}/{name}") if line.strip()]
+    def rows(name, convert=float):
+        return [[convert(x) for x in line.split()] for line in open(f"{run}/{name}") if line.strip()]
 
     pair = re.compile(r"\(\s*([-+0-9.Ee]+)\s*,\s*([-+0-9.Ee]+)\s*\)")
-    hop = [
-        [complex(float(a), float(b)) for a, b in pair.findall(line)]
-        for line in open(f"{run}/{prefix}.s.mag")
-        if line.strip()
-    ]
-    disp = [np.array(list(zip(x, y, z))) for x, y, z in zip(rows("dx"), rows("dy"), rows("dz"))]
+    hop = [[complex(float(a), float(b)) for a, b in pair.findall(line)]
+           for line in open(f"{run}/{prefix}.s.mag") if line.strip()]
+    images = np.array(rows("neighCell.dat", int))
+    disp = np.array(rows("neighD.dat"))
     cell = np.array(rows(f"{prefix}.cell"))
     onsite = rows(f"{prefix}.e")
-    table = dict(
-        count=count, neighbors=neighbors, hop=hop, disp=disp,
+    counts = [len(row) for row in neighbors]
+    assert [len(h) for h in hop] == counts and len(images) == sum(counts) == len(disp), "inconsistent tables"
+    owner = np.repeat(np.arange(len(neighbors)), counts)
+    return dict(
+        owner=owner, neighbor=np.concatenate([np.array(r, int) for r in neighbors]),
+        image=images, disp=disp, hop=np.concatenate([np.array(h) for h in hop]),
         pos=np.array(rows(f"{prefix}.pos")), ucell=cell[:3].T, rcell=cell[3:].T,
         h0=np.array([r[0] for r in onsite]), layer=np.array([int(r[2]) for r in onsite]),
     )
-    assert all(len(h) == c == len(d) for h, c, d in zip(hop, count, disp)), "inconsistent tables"
-    return table
 
 
 def read_bands(path):
@@ -69,74 +93,98 @@ def read_bands(path):
     return values[:, 0], values[:, 1:]
 
 
-def k_points(rcell, corners, path_length):
+def path_k_points(rcell, corners, path_length):
+    """k-points of the band file. The solver spaces them uniformly on each
+    segment; the six-decimal path coordinate of the file is only used to count
+    the points per segment, so that the k-points are exact."""
     corners = [rcell @ np.array(c) for c in corners]
-    segments = [np.linalg.norm(b - a) for a, b in zip(corners[:-1], corners[1:])]
-    result = []
-    for x in path_length:
-        i = 0
-        while i < len(segments) - 1 and x > segments[i] + 1e-7:
-            x -= segments[i]
-            i += 1
-        result.append(corners[i] + (corners[i + 1] - corners[i]) * min(x / segments[i], 1.0))
+    ends = np.cumsum([np.linalg.norm(b - a) for a, b in zip(corners[:-1], corners[1:])])
+    x = np.asarray(path_length)
+    result = [corners[0]]
+    first = 1
+    for a, b, end in zip(corners[:-1], corners[1:], ends):
+        last = int(np.searchsorted(x, end + 1e-5))      # points up to this corner
+        steps = last - first
+        for j in range(1, steps + 1):
+            result.append(a + (b - a) * j / steps)
+        first = last
+    assert len(result) == len(x), "band path does not match the given corners"
     return result
 
 
-def lattice_images(t, rule):
-    """Integer lattice vector of every neighbor entry, and the entries where the
-    distance-only rule of neigh.F90 (last match in a -5..5 scan) picks another one."""
-    ucell, pos = t["ucell"], t["pos"]
-    images, different = [], 0
-    scan = [np.array([ix, iy, 0]) for ix in range(-5, 6) for iy in range(-5, 6)]
-    for i, (nbrs, disp) in enumerate(zip(t["neighbors"], t["disp"])):
-        row = []
-        for m, d in zip(nbrs, disp):
-            true = np.round(np.linalg.solve(ucell, d - (pos[m] - pos[i]))).astype(int)
-            chosen = true
-            if rule == "solver":
-                dist = np.linalg.norm(d)
-                chosen = np.zeros(3, int)
-                for n in scan:
-                    if i == m and not n.any():
-                        continue
-                    if abs(np.linalg.norm(pos[i] - pos[m] - ucell @ n) - dist) < 0.1:
-                        chosen = n
-                different += not np.array_equal(chosen, true)
-            row.append(chosen)
-        images.append(row)
-    return images, different
+class Model:
+    """Hamiltonian defined by the command-line parameters only."""
+
+    def __init__(self, args, bond):
+        self.bond = bond
+        self.shell_energy = args.intralayer
+        n = len(self.shell_energy)
+        self.rc_intra = 0.5 * (SHELL_RADIUS[n - 1] + SHELL_RADIUS[n]) * bond
+        self.shell_edges = 0.5 * (SHELL_RADIUS[:n] + SHELL_RADIUS[1:n + 1]) * bond
+        self.rc_inter = args.interlayer_cutoff
+        self.vpi, self.vsigma = -args.vpppi0, args.vppsigma0
+        self.d0, self.delta = args.interlayer_distance, args.decay
+        self.second = args.second_layer
+        self.periodic_z = args.periodic_z
+
+    def classify(self, d):
+        """0: not a pair, 1: intralayer, 2: interlayer (arrays over displacements)."""
+        rho = np.hypot(d[..., 0], d[..., 1])
+        adz = abs(d[..., 2])
+        intra = (adz < DZ_INTRA) & (rho < self.rc_intra)
+        top = DZ_SECOND if self.second else DZ_INTER
+        inter = (adz > DZ_INTRA) & (adz < top) & (rho < self.rc_inter)
+        if not self.second:
+            inter &= adz < DZ_INTER
+        return np.where(intra, 1, np.where(inter, 2, 0))
+
+    def element(self, d, kind):
+        """Matrix element (eV) of pairs with displacement d and class kind."""
+        rho = np.hypot(d[..., 0], d[..., 1])
+        dist = np.linalg.norm(d, axis=-1)
+        shell = np.searchsorted(self.shell_edges, rho)
+        intra = np.array(self.shell_energy + [0.0])[np.minimum(shell, len(self.shell_energy))]
+        safe = np.where(dist > 0, dist, 1.0)
+        cz = (d[..., 2] / safe) ** 2
+        inter = (self.vpi * np.exp(-(dist - self.bond) / self.delta) * (1 - cz)
+                 + self.vsigma * np.exp(-(dist - self.d0) / self.delta) * cz)
+        return np.where(kind == 1, intra, np.where(kind == 2, inter, 0.0))
+
+    def enumerate(self, pos, ucell):
+        """All pairs (i, m, R != self) inside the search radii: arrays i, m, R, d, H."""
+        rmax = max(self.rc_intra, self.rc_inter)
+        area = abs(ucell[0, 0] * ucell[1, 1] - ucell[0, 1] * ucell[1, 0])
+        frac = np.linalg.solve(ucell[:2, :2], pos[:, :2].T).T
+        spread = frac.max(axis=0) - frac.min(axis=0)
+        reach = [int(np.ceil(rmax * np.linalg.norm(ucell[:2, 1 - a]) / area + spread[a])) + 1 for a in (0, 1)]
+        reach_z = 0
+        if self.periodic_z:
+            top = (DZ_SECOND if self.second else DZ_INTER) + np.ptp(pos[:, 2])
+            reach_z = int(np.ceil(top / ucell[2, 2])) + 1
+        out = [[], [], [], [], []]
+        for a in range(-reach[0], reach[0] + 1):
+            for b in range(-reach[1], reach[1] + 1):
+                for c in range(-reach_z, reach_z + 1):
+                    image = np.array([a, b, c])
+                    d = pos[None, :, :] + ucell @ image - pos[:, None, :]
+                    kind = self.classify(d)
+                    if a == 0 and b == 0 and c == 0:
+                        np.fill_diagonal(kind, 0)
+                    i, m = np.nonzero(kind)
+                    out[0].append(i)
+                    out[1].append(m)
+                    out[2].append(np.tile(image, (len(i), 1)))
+                    out[3].append(d[i, m])
+                    out[4].append(self.element(d[i, m], kind[i, m]))
+        return (np.concatenate(out[0]), np.concatenate(out[1]), np.concatenate(out[2]),
+                np.concatenate(out[3]), np.concatenate(out[4]))
 
 
-def h_from_tables(t, images, k, g0):
-    n = len(t["count"])
+def bloch(n, owner, neighbor, value, phase_vector, k, onsite):
+    """H[m, i](k) = sum value * exp(-i k.phase_vector): the convention of DiagHam."""
     h = np.zeros((n, n), complex)
-    for i in range(n):
-        for m, hop, image in zip(t["neighbors"][i], t["hop"][i], images[i]):
-            h[m, i] -= hop * np.exp(-1j * k @ (t["ucell"] @ image))
-    lower = np.tril(h, -1)  # ZHEEV('N','L') only references the lower triangle
-    return (lower + lower.conj().T + np.diag(t["h0"])) * g0
-
-
-def h_independent(t, k, shells, two_center, cutoff):
-    pos, ucell, layer = t["pos"], t["ucell"], t["layer"]
-    h = np.zeros((len(pos), len(pos)), complex)
-    same = layer[:, None] == layer[None, :]
-    reach = int(np.ceil(cutoff / np.linalg.norm(ucell[:, 0]))) + 1
-    for a in range(-reach, reach + 1):
-        for b in range(-reach, reach + 1):
-            shift = ucell @ np.array([a, b, 0])
-            d = pos[None, :, :] + shift - pos[:, None, :]
-            rho = np.hypot(d[..., 0], d[..., 1])
-            dist = np.linalg.norm(d, axis=2)
-            phase = np.exp(1j * k @ shift)
-            for radius, energy in shells.items():
-                h += np.where(same & (abs(rho - radius) < 0.02), energy, 0.0) * phase
-            inter = (~same) & (rho < cutoff)
-            cz = np.where(inter, (d[..., 2] / np.where(dist > 0, dist, 1.0)) ** 2, 0.0)
-            v = (two_center["vpi"] * np.exp(-(dist - two_center["acc"]) / two_center["delta"]) * (1 - cz)
-                 + two_center["vsigma"] * np.exp(-(dist - two_center["d0"]) / two_center["delta"]) * cz)
-            h += np.where(inter, v, 0.0) * phase
-    return h + np.diag(t["h0"])
+    np.add.at(h, (neighbor, owner), value * np.exp(-1j * (phase_vector @ k)))
+    return h + np.diag(onsite)
 
 
 def main():
@@ -145,94 +193,178 @@ def main():
     parser.add_argument("--prefix", default="generate")
     parser.add_argument("--lattice-parameter", type=float, default=2.46)
     parser.add_argument("--g0", type=float, help="energy unit in eV (default: 12.14 - 3.72 a)")
+    parser.add_argument("--intralayer", type=lambda s: [float(x) for x in s.split(",")], required=True,
+                        help="intralayer matrix elements in eV, one per neighbor shell, e.g. -2.9888,0,0")
     parser.add_argument("--vpppi0", type=float, default=3.5)
     parser.add_argument("--vppsigma0", type=float, default=0.48)
     parser.add_argument("--interlayer-distance", type=float, default=3.34)
-    parser.add_argument("--layer-dist-factor", type=float, default=6.2)
-    parser.add_argument("--max-table-dev", type=float,
-                        help="fail if the tables (solver image rule) deviate more from the bands (eV)")
-    parser.add_argument("--max-model-dev", type=float,
-                        help="fail if the independent model deviates more from the bands (eV)")
+    parser.add_argument("--decay", type=float, help="decay length in A (default: 0.184 a)")
+    parser.add_argument("--interlayer-cutoff", type=float,
+                        help="in-plane interlayer search radius in A (default: 1.1 a_cc * 6.2); "
+                             "1.0 corresponds to Neigh.LayerNeighbors 0")
+    parser.add_argument("--periodic-z", action="store_true", help="system periodic along z (Bulk, nonBulkSmall)")
+    parser.add_argument("--second-layer", action="store_true", help="addSecondLayerInteractions")
+    parser.add_argument("--path", default="2/3,1/3;0,0;1/2,0;2/3,1/3",
+                        help="corners of the band path in reciprocal coordinates")
+    parser.add_argument("--seed", type=int, default=20261008)
+    parser.add_argument("--tol-matrix", type=float, default=1e-9,
+                        help="limit for matrix-element and Hermiticity residuals (eV)")
+    parser.add_argument("--tol-bands", type=float, default=1e-6,
+                        help="limit for the comparison with the six-decimal band file (eV)")
     args = parser.parse_args()
 
     a = args.lattice_parameter
-    acc = a / np.sqrt(3.0)
+    bond = a / np.sqrt(3.0)
     g0 = args.g0 if args.g0 is not None else 12.14 - 3.72 * a
+    if args.decay is None:
+        args.decay = 0.184 * a
+    if args.interlayer_cutoff is None:
+        args.interlayer_cutoff = bond * 1.1 * 6.2
     t = load(args.run_dir, args.prefix)
-    n = len(t["count"])
-    print(f"atoms: {n}   energy unit g0 = {g0:.5f} eV   largest |on-site| = {abs(t['h0']).max() * g0:.3e} eV")
+    pos, ucell, rcell = t["pos"], t["ucell"], t["rcell"]
+    n = len(pos)
+    model = Model(args, bond)
+    failures = []
 
-    shells = collections.defaultdict(list)
-    inter = []
-    for hops, disp in zip(t["hop"], t["disp"]):
-        for hop, d in zip(hops, disp):
-            if abs(d[2]) < 1e-6:
-                shells[round(float(np.hypot(d[0], d[1])), 2)].append(-hop.real * g0)
-            else:
-                inter.append((np.hypot(d[0], d[1]), d[2], -hop.real * g0))
-    print("intralayer shells:  distance (A)  neighbors/atom  H_ij (eV)")
-    model_shells = {}
-    for radius in sorted(shells):
-        values = np.array(shells[radius])
-        print(f"                    {radius:10.2f}  {len(values) / n:14.2f}  {values.mean():+.5f}"
-              + ("" if np.ptp(values) < 1e-9 else f"  (spread {np.ptp(values):.1e})"))
-        if abs(values.mean()) > 1e-12:
-            model_shells[radius] = values.mean()
+    def report(label, value, limit=None, unit="eV"):
+        flag = ""
+        if limit is not None and not value <= limit:
+            flag = f"   <-- above the limit {limit:g}"
+            failures.append(label)
+        print(f"  {label:<62s} {value:10.3e} {unit}{flag}")
 
-    two_center = dict(vpi=-args.vpppi0, vsigma=args.vppsigma0, acc=acc,
-                      d0=args.interlayer_distance, delta=0.184 * a)
-    cutoff = acc * 1.1 * args.layer_dist_factor
-    if inter:
-        inter = np.array(inter)
-        dist = np.hypot(inter[:, 0], inter[:, 1])
-        cz = (inter[:, 1] / dist) ** 2
-        formula = (two_center["vpi"] * np.exp(-(dist - acc) / two_center["delta"]) * (1 - cz)
-                   + two_center["vsigma"] * np.exp(-(dist - two_center["d0"]) / two_center["delta"]) * cz)
-        print(f"interlayer: {len(inter) / n:.2f} neighbors/atom, in-plane distance up to {inter[:, 0].max():.2f} A, "
-              f"largest |H_ij| = {abs(inter[:, 2]).max():.4f} eV")
-        print(f"  deviation from the two-center formula: {abs(formula - inter[:, 2]).max():.2e} eV")
-        pos, ucell, layer = t["pos"], t["ucell"], t["layer"]
-        expected = 0
-        reach = int(np.ceil(cutoff / np.linalg.norm(ucell[:, 0]))) + 1
-        for a_ in range(-reach, reach + 1):
-            for b_ in range(-reach, reach + 1):
-                d = pos[None, :, :] + ucell @ np.array([a_, b_, 0]) - pos[:, None, :]
-                expected += int(((layer[:, None] != layer[None, :]) & (np.hypot(d[..., 0], d[..., 1]) < cutoff)).sum())
-        print(f"  pairs inside the nominal in-plane cutoff of {cutoff:.2f} A: {expected}; "
-              f"in the solver list: {len(inter)} ({100 * len(inter) / expected:.1f} %)")
+    print(f"atoms: {n}   neighbor entries: {len(t['owner'])}   g0 = {g0:.5f} eV")
+    print(f"cell: |A1| = {np.linalg.norm(ucell[:, 0]):.5f} A, |A2| = {np.linalg.norm(ucell[:, 1]):.5f} A; "
+          f"intralayer radius {model.rc_intra:.4f} A ({len(args.intralayer)} shells), "
+          f"interlayer radius {model.rc_inter:.4f} A")
 
-    true_images, _ = lattice_images(t, "true")
-    solver_images, different = lattice_images(t, "solver")
-    entries = {}
-    for i in range(n):
-        for m, image in zip(t["neighbors"][i], true_images[i]):
-            entries[(i, m, image[0], image[1])] = True
-    unpaired = sum((m, i, -a_, -b_) not in entries for (i, m, a_, b_) in entries)
-    print(f"neighbor entries: {len(entries)}; without the reverse entry: {unpaired}; "
-          f"given another lattice image by the distance-only rule: {different}")
+    solver_value = -t["hop"] * g0                      # H_j of every entry (eV)
+    lattice = t["image"] @ ucell.T                     # R of every entry
 
-    path, bands = read_bands(f"{args.run_dir}/{args.prefix}.bands")
-    ks = k_points(t["rcell"], ([2 / 3, 1 / 3, 0], [0, 0, 0], [0.5, 0, 0], [2 / 3, 1 / 3, 0]), path)
+    print("1. lattice translations")
+    expected_disp = pos[t["neighbor"]] + lattice - pos[t["owner"]]
+    report("max |stored displacement - (r_m + R - r_i)|", abs(expected_disp - t["disp"]).max(), 1e-9, "A")
 
-    def deviation(build):
-        return max(abs(np.linalg.eigvalsh(build(k)) - e).max() for k, e in zip(ks, bands))
+    print("2. completeness of the neighbor list")
+    ei, em, eimage, edisp, evalue = model.enumerate(pos, ucell)
+    solver_keys = {}
+    duplicates = 0
+    for index, key in enumerate(zip(t["owner"], t["neighbor"], *t["image"].T)):
+        duplicates += key in solver_keys
+        solver_keys[key] = index
+    enum_keys = {key: index for index, key in enumerate(zip(ei, em, *eimage.T))}
+    missing = [enum_keys[key] for key in enum_keys if key not in solver_keys]
+    extra = [solver_keys[key] for key in solver_keys if key not in enum_keys]
+    print(f"  pairs inside the search radii (exhaustive enumeration): {len(enum_keys)}; "
+          f"in the solver list: {len(solver_keys)}")
+    report("pairs missing from the solver list", len(missing), 0, "")
+    report("solver entries outside the search radii", len(extra), 0, "")
+    report("duplicate solver entries", duplicates, 0, "")
+    if missing:
+        report("largest |H| among the missing pairs", abs(evalue[missing]).max())
+    if extra:
+        report("largest |H| among the extra entries", abs(solver_value[extra]).max())
 
-    dev_solver = deviation(lambda k: h_from_tables(t, solver_images, k, g0))
-    dev_true = deviation(lambda k: h_from_tables(t, true_images, k, g0))
-    dev_model = deviation(lambda k: h_independent(t, k, model_shells, two_center, cutoff))
-    print("largest band deviation from the solver output (eV):")
-    print(f"  tables, lattice images as chosen by the solver : {dev_solver:.2e}")
-    print(f"  tables, lattice images from the displacements  : {dev_true:.2e}")
-    print(f"  independent model, complete neighbor set       : {dev_model:.2e}")
+    print("3. reverse partners (H_ij(R) = conj(H_ji(-R)))")
+    unpaired, worst = 0, 0.0
+    for (i, m, a1, a2, a3), index in solver_keys.items():
+        partner = solver_keys.get((m, i, -a1, -a2, -a3))
+        if partner is None:
+            unpaired += 1
+        else:
+            worst = max(worst, abs(solver_value[index] - np.conj(solver_value[partner])))
+    report("entries without the reverse entry", unpaired, 0, "")
+    report("max |H_ij(R) - conj(H_ji(-R))|", worst, args.tol_matrix)
 
-    status = 0
-    if args.max_table_dev is not None and dev_solver > args.max_table_dev:
-        print(f"MISMATCH: table reconstruction deviates by more than {args.max_table_dev:g} eV")
-        status = 1
-    if args.max_model_dev is not None and dev_model > args.max_model_dev:
-        print(f"MISMATCH: independent model deviates by more than {args.max_model_dev:g} eV")
-        status = 1
-    return status
+    print("4. matrix elements against the independent model")
+    common = [(solver_keys[key], enum_keys[key]) for key in solver_keys if key in enum_keys]
+    si = np.array([c[0] for c in common])
+    ee = np.array([c[1] for c in common])
+    diff = abs(solver_value[si] - evalue[ee])
+    intra = abs(edisp[ee][:, 2]) < DZ_INTRA
+    if intra.any():
+        report("intralayer entries: max |H_solver - H_model|", diff[intra].max(), args.tol_matrix)
+    if (~intra).any():
+        report("interlayer entries: max |H_solver - H_model|", diff[~intra].max(), args.tol_matrix)
+    report("largest |on-site energy| in the tables", abs(t["h0"]).max() * g0, args.tol_matrix)
+    rho = np.round(np.hypot(edisp[ee][:, 0], edisp[ee][:, 1])[intra], 2)
+    print("  intralayer shells:  distance (A)   neighbors/atom   H_solver (eV)   H_model (eV)")
+    for radius in np.unique(rho):
+        sel = np.flatnonzero(intra)[rho == radius]
+        print(f"                      {radius:10.2f}   {len(sel) / n:14.2f}   {solver_value[si][sel].real.mean():+12.5f}   "
+              f"{evalue[ee][sel].mean():+11.5f}")
+    if (~intra).any():
+        print(f"  interlayer: {(~intra).sum() / n:.2f} neighbors/atom, largest |H| = "
+              f"{abs(solver_value[si][~intra]).max():.5f} eV, smallest |H| = {abs(solver_value[si][~intra]).min():.2e} eV")
+
+    print("5. H(k): Hermiticity and agreement with the independent model")
+    onsite = t["h0"] * g0
+    corners = [[float(eval(x, {"__builtins__": {}})) for x in c.split(",")] + [0.0] for c in args.path.split(";")]
+    rng = np.random.default_rng(args.seed)
+    named = {"Gamma": [0, 0, 0], "K": [2 / 3, 1 / 3, 0], "M": [0.5, 0, 0],
+             "generic (0.137, 0.291)": [0.137, 0.291, 0], "generic (-0.412, 0.073)": [-0.412, 0.073, 0]}
+    for index in range(4):
+        f = rng.uniform(-1, 1, 2)
+        named[f"random {index + 1} ({f[0]:+.3f}, {f[1]:+.3f})"] = [f[0], f[1], 0]
+    e_lattice = eimage @ ucell.T
+
+    def solver_h(k):
+        return bloch(n, t["owner"], t["neighbor"], solver_value, lattice, k, onsite)
+
+    def model_h(k):
+        return bloch(n, ei, em, evalue, e_lattice, k, np.zeros(n))
+
+    worst_herm = worst_h = worst_e = 0.0
+    print("     k-point                      |H-H^+|_max   |H_solver-H_model|_max   max |dE|")
+    for label, f in named.items():
+        k = rcell @ np.array(f, float)
+        hs, hm = solver_h(k), model_h(k)
+        herm = abs(hs - hs.conj().T).max()
+        dh = abs(hs - hm).max()
+        de = abs(np.linalg.eigvalsh(0.5 * (hs + hs.conj().T)) - np.linalg.eigvalsh(hm)).max()
+        worst_herm, worst_h, worst_e = max(worst_herm, herm), max(worst_h, dh), max(worst_e, de)
+        print(f"     {label:<28s} {herm:11.2e}   {dh:20.2e}   {de:9.2e}")
+    report("largest Hermiticity residual", worst_herm, args.tol_matrix)
+    report("largest |H_solver(k) - H_model(k)|", worst_h, args.tol_matrix)
+    report("largest eigenvalue difference", worst_e, args.tol_matrix)
+
+    print("6. invariances")
+    k = rcell @ np.array([0.137, 0.291, 0.0])
+    reference = np.linalg.eigvalsh(model_h(k))
+    worst_g_h = worst_g_e = 0.0
+    for g in ([1, 0, 0], [0, 1, 0], [-2, 3, 0]):
+        kg = k + rcell @ np.array(g, float)
+        worst_g_h = max(worst_g_h, abs(solver_h(kg) - solver_h(k)).max())
+        worst_g_e = max(worst_g_e, abs(np.linalg.eigvalsh(model_h(kg)) - reference).max())
+    report("H_solver(k+G) - H_solver(k), element by element", worst_g_h, args.tol_matrix)
+    report("eigenvalues of the model at k+G", worst_g_e, args.tol_matrix)
+    # atoms moved to other unit cells: new positions, new enumeration
+    shift = rng.integers(-2, 3, size=(n, 2))
+    moved = pos + np.hstack([shift, np.zeros((n, 1), int)]) @ ucell.T
+    mi, mm, mimage, _, mvalue = model.enumerate(moved, ucell)
+    hm_moved = bloch(n, mi, mm, mvalue, mimage @ ucell.T, k, np.zeros(n))
+    gauge = np.exp(-1j * (moved - pos) @ k)
+    report("atoms moved by lattice vectors: number of pairs changes by", abs(len(mi) - len(ei)), 0, "")
+    report("  eigenvalues", abs(np.linalg.eigvalsh(hm_moved) - reference).max(), args.tol_matrix)
+    report("  |H' - D^+ H D| with D = diag(exp(-i k.T))",
+           abs(hm_moved - gauge.conj()[:, None] * model_h(k) * gauge[None, :]).max(), args.tol_matrix)
+    # convention with the full displacement in the phase
+    h_atomic = bloch(n, ei, em, evalue, edisp, k, np.zeros(n))
+    report("phases exp(-i k.d) instead of exp(-i k.R): eigenvalues",
+           abs(np.linalg.eigvalsh(h_atomic) - reference).max(), args.tol_matrix)
+
+    print("7. eigenvalues of the independent model against the solver's band file")
+    x, bands = read_bands(f"{args.run_dir}/{args.prefix}.bands")
+    worst_band = 0.0
+    for kp, energies in zip(path_k_points(rcell, corners, x), bands):
+        worst_band = max(worst_band, abs(np.linalg.eigvalsh(model_h(kp)) - energies).max())
+    report(f"max |E_model - E_solver| over {len(x)} k-points x {bands.shape[1]} bands", worst_band, args.tol_bands)
+
+    if failures:
+        print("MISMATCH: " + "; ".join(failures))
+        return 1
+    print("all residuals within their limits")
+    return 0
 
 
 if __name__ == "__main__":
