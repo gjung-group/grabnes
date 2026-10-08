@@ -1,37 +1,76 @@
-# Builds the canonical solver with GNU Fortran and Open MPI on Ubuntu and runs
-# the regression suite of grabnes_testrun.
-#
-# STATUS: written on a development branch and NOT yet exercised on GitHub.
-# The suite itself is validated on Fedora 36 with GNU Fortran 12.2 + Intel MPI
-# and with Intel Fortran; the Ubuntu packages and Open MPI below are untested,
-# and the workflow could not be reproduced locally in a container. Expect to
-# adjust it on the first run (see docs/development/release-readiness.md).
+# Builds the canonical solver with GNU Fortran and Open MPI on Ubuntu, runs the
+# four supported examples and the further checks of grabnes_testrun, and
+# compares the results with the committed reference data. Any build failure,
+# solver error, or deviation beyond the tolerances fails the job.
 name: regression
 
 on:
-  pull_request:
   push:
+    branches: [main, nicolas/development]
+  pull_request:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   gnu:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
+    env:
+      # Open MPI refuses to start more processes than cores without this
+      # (used only by the check that two MPI processes are refused).
+      GRABNES_MPIRUN: mpirun --oversubscribe
+      GRABNES_TEST_DIR: ${{ runner.temp }}/grabnes
+      OMP_NUM_THREADS: 1
     steps:
       - uses: actions/checkout@v4
-      - name: Install compiler and libraries
+
+      - name: Install compiler, MPI, numerical libraries and Python packages
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             gfortran make libopenmpi-dev openmpi-bin \
-            libblas-dev liblapack-dev libarpack2-dev python3 python3-numpy python3-pytest python3-scipy
-      - name: Smoke test (build + graphene bands)
-        run: ./grabnes_testrun/smoke_test.sh
-      - name: Regression suite (checked build)
+            libblas-dev liblapack-dev libarpack2-dev \
+            python3 python3-numpy python3-scipy python3-pytest python3-matplotlib
+
+      - name: Report tool versions
+        run: |
+          gfortran --version | head -n 1
+          mpif90 --version | head -n 1
+          mpirun --version | head -n 1
+          python3 --version
+
+      - name: Build the solver, run the four examples and the regression checks
+        run: ./grabnes_testrun/run_examples.sh
+
+      - name: Run the example launchers and plotting scripts
+        # Informative only: a plotting problem must not hide a numerical result.
+        continue-on-error: true
         env:
-          # Open MPI refuses to start more processes than cores without this.
-          GRABNES_MPIRUN: mpirun --oversubscribe
-        run: ./grabnes_testrun/run_examples.sh --debug
+          GRABNES_BIN: ${{ runner.temp }}/grabnes/bin/grabnes
+          MPLBACKEND: Agg
+        run: |
+          for example in examples/0*/; do
+            (cd "$example" && ./run.sh && python3 plot.py)
+          done
+
       - name: TAPW mathematical tests
         run: python3 -m pytest tests/tapw
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grabnes-test-logs
+          path: |
+            ${{ runner.temp }}/grabnes/build.log
+            ${{ runner.temp }}/grabnes/run/*/job.out
+            ${{ runner.temp }}/grabnes/run/*/job.err
+            ${{ runner.temp }}/grabnes/run/*/verify_tables.log
+          if-no-files-found: ignore
