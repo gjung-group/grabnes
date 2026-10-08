@@ -28,6 +28,9 @@ subroutine TBInit()
    real(dp) :: t2
 
    call MIO_InputParameter('TB.NeighLevels',tbnn,1)
+   if (tbnn < 1) then
+      call MIO_Kill('TB.NeighLevels must be at least 1 (requested: '//trim(num2str(tbnn))//').','tbpar','TBInit')
+   end if
    call MIO_Allocate(gn,[4,4,tbnn],'gn','tbpar')
    if (MIO_InputSearchLabel('&begin TB.Hoppings.1',line,id)) then
       call MIO_InputBlock('TB.Hoppings.1',gn(:,:,1))

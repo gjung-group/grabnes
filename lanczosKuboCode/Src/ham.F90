@@ -108,6 +108,7 @@ subroutine HamInit()
 
    use neigh,                only : NeighList, maxNeigh, Nneigh, neighCell, NList,neighD,Nradii, fastNNnotsquare, fastNNnotsquareSmall, fastNN, fastNNnotsquareBulk, fastNNnotsquareBulkSmall
    use neigh,                only : fastNNnotsquareNotRectangle
+   use neigh,                only : NeighShellCutoff2
    use atoms,                only : inode1, inode2, Species, nAt, Rat, AtomsSetCart, layerIndex, in1, in2, frac, interlayerDistances
    use atoms,                only : AtomsSetFrac, displacements
    use interface,            only : InterfacePot2
@@ -136,6 +137,7 @@ subroutine HamInit()
 
    ! Neighbor counting
    integer :: inplaneNeigh, outplaneNeigh  ! In-plane and out-of-plane neighbor counts
+   integer :: nShells, modelShells         ! Intralayer shells searched / reached by the model
    integer :: maxnn                        ! Maximum number of neighbors
 
    ! Loop variables
@@ -306,28 +308,27 @@ subroutine HamInit()
       call MIO_Print('fastNN finished','ham')
    else if (ll) then
       aCC = aG/sqrt(3.0_dp)
-      if (tbnn==1) then
-          cutoff2 = aCC**2 * 1.2_dp**2
-      else if (tbnn==2) then
-          cutoff2 = aG**2 * 1.2_dp**2
-      else if (tbnn>2) then
-          ! cutAtNN3 used to be tested without ever being assigned. It is now
-          ! an explicit input flag; .true. keeps the intralayer search within
-          ! the third-neighbour shell.
-          call MIO_InputParameter('Neigh.CutAtNN3',cutAtNN3,.false.)
-          if (cutAtNN3) then
-             cutoff2 = (aG**2 + aCC**2) * 1.2_dp**2
-             call MIO_Print('We go to third nearest neighbors (intralayer) (are you sure it is enough?)','ham')
-          else
-             call MIO_InputParameter('F2G2Model',F2G2Model,.true.)
-             if (F2G2Model) then
-                 call MIO_Print('We go to fifth nearest neighbors (intralayer) as in the F2G2 model','ham')
-                 cutoff2 = ((3.0_dp*aCC)**2) * 1.2_dp**2
-             else
-                 call MIO_Print('We go to eight nearest neighbors (intralayer) as in the Kaxiras model','ham')
-                 cutoff2 = ((4.0_dp*aCC)**2) * 1.2_dp**2
-             end if
-          end if
+      ! TB.NeighLevels is the number of intralayer neighbour shells. It sets
+      ! the search radius through the shell table of the neigh module; the
+      ! neighbour arrays are sized by the search itself.
+      nShells = tbnn
+      call MIO_InputParameter('Neigh.CutAtNN3',cutAtNN3,.false.)
+      if (cutAtNN3) then
+         ! Legacy flag: it limited the search to three shells when
+         ! TB.NeighLevels was larger than 2.
+         call MIO_Print('Neigh.CutAtNN3 is deprecated; use TB.NeighLevels 3 instead','ham')
+         nShells = min(nShells,3)
+      end if
+      cutoff2 = NeighShellCutoff2(nShells,aCC)
+      call MIO_Print('Intralayer neighbours: '//trim(num2str(nShells))//' shell(s), in-plane radius '// &
+        trim(num2str(sqrt(cutoff2),4))//' Ang','ham')
+      call MIO_InputParameter('F2G2Model',F2G2Model,.true.)
+      modelShells = 8
+      if (F2G2Model) modelShells = 5
+      if (nShells < modelShells) then
+         call MIO_Print('Intralayer hopping terms beyond shell '//trim(num2str(nShells))// &
+           ' are not included (the intralayer models reach shell '//trim(num2str(modelShells))// &
+           '); raise TB.NeighLevels to include them','ham')
       end if
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,0)
       call MIO_InputParameter('Bulk',bulk,.false.)
@@ -347,28 +348,25 @@ subroutine HamInit()
       A1 = ucell(:,1)
       A2 = ucell(:,2)
       A3 = ucell(3,3)
-      !print*, "A1 and A2", A1, A2
-      inplaneNeigh=sum(numN(1:tbnn))
-      maxnn = inplaneNeigh + outplaneNeigh !to be adjusted for accuracy
       !ALLOCATE(nn(natoms,maxnn))
       !ALLOCATE(near(natoms))
       if (frac) call AtomsSetCart()
       !print*, cutoff2, cutoff2bis
       if (bulk) then
          if (bulksmall) then
-             call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,A3,maxnn)
+             call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2,A3)
          else
-             call fastNNnotsquareBulk(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,A3,maxnn)
+             call fastNNnotsquareBulk(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2,A3)
          end if
       else
          if (small) then
-            call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,A3,maxnn)
+            call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2,A3)
             !call fastNNnotsquareSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,maxnn) # this one doesn't work
             !for now, let's use bulk, but add a large amount of free space to avoid interactions between periodic images in z
             !direction
-            !call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,A3,maxnn)
+            !call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2,A3)
          else
-            call fastNNnotsquare(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
+            call fastNNnotsquare(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2)
          end if
       end if
       call MIO_Print('fastNNnotsquare finished','ham')
