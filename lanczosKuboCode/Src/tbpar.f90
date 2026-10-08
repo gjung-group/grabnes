@@ -24,7 +24,7 @@ subroutine TBInit()
    integer :: i, i1, i2
    character(len=80) :: line
    integer :: id
-   real(dp) :: g
+   real(dp) :: g, gdef
    real(dp) :: t2
 
    call MIO_InputParameter('TB.NeighLevels',tbnn,1)
@@ -36,14 +36,16 @@ subroutine TBInit()
       call MIO_InputBlock('TB.Hoppings.1',gn(:,:,1))
       g0 = gn(2,1,1)
    else
-      g0 = -3.72_dp*aG + 12.14_dp
-      call MIO_InputParameter('TB.Hopping',g0,g0)
+      ! The default must not be the variable that receives the value: with
+      ! both arguments aliased the result is undefined (zero in optimised builds).
+      gdef = -3.72_dp*aG + 12.14_dp
+      call MIO_InputParameter('TB.Hopping',g0,gdef)
       call MIO_Print('Hopping g0: '//trim(num2str(g0)),'tbpar')
       gn(2,1,1) = g0
       gn(1,1,1) = g0
       gn(2,2,1) = g0
-      g = -3.11_dp*aBN + 10.68_dp
-      call MIO_InputParameter('TB.BNHopping',g,g)
+      gdef = -3.11_dp*aBN + 10.68_dp
+      call MIO_InputParameter('TB.BNHopping',g,gdef)
       gn(4,3,1) = g
       call MIO_InputParameter('TB.CBHopping',g,2.68_dp)
       gn(3,1,1) = g

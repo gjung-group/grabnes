@@ -6600,7 +6600,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (BNBNtwoLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -6779,7 +6779,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (encapsulatedThreeLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -7000,7 +7000,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (encapsulatedFourLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -7221,7 +7221,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (encapsulatedFiveLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -7442,7 +7442,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (encapsulatedSixLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -7663,7 +7663,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (encapsulatedSevenLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -7884,7 +7884,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (t3GwithBN) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -8055,7 +8055,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                            !print*, "F2G2", hopp(j,i)
                         !else if (BNBNtwoLayers) then
@@ -8208,7 +8208,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                            !print*, "F2G2", hopp(j,i)
                         !else if (BNBNtwoLayers) then
@@ -8448,11 +8448,14 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (MIO_StringComp(BilayerModel,'Koshino') .or. MIO_StringComp(BilayerModel,'Mayou') .or. MIO_StringComp(BilayerModel,'HTC') .or. MIO_StringComp(SinglelayerModel,'HTC') ) then
                            if (frac) call AtomsSetCart()
                            if (KoshinoIntralayer .or. MayouIntralayer) then
+                              ! The interlayer renormalisation factor (KoshinoSR) is not
+                              ! meant for intralayer pairs and may not be set yet here.
+                              renormalizeHoppingFactorAAp = 1.0_dp
                               if (MIO_StringComp(BilayerModel,'Koshino')) then
                                  !print*, "adding the inplane Koshino terms"
                                  if (frac) call AtomsSetCart()
@@ -8766,7 +8769,7 @@ subroutine HamHopping
                                   delta = 0.0_dp
                               end if
                               !print*, "we are adding the gn values"
-                              hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                              hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            end if
                         else if (MIO_StringComp(BilayerModel,'BLKaxiras') .or. MIO_StringComp(BilayerModel,'BLSrivani')) then ! this is where we assign the intralayer F2G2
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -8977,7 +8980,7 @@ subroutine HamHopping
                            if (d > 1.5_dp) then
                                delta = 0.0_dp
                            end if
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta)
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp)
                         else if (MIO_StringComp(BilayerModel,'Srivani')) then
                            !print*, "adding Srivani in plane terms"
                            !if (frac) call AtomsSetCart()
@@ -9005,13 +9008,13 @@ subroutine HamHopping
                            if (d > 1.5_dp) then
                                delta = 0.0_dp
                            end if
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) + 1.0_dp*delta )
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) + 1.0_dp*delta ,kind=dp)
                         else
                            !print*, i, j, cmplx(gn(Species(i),Species(NList(j,i)),ilvl))
                            if (d > 1.5_dp) then
                                delta = 0.0_dp
                            end if
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta)
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp)
                         end if
                         exit
                      end if
@@ -10983,7 +10986,7 @@ subroutine HamHopping
                     !end if
                   else
                     d = sqrt(dot_product(NeighD(1:2,j,i),NeighD(1:2,j,i)))
-                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay))
+                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay),kind=dp)
                   end if
                else ! end of INTERLAYER
                   hopp(j,i) = hopp(j,i) + 0.0_dp
@@ -11002,7 +11005,7 @@ subroutine HamHopping
                     iii = NList(j,i)
                     do jj=1,Nneigh(iii)
                        if(NList(jj,iii).eq.i) then
-                           hopp(j,i) = hopp(j,i) + cmplx(hopp(jj,iii))
+                           hopp(j,i) = hopp(j,i) + cmplx(hopp(jj,iii),kind=dp)
                        end if
                     end do
                  end if
@@ -11157,7 +11160,7 @@ subroutine HamHopping
                                                ! instance)
                               delta = 0.0_dp
                           end if
-                          hopp(j,i) = hopp(j,i) - cmplx(1.0_dp*delta )
+                          hopp(j,i) = hopp(j,i) - cmplx(1.0_dp*delta ,kind=dp)
                           exit
                        end if
                     end do
@@ -11170,7 +11173,7 @@ subroutine HamHopping
                     !end if
                  else
                     d = sqrt(dot_product(NeighD(1:2,j,i),NeighD(1:2,j,i)))
-                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay))
+                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay),kind=dp)
                  end if
               end do
           end do
