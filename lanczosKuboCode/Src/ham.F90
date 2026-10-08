@@ -12055,7 +12055,9 @@ subroutine HamHopping
    if (w) then
       !print*, "prefix is ", prefix
       !print*, "here it is only printing the first 3 neighbor hoppings!!!"
-      call file%Open(name=trim(prefix)//'.'//'s.mag',serial=.true.)
+      ! One record holds every hopping of an atom; the default record length
+      ! (maxlinel) is too short for that.
+      call file%Open(name=trim(prefix)//'.'//'s.mag',serial=.true.,recl=64*maxNeigh)
       !open(1,FILE='s')
       u = file%GetUnit()
       do i=1,nAt
