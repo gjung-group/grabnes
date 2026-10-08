@@ -3,6 +3,8 @@
 This example uses exact diagonalization on an `8 x 8` k-point grid to compute
 the density of states of the same 76-atom `(m,n) = (3,2)` commensurate cell as
 example 03. Gaussian broadening produces a compact, deterministic laptop test.
+The Hamiltonian is the one of example 03: Koshino interlayer hopping and
+nearest-neighbor intralayer hopping, requested explicitly in `Gendata.in`.
 
 ## Run
 
