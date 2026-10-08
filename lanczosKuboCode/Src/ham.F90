@@ -8705,7 +8705,7 @@ subroutine HamHopping
                                                 hopp(j,i) = hopp(j,i) + t5KB
                                            end if
                                       end if
-                                 else if (dist .gt. 2.0_dp*aG*0.9_dp .and. dist .lt. 2.0_dp*aG*1.1_dp) then
+                                 else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then ! narrow: the seventh shell is only 4 % further out
                                       !if (i.eq.1) print*, "assigning intralayer F2G2 terms 6", delta
                                       hopp(j,i) = hopp(j,i) + t6K
                                  else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
@@ -8943,7 +8943,7 @@ subroutine HamHopping
                                              hopp(j,i) = hopp(j,i) + t5KB
                                         end if
                                    end if
-                              else if (dist .gt. 2.0_dp*aG*0.9_dp .and. dist .lt. 2.0_dp*aG*1.1_dp) then
+                              else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then ! narrow: the seventh shell is only 4 % further out
                                    !if (i.eq.1) print*, "assigning intralayer F2G2 terms 6", delta
                                    hopp(j,i) = hopp(j,i) + t6K
                               else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
