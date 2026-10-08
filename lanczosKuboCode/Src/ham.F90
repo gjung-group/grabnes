@@ -4715,7 +4715,24 @@ subroutine HamHopping
          !call MIO_InputParameter('BLdelta',BLdelta,0.184*aG)
          ! Koshino
          aCC = aG/sqrt(3.0_dp)
-         call MIO_InputParameter('vpppi0',vpppi0,3.5_dp)
+         ! vpppi0 is one parameter with two roles: it scales the pi part of the
+         ! two-centre INTERLAYER hopping in every model, and with
+         ! KoshinoIntralayer it is also the INTRALAYER nearest-neighbour hopping.
+         ! Its default therefore follows the intralayer model: 2.7 eV, the
+         ! original Moon-Koshino value, with KoshinoIntralayer; 3.5 eV, the
+         ! calibration that goes with the F2G2-type intralayer models, otherwise.
+         call MIO_InputParameter('KoshinoIntralayer',KoshinoIntralayer,.false.)
+         if (KoshinoIntralayer) then
+            call MIO_InputParameter('vpppi0',vpppi0,2.7_dp)
+            call MIO_Print('Two-centre Vpppi0 = '//trim(num2str(vpppi0,4))// &
+              ' eV (intralayer and interlayer; default 2.7 with KoshinoIntralayer)','ham')
+         else
+            call MIO_InputParameter('vpppi0',vpppi0,3.5_dp)
+            if (.not. MIO_StringComp(BilayerModel,'None')) then
+               call MIO_Print('Two-centre Vpppi0 = '//trim(num2str(vpppi0,4))// &
+                 ' eV (interlayer pi term only; default 3.5 without KoshinoIntralayer)','ham')
+            end if
+         end if
          vpppi0 = vpppi0/g0
          call MIO_InputParameter('vppsigma0',vppsigma0,0.48_dp)
          call MIO_InputParameter('BLdelta',BLdelta,0.184_dp*aG)
