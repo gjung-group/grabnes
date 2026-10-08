@@ -26,7 +26,6 @@ jobs:
       # Open MPI refuses to start more processes than cores without this
       # (used only by the check that two MPI processes are refused).
       GRABNES_MPIRUN: mpirun --oversubscribe
-      GRABNES_TEST_DIR: ${{ runner.temp }}/grabnes
       OMP_NUM_THREADS: 1
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +46,8 @@ jobs:
           python3 --version
 
       - name: Build the solver, run the four examples and the regression checks
-        run: ./grabnes_testrun/run_examples.sh
+        # The work directory is kept so that later steps can reuse the executable.
+        run: ./grabnes_testrun/run_examples.sh --work-dir "$RUNNER_TEMP/grabnes"
 
       - name: Run the example launchers and plotting scripts
         # Informative only: a plotting problem must not hide a numerical result.
