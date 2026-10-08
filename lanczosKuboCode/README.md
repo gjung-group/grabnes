@@ -51,6 +51,12 @@ bin/grabnes Gendata.in > job.out
 `TB.NeighLevels` (1 to 8) sets the number of intralayer neighbor shells, and
 with it the search radius; the neighbor arrays are sized automatically.
 
+The two-center parameter `vpppi0` depends on the intralayer model: it
+defaults to 2.7 eV (Moon and Koshino) with `KoshinoIntralayer .true.`, where
+it is also the intralayer hopping, and to 3.5 eV with the F2G2-type intralayer
+models, where it only enters the interlayer hopping. The value in use is
+printed in the log.
+
 Start it with a single MPI process. The MPI domain decomposition is disabled
 in this version and the program stops when it is given more than one.
 

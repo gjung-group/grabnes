@@ -14,11 +14,13 @@ bilayer graphene.
   the default `TB.Hopping` for a lattice parameter of 2.46 A.
 - Interlayer: two-center form of Moon and Koshino, Phys. Rev. B 85, 195458
   (2012), with `vppsigma0` = 0.48 eV, decay length 0.184 a, interlayer distance
-  3.34 A, for pairs up to 9.69 A apart in the plane. `vpppi0` is 3.5 eV rather
-  than their 2.7 eV. This is a deliberate calibration aimed at a more realistic
-  Dirac velocity; it acts on the velocity when the intralayer hopping also
-  follows the two-center form (`KoshinoIntralayer .true.`), and has a
-  negligible effect in this example, whose velocity is set by `TB.Hopping`.
+  3.34 A, for pairs up to 9.69 A apart in the plane. `vpppi0`, which here only
+  scales the pi part of the interlayer hopping, has its default of 3.5 eV, the
+  value that goes with the F2G2-type intralayer models this example belongs
+  to. The original Koshino model is a different choice:
+  `KoshinoIntralayer .true.`, whose default `vpppi0` is the Moon-Koshino value
+  of 2.7 eV. This example demonstrates neither velocity; its Dirac velocity is
+  set by `TB.Hopping`.
 
 `TB.NeighLevels` is the number of intralayer neighbor shells. With
 `TB.NeighLevels 5` GRABNES uses its F2G2 intralayer model, which moves the

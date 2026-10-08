@@ -114,6 +114,36 @@ details, measured results, and limitations are in
   Hamiltonian comparisons, shell-control errors, and the legacy
   `Neigh.CutAtNN3` equivalence.
 
+### Parameter convention, wider validation, and release readiness (same day)
+
+- **`vpppi0` is model dependent.** It is one variable that sets the intralayer
+  hopping with `KoshinoIntralayer` and the pi part of the interlayer hopping in
+  every model. Its default was 3.5 eV for all models; it is now 2.7 eV (Moon
+  and Koshino) with `KoshinoIntralayer .true.` and 3.5 eV otherwise, and the
+  value is printed. Both combinations are in the regression suite. Measured:
+  with the Koshino intralayer model 3.5 eV instead of 2.7 eV raises the Dirac
+  velocity by 31 to 48 % (13.2 to 3.9 degrees); with the F2G2-type models the
+  choice changes the velocity by 0.03 to 0.3 % only, so the velocity
+  calibration attributed to 3.5 eV is not reproduced by this code and needs
+  clarification by the authors.
+- **More undefined behavior removed:** aliased defaults in `TB.Hopping` and
+  `TB.BNHopping` (zero B-N hopping with GNU `-O3`), hoppings converted through
+  single precision, and an unset factor in the Koshino intralayer hopping
+  (wrong and non-Hermitian matrix with Intel Fortran).
+- **Legacy neighbor routines audited.** `NeighList` agrees with the default
+  search on graphene supercells; `Neigh.fastNN` and
+  `Neigh.fastNNnotsquareNotRectangle` overrun their arrays and are now refused.
+- **Other systems.** hBN monolayer validated against an analytic model;
+  twisted bulk, trilayer-cell, `GBNtwoLayers`, and encapsulated cells pass
+  structural checks only; `Graphene_Over_BN` is inconsistent with the inputs
+  tried and stays unvalidated.
+- **Performance.** Setup (neighbor search and hopping assembly) scales
+  linearly up to 11.5 million atoms and 69 million entries; the search is 6 to
+  15 % of it.
+- **Release readiness.** New page `functionality-status.md`; a GitHub Actions
+  workflow added but not yet run; no license file (and conflicting license
+  statements) and no citation file remain release blockers.
+
 Sections 1, 5, and 6 below describe the state before this work; where they
 mention the test copy or a `grabnes_testrun` executable, this section
 supersedes them.

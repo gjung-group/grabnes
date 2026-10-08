@@ -110,6 +110,11 @@ All pass with the three builds:
 | --- | --- | --- |
 | `dirac_point_degeneracy` | the four Dirac states of example 03 at K form two pairs degenerate within 1e-6 eV | splitting 0 at six decimals |
 | `hamiltonian_example03`, `hamiltonian_f2g2`, `hamiltonian_small_cell` | solver tables against the independent model of `verify_tables.py`: no missing, extra, duplicate, or unpaired entry; matrix elements, Hermiticity, and eigenvalues within 1e-9 eV; model bands against the band file within 1e-6 eV (needs NumPy) | matrix elements 4e-16 eV (GNU), 2e-14 eV (Intel); bands 5.0e-7 eV |
+| `koshino_intralayer_default` | `KoshinoIntralayer .true.` without `vpppi0`: tables against the independent two-center model with 2.7 eV on five shells; log reports 2.7 eV. The F2G2 check likewise requires 3.5 eV in its interlayer term and in the log | 7e-15 eV; both log lines present |
+| `hbn_monolayer` | hBN monolayer against the model t = 3.0294 eV with on-site energies 3.09 and -1.89 eV | 0 (all builds); bands 5.0e-7 eV |
+| `twisted_bulk` | z-periodic twisted cell: complete, symmetric, Hermitian tables that reproduce the bands (structure only) | 0 missing, 0 unpaired; 5.0e-7 eV |
+| `supercell_neighlist` | `NeighList` gives the band file of the default search for a 32-atom graphene cell | identical |
+| `legacy_fastnn`, `legacy_notrectangle` | the two overrunning neighbor switches are refused | refused |
 | `neighlevels_0`, `neighlevels_9` | `TB.NeighLevels` outside 1 to 8 is refused with its error message | refused |
 | `legacy_cutatnn3` | `TB.NeighLevels 5` + `Neigh.CutAtNN3 .true.` gives byte-identical bands to `TB.NeighLevels 3` | identical |
 | `kubo_graphene_dos` | recursion DOS of 180000-atom graphene, fixed seed, against the exact DOS: maximum deviation below 0.03 and rms below 0.006 | GNU 0.0082 / 0.0027, Intel 0.0115 / 0.0033 |
@@ -179,16 +184,23 @@ Found during the follow-up investigations:
     "Neighbor shells").
 16. `ham.F90`: seventh-shell hopping assigned the sixth-shell value in the
     bilayer intralayer branch.
+17. `ham.F90`: default of `vpppi0` independent of the intralayer model; unset
+    short-range factor in the Koshino intralayer hopping (see "`vpppi0`
+    depends on the intralayer model").
+18. `tbpar.f90`, `ham.F90`, `atoms.F90`: aliased input defaults, hoppings
+    through single precision, crash on missing `MoireCellParameters`; two
+    overrunning neighbor routines refused (see "Other systems" and "Remaining
+    neighbor routines").
 
 Build system:
 
-17. The Makefile derived the source root from `$PWD`; it now derives it from
+19. The Makefile derived the source root from `$PWD`; it now derives it from
     its own location, and `MAKE_SYS`, `BUILD_DIR`, and `BIN_DIR` can be
     overridden.
-18. `Src/Makefile` re-read `make.sys`, which discarded the `-DTIMER` that the
+20. `Src/Makefile` re-read `make.sys`, which discarded the `-DTIMER` that the
     top-level Makefile adds; the sources do not compile without it. The
     configuration is now read once.
-19. The rule that regenerated `version.info` from `.version` was removed. It
+21. The rule that regenerated `version.info` from `.version` was removed. It
     dates from Subversion keyword expansion, rewrote two tracked files
     depending on their time stamps, and produced a malformed version string.
     `make clean` removes only `bin/grabnes` instead of every file in the
@@ -374,7 +386,7 @@ the Hamiltonian is the same.
 | Parameter | Status |
 | --- | --- |
 | Two-center form, `vppsigma0` = 0.48 eV, `BLdelta` = 0.184 a | Moon and Koshino, Phys. Rev. B 85, 195458 (2012), checked against the preprint (arXiv:1202.4365): "V0ppπ ≈ −2.7 eV, V0ppσ ≈ 0.48 eV", decay length "0.184a" |
-| `vpppi0` = 3.5 eV | **Deliberate phenomenological calibration**, not the Moon-Koshino value of 2.7 eV. It was chosen to obtain a more realistic Dirac velocity; see the next section for where it acts. Do not change it to 2.7 eV |
+| `vpppi0` | **Model dependent.** 2.7 eV, the Moon-Koshino value, with `KoshinoIntralayer .true.`; 3.5 eV, a deliberate calibration of the group, with the F2G2-type intralayer models. See the next section |
 | Interlayer distance 3.34 A | set in the example inputs; Moon and Koshino quote about 3.35 A; the solver default is 3.22 A |
 | `g0 = 12.14 - 3.72 a` (2.9888 eV) | origin not identified; not found in the two Jung-MacDonald papers consulted. Unverified |
 | F2G2 single-layer values (`SingleLayert2KSL` -0.2354, `SingleLayert3K` 0.1877, `SingleLayert5KSL` -0.0633) | not found in the text of Jung and MacDonald, Phys. Rev. B 87, 195450 (2013), whose five-parameter set starts from t1 = -3.00236 eV. Unverified. They do reproduce the Dirac-velocity coefficient quoted for the LDA bands in Jung and MacDonald, arXiv:1309.5429 (5.567 eV A, 8.45e5 m/s): the solver gives 5.568 eV A |
@@ -382,58 +394,117 @@ the Hamiltonian is the same.
 
 No parameter value was changed.
 
-### Dirac velocity and the role of `vpppi0`
+### `vpppi0` depends on the intralayer model
 
-In Moon and Koshino's model one parameter, V0ppπ, sets both the intralayer
-hopping and the pi part of the interlayer hopping, and the monolayer velocity
-is `sqrt(3) a |V0ppπ| / (2 hbar)`. In GRABNES `vpppi0` enters the intralayer
-hopping only with `KoshinoIntralayer .true.`; by default, and in the public
-examples, the intralayer nearest-neighbor hopping is `g0`. All velocities
-below are `hbar v = dE/dk` in eV A (and v in 1e5 m/s).
+**Convention.** The original Koshino intralayer model
+(`KoshinoIntralayer .true.`) is to be used with `vpppi0` = 2.7 eV, the
+Moon-Koshino value. The group's F2G2-type intralayer models are to be used
+with `vpppi0` = 3.5 eV. The two must not be mixed, and 3.5 eV is not a
+correction to the Moon-Koshino model.
 
-Bare monolayer values (analytic or from the monolayer dispersion):
+**Where the parameter acts in the code.** `vpppi0` is a single variable of
+`HamHopping`, read once. It enters
 
-| Intralayer model | hbar v | v |
-| --- | --- | --- |
-| Nearest neighbor, t = `g0` = 2.9888 eV | 6.367 | 9.67 |
-| Nearest neighbor, t = 2.7 eV | 5.752 | 8.74 |
-| Nearest neighbor, t = 3.5 eV | 7.457 | 11.33 |
-| Two-center form on five shells, `vpppi0` = 2.7 eV | 5.220 | 7.93 |
-| Two-center form on five shells, `vpppi0` = 3.5 eV | 6.767 | 10.28 |
-| F2G2, `(sqrt(3)/2) a abs(t1 - 2 t3)` | 5.568 | 8.46 |
+1. the *intralayer* hopping, only with `KoshinoIntralayer` (or
+   `MayouIntralayer`): every intralayer pair gets
+   `-vpppi0 exp(-(d - a_cc)/delta)`, so the first-shell hopping is `-vpppi0`
+   and the second-shell one is 0.1 `vpppi0`, as in Moon and Koshino;
+2. the pi part of the *interlayer* two-center hopping, in every model
+   (`TypeOfBL` Koshino, Mayou, HTC, and the multilayer branches).
 
-Twisted bilayer at 13.17 degrees, from solver bands on a line through the
-moire K point: half the difference between the mean of the two upper and the
-mean of the two lower Dirac bands at `+q` and `-q`, divided by `q`, for
-`q` = 0.0039 and 0.0098 1/A and extrapolated quadratically to `q = 0`:
+With an F2G2-type intralayer model the intralayer hoppings come from
+`TB.Hopping` and the `SingleLayert*` parameters; `vpppi0` then only appears in
+item 2.
 
-| Solver input | Dirac energy (eV) | hbar v | v | Relative to the bare monolayer |
-| --- | --- | --- | --- | --- |
-| Example 03 (`TB.NeighLevels 1`, `vpppi0` 3.5) | -0.00036 | 6.2327 | 9.47 | -2.1 % |
-| Example 03 with `vpppi0 2.7` | -0.00035 | 6.2339 | 9.47 | -2.1 % |
-| `KoshinoIntralayer .true.`, 5 shells, `vpppi0` 3.5 | +1.01282 | 6.6468 | 10.10 | -1.8 % |
-| `KoshinoIntralayer .true.`, 5 shells, `vpppi0 2.7` | +0.77975 | 5.0649 | 7.70 | -3.0 % |
-| F2G2 intralayer (`TB.NeighLevels 5`), `vpppi0` 3.5 | -0.33023 | 5.4274 | 8.25 | -2.5 % |
+**Defect and correction.** The default was 3.5 eV whatever the model, so
+`KoshinoIntralayer .true.` without an explicit `vpppi0` ran the original
+Koshino intralayer model with the 3.5 eV calibration. The default now follows
+the model: 2.7 eV with `KoshinoIntralayer`, 3.5 eV otherwise. An explicit
+`vpppi0` in the input is still honored, and the solver prints the value and
+its role. Inputs without `KoshinoIntralayer` behave as before.
+`MayouIntralayer` keeps 3.5 eV because its intended value was not specified.
 
-Reading:
+A second defect in the same branch: the intralayer two-center hopping was
+multiplied by the interlayer short-range factor of the previously treated
+pair, which is unset for the first pair. With GNU Fortran it happened to be 1;
+with Intel Fortran some first-shell hoppings came out as 0 and the matrix was
+not Hermitian. The factor is now 1 for intralayer pairs. After this fix the
+solver agrees with the independent two-center model to 7e-15 eV on five
+shells with all three builds.
 
-- In the example configuration the value of `vpppi0` is irrelevant for the
-  velocity (0.02 %), because it only scales the pi part of the interlayer
-  hopping, which is small at interlayer distances. The velocity there is set
-  by `TB.Hopping`.
-- With `KoshinoIntralayer .true.`, 3.5 eV instead of 2.7 eV raises the
-  velocity by 31 %, to 1.01e6 m/s in this bilayer. This is the configuration
-  in which the calibration does what it is meant to do.
-- In all cases the bilayer velocity is 2 to 3 % below the bare monolayer
-  value, the expected size of the interlayer renormalization at this angle.
-- No experimental target value is asserted here; these numbers only state
-  what the implemented models give.
+**Measured Dirac velocities.** `hbar v = dE/dk` in eV A (v in 1e5 m/s), from
+solver bands on a line through the moire K point: half the difference between
+the mean of the two upper and the two lower Dirac bands at `+q` and `-q`,
+divided by `q`, at two values of `q` (1 % and 2.5 % of the distance Gamma-K) and
+extrapolated quadratically to `q = 0`. Run on a compute node with the
+optimized GNU build.
+
+Bare monolayer values, for comparison:
+
+| Intralayer model | hbar v | v | Set by |
+| --- | --- | --- | --- |
+| Koshino two-center, 5 shells, `vpppi0` 2.7 | 5.220 | 7.93 | `vpppi0` |
+| Koshino two-center, 5 shells, `vpppi0` 3.5 | 6.767 | 10.28 | `vpppi0` |
+| F2G2, `(sqrt(3)/2) a abs(t1 - 2 t3)` | 5.568 | 8.46 | `TB.Hopping` and `SingleLayert3K` |
+| Nearest neighbor, t = `TB.Hopping` = 2.9888 eV | 6.367 | 9.67 | `TB.Hopping` |
+
+Twisted bilayers:
+
+| Twist angle | Intralayer model | `vpppi0` | hbar v | v | v / bare |
+| --- | --- | --- | --- | --- | --- |
+| 13.17 | Koshino | **2.7** | 5.0649 | 7.70 | 0.970 |
+| 13.17 | Koshino | 3.5 | 6.6468 | 10.10 | 0.982 |
+| 13.17 | F2G2 | **3.5** | 5.4274 | 8.25 | 0.975 |
+| 13.17 | F2G2 | 2.7 | 5.4287 | 8.25 | 0.975 |
+| 13.17 | nearest neighbor (examples 03/04) | **3.5** | 6.2327 | 9.47 | 0.979 |
+| 13.17 | nearest neighbor | 2.7 | 6.2339 | 9.47 | 0.979 |
+| 6.01 | Koshino | **2.7** | 4.5608 | 6.93 | 0.874 |
+| 6.01 | Koshino | 3.5 | 6.2460 | 9.49 | 0.923 |
+| 6.01 | F2G2 | **3.5** | 4.9461 | 7.51 | 0.888 |
+| 6.01 | F2G2 | 2.7 | 4.9517 | 7.52 | 0.889 |
+| 3.89 | Koshino | **2.7** | 3.7715 | 5.73 | 0.723 |
+| 3.89 | Koshino | 3.5 | 5.5927 | 8.50 | 0.827 |
+| 3.89 | F2G2 | **3.5** | 4.1837 | 6.36 | 0.751 |
+| 3.89 | F2G2 | 2.7 | 4.1958 | 6.38 | 0.754 |
+
+Bold marks the intended combination. Reading:
+
+- **Koshino intralayer:** `vpppi0` sets the velocity directly. Using 3.5
+  instead of 2.7 eV raises it by 31 % at 13.17 degrees, 37 % at 6.01, and
+  48 % at 3.89; this is the size of the error the old default made.
+- **F2G2-type intralayer:** the velocity is set by `TB.Hopping` and
+  `SingleLayert3K` (bare value 8.46e5 m/s). **In this public code the choice
+  between 3.5 and 2.7 eV changes the velocity by only -0.03 %, -0.11 %, and
+  -0.29 % at the three angles**, because `vpppi0` enters only the pi part of
+  the interlayer hopping. Its effect on the interlayer tunneling amplitude
+  (Fourier component at the Dirac point for rigid layers 3.34 A apart) is
+  111.2 meV with 2.7 eV and 111.8 meV with 3.5 eV. The statement that 3.5 eV
+  provides the realistic velocity of the F2G2 models is therefore *not*
+  reproduced by the public implementation: either the velocity calibration
+  resides in the F2G2 intralayer parameters themselves, or it relies on a
+  code path that is not in the public solver. This should be clarified by the
+  authors; the convention above is implemented and tested as given.
+- **Interlayer coupling.** In every model the bilayer velocity is below the
+  bare monolayer value, by 2 to 3 % at 13.17 degrees and 25 to 28 % at 3.89
+  degrees. This is the moire renormalization, which grows as the ratio of
+  the interlayer tunneling to `hbar v k_theta` grows; it is a property of the
+  bilayer, not of the intralayer parameter set.
+- No experimental target value is asserted.
 
 With the interlayer coupling switched off (`deactivateInterlayer .true.`) the
-solver reproduces the monolayer expressions directly: Dirac energy -0.326400
-eV for F2G2 (analytic -0.326400) and 0 for nearest neighbor, velocities 5.5683
-and 6.3682 eV A (analytic 5.5676 and 6.3674; the difference is the
-extrapolation error).
+solver reproduces the monolayer expressions: Dirac energy -0.326400 eV for
+F2G2 (analytic -0.326400) and 0 for nearest neighbor, velocities 5.5683 and
+6.3682 eV A (analytic 5.5676 and 6.3674; the difference is the extrapolation
+error).
+
+**Examples 03 and 04** use neither model in full: their intralayer part is
+the first shell of the F2G2-type models (`TB.Hopping`), so by the convention
+they belong with 3.5 eV, which is what they contain. They are kept as
+regression cases and are not a demonstration of the velocity calibration:
+with 2.7 eV their bands would change by at most 10 meV (rms 2.4 meV), the DOS
+by 0.4 %, and the velocity by 0.02 %. No input or reference file was changed.
+The intended combinations are protected by regression checks that need no
+stored data (`koshino_intralayer_default`, `hamiltonian_f2g2`).
 
 ### The F2G2 intralayer model
 
@@ -476,6 +547,97 @@ the Hamiltonian terms are the same. The corrected files are byte-identical
 between the optimized GNU, checked GNU, and Intel builds for the bands, and
 agree to 2e-13 for the DOS. Examples 01 and 02 are unaffected (byte-identical
 bands; DOS within 5e-16).
+
+## Remaining neighbor routines
+
+| Routine | Selected by | Finding | Status |
+| --- | --- | --- | --- |
+| `NeighSearchLayered` behind `fastNNnotsquare`, `fastNNnotsquareBulk`, `fastNNnotsquareBulkSmall` | default; `Bulk`; `BulkSmall` or `nonBulkSmall` | validated above | supported |
+| `NeighList` | `Neigh.fastNNnotsquare .false.` | For graphene supercells of 32 and 288 atoms and 1 to 3 shells its bands are byte-identical to the default search. It stops with its own error on a twisted bilayer. Written for single-layer cells and the former MPI decomposition | kept; single-layer cells only |
+| `fastNN` | `Neigh.fastNN .true.` | Reads past the end of its bin array (capacity 16) on every graphene supercell tried, 2 to 7200 atoms; stops with an overflow error on the twisted bilayer | refused with an error |
+| `fastNNnotsquareNotRectangle` | `Neigh.fastNNnotsquare .false.` and `Neigh.fastNNnotsquareNotRectangle .true.` | Same overrun on graphene supercells; overflow error on the twisted bilayer | refused with an error |
+| `fastNNnotsquareSmall`, `NeighListOld` | nothing | unreachable | dead code, left in place |
+
+The two refused routines were not rewritten: the default search already
+handles non-rectangular and small cells, and nothing indicates that they
+serve a distinct physical purpose. Their source remains for reference.
+
+## Other systems
+
+All runs below use the checked GNU build and 76- to 114-atom cells (2 atoms
+for the monolayers). "Structure" means: every stored displacement equals
+`r_m + R - r_i`; the list equals an exhaustive enumeration of the pairs inside
+the search radii; every entry has its reverse partner with the conjugate
+value; `H(k)` built from the stored tables is Hermitian, periodic in
+reciprocal lattice vectors, and reproduces the solver's own band file.
+
+| System | Input | Result |
+| --- | --- | --- |
+| hBN monolayer | `TypeOfSystem BoronNitride` | Agrees entry by entry with the model t = 10.68 - 3.11 a = 3.0294 eV, on-site energies 3.09 and -1.89 eV; bands equal the analytic two-band formula (gap 4.98 eV at K; -8.823135 and 10.023135 eV at Gamma). In the regression suite. Note that the cell is built with the graphene lattice parameter (2.46 A) |
+| Twisted bulk (periodic along z) | example 03 with `CellHeight 6.68`, `Bulk .true.` (and `BulkSmall`) | Structure passes: 17372 entries, 0 missing, 0 unpaired, Hermiticity 0, tables reproduce the bands to 5e-7 eV. In the regression suite. Hopping values not compared with a model |
+| `TrilayerBasedOnMoireCell` | example 03 with that system type | Structure passes (114 atoms, 17198 entries). All interlayer hoppings are zero with this input: the layers are decoupled, so the input is evidently incomplete |
+| `GBNtwoLayers`, `MoireEncapsulatedBilayerBasedOnMoireCell` | example 03 with these switches | Structure passes. Interlayer values differ from the plain two-center form, as these branches intend; not compared with a model |
+| `Graphene_Over_BN` | `MoireCellParameters 5 0 4 0` (82 atoms, BN stretched by 25 %) and `3 2 2 3` | Runs. **Not consistent:** the stored tables do not reproduce the solver's bands (0.4 to 1.6 eV), and near-vertical C-B and C-N pairs 3.2 to 3.4 A apart carry the in-plane hopping constants (2.58 and 2.69 eV). With explicit interlayer neighbors the tables of the mismatched cell are not Hermitian (2.7 eV). Whether this is a defect or a wrong input cannot be decided without a canonical input from the authors |
+| Lattice-mismatched or strained layers | | Not validated. The shell radii of `TB.NeighLevels` come from the graphene lattice parameter; for a layer with a 2 % different lattice parameter the sixth and seventh shells cannot be separated by one radius, and in the 25 % stretched hBN layer above no shell of BN beyond the first would be assigned correctly |
+
+Three further defects surfaced in these runs and were fixed:
+
+- `TB.Hopping` and `TB.BNHopping` were read with the same variable as result
+  and default. With GNU Fortran `-O3` the B-N hopping became zero (flat hBN
+  bands); the checked build gave 3.0294 eV.
+- Hoppings from the species table were converted through single precision
+  (`cmplx()` without a kind): a relative error of 3e-8 for B-N, C-B, and C-N.
+- A missing `MoireCellParameters` ended in a floating-point exception instead
+  of an error message.
+
+## Performance of the setup
+
+Method: inputs with `Kubo.Calc .false.` and `Diag.Calc .false.`, so that the
+run consists of the neighbor search and the assembly of the hopping table.
+One batch job on a compute node (Xeon Gold 6342, one core, optimized GNU
+build, executable md5 `07655abe...`). "Setup" is the solver's `ham` timer (CPU
+time, search plus assembly); "search" is the `nsearch` timer measured
+separately on the login node for the cases marked; memory is the solver's own
+accounting and the maximum resident set size of the process.
+
+| System | Atoms | Entries | Entries/atom | Setup (s) | Search (s) | Accounted memory | Max RSS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Graphene, 1 shell | 180000 | 0.54 M | 3 | 0.50 | | 51 MB | 124 MB |
+| Graphene, 1 shell | 720000 | 2.16 M | 3 | 1.98 | 0.30 | 203 MB | 283 MB |
+| Graphene, 1 shell | 2880000 | 8.64 M | 3 | 7.99 | | 813 MB | 904 MB |
+| Graphene, 1 shell | 11520000 | 34.6 M | 3 | 32.0 | | 1.97 GB | 3.40 GB |
+| Graphene, 5 shells | 720000 | 17.3 M | 24 | 14.8 | 1.36 | 1.04 GB | 1.17 GB |
+| Graphene, 5 shells | 2880000 | 69.1 M | 24 | 58.7 | | 1.94 GB | 4.45 GB |
+| TBG 2.13 deg, 5 shells | 2884 | 0.39 M | 137 | 0.62 | | 23 MB | 95 MB |
+| TBG 1.08 deg, 1 shell | 11164 | 1.29 M | 115 | 2.24 | 0.16 | 78 MB | 155 MB |
+| TBG 1.08 deg, 5 shells | 11164 | 1.52 M | 136 | 2.32 | 0.22 | 91 MB | 165 MB |
+| same, `Neigh.LayerDistFactor 3.0` (4.7 A) | 11164 | 0.56 M | 50 | 0.63 | | 35 MB | 109 MB |
+| same, `Neigh.LayerDistFactor 9.0` (14.1 A) | 11164 | 2.91 M | 261 | 4.71 | 0.34 | 171 MB | 247 MB |
+| TBG 0.55 deg, 5 shells | 43924 | 6.00 M | 136 | 9.22 | | 358 MB | 442 MB |
+| TBG 0.27 deg, 5 shells | 174244 | 23.8 M | 136 | 37.8 | | 1.39 GB | 1.53 GB |
+| Trilayer cell 1.08 deg | 16746 | 2.87 M | 172 | 2.94 | | 241 MB | 318 MB |
+| Bulk twisted cell 1.08 deg | 11164 | 2.78 M | 249 | 0.51 | 0.43 | 165 MB | 243 MB |
+
+- **Scaling is linear** in the number of atoms and in the number of stored
+  entries: 2.8 microseconds per atom for one shell of graphene from 0.18 to
+  11.5 million atoms, and 1.5 to 1.6 microseconds per entry for twisted
+  bilayers from 2884 to 174244 atoms.
+- **Cutoff:** tripling the interlayer radius multiplies entries and time by
+  about five and seven, in proportion to the area.
+- **The search is not the bottleneck:** it takes 6 to 15 % of the setup time
+  for graphene and twisted bilayers. The rest is the assembly of the hopping
+  values in `HamHopping`, a long chain of distance and model tests per entry.
+  (In the bulk case the assembly is short and the search dominates.)
+- **Memory** is 60 bytes per entry (neighbor index twice, displacement,
+  translation, complex hopping) plus per-atom arrays. The neighbor index is
+  stored twice (`NList` and its copy `NList2` for the Kubo routines); this is
+  8 % of the total and was left alone. The accounted memory stops
+  increasing near 2 GB (1.97 GB shown for 11.5 million atoms where the process
+  uses 3.4 GB), consistent with a default-integer byte counter. This is a
+  reporting defect only.
+- No comparison with the old search is given beyond the earlier single
+  measurement (1.8 s against 0.6 s for 180000 atoms), because the old search
+  no longer exists in the tree.
 
 ## MPI
 
@@ -539,18 +701,22 @@ the conductivity remain untested, and the other initialization routines
   (see the MPI section).
 - **GNU OpenMP.** See above; only the Intel build was run with threads, so the
   GNU build has no parallel mode at all at present.
-- **Other neighbor routines.** `fastNNnotsquareNotRectangle`, `fastNN`, and
-  `NeighList` were not corrected or examined; `fastNNnotsquareSmall` is
-  unreachable. The `ReadDataFiles` path only reconstructs translations for
-  first-shell neighbors unless `readNeighborDetails` is set.
+- **Other neighbor routines.** See "Remaining neighbor routines". The
+  `ReadDataFiles` path only reconstructs translations for first-shell
+  neighbors unless `readNeighborDetails` is set.
+- **G/hBN and other heterostructures.** `Graphene_Over_BN` is not consistent
+  with the inputs tried; the multilayer and encapsulated types pass structural
+  checks only. See "Other systems".
 - **Hopping models other than those listed.** The independent check covers
   the two-center interlayer form and the F2G2 and eight-shell intralayer
   values of a twisted bilayer, and nearest-neighbor graphene. hBN,
   multilayers, strain, relaxation, magnetic field, and the many other branches
   of `HamHopping` are not covered.
-- **`KoshinoIntralayer`.** Used for the velocity table; its Dirac energy and
-  velocity are consistent with the two-center form, but it was not compared
-  entry by entry with the independent model.
+- **Velocity calibration of the F2G2-type models.** `vpppi0` = 3.5 eV does
+  not act on their velocity in this code (0.03 to 0.3 %); the origin of the
+  intended calibration is to be clarified.
+- **Other uses of `cmplx()` without a kind** remain in 15 places outside the
+  hopping assembly (not examined).
 - **Kubo transport.** The DOS is validated on graphene; time evolution and
   conductivity are not.
 - **Other uninitialized variables.** GNU Fortran flags about 120 further

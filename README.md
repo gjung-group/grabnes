@@ -43,6 +43,9 @@ reference data:
 
 Tested compilers, measured results, and known limitations are recorded in
 [`docs/development/cluster-build-and-validation.md`](docs/development/cluster-build-and-validation.md).
+Which capabilities are validated, partially validated, or experimental is
+listed in
+[`docs/development/functionality-status.md`](docs/development/functionality-status.md).
 
 ## Validated examples
 
@@ -102,4 +105,8 @@ tracker and include the commit hash, compiler version, input file, and log.
 ## License
 
 No software license has yet been added to this repository. A license must be
-selected before the announced release so that reuse terms are explicit.
+selected before the announced release so that reuse terms are explicit. Until
+then the code may not be assumed to be open source: `pyproject.toml` still
+declares it proprietary, and parts of `Src/MIO` and `Src/math` carry headers
+that refer to the GNU General Public License. These statements have to be
+reconciled by the authors.
