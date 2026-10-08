@@ -1,0 +1,36 @@
+# Builds the canonical solver with GNU Fortran and Open MPI on Ubuntu and runs
+# the regression suite of grabnes_testrun.
+#
+# STATUS: written on a development branch and NOT yet exercised on GitHub.
+# The suite itself is validated on Fedora 36 with GNU Fortran 12.2 + Intel MPI
+# and with Intel Fortran; the Ubuntu packages and Open MPI below are untested.
+# Expect to adjust it on the first run.
+name: regression
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  gnu:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install compiler and libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gfortran make libopenmpi-dev openmpi-bin \
+            libblas-dev liblapack-dev libarpack2-dev python3 python3-numpy python3-pytest python3-scipy
+      - name: Smoke test (build + graphene bands)
+        run: ./grabnes_testrun/smoke_test.sh
+      - name: Regression suite (checked build)
+        env:
+          # Open MPI refuses to start more processes than cores without this.
+          GRABNES_MPIRUN: mpirun --oversubscribe
+        run: ./grabnes_testrun/run_examples.sh --debug
+      - name: TAPW mathematical tests
+        run: python3 -m pytest tests/tapw
