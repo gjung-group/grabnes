@@ -59,10 +59,8 @@ details, measured results, and limitations are in
 - **Examples 03 and 04** are now documented as regression tests of one
   specific Hamiltonian, with its active terms listed. A new tool,
   `tools/hamiltonian/verify_tables.py`, rebuilds that Hamiltonian
-  independently; it agrees with the solver to 1e-4 eV and traces the
-  remainder to the neighbor search (lattice images chosen by distance only, a
-  truncated and non-symmetric interlayer set). The reference files are
-  unchanged and these defects are documented, not fixed.
+  independently; it agreed with the solver to 1e-4 eV and traced the
+  remainder to the neighbor search (corrected in the next entry).
 - **Default F2G2 model** assessed: correctly assembled to 1e-4 eV; its Dirac
   point at -0.33 eV follows from the parameters (`-3 t2 + 6 t5`). No F2G2
   reference data were added; the parameter values still need to be checked
@@ -80,6 +78,41 @@ details, measured results, and limitations are in
 - **`WriteDataFiles .true.`** no longer stops at the hopping table.
 - **Harness.** `run_examples.sh` gained three checks: `hamiltonian_tables`,
   `kubo_graphene_dos`, and `two_mpi_processes`.
+
+### Neighbor-search correction and Hamiltonian validation (same day)
+
+- **Neighbor search rewritten.** The default search and its two bulk variants
+  now share one exhaustive routine. It stores the lattice translation that
+  built each periodic image instead of guessing it from a distance, generates
+  as many images as the search radii need, produces a symmetric list, and
+  sizes the arrays from the result. In the 76-atom twisted bilayer the old
+  search attached wrong Bloch phases to 321 of 7223 entries (1.0e-4 eV in the
+  bands), missed 26 % of the interlayer pairs (1.3e-5 eV), and left 659
+  entries without reverse partner (2e-6 eV).
+- **`TB.NeighLevels`** is now the single control for the number of intralayer
+  shells (1 to 8). `Neigh.CutAtNN3` is deprecated but keeps its meaning;
+  values outside the range are refused; `Neigh.LayerNeighbors` only switches
+  the interlayer search on.
+- **Seventh-shell hopping.** In the bilayer intralayer branch the seventh
+  shell received the sixth-shell value (non-default eight-shell models only).
+- **Independent validation.** `tools/hamiltonian/verify_tables.py` now builds
+  a Hamiltonian from positions and parameters alone and compares it with the
+  solver's tables entry by entry: agreement to 4e-16 eV for six cases (three
+  twisted cells, F2G2 and eight-shell models, graphene), with Hermiticity,
+  reciprocal-lattice periodicity, and invariance under unit-cell images
+  checked.
+- **Reference data of examples 03 and 04 replaced** after that validation;
+  the historical files remain in the Git history (commit `b360f13`). Largest
+  change 1.03e-4 eV. Their inputs now use `TB.NeighLevels 1`.
+- **Parameters.** `vpppi0` = 3.5 eV is documented as a deliberate calibration
+  relative to the Moon-Koshino value of 2.7 eV, with the measured Dirac
+  velocities for both; the Moon-Koshino form and remaining values were checked
+  against the preprint. The F2G2 values and the rule for `g0` could not be
+  traced to a source and are marked unverified. No value was changed and no
+  F2G2 reference data were added.
+- **Harness.** New checks: Dirac-point degeneracy, three independent
+  Hamiltonian comparisons, shell-control errors, and the legacy
+  `Neigh.CutAtNN3` equivalence.
 
 Sections 1, 5, and 6 below describe the state before this work; where they
 mention the test copy or a `grabnes_testrun` executable, this section

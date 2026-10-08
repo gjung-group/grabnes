@@ -48,6 +48,9 @@ GRABNES accepts the input filename as its first argument:
 bin/grabnes Gendata.in > job.out
 ```
 
+`TB.NeighLevels` (1 to 8) sets the number of intralayer neighbor shells, and
+with it the search radius; the neighbor arrays are sized automatically.
+
 Start it with a single MPI process. The MPI domain decomposition is disabled
 in this version and the program stops when it is given more than one.
 
