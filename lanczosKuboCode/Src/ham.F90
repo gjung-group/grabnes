@@ -3345,6 +3345,74 @@ subroutine HamPrintNormalStats(pzn, nfallback)
 end subroutine HamPrintNormalStats
 #endif /* DEBUG */
 
+!> @brief Hermiticity of the hopping table when position-dependent bond terms
+!!        are present (MoireOffDiag, tBGOffDiag, GBNOffDiag).
+!! @details These terms change the hopping of a bond by an amount evaluated at
+!!          the position of the atom the bond starts from, so the entries
+!!          i -> m and m -> i of the same bond differ by the variation of the
+!!          moire function across the bond. The largest difference is
+!!          reported. With Hopping.Symmetrize .true. every such pair is replaced
+!!          by its Hermitian average, which corresponds to evaluating the term
+!!          at the bond centre; the default leaves the table as it is, which
+!!          is the historical behaviour (the diagonalisation routines then use
+!!          the entry of the lower-numbered atom, the Kubo routines both).
+subroutine HamCheckHermiticity()
+
+   use atoms,  only : nAt
+   use neigh,  only : NList, Nneigh, neighCell
+   use tbpar,  only : g0
+
+   logical :: moireOD, tbgOD, gbnOD, symmetrize
+   integer :: i, j, m, j2, npairs, nmissing
+   real(dp) :: asym, maxAsym
+   complex(dp) :: avg
+
+   call MIO_InputParameter('MoireOffDiag',moireOD,.false.)
+   call MIO_InputParameter('tBGOffDiag',tbgOD,.false.)
+   call MIO_InputParameter('GBNOffDiag',gbnOD,.false.)
+   if (.not. (moireOD .or. tbgOD .or. gbnOD)) return
+   call MIO_InputParameter('Hopping.Symmetrize',symmetrize,.false.)
+
+   maxAsym = 0.0_dp
+   npairs = 0
+   nmissing = 0
+   do i=1,nAt
+      do j=1,Nneigh(i)
+         m = NList(j,i)
+         if (m < i) cycle
+         ! reverse entry: atom m -> atom i with the opposite lattice translation
+         do j2=1,Nneigh(m)
+            if (NList(j2,m)==i .and. all(neighCell(:,j2,m)==-neighCell(:,j,i))) exit
+         end do
+         if (j2 > Nneigh(m)) then
+            nmissing = nmissing + 1
+            cycle
+         end if
+         if (m==i .and. j2<=j) cycle
+         npairs = npairs + 1
+         asym = abs(hopp(j,i)-conjg(hopp(j2,m)))
+         maxAsym = max(maxAsym,asym)
+         if (symmetrize) then
+            avg = 0.5_dp*(hopp(j,i)+conjg(hopp(j2,m)))
+            hopp(j,i) = avg
+            hopp(j2,m) = conjg(avg)
+         end if
+      end do
+   end do
+   if (nmissing > 0) then
+      call MIO_Print('Hopping table: '//trim(num2str(nmissing))//' entries without reverse entry','ham')
+   end if
+   if (symmetrize) then
+      call MIO_Print('Hopping table symmetrized (Hopping.Symmetrize): largest difference between the two '// &
+        'directions of a bond was '//trim(num2str(maxAsym*g0,6))//' eV','ham')
+   else
+      call MIO_Print('Hopping table not Hermitian: the two directions of a bond differ by up to '// &
+        trim(num2str(maxAsym*g0,6))//' eV (position-dependent bond terms); set Hopping.Symmetrize .true. '// &
+        'to use their Hermitian average','ham')
+   end if
+
+end subroutine HamCheckHermiticity
+
 !> @brief Fill the MPI halo region of pzn for remote neighbour atoms, reusing
 !!        the neigh send/receive lists (same exchange pattern as
 !!        kubosubs::KuboUpdate_d). No-op for serial runs / nProc < 2.
@@ -12076,6 +12144,8 @@ subroutine HamHopping
       end do
       !$OMP END PARALLEL DO
    end if
+
+   call HamCheckHermiticity()
 
    call MIO_InputParameter('WriteDataFiles',w,.false.)
    if (w) then
