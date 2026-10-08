@@ -6676,7 +6676,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (BNBNtwoLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
