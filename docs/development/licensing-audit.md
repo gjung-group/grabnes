@@ -1,14 +1,65 @@
 # Licensing and third-party code audit
 
-Audit of the tracked files as of October 2026. It records what the files say;
-it is not legal advice, and **no license was selected, added, or changed**.
+Audit of the tracked files as of October 2026, and the license decision taken
+on its basis. It records what the files say and is not legal advice.
 
-## Findings
+## Decision
+
+GRABNES is distributed under the **GNU General Public License, version 3 or
+any later version** (`GPL-3.0-or-later`). The maintainer selected it on
+2026-10-09. The license text is in `LICENSE`; the notices of other authors
+are listed in `THIRD_PARTY_LICENSES.md` and remain in their files.
+
+Why this license is compatible with what the repository contains:
+
+1. **GPL notices without a version (MIO and math libraries, 33 files).**
+   The notices say "distributed under the terms of the GNU General Public
+   License" and name no version. The license itself settles this case: "If
+   the Program does not specify a version number of the GNU General Public
+   License, you may choose any version ever published by the Free Software
+   Foundation" (GPL version 3, section 14; versions 1 and 2 contain the same
+   rule in sections 7 and 9). The libraries may therefore be used and
+   redistributed under version 3 or later. Their notices are unchanged; the
+   `LICENSE` file they refer to now exists.
+2. **LGPL routines (four routines by John Burkardt in `ham.F90`).** The LGPL
+   allows the covered code to be combined with, and conveyed as part of, a
+   GPL-licensed program. The routines keep their LGPL notice; the LGPL text
+   is supplied as `COPYING.LESSER`.
+3. **Two-clause BSD script (`fracToCart.py`).** This license is compatible
+   with the GPL; its notice and disclaimer stay in each copy.
+4. **Solver sources without a notice.** They were written by the three
+   authors of GRABNES (Rafael Martinez-Gordillo's original program, extended
+   in the group of Jeil Jung, currently developed by Nicolas Leconte), with
+   contributions from other group members named in the sources. The original
+   program is the one whose libraries carry the GPL notice, so a GPL license
+   for the whole is consistent with the terms under which it was received.
+5. **A copyleft license is the conservative choice.** A permissive license
+   for the whole would have required the copyright holder of the GPL-marked
+   libraries to relicense them; the GPL does not.
+
+What was **not** done: no copyright notice was removed or reworded, no file
+was relicensed away from the terms stated in it, and no copyright ownership
+was asserted on behalf of anyone. Authorship (who wrote the software) is
+recorded in `CITATION.cff`; it is not a statement about who holds copyright.
+
+## Open points
+
+| Point | Whose confirmation | Files |
+| --- | --- | --- |
+| Agreement of the co-authors with `GPL-3.0-or-later` for the solver sources that carry no notice | Jeil Jung, Rafael Martinez-Gordillo | `lanczosKuboCode/Src/*.F90`, `*.f90`, `Utils/`, the Makefiles |
+| Whether copyright headers are added to those sources, and naming whom | the three authors and, where applicable, their institutions | same |
+| Terms for the research material | maintainer | `LAMMPSNotebooks/`, `PyBinding/`, `usefulGeneralScripts/`: notebooks, data and scripts without notices, currently covered by the repository license by default |
+| Contributions of other group members named in source comments | maintainer | `ham.F90` and others |
+
+None of these prevents distribution under the GPL as it stands; they are the
+points on which a written record would be prudent before a formal release.
+
+## Findings of the audit
 
 | Component | Location | Notice found | Remark |
 | --- | --- | --- | --- |
-| Project metadata | `pyproject.toml` | `license = {text = "Proprietary"}` | Contradicts a public repository and the notices below |
-| Top level | | no `LICENSE` or `COPYING` file | The GPL notices below refer to "the file `LICENSE` in the root directory", which does not exist |
+| Project metadata (before this change) | `pyproject.toml` | `license = {text = "Proprietary"}` | Contradicted a public repository and the notices below |
+| Top level (before this change) | | no `LICENSE` or `COPYING` file | The GPL notices below refer to "the file `LICENSE` in the root directory" |
 | MIO library (memory, input/output, timers, MPI wrappers) | `lanczosKuboCode/Src/MIO/`, `Src/MIO/MPI/` (25 files) | "Copyright (C) 2012 Rafael Martinez-Gordillo ... distributed under the terms of the GNU General Public License" | No GPL version is named; the notice points to `http://www.gnu.org/copyleft/gpl.txt` |
 | Math library | `lanczosKuboCode/Src/math/` (8 files) | same notice | same |
 | Build file of the solver | `lanczosKuboCode/Src/Makefile` | "Kubo3 Makefile, Copyright (C) 2012 Rafael Martinez-Gordillo" | No license statement |
@@ -23,41 +74,14 @@ Libraries that are linked but not distributed with GRABNES (BLAS, LAPACK,
 ARPACK, MPI) impose no condition on the source distribution; their own
 licenses apply to binaries that include them.
 
-## What this implies
+## Changes made after the audit
 
-1. **The GPL-marked libraries are part of the executable.** MIO and the math
-   library are compiled into `grabnes`. As long as they are under the GPL, the
-   program as a whole can only be distributed under GPL-compatible terms,
-   unless their copyright holder agrees to other terms. "Proprietary" in
-   `pyproject.toml` is not compatible with distributing them.
-2. **The GPL version is unspecified.** The notices name no version. This needs
-   to be settled with the copyright holder (GPL-2.0-only, GPL-2.0-or-later, and
-   GPL-3.0 differ in their compatibility with other licenses).
-3. **The origin of the unmarked solver sources should be recorded.** They
-   derive from the same original code; whoever holds rights in the 2012 code
-   has to agree to the license chosen for the whole.
-4. **LGPL and BSD-style notices must be preserved** in the files that carry
-   them, whatever project license is chosen.
-5. **The commented-out Numerical Recipes routines** are the one item that
-   could not be redistributed under any open license. They are dead code.
-
-## Decisions required from the maintainers
-
-1. Choose the project license, in agreement with Rafael Martinez-Gordillo as
-   the named copyright holder of MIO and the math library (and, as far as it
-   applies, of the original solver).
-2. State the GPL version of the existing notices, or have them replaced by
-   the copyright holder.
-3. Add the corresponding `LICENSE` file at the top level and make
-   `pyproject.toml` agree with it.
-4. Decide who is named as copyright holder of the solver sources, and whether
-   headers are added to them.
-5. Authorize the removal of the commented-out Numerical Recipes routines from
-   `kubo.F90`. (Not done here: `kubo.F90` is a scientific source file under
-   the current code freeze, and the removal is a licensing decision.)
-6. Decide whether `LAMMPSNotebooks/`, `PyBinding/`, and
-   `usefulGeneralScripts/` are released under the same terms, under separate
-   terms, or moved out of the software distribution.
-
-Nothing in this list was acted upon. No copyright notice was removed or
-altered during the release preparation.
+- `LICENSE` (GPL version 3) and `COPYING.LESSER` (LGPL version 3) added.
+- `THIRD_PARTY_LICENSES.md` added.
+- `pyproject.toml`: "Proprietary" replaced by `GPL-3.0-or-later`; authors and
+  maintainer recorded.
+- The two commented-out *Numerical Recipes* routines (`pythag`, `tqli`; 77
+  comment lines) were removed from `lanczosKuboCode/Src/kubo.F90`. They were
+  comments only, referenced nowhere in compiled code, and their removal
+  changes no executable statement. The group's own commented routine that
+  called them was left in place.
