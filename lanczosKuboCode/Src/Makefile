@@ -3,11 +3,8 @@
 # Copyright (C) 2012 Rafael Martinez-Gordillo
 #
 
-# Include make.sys
-include ../make.sys
-
-# Export LDFLAGS
-export LDFLAGS
+# The build configuration (make.sys) is read once by the root Makefile, which
+# exports the compiler, flag, and directory variables used here.
 
 default: grabnes
 

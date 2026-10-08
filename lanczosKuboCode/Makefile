@@ -1,5 +1,13 @@
-# Include make.sys
-include make.sys
+# Locate the solver root from this Makefile rather than from $PWD, so that
+# 'make -C <dir>' and 'make -f <dir>/Makefile' work from any directory.
+ROOT_DIR:=$(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+
+# Include make.sys (override MAKE_SYS to use a configuration kept elsewhere)
+MAKE_SYS?=$(ROOT_DIR)/make.sys
+ifeq ($(wildcard $(MAKE_SYS)),)
+$(error Build configuration '$(MAKE_SYS)' not found. Copy make.sys.example to make.sys and adjust it)
+endif
+include $(MAKE_SYS)
 
 # Export LDFLAGS
 export LDFLAGS
@@ -14,22 +22,22 @@ endif
 
 F90_SERIAL?=$(F90)
 
-ROOT_DIR:=$(PWD)
-BUILD_DIR:=$(ROOT_DIR)/build
+# BUILD_DIR and BIN_DIR may be overridden for an out-of-tree build
+BUILD_DIR?=$(ROOT_DIR)/build
 SRC_DIR=$(ROOT_DIR)/Src
 LIB_DIR:=$(BUILD_DIR)/lib
 VPATH:=$(ROOT_DIR):$(SRC_DIR)
-BIN_DIR:=$(ROOT_DIR)/bin
+BIN_DIR?=$(ROOT_DIR)/bin
 
-VERSION:=$(word 2,$(shell cat version.info))-rev$(word 4,$(shell cat version.info))
-ODATE:=$(subst -, ,$(word 8,$(shell cat version.info)))
+VERSION:=$(word 2,$(shell cat $(ROOT_DIR)/version.info))-rev$(word 4,$(shell cat $(ROOT_DIR)/version.info))
+ODATE:=$(subst -, ,$(word 8,$(shell cat $(ROOT_DIR)/version.info)))
 YEAR:=$(word 1,$(ODATE))
 MONTH:=$(word 2,$(ODATE))
 DAY:=$(word 3,$(ODATE))
 DATE:=$(MONTH)'-'$(DAY)'-'$(YEAR)
 
 export ROOT_DIR BUILD_DIR SRC_DIR BIN_DIR F90
-export FCFLAGS LIBS LIB_DIR VPATH ARFLAGS
+export FCFLAGS LIBS LIB_DIR VPATH ARFLAGS CPPFLAGS
 export VERSION DATE INCFLAGS F90_SERIAL
 
 default: grabnes
@@ -38,7 +46,7 @@ all: grabnes
 
 grabnes : | $(BUILD_DIR) $(BIN_DIR)
 
-grabnes: flags version.info
+grabnes: flags
 	@echo
 	@echo ">> GraBNES compilation <<"
 	@echo "Version: "$(VERSION)
@@ -48,9 +56,9 @@ grabnes: flags version.info
 	@(cd $(BUILD_DIR) ; $(MAKE) grabnes)
 
 $(BUILD_DIR):
-	mkdir $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)
 $(BIN_DIR):
-	mkdir $(BIN_DIR)
+	mkdir -p $(BIN_DIR)
 
 .PHONY: clean flags
 clean:
@@ -62,22 +70,5 @@ clean:
 	@if [ -d $(LIB_DIR) ]; then \
 	cd $(LIB_DIR) ; $(RM) *.a ; \
 	fi
-	@if [ -d $(BIN_DIR) ]; then \
-	cd $(BIN_DIR) ; $(RM) * ; \
-	else \
-	echo 'Nothing to clean in BIN_DIR' ; \
-	fi
-
-version.info: .version
-	@echo ">> Generating version file <<"; \
-	cp .version version.info ; \
-	exec 3<version.info ; \
-	exec 4> .version ; \
-	read line <&3 ; \
-	echo "$$line" >&4 ; \
-	echo "\$$Revision\$$" >&4 ; \
-	echo "updated" >&4 ; \
-	echo "\$$Date\$$" >&4 ; \
-	echo $$(date) >&4 ; \
-	touch version.info
+	@$(RM) $(BIN_DIR)/grabnes
 
