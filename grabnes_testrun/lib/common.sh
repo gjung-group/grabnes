@@ -161,39 +161,43 @@ select_executable() {
     fi
 }
 
-# run_example NAME OUTPUT REFERENCE KIND ATOL RTOL
-run_example() {
-    name=$1; output=$2; reference="$examples_dir/$1/reference/$3"
-    kind=$4; atol=$5; rtol=$6
+# run_solver NAME INPUT OUTPUT
+# Runs the solver on a copy of INPUT in $work_dir/run/NAME. Returns 1, after
+# reporting and counting the failure, unless the run ends cleanly with OUTPUT.
+run_solver() {
+    name=$1; input=$2; output=$3
     run_dir="$work_dir/run/$name"
 
     printf '\n%s\n' "== $name"
-    [ -f "$examples_dir/$name/Gendata.in" ] || die "missing input $examples_dir/$name/Gendata.in"
-    [ -f "$reference" ] || die "missing reference $reference"
+    [ -f "$input" ] || die "missing input $input"
     rm -rf "$run_dir"
     mkdir -p "$run_dir"
-    cp "$examples_dir/$name/Gendata.in" "$run_dir/"
+    cp "$input" "$run_dir/Gendata.in"
 
     status=0
     # GRABNES_LAUNCHER is split on purpose (for example "mpirun -np 1").
     (cd "$run_dir" && ${GRABNES_LAUNCHER:-} "$grabnes_bin" Gendata.in > job.out 2> job.err) || status=$?
     if [ "$status" -ne 0 ]; then
         printf '%s\n' "  FAIL: the solver exited with status $status (see $run_dir)"
-        grep 'ERROR' "$run_dir/job.out" | sed -n '1,3p;s/^/  /'
+        grep 'ERROR' "$run_dir/job.out" | sed -n '1,3p' | sed 's/^/  /'
         sed -n '1,5p' "$run_dir/job.err" | sed 's/^/  /'
-        failures=$((failures + 1))
-        return 0
-    fi
-    if ! grep -q '^0 errors, 0 warnings' "$run_dir/job.out"; then
+    elif ! grep -q '^0 errors, 0 warnings' "$run_dir/job.out"; then
         printf '%s\n' "  FAIL: the solver did not report '0 errors, 0 warnings' (see $run_dir/job.out)"
-        failures=$((failures + 1))
-        return 0
-    fi
-    if [ ! -s "$run_dir/$output" ]; then
+    elif [ ! -s "$run_dir/$output" ]; then
         printf '%s\n' "  FAIL: the solver did not write $output"
-        failures=$((failures + 1))
+    else
         return 0
     fi
+    failures=$((failures + 1))
+    return 1
+}
+
+# run_example NAME OUTPUT REFERENCE KIND ATOL RTOL
+run_example() {
+    reference="$examples_dir/$1/reference/$3"
+    kind=$4; atol=$5; rtol=$6
+    [ -f "$reference" ] || die "missing reference $reference"
+    run_solver "$1" "$examples_dir/$1/Gendata.in" "$2" || return 0
     set -- --kind "$kind" --atol "$atol" --rtol "$rtol"
     if [ "$exact" -eq 1 ] && [ "$kind" = bands ]; then
         set -- "$@" --exact
@@ -202,6 +206,68 @@ run_example() {
         printf '%s\n' "  PASS"
     else
         printf '%s\n' "  FAIL: $output does not reproduce $reference"
+        failures=$((failures + 1))
+    fi
+}
+
+# Stochastic Kubo (Lanczos recursion) DOS of graphene against the exact DOS.
+run_kubo_check() {
+    case_dir="$harness_dir/kubo_graphene_dos"
+    run_solver kubo_graphene_dos "$case_dir/Gendata.in" generate.DOS || return 0
+    if python3 "$harness_dir/check_kubo_dos.py" --max-dev "$kubo_max_dev" --rms-dev "$kubo_rms_dev" \
+            "$run_dir/generate.DOS" "$case_dir/reference/exact_dos.dat"; then
+        printf '%s\n' "  PASS"
+    else
+        printf '%s\n' "  FAIL: the Kubo DOS deviates from the exact graphene DOS"
+        failures=$((failures + 1))
+    fi
+}
+
+# Independent reconstruction of the example-03 Hamiltonian from the tables the
+# solver writes with WriteDataFiles (needs NumPy; skipped without it).
+run_hamiltonian_check() {
+    if ! python3 -c 'import numpy' >/dev/null 2>&1; then
+        printf '\n%s\n%s\n' "== hamiltonian_tables" "  SKIP: NumPy is not available"
+        return 0
+    fi
+    mkdir -p "$work_dir/inputs"
+    sed 's/^WriteDataFiles .*/WriteDataFiles .true./' \
+        "$examples_dir/03_twisted_bilayer_bands/Gendata.in" > "$work_dir/inputs/hamiltonian_tables.in"
+    run_solver hamiltonian_tables "$work_dir/inputs/hamiltonian_tables.in" generate.s.mag || return 0
+    verify_status=0
+    python3 "$repo_root/tools/hamiltonian/verify_tables.py" "$run_dir" \
+        --max-table-dev "$tables_max_dev" --max-model-dev "$model_max_dev" \
+        > "$run_dir/verify_tables.log" 2>&1 || verify_status=$?
+    sed 's/^/  /' "$run_dir/verify_tables.log"
+    if [ "$verify_status" -eq 0 ] &&
+       python3 "$harness_dir/compare_output.py" --kind bands --atol "$bands_atol" --rtol "$bands_rtol" \
+            "$run_dir/generate.bands" "$examples_dir/03_twisted_bilayer_bands/reference/bands.dat"; then
+        printf '%s\n' "  PASS"
+    else
+        printf '%s\n' "  FAIL: the Hamiltonian tables are not consistent with the bands"
+        failures=$((failures + 1))
+    fi
+}
+
+# A run with two MPI processes must stop with the documented error message
+# instead of crashing: the MPI domain decomposition is disabled in the solver.
+run_mpi_guard_check() {
+    printf '\n%s\n' "== two_mpi_processes"
+    mpirun_cmd=${GRABNES_MPIRUN:-mpirun}
+    if ! command -v "${mpirun_cmd%% *}" >/dev/null 2>&1; then
+        printf '%s\n' "  SKIP: '${mpirun_cmd%% *}' not found (set GRABNES_MPIRUN to the MPI launcher)"
+        return 0
+    fi
+    run_dir="$work_dir/run/two_mpi_processes"
+    rm -rf "$run_dir"
+    mkdir -p "$run_dir"
+    cp "$examples_dir/01_graphene_bands/Gendata.in" "$run_dir/"
+    status=0
+    (cd "$run_dir" && $mpirun_cmd -np 2 "$grabnes_bin" Gendata.in > job.out 2> job.err) || status=$?
+    if [ "$status" -ne 0 ] && grep -q 'must be run with a single MPI' "$run_dir/job.out"; then
+        printf '%s\n' "  PASS: the run was refused with the single-process error (status $status)"
+    else
+        printf '%s\n' "  FAIL: expected the single-process error, got status $status (see $run_dir)"
         failures=$((failures + 1))
     fi
 }
@@ -236,3 +302,18 @@ bands_atol=2e-6
 bands_rtol=0
 dos_atol=1e-12
 dos_rtol=1e-9
+
+# The Kubo DOS uses one random-phase state on 180000 atoms. Six runs (three
+# seeds, GNU and Intel random-number generators) gave rms deviations of
+# 0.0027-0.0033 and maximum deviations of 0.008-0.014 from the exact DOS
+# (peak 0.417). The limits are about twice that; a 2 % error in the hopping or
+# a broadening in the wrong energy unit exceeds them.
+kubo_max_dev=0.03
+kubo_rms_dev=0.006
+
+# Example-03 bands rebuilt in Python: from the solver's own tables (measured
+# 4e-6 eV, limited by the five-decimal displacement files) and from an
+# independent model with a complete neighbor set (measured 1.0e-4 eV, the
+# known size of the neighbor-search approximations in this small cell).
+tables_max_dev=2e-5
+model_max_dev=3e-4

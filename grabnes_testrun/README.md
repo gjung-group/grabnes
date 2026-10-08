@@ -13,7 +13,7 @@ Both scripts can be started from any directory.
 
 ```sh
 ./grabnes_testrun/smoke_test.sh      # build + pristine graphene bands (about 1.5 minutes)
-./grabnes_testrun/run_examples.sh    # build + all four public examples
+./grabnes_testrun/run_examples.sh    # build + all four public examples + solver checks
 ```
 
 The exit status is `0` when every check passes, `1` when the build, a run, or
@@ -75,7 +75,7 @@ work directory, by default a new one under `$TMPDIR` (or `/tmp`):
 ├── build/      object files, modules, generated sources
 ├── bin/        the grabnes executable
 ├── build.log   complete compiler output
-└── run/<example>/   copied input, job.out, job.err, and all solver output
+└── run/<check>/     copied input, job.out, job.err, and all solver output
 ```
 
 A temporary work directory is removed when every check passes and kept, with
@@ -98,6 +98,19 @@ then checks that
 | --- | --- | --- | --- |
 | `generate.bands` | 2e-6 | 0 | written with six decimals; allows one last-digit rounding flip |
 | `generate.diag.DOS` | 1e-12 | 1e-9 | written with 17 significant digits; limited by BLAS/LAPACK and math-library rounding |
+
+`run_examples.sh` then runs three checks that are not public examples:
+
+| Check | Requirement |
+| --- | --- |
+| `hamiltonian_tables` | Example 03 is rerun with `WriteDataFiles .true.` and [`tools/hamiltonian/verify_tables.py`](../tools/hamiltonian/) rebuilds its bands in Python: from the solver's own tables within 2e-5 eV, and from an independent model with a complete neighbor set within 3e-4 eV. Needs NumPy; skipped without it. |
+| `kubo_graphene_dos` | The stochastic Kubo (Lanczos recursion) DOS of a 180000-atom graphene cell with a fixed seed must match the exact broadened DOS in `kubo_graphene_dos/reference/exact_dos.dat` (analytic, written by `make_reference.py`): maximum deviation below 0.03, rms below 0.006. About 3 s and 0.5 GB. |
+| `two_mpi_processes` | Started with `mpirun -np 2`, the solver must refuse to run with its single-process error. Skipped when no `mpirun` is found; set `GRABNES_MPIRUN` to use another launcher. |
+
+The Kubo check is statistical because the random numbers depend on the
+compiler; its limits are about twice the deviation observed with GNU and Intel
+Fortran. The limits of the Hamiltonian check record the present accuracy of
+the neighbor search, see the validation document.
 
 Byte identity is reported for information. `--exact` additionally requires it
 for the band files, which have been byte-identical for every compiler tested
