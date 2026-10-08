@@ -47,8 +47,8 @@ states for each capability what evidence exists.
 
 ## Requirements
 
-- A Fortran compiler. Tested: GNU Fortran 12.2 and Intel `ifort` 2021.6, on
-  Linux x86_64.
+- A Fortran compiler. Tested: GNU Fortran 11.4 and 12.2, and Intel `ifort`
+  2021.6, on Linux x86_64.
 - An MPI library with a Fortran compiler wrapper (`mpif90`, `mpiifort`, ...).
   The code is built with MPI but currently runs on **one MPI process**.
 - BLAS and LAPACK (reference implementation or MKL).

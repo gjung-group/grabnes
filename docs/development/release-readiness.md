@@ -27,7 +27,7 @@ capabilities outside that set are released as research code.
 | Build independent of the working directory; out-of-tree builds | Complete | |
 | No machine-specific path in the build files that are used | Complete | |
 | Historical site configurations under `lanczosKuboCode/Sys/` contain absolute paths | Optional | kept as starting points; could be removed |
-| Other compilers and platforms (`ifx`, macOS, Open MPI, MPICH) | Optional | untested; not claimed |
+| Other compilers and platforms (`ifx`, macOS, MPICH) | Optional | untested; not claimed. GNU Fortran 11.4 with Open MPI 4.1.2 on Ubuntu 22.04 is exercised by the CI workflow |
 | OpenMP with GNU Fortran | Optional | six `REDUCTION` clauses on pointer arrays |
 
 ## Numerical validation
@@ -65,7 +65,7 @@ capabilities outside that set are released as research code.
 | Item | Status | Note |
 | --- | --- | --- |
 | Workflow `.github/workflows/regression.yml` | Complete | builds with GNU Fortran and Open MPI on Ubuntu 22.04, runs the four examples and the regression checks against the reference data, then the TAPW tests; read-only permissions |
-| Result of the workflow on GitHub | Technical work | first run pending |
+| Result of the workflow on GitHub | Complete | passes on `nicolas/development` (first green run: commit `445656e`, GNU Fortran 11.4, Open MPI 4.1.2, Ubuntu 22.04): build, four examples, regression checks, plotting scripts, TAPW tests |
 
 ## Licensing, copyright, third-party code
 

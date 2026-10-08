@@ -170,7 +170,11 @@ details, measured results, and limitations are in
   `CITATION.cff` names the authors Jeil Jung, Rafael Martinez-Gordillo, and
   Nicolas Leconte; Nicolas Leconte is the current developer and maintainer.
 - **CI.** The workflow now runs on pushes to the development and main
-  branches and on pull requests to main.
+  branches and on pull requests to main. The development branch was pushed
+  and the workflow passes on GitHub (Ubuntu 22.04, GNU Fortran 11.4, Open MPI
+  4.1.2). Its first complete run showed that with Open MPI the error message
+  of an aborting run was lost; standard output is now flushed before
+  `MPI_Abort`.
 
 Sections 1, 5, and 6 below describe the state before this work; where they
 mention the test copy or a `grabnes_testrun` executable, this section

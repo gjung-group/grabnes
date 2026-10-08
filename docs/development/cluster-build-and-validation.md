@@ -55,6 +55,7 @@ make -C lanczosKuboCode MAKE_SYS=/path/to/make.sys \
 | GNU, checked (`grabnes_testrun/config/gfortran.debug.make.sys`) | as above with `-O0 -g -fcheck=all -fbacktrace` | builds, about 25 s |
 | Intel (`grabnes_testrun/config/intel.make.sys`) | `-O2 -g -traceback -DMPI -qopenmp -DPOINTER_SIZE=8`, `-larpack -qmkl=sequential` | builds, about 150 s, no diagnostics |
 | `ifx` | | not tested |
+| GNU on Ubuntu 22.04 (GitHub Actions) | `make.sys.example` with GNU Fortran 11.4.0, Open MPI 4.1.2, reference BLAS/LAPACK, ARPACK | builds; all regression checks pass |
 
 GNU Fortran emits 35 warnings, all of legacy character: 29 argument rank/type
 mismatches in the generated MPI wrappers (accepted through
