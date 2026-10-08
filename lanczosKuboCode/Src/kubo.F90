@@ -421,23 +421,6 @@ subroutine KuboTEvol(Psi,ZUPsi,Psin,Psinm1,XpnPsi,XpnPsim1,c,dT,nT,az,bz,H,H0,ho
 
 end subroutine KuboTEvol
 
-!!----------------------------------------------------------------------
-!      FUNCTION pythag (a, b)
-!      DOUBLE PRECISION a, b, pythag
-!      DOUBLE PRECISION absa, absb
-!      absa = dabs (a)
-!      absb = dabs (b)
-!      IF (absa.gt.absb) THEN
-!         pythag = absa * dsqrt (1. + (absb / absa) **2)
-!      ELSE
-!         IF (absb.eq.0.) THEN
-!            pythag = 0.
-!         ELSE
-!            pythag = absb * dsqrt (1. + (absa / absb) **2)
-!         ENDIF
-!      ENDIF
-!      RETURN
-!      END FUNCTION pythag
 !!-----------------------------------------------------------------------
 !
 !      SUBROUTINE intervalle (a, b, ac, bc, NRECURS)
@@ -480,66 +463,6 @@ end subroutine KuboTEvol
 !      RETURN
 !      END SUBROUTINE intervalle
 !
-!      SUBROUTINE tqli (d, e, n, np, z)
-!      use pythag
-!      INTEGER n, np
-!      DOUBLE PRECISION d (np), e (np), z (np, np)
-!!U    USES pythag
-!      INTEGER i, iter, k, l, m
-!      DOUBLE PRECISION b, c, dd, f, g, p, r, s, pythag
-!      DO 11 i = 2, n
-!         e (i - 1) = e (i)
-!   11 END DO
-!      e (n) = 0.
-!      DO 15 l = 1, n
-!         iter = 0
-!    1    DO 12 m = l, n - 1
-!            dd = dabs (d (m) ) + dabs (d (m + 1) )
-!            IF (dabs (e (m) ) + dd.eq.dd) goto 2
-!   12    END DO
-!         m = n
-!    2    IF (m.ne.l) THEN
-!!         if(iter.eq.30)pause 'too many iterations in tqli'
-!            iter = iter + 1
-!            g = (d (l + 1) - d (l) ) / (2. * e (l) )
-!            r = pythag (g, 1.d0)
-!            g = d (m) - d (l) + e (l) / (g + sign (r, g) )
-!            s = 1.
-!            c = 1.
-!            p = 0.
-!            DO 14 i = m - 1, l, - 1
-!               f = s * e (i)
-!               b = c * e (i)
-!               r = pythag (f, g)
-!               e (i + 1) = r
-!               IF (r.eq.0.) THEN
-!                  d (i + 1) = d (i + 1) - p
-!                  e (m) = 0.
-!                  GOTO 1
-!               ENDIF
-!               s = f / r
-!               c = g / r
-!               g = d (i + 1) - p
-!               r = (d (i) - g) * s + 2. * c * b
-!               p = s * r
-!               d (i + 1) = g + p
-!               g = c * r - b
-!!     Omit lines from here ...
-!               DO 13 k = 1, n
-!                  f = z (k, i + 1)
-!                  z (k, i + 1) = s * z (k, i) + c * f
-!                  z (k, i) = c * z (k, i) - s * f
-!   13          END DO
-!!     ... to here when finding only eigenvalues.
-!   14       END DO
-!            d (l) = d (l) - p
-!            e (l) = g
-!            e (m) = 0.
-!            GOTO 1
-!         ENDIF
-!   15 END DO
-!      RETURN
-!      END SUBROUTINE tqli
 
 
 end module kubo
