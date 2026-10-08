@@ -21,6 +21,18 @@ python3 tools/hamiltonian/verify_tables.py /path/to/run \
 # pristine graphene, example 01 (TB.Hopping 3.1, nonBulkSmall, no interlayer search)
 python3 tools/hamiltonian/verify_tables.py /path/to/run --g0 3.1 --intralayer=-3.1 \
     --interlayer-cutoff 1.0 --periodic-z
+
+# original Koshino model (KoshinoIntralayer .true., TB.NeighLevels 5): two-center
+# form within the layers as well, with the Moon-Koshino value of vpppi0
+python3 tools/hamiltonian/verify_tables.py /path/to/run --koshino-intralayer 5 --vpppi0 2.7
+
+# hBN monolayer: on-site energies by species number
+python3 tools/hamiltonian/verify_tables.py /path/to/run --g0 3.1 --intralayer=-3.0294 \
+    --onsite 3:3.09,4:-1.89 --interlayer-cutoff 1.0 --periodic-z
+
+# no model available: geometry, translations, reverse partners and Hermiticity only,
+# with a listing of the stored elements by species pair and distance
+python3 tools/hamiltonian/verify_tables.py /path/to/run --structure-only 1
 ```
 
 The second Hamiltonian uses only the atomic positions and these parameters:

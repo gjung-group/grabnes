@@ -81,7 +81,8 @@ def load(run, prefix):
         owner=owner, neighbor=np.concatenate([np.array(r, int) for r in neighbors]),
         image=images, disp=disp, hop=np.concatenate([np.array(h) for h in hop]),
         pos=np.array(rows(f"{prefix}.pos")), ucell=cell[:3].T, rcell=cell[3:].T,
-        h0=np.array([r[0] for r in onsite]), layer=np.array([int(r[2]) for r in onsite]),
+        h0=np.array([r[0] for r in onsite]), species=np.array([int(r[1]) for r in onsite]),
+        layer=np.array([int(r[2]) for r in onsite]),
     )
 
 
@@ -117,8 +118,9 @@ class Model:
 
     def __init__(self, args, bond):
         self.bond = bond
-        self.shell_energy = args.intralayer
-        n = len(self.shell_energy)
+        self.two_center_shells = args.koshino_intralayer
+        self.shell_energy = args.intralayer or []
+        n = self.two_center_shells or len(self.shell_energy) or args.structure_only
         self.rc_intra = 0.5 * (SHELL_RADIUS[n - 1] + SHELL_RADIUS[n]) * bond
         self.shell_edges = 0.5 * (SHELL_RADIUS[:n] + SHELL_RADIUS[1:n + 1]) * bond
         self.rc_inter = args.interlayer_cutoff
@@ -142,12 +144,15 @@ class Model:
         """Matrix element (eV) of pairs with displacement d and class kind."""
         rho = np.hypot(d[..., 0], d[..., 1])
         dist = np.linalg.norm(d, axis=-1)
-        shell = np.searchsorted(self.shell_edges, rho)
-        intra = np.array(self.shell_energy + [0.0])[np.minimum(shell, len(self.shell_energy))]
         safe = np.where(dist > 0, dist, 1.0)
         cz = (d[..., 2] / safe) ** 2
         inter = (self.vpi * np.exp(-(dist - self.bond) / self.delta) * (1 - cz)
                  + self.vsigma * np.exp(-(dist - self.d0) / self.delta) * cz)
+        if self.two_center_shells:
+            intra = inter          # KoshinoIntralayer: the same two-center form within a layer
+        else:
+            shell = np.searchsorted(self.shell_edges, rho)
+            intra = np.array(self.shell_energy + [0.0])[np.minimum(shell, len(self.shell_energy))]
         return np.where(kind == 1, intra, np.where(kind == 2, inter, 0.0))
 
     def enumerate(self, pos, ucell):
@@ -193,8 +198,18 @@ def main():
     parser.add_argument("--prefix", default="generate")
     parser.add_argument("--lattice-parameter", type=float, default=2.46)
     parser.add_argument("--g0", type=float, help="energy unit in eV (default: 12.14 - 3.72 a)")
-    parser.add_argument("--intralayer", type=lambda s: [float(x) for x in s.split(",")], required=True,
+    parser.add_argument("--intralayer", type=lambda s: [float(x) for x in s.split(",")],
                         help="intralayer matrix elements in eV, one per neighbor shell, e.g. -2.9888,0,0")
+    parser.add_argument("--onsite", default="", metavar="SPECIES:E,...",
+                        help="on-site energies of the model in eV by species number, e.g. 3:3.09,4:-1.89 "
+                             "(default: zero)")
+    parser.add_argument("--structure-only", type=int, metavar="SHELLS",
+                        help="no model: only check the neighbor geometry for this many intralayer "
+                             "shells, the translations, the reverse partners and Hermiticity of the "
+                             "stored values, and list the stored elements by species and distance")
+    parser.add_argument("--koshino-intralayer", type=int, metavar="SHELLS",
+                        help="KoshinoIntralayer: intralayer elements from the two-center form with "
+                             "vpppi0, on this many neighbor shells (instead of --intralayer)")
     parser.add_argument("--vpppi0", type=float, default=3.5)
     parser.add_argument("--vppsigma0", type=float, default=0.48)
     parser.add_argument("--interlayer-distance", type=float, default=3.34)
@@ -213,6 +228,8 @@ def main():
                         help="limit for the comparison with the six-decimal band file (eV)")
     args = parser.parse_args()
 
+    if sum(x is not None for x in (args.intralayer, args.koshino_intralayer, args.structure_only)) != 1:
+        parser.error("give exactly one of --intralayer, --koshino-intralayer and --structure-only")
     a = args.lattice_parameter
     bond = a / np.sqrt(3.0)
     g0 = args.g0 if args.g0 is not None else 12.14 - 3.72 * a
@@ -235,10 +252,12 @@ def main():
 
     print(f"atoms: {n}   neighbor entries: {len(t['owner'])}   g0 = {g0:.5f} eV")
     print(f"cell: |A1| = {np.linalg.norm(ucell[:, 0]):.5f} A, |A2| = {np.linalg.norm(ucell[:, 1]):.5f} A; "
-          f"intralayer radius {model.rc_intra:.4f} A ({len(args.intralayer)} shells), "
+          f"intralayer radius {model.rc_intra:.4f} A, "
           f"interlayer radius {model.rc_inter:.4f} A")
 
     solver_value = -t["hop"] * g0                      # H_j of every entry (eV)
+    species_energy = {int(a_): float(b_) for a_, b_ in (item.split(":") for item in args.onsite.split(",") if item)}
+    model_onsite = np.array([species_energy.get(int(sp_), 0.0) for sp_ in t["species"]])
     lattice = t["image"] @ ucell.T                     # R of every entry
 
     print("1. lattice translations")
@@ -276,26 +295,48 @@ def main():
     report("entries without the reverse entry", unpaired, 0, "")
     report("max |H_ij(R) - conj(H_ji(-R))|", worst, args.tol_matrix)
 
-    print("4. matrix elements against the independent model")
     common = [(solver_keys[key], enum_keys[key]) for key in solver_keys if key in enum_keys]
     si = np.array([c[0] for c in common])
     ee = np.array([c[1] for c in common])
-    diff = abs(solver_value[si] - evalue[ee])
     intra = abs(edisp[ee][:, 2]) < DZ_INTRA
-    if intra.any():
-        report("intralayer entries: max |H_solver - H_model|", diff[intra].max(), args.tol_matrix)
-    if (~intra).any():
-        report("interlayer entries: max |H_solver - H_model|", diff[~intra].max(), args.tol_matrix)
-    report("largest |on-site energy| in the tables", abs(t["h0"]).max() * g0, args.tol_matrix)
-    rho = np.round(np.hypot(edisp[ee][:, 0], edisp[ee][:, 1])[intra], 2)
-    print("  intralayer shells:  distance (A)   neighbors/atom   H_solver (eV)   H_model (eV)")
-    for radius in np.unique(rho):
-        sel = np.flatnonzero(intra)[rho == radius]
-        print(f"                      {radius:10.2f}   {len(sel) / n:14.2f}   {solver_value[si][sel].real.mean():+12.5f}   "
-              f"{evalue[ee][sel].mean():+11.5f}")
-    if (~intra).any():
-        print(f"  interlayer: {(~intra).sum() / n:.2f} neighbors/atom, largest |H| = "
-              f"{abs(solver_value[si][~intra]).max():.5f} eV, smallest |H| = {abs(solver_value[si][~intra]).min():.2e} eV")
+    if args.structure_only:
+        print("4. stored matrix elements by species pair and distance (no model given)")
+        sp = t["species"]
+        pairs = np.stack([np.minimum(sp[t["owner"]], sp[t["neighbor"]]), np.maximum(sp[t["owner"]], sp[t["neighbor"]])], 1)
+        dist = np.round(np.linalg.norm(t["disp"], axis=1), 2)
+        in_plane = abs(t["disp"][:, 2]) < DZ_INTRA
+        print("     species  in-plane  distance (A)  entries   H mean (eV)    H min..max (eV)")
+        shown = 0
+        for a_, b_ in sorted(set(map(tuple, pairs))):
+            for flag in (True, False):
+                sel = (pairs[:, 0] == a_) & (pairs[:, 1] == b_) & (in_plane == flag)
+                for r in np.unique(dist[sel])[: (99 if flag else 3)]:
+                    m = sel & (dist == r)
+                    v = solver_value[m].real
+                    print(f"     {a_}-{b_}      {'yes' if flag else 'no ':3s}   {r:10.2f}   {m.sum():7d}   {v.mean():+11.5f}    {v.min():+.5f}..{v.max():+.5f}")
+                    shown += 1
+        report("largest |Im H| among the stored elements", abs(solver_value.imag).max())
+        on = t["h0"] * g0
+        for sp_ in np.unique(sp):
+            print(f"     on-site energy, species {sp_}: {on[sp == sp_].min():+.5f}..{on[sp == sp_].max():+.5f} eV")
+    else:
+        print("4. matrix elements against the independent model")
+        diff = abs(solver_value[si] - evalue[ee])
+        intra = abs(edisp[ee][:, 2]) < DZ_INTRA
+        if intra.any():
+            report("intralayer entries: max |H_solver - H_model|", diff[intra].max(), args.tol_matrix)
+        if (~intra).any():
+            report("interlayer entries: max |H_solver - H_model|", diff[~intra].max(), args.tol_matrix)
+        report("on-site energies: max |E_solver - E_model|", abs(t["h0"] * g0 - model_onsite).max(), args.tol_matrix)
+        rho = np.round(np.hypot(edisp[ee][:, 0], edisp[ee][:, 1])[intra], 2)
+        print("  intralayer shells:  distance (A)   neighbors/atom   H_solver (eV)   H_model (eV)")
+        for radius in np.unique(rho):
+            sel = np.flatnonzero(intra)[rho == radius]
+            print(f"                      {radius:10.2f}   {len(sel) / n:14.2f}   {solver_value[si][sel].real.mean():+12.5f}   "
+                  f"{evalue[ee][sel].mean():+11.5f}")
+        if (~intra).any():
+            print(f"  interlayer: {(~intra).sum() / n:.2f} neighbors/atom, largest |H| = "
+                  f"{abs(solver_value[si][~intra]).max():.5f} eV, smallest |H| = {abs(solver_value[si][~intra]).min():.2e} eV")
 
     print("5. H(k): Hermiticity and agreement with the independent model")
     onsite = t["h0"] * g0
@@ -311,8 +352,30 @@ def main():
     def solver_h(k):
         return bloch(n, t["owner"], t["neighbor"], solver_value, lattice, k, onsite)
 
+    if args.structure_only:
+        worst_herm = worst_g = 0.0
+        k0 = rcell @ np.array([0.137, 0.291, 0.0])
+        for label, f in named.items():
+            hs = solver_h(rcell @ np.array(f, float))
+            worst_herm = max(worst_herm, abs(hs - hs.conj().T).max())
+        for g in ([1, 0, 0], [0, 1, 0], [-2, 3, 0]):
+            worst_g = max(worst_g, abs(solver_h(k0 + rcell @ np.array(g, float)) - solver_h(k0)).max())
+        report(f"largest Hermiticity residual of H(k) at {len(named)} k-points", worst_herm, args.tol_matrix)
+        report("H(k+G) - H(k), element by element", worst_g, args.tol_matrix)
+        x, bands = read_bands(f"{args.run_dir}/{args.prefix}.bands")
+        worst_band = 0.0
+        for kp, energies in zip(path_k_points(rcell, corners, x), bands):
+            hs = solver_h(kp)
+            worst_band = max(worst_band, abs(np.linalg.eigvalsh(0.5 * (hs + hs.conj().T)) - energies).max())
+        report("eigenvalues of the stored tables against the band file", worst_band, args.tol_bands)
+        if failures:
+            print("MISMATCH: " + "; ".join(failures))
+            return 1
+        print("all residuals within their limits (structure only; no independent model)")
+        return 0
+
     def model_h(k):
-        return bloch(n, ei, em, evalue, e_lattice, k, np.zeros(n))
+        return bloch(n, ei, em, evalue, e_lattice, k, model_onsite)
 
     worst_herm = worst_h = worst_e = 0.0
     print("     k-point                      |H-H^+|_max   |H_solver-H_model|_max   max |dE|")
@@ -342,14 +405,14 @@ def main():
     shift = rng.integers(-2, 3, size=(n, 2))
     moved = pos + np.hstack([shift, np.zeros((n, 1), int)]) @ ucell.T
     mi, mm, mimage, _, mvalue = model.enumerate(moved, ucell)
-    hm_moved = bloch(n, mi, mm, mvalue, mimage @ ucell.T, k, np.zeros(n))
+    hm_moved = bloch(n, mi, mm, mvalue, mimage @ ucell.T, k, model_onsite)
     gauge = np.exp(-1j * (moved - pos) @ k)
     report("atoms moved by lattice vectors: number of pairs changes by", abs(len(mi) - len(ei)), 0, "")
     report("  eigenvalues", abs(np.linalg.eigvalsh(hm_moved) - reference).max(), args.tol_matrix)
     report("  |H' - D^+ H D| with D = diag(exp(-i k.T))",
            abs(hm_moved - gauge.conj()[:, None] * model_h(k) * gauge[None, :]).max(), args.tol_matrix)
     # convention with the full displacement in the phase
-    h_atomic = bloch(n, ei, em, evalue, edisp, k, np.zeros(n))
+    h_atomic = bloch(n, ei, em, evalue, edisp, k, model_onsite)
     report("phases exp(-i k.d) instead of exp(-i k.R): eigenvalues",
            abs(np.linalg.eigvalsh(h_atomic) - reference).max(), args.tol_matrix)
 

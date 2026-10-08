@@ -17,6 +17,8 @@ run_example 04_twisted_bilayer_dos   generate.diag.DOS dos.dat   dos   "$dos_ato
 # Checks that are not public examples (inputs in this directory)
 run_degeneracy_check
 run_hamiltonian_checks
+run_parameter_convention_checks
+run_other_system_checks
 run_shell_control_checks
 run_kubo_check
 run_mpi_guard_check

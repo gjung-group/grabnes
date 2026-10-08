@@ -105,6 +105,11 @@ then checks that
 | --- | --- |
 | `dirac_point_degeneracy` | The four Dirac states of example 03 at the moire K point form two pairs degenerate within 1e-6 eV (a symmetry the historical neighbor search violated by 1e-4 eV). |
 | `hamiltonian_example03`, `hamiltonian_f2g2`, `hamiltonian_small_cell` | The solver is run with `WriteDataFiles .true.` on example 03, on its F2G2 variant (`TB.NeighLevels 5`), and on a 28-atom cell smaller than the interlayer search radius. [`tools/hamiltonian/verify_tables.py`](../tools/hamiltonian/) compares the tables it writes with a Hamiltonian enumerated independently from the atomic positions: no missing, extra, duplicate, or unpaired entry; matrix elements, Hermiticity, and eigenvalues at Gamma, K, M, generic and random k-points within 1e-9 eV; bands within 1e-6 eV of the six-decimal band file. Needs NumPy; skipped without it. |
+| `koshino_intralayer_default` | With `KoshinoIntralayer .true.` and no `vpppi0` in the input, the tables must match the independent two-center model with 2.7 eV, and the log must report 2.7 eV; the F2G2 run must report 3.5 eV. This protects the model-dependent convention for `vpppi0`. |
+| `hbn_monolayer` | hBN monolayer against the independent model (t = 3.0294 eV, on-site energies 3.09 and -1.89 eV). |
+| `twisted_bulk` | A twisted cell periodic along z: the stored tables must be complete, symmetric, Hermitian, and reproduce the bands (structure only; no model). |
+| `supercell_neighlist` | The legacy `NeighList` routine must give the same band file as the default search for a 32-atom graphene cell. |
+| `legacy_fastnn`, `legacy_notrectangle` | `Neigh.fastNN` and `Neigh.fastNNnotsquareNotRectangle` must be refused. |
 | `neighlevels_0`, `neighlevels_9` | `TB.NeighLevels` outside 1 to 8 must be refused with its error message. |
 | `legacy_cutatnn3` | The deprecated `Neigh.CutAtNN3 .true.` with `TB.NeighLevels 5` must give the same band file as `TB.NeighLevels 3`. |
 | `kubo_graphene_dos` | The stochastic Kubo (Lanczos recursion) DOS of a 180000-atom graphene cell with a fixed seed must match the exact broadened DOS in `kubo_graphene_dos/reference/exact_dos.dat` (analytic, written by `make_reference.py`): maximum deviation below 0.03, rms below 0.006. About 2 s and 0.5 GB. |

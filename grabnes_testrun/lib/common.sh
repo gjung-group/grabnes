@@ -231,7 +231,14 @@ variant_input() {
     sed "$@" "$examples_dir/03_twisted_bilayer_bands/Gendata.in" > "$work_dir/inputs/$variant_name.in"
 }
 
-# run_hamiltonian_check NAME INTRALAYER_ELEMENTS
+# As variant_input, starting from the pristine graphene input of example 01.
+graphene_variant_input() {
+    variant_name=$1; shift
+    mkdir -p "$work_dir/inputs"
+    sed "$@" "$examples_dir/01_graphene_bands/Gendata.in" > "$work_dir/inputs/$variant_name.in"
+}
+
+# run_hamiltonian_check NAME VERIFY_TABLES_OPTIONS...
 # Runs $work_dir/inputs/NAME.in and compares the tables the solver writes with
 # WriteDataFiles against the independent Hamiltonian of
 # tools/hamiltonian/verify_tables.py (needs NumPy; skipped without it).
@@ -240,11 +247,12 @@ run_hamiltonian_check() {
         printf '\n%s\n%s\n' "== $1" "  SKIP: NumPy is not available"
         return 0
     fi
-    run_solver "$1" "$work_dir/inputs/$1.in" generate.s.mag || return 0
+    check_name=$1; shift
+    run_solver "$check_name" "$work_dir/inputs/$check_name.in" generate.s.mag || return 0
     verify_status=0
-    python3 "$repo_root/tools/hamiltonian/verify_tables.py" "$run_dir" --intralayer="$2" \
+    python3 "$repo_root/tools/hamiltonian/verify_tables.py" "$run_dir" "$@" \
         > "$run_dir/verify_tables.log" 2>&1 || verify_status=$?
-    grep -E 'neighbor entries:|missing from|without the reverse|max \|H_solver - H_model|largest (Hermiticity|eigenvalue)|E_model - E_solver|MISMATCH|Error|Traceback' \
+    grep -E 'neighbor entries:|missing from|without the reverse|max \|(H_solver - H_model|E_solver - E_model|H_ij)|largest (Hermiticity|eigenvalue)|E_model - E_solver|against the band file  |MISMATCH|Error|Traceback' \
         "$run_dir/verify_tables.log" | sed 's/^ */  /'
     if [ "$verify_status" -eq 0 ]; then
         printf '%s\n' "  PASS"
@@ -287,14 +295,69 @@ PYEOF
 # than the interlayer search radius, each against the independent model.
 run_hamiltonian_checks() {
     variant_input hamiltonian_example03 -e 's/^WriteDataFiles .*/WriteDataFiles .true./'
-    run_hamiltonian_check hamiltonian_example03 "$nn_elements"
+    run_hamiltonian_check hamiltonian_example03 --intralayer="$nn_elements"
     variant_input hamiltonian_f2g2 -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
         -e 's/^TB.NeighLevels .*/TB.NeighLevels 5/'
-    run_hamiltonian_check hamiltonian_f2g2 "$f2g2_elements"
+    run_hamiltonian_check hamiltonian_f2g2 --intralayer="$f2g2_elements"
     variant_input hamiltonian_small_cell -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
         -e 's/^TB.NeighLevels .*/TB.NeighLevels 5/' \
         -e 's/^MoireCellParameters .*/MoireCellParameters 2 1 1 2/'
-    run_hamiltonian_check hamiltonian_small_cell "$f2g2_elements"
+    run_hamiltonian_check hamiltonian_small_cell --intralayer="$f2g2_elements"
+}
+
+# The two-centre parameter vpppi0 depends on the intralayer model:
+# - KoshinoIntralayer .true. (original Moon-Koshino model): default 2.7 eV, used
+#   for the intralayer and the interlayer hopping;
+# - F2G2-type intralayer models: default 3.5 eV, used in the interlayer pi term.
+# Both defaults are checked against the independent model and in the log.
+run_parameter_convention_checks() {
+    variant_input koshino_intralayer_default -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
+        -e 's/^TB.NeighLevels .*/TB.NeighLevels 5/' -e '$a KoshinoIntralayer .true.'
+    run_hamiltonian_check koshino_intralayer_default --koshino-intralayer 5 --vpppi0 2.7
+    expect_log_line koshino_intralayer_default 'Two-centre Vpppi0 = 2.7000 eV (intralayer and interlayer'
+    expect_log_line hamiltonian_f2g2 'Two-centre Vpppi0 = 3.5000 eV (interlayer pi term only'
+}
+
+# expect_log_line RUN TEXT: the solver log of an earlier run must contain TEXT.
+expect_log_line() {
+    if [ -f "$work_dir/run/$1/job.out" ] && grep -qF "$2" "$work_dir/run/$1/job.out"; then
+        printf '%s\n' "  PASS: $1 reports '$2'"
+    else
+        printf '%s\n' "  FAIL: $1 does not report '$2'"
+        failures=$((failures + 1))
+    fi
+}
+
+# Other systems. hBN monolayer: tables against the model t = 10.68 - 3.11 a with
+# the default on-site energies. Twisted bulk (periodic along z) and the legacy
+# NeighList routine: structure and consistency only.
+run_other_system_checks() {
+    graphene_variant_input hbn_monolayer -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
+        -e 's/^TypeOfSystem .*/TypeOfSystem BoronNitride/'
+    run_hamiltonian_check hbn_monolayer --g0 3.1 --intralayer=-3.0294 --onsite 3:3.09,4:-1.89 \
+        --interlayer-cutoff 1.0 --periodic-z
+
+    variant_input twisted_bulk -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
+        -e 's/^CellHeight .*/CellHeight 6.68/' -e '$a Bulk .true.'
+    run_hamiltonian_check twisted_bulk --structure-only 1 --periodic-z
+
+    graphene_variant_input supercell_default -e 's/^SuperCell .*/SuperCell 4/' -e '/^nonBulkSmall/d'
+    graphene_variant_input supercell_neighlist -e 's/^SuperCell .*/SuperCell 4/' -e '/^nonBulkSmall/d' \
+        -e '$a Neigh.fastNNnotsquare .false.'
+    run_solver supercell_default "$work_dir/inputs/supercell_default.in" generate.bands || return 0
+    run_solver supercell_neighlist "$work_dir/inputs/supercell_neighlist.in" generate.bands || return 0
+    if cmp -s "$work_dir/run/supercell_default/generate.bands" "$work_dir/run/supercell_neighlist/generate.bands"; then
+        printf '%s\n' "  PASS: NeighList gives the bands of the default search for a 32-atom graphene cell"
+    else
+        printf '%s\n' "  FAIL: NeighList and the default search give different bands"
+        failures=$((failures + 1))
+    fi
+
+    graphene_variant_input legacy_fastnn -e '$a Neigh.fastNN .true.'
+    run_expect_error legacy_fastnn 'Neigh.fastNN and Neigh.fastNNnotsquareNotRectangle are not'
+    graphene_variant_input legacy_notrectangle -e '$a Neigh.fastNNnotsquare .false.' \
+        -e '$a Neigh.fastNNnotsquareNotRectangle .true.'
+    run_expect_error legacy_notrectangle 'Neigh.fastNN and Neigh.fastNNnotsquareNotRectangle are not'
 }
 
 # run_expect_error NAME PATTERN: $work_dir/inputs/NAME.in must be refused with
