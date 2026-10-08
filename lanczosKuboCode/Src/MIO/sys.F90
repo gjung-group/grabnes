@@ -80,7 +80,7 @@ subroutine SysKill(message,module,func,hold)
    call SysPrintErrors()
    call SysPrint('*** PROGRAM ABORTED')
 #ifdef MPI
-   call MPI_Abort()
+   call MPI_Abort(MPI_COMM_WORLD,1,ierr)
 #endif /* MPI */
    stop
 
@@ -290,11 +290,13 @@ subroutine SysKillFlush()
 
    implicit none
 
+   integer :: ierr
+
    if (nerr==0) return
    call SysPrintErrors()
    call SysPrint('*** PROGRAM ABORTED')
 #ifdef MPI
-   call MPI_Abort()
+   call MPI_Abort(MPI_COMM_WORLD,1,ierr)
 #endif /* MPI */
    stop
 

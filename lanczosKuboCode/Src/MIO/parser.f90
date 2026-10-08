@@ -798,6 +798,9 @@ l2:do iop = 1,narit
       end if
    end if
 
+   ! error is intent(out): it must also be defined on success
+   if (present(error)) error = 0
+
 end subroutine ParserProcess
 !****** End subroutine: ParserProcess *****************************************
 !******************************************************************************

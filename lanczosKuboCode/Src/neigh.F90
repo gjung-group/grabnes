@@ -10,14 +10,33 @@ module neigh
    real(dp), public, pointer :: NeighD(:,:,:), Nradii(:,:)
    integer, public :: maxNeigh=3
 #ifdef MPI
-   integer, public, pointer :: rcvList(:), rcvIndx(:,:), sndList(:), sndIndx(:,:)
-   integer, public, pointer :: nodeSndRcv(:,:)
+   ! The halo lists are only allocated for nProc>1; keep them disassociated
+   ! (rather than undefined) otherwise so that associated() can be tested.
+   integer, public, pointer :: rcvList(:)=>NULL(), rcvIndx(:,:)=>NULL()
+   integer, public, pointer :: sndList(:)=>NULL(), sndIndx(:,:)=>NULL()
+   integer, public, pointer :: nodeSndRcv(:,:)=>NULL()
    integer, public :: rcvSz, sndSz
 #endif /* MPI */
 
    public :: NeighList, fastNNnotsquare, fastNNnotsquareSmall, fastNN, fastNNnotsquareNotRectangle, fastNNnotsquareBulk, fastNNnotsquareBulkSmall
 
 contains
+
+!> @brief Stop cleanly when an atom has more neighbours inside the cutoffs than
+!!        the neighbour arrays (sized with maxnn) can hold, instead of writing
+!!        past their end.
+subroutine NeighCheckCount(NNcount,maxnn)
+
+   integer, intent(in) :: NNcount, maxnn
+
+   if (NNcount > maxnn) then
+      call MIO_Kill('An atom has more neighbours within the cutoffs than the '// &
+        'neighbour lists can hold ('//trim(num2str(maxnn))//'). Increase '// &
+        'TB.NeighLevels and/or Neigh.LayerNeighbors, or reduce the cutoffs.', &
+        'neigh','NeighCheckCount')
+   end if
+
+end subroutine NeighCheckCount
 
 subroutine NeighList()
 
@@ -1016,6 +1035,7 @@ subroutine fastNNnotsquare(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
    integer :: jj
 
 
+   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
    call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
    !if (frac) call AtomsSetCart()
    !call AtomsSetFrac()
@@ -1318,6 +1338,7 @@ subroutine fastNNnotsquare(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
                  !if (n .eq. 1) print*, d2_t2, cutoff2
                  IF (d2_t2 .lt. cutoff2*1.1_dp) THEN
                    NNcount = NNcount + 1
+                   call NeighCheckCount(NNcount,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
@@ -1337,6 +1358,7 @@ subroutine fastNNnotsquare(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
                ELSE IF (abs(dz_t)>1.50_dp .and. abs(dz_t)<4.50_dp) THEN
                  IF (d2_t2 .lt. cutoff2bis) THEN
                    NNcount = NNcount + 1
+                   call NeighCheckCount(NNcount,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
@@ -1675,6 +1697,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
    integer :: uX, uY, uZ, nmax, unitsX, unitsY
 
 
+   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
    call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
    !if (frac) call AtomsSetCart()
    !call AtomsSetFrac()
@@ -1999,6 +2022,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
                  !if (n .eq. 1) print*, d2_t2, cutoff2
                  IF (d2_t2 .lt. cutoff2*1.1_dp) THEN
                    NNcount = NNcount + 1
+                   call NeighCheckCount(NNcount,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
@@ -2021,6 +2045,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
                ELSE IF (abs(dz_t)>1.50_dp .and. abs(dz_t)<4.50_dp) THEN
                  IF (d2_t2 .lt. cutoff2bis) THEN
                    NNcount = NNcount + 1
+                   call NeighCheckCount(NNcount,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
@@ -2356,6 +2381,7 @@ subroutine fastNNnotsquareBulk(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,A3,maxn
    logical :: readDataFiles
 
 
+   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
    call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
    !if (frac) call AtomsSetCart()
    !call AtomsSetFrac()
@@ -2829,6 +2855,7 @@ subroutine fastNNnotsquareBulk(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,A3,maxn
                  !if (n .eq. 1) print*, d2_t2, cutoff2
                  IF (d2_t2 .lt. cutoff2*1.1_dp) THEN
                    NNcount = NNcount + 1
+                   call NeighCheckCount(NNcount,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
@@ -2851,6 +2878,7 @@ subroutine fastNNnotsquareBulk(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,A3,maxn
                ELSE IF (abs(dz_t)>1.50_dp .and. abs(dz_t)<4.50_dp) THEN
                  IF (d2_t2 .lt. cutoff2bis) THEN
                    NNcount = NNcount + 1
+                   call NeighCheckCount(NNcount,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
@@ -3194,6 +3222,7 @@ subroutine fastNNnotsquareBulkSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,A3
    integer :: uX, uY, uZ, nmax, unitsX, unitsY
 
 
+   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
    call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
    !if (frac) call AtomsSetCart()
    !call AtomsSetFrac()
@@ -3486,6 +3515,7 @@ subroutine fastNNnotsquareBulkSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,A3
                  !if (n .eq. 1) print*, d2_t2, cutoff2
                  IF (d2_t2 .lt. cutoff2*1.1_dp) THEN
                    NNcount = NNcount + 1
+                   call NeighCheckCount(NNcount,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
@@ -3508,6 +3538,7 @@ subroutine fastNNnotsquareBulkSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,A3
                ELSE IF (abs(dz_t)>1.50_dp .and. abs(dz_t)<4.50_dp) THEN
                  IF (d2_t2 .lt. cutoff2bis) THEN
                    NNcount = NNcount + 1
+                   call NeighCheckCount(NNcount,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
@@ -3532,6 +3563,7 @@ subroutine fastNNnotsquareBulkSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,A3
                ELSE IF (abs(dz_t)>4.50_dp .and. abs(dz_t)<7.50_dp .and. addSecondLayerInteractions) THEN
                  IF (d2_t2 .lt. cutoff2bis) THEN
                    NNcount = NNcount + 1
+                   call NeighCheckCount(NNcount,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
@@ -4043,6 +4075,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
              !print*, cutoff2
              IF (d2_t .lt. cutoff2*1.1_dp) THEN
                NNcount = NNcount + 1
+               call NeighCheckCount(NNcount,maxnn)
                vecino=mod(m,natoms)
                if (vecino==0) vecino=natoms
                nn(n,NNcount) = vecino
@@ -4064,6 +4097,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
              !print*, "dt_t2", d2_t2
              IF (d2_t2 .lt. cutoff2bis) THEN
                NNcount = NNcount + 1
+               call NeighCheckCount(NNcount,maxnn)
                vecino=mod(m,natoms)
                if (vecino==0) vecino=natoms
                nn(n,NNcount) = vecino
@@ -4105,6 +4139,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
             IF (abs(dz_t)<0.01_dp) THEN
                IF (d2_t .lt. cutoff2*1.1_dp) THEN
                     NNcount = NNcount + 1
+                    call NeighCheckCount(NNcount,maxnn)
                     !vecino=mod(m,natoms)
                     !if (vecino==0) vecino=natoms
                     !nn(n,NNcount) = vecino
@@ -4162,6 +4197,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    do i=1,tbnn
       Nradii(i,1) = rad(i)*aG*1.1_dp
    end do
+   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
    if (MIO_StringComp(str,'BoronNitride')) then
       Nradii(:,2) = Nradii(:,1)
    else
@@ -4386,6 +4422,7 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
    do i=1,tbnn
       Nradii(i,1) = rad(i)*aG*1.1_dp
    end do
+   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
    if (MIO_StringComp(str,'BoronNitride')) then
       Nradii(:,2) = Nradii(:,1)
    else
@@ -4487,6 +4524,7 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
            !cutoff2 = aG/sqrt(3.0_dp)*1.1_dp*distFact
            IF (dist2 .lt. cutoff2*2.5) THEN
              NNcount = NNcount + 1
+             call NeighCheckCount(NNcount,maxnn)
              nn(n,NNcount) = m
              NList(NNcount,n) = m
              NeighD(1,NNcount,n) = dx

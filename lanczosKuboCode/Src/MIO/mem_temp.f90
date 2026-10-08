@@ -104,9 +104,9 @@ subroutine Dealloc[_TYPE](array,name,routine)
 
    call MemGetName(arrname,rname,name,routine)
    if (associated(array)) then
+      arrSz = size(array)*[TYPESZ]
       deallocate(array,STAT=istat)
       call SysIOErr(istat)
-      arrSz = size(array)*[TYPESZ]
       call MemCount(-arrSz,arrname,rname)
    end if
 

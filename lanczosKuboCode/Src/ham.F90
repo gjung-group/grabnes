@@ -311,6 +311,10 @@ subroutine HamInit()
       else if (tbnn==2) then
           cutoff2 = aG**2 * 1.2_dp**2
       else if (tbnn>2) then
+          ! cutAtNN3 used to be tested without ever being assigned. It is now
+          ! an explicit input flag; .true. keeps the intralayer search within
+          ! the third-neighbour shell.
+          call MIO_InputParameter('Neigh.CutAtNN3',cutAtNN3,.false.)
           if (cutAtNN3) then
              cutoff2 = (aG**2 + aCC**2) * 1.2_dp**2
              call MIO_Print('We go to third nearest neighbors (intralayer) (are you sure it is enough?)','ham')
@@ -5632,6 +5636,7 @@ subroutine HamHopping
          !end if
          call MIO_InputParameter('threeLayers',threeLayers,.false.)
          call MIO_InputParameter('fourLayersSandwiched',fourLayersSandwiched,.false.)
+         call MIO_InputParameter('helicalTwistedMBM',helicalTwistedMBM,.false.)
          call MIO_InputParameter('fiveLayersSandwiched',fiveLayersSandwiched,.false.)
          call MIO_InputParameter('sixLayersSandwiched',sixLayersSandwiched,.false.)
          call MIO_InputParameter('sevenLayersSandwiched',sevenLayersSandwiched,.false.)
@@ -5782,7 +5787,8 @@ subroutine HamHopping
          ! interlayerTwoCenter() can be called branch-free at every site; it is
          ! only populated (owned atoms + MPI halo) when the flag is set.
 #ifdef MPI
-         pzNGhost = size(rcvList)
+         pzNGhost = 0
+         if (associated(rcvList)) pzNGhost = size(rcvList)
 #else
          pzNGhost = 0
 #endif /* MPI */
