@@ -11,6 +11,7 @@ examples linked from the repository README.
 
    user-guide/tapw-soc-input
    development/building-documentation
+   development/cluster-build-and-validation
    development/soc-implementation
    development/tapw-chern-optimization
    development/known-issues/berry-curvature

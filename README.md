@@ -7,12 +7,14 @@ two-dimensional materials.
 The public repository is being prepared for its first announced release. The
 four examples below are validated laptop-sized calculations; advanced TAPW,
 spin-orbit-coupling, Berry-curvature, and transport workflows should currently
-be treated as research functionality.
+be treated as research functionality that is not covered by any regression
+test.
 
 ## Quick start
 
-Requirements are GNU Fortran, an MPI compiler wrapper, BLAS/LAPACK, ARPACK,
-and GNU Make. Build the solver with:
+Requirements are a Fortran compiler (tested: GNU Fortran 12.2 and Intel
+`ifort` 2021.6), an MPI compiler wrapper, BLAS/LAPACK, ARPACK, and GNU Make. Build the
+solver with:
 
 ```sh
 cd lanczosKuboCode
@@ -30,12 +32,17 @@ cd examples/01_graphene_bands
 python3 plot.py
 ```
 
-During the pre-announcement period, collaborators can also perform the clean
-build and reference-output check documented in [`grabnes_testrun`](grabnes_testrun/):
+The test harness in [`grabnes_testrun`](grabnes_testrun/) builds the same
+sources in a temporary directory and compares example results with their
+reference data:
 
 ```sh
-./grabnes_testrun/smoke_test.sh
+./grabnes_testrun/smoke_test.sh      # build + graphene bands
+./grabnes_testrun/run_examples.sh    # build + all four examples
 ```
+
+Tested compilers, measured results, and known limitations are recorded in
+[`docs/development/cluster-build-and-validation.md`](docs/development/cluster-build-and-validation.md).
 
 ## Validated examples
 
@@ -57,7 +64,8 @@ runtime and executable-selection details.
 - `docs/`: user, theory, API, and development documentation.
 - `tests/`: Python mathematical checks and validation plans.
 - `tools/`: standalone analysis and debugging utilities.
-- `grabnes_testrun/`: temporary collaborator-facing clean-build check.
+- `grabnes_testrun/`: regression harness that builds `lanczosKuboCode/` out of
+  tree and checks the examples against their reference data.
 - `PyBinding/`, `LAMMPSNotebooks/`, and `usefulGeneralScripts/`: legacy and
   research workflows that are not yet part of the minimal supported interface.
 

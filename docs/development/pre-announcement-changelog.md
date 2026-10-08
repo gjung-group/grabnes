@@ -6,7 +6,57 @@ repository is already publicly accessible, but the work described here should
 be treated as pre-release consolidation until collaborators have reviewed and
 committed it.
 
-Last updated: 2026-09-27
+Last updated: 2026-10-08
+
+## Solver reconciliation, Linux validation, and test harness (2026-10-08)
+
+Work on branch `nicolas/development`, starting from commit `941e859`. Full
+details, measured results, and limitations are in
+[`cluster-build-and-validation.md`](cluster-build-and-validation.md).
+
+- **One solver tree.** The compatibility fixes that existed only in
+  `grabnes_testrun/lanczosKuboCode/` were reviewed individually and applied to
+  `lanczosKuboCode/` (logical `.eqv.`, removal of the dead `move_alloc` block,
+  the MPI receive-list guard, memory accounting, generator file-name buffers).
+  The duplicated solver tree and the duplicated graphene example were then
+  removed from `grabnes_testrun/`.
+- **Further defects fixed.** Building the canonical tree with optimization and
+  running all four examples exposed defects the laptop test had not reached:
+  an undefined `intent(out)` status in the input parser, `MPI_Abort` called
+  without arguments (fatal errors ended in a segmentation fault without their
+  message), two flags used without ever being assigned (`helicalTwistedMBM` in
+  `HamHopping`, `cutAtNN3` in `HamInit`), unchecked writes beyond the neighbor
+  arrays, an uninitialized string in the neighbor routines, and an unguarded
+  `size()` of the receive list in the Kubo setup.
+- **New input parameter** `Neigh.CutAtNN3` (default `.false.`) replaces the
+  never-assigned `cutAtNN3`.
+- **Build system.** The Makefile no longer depends on `$PWD`, supports
+  `MAKE_SYS`, `BUILD_DIR`, and `BIN_DIR` for out-of-tree builds, passes
+  `-DTIMER` to all sub-builds as intended, and no longer rewrites
+  `.version`/`version.info`. `make.sys.example` now contains the flags GNU
+  Fortran needs and does not enable OpenMP directives, which GNU Fortran
+  rejects in `Src/diag.F90`.
+- **Examples 03 and 04.** Their results used to depend on uninitialized
+  memory. The reference files are unchanged; the inputs now state explicitly
+  the model those files correspond to (nearest-neighbor intralayer hopping).
+  Switching the examples to the default F2G2 intralayer model would require
+  new reference data and is left as an open decision.
+- **Harness.** `grabnes_testrun/` is now a small harness that builds the
+  canonical sources out of tree and compares results numerically:
+  `smoke_test.sh` (example 01) and `run_examples.sh` (all four), with checked
+  GNU and Intel configurations. The example launchers no longer look for a
+  test-copy executable.
+- **Validation on Linux x86_64.** All four examples reproduce their reference
+  data with GNU Fortran 12.2.1 (`-O3` and `-O0 -fcheck=all`) and with Intel
+  `ifort` 2021.6 + MKL (1 and 4 OpenMP threads): band files byte-identical,
+  DOS files within 2e-13. The four TAPW pytest cases pass.
+- **Not validated:** runs with more than one MPI process (the examples
+  crash), OpenMP with GNU Fortran, Kubo transport (not reproducible from run
+  to run), and all TAPW, SOC, Berry-curvature, and semiclassical functionality.
+
+Sections 1, 5, and 6 below describe the state before this work; where they
+mention the test copy or a `grabnes_testrun` executable, this section
+supersedes them.
 
 ## Documentation and test organization (working tree)
 
@@ -175,7 +225,7 @@ This was the result of the original build attempt with an obsolete Intel
 Homebrew compiler. A later isolated native Apple Silicon build is documented
 below.
 
-## 6. Isolated native build and smoke-test harness
+## 6. Isolated native build and smoke-test harness (superseded on 2026-10-08)
 
 Added `grabnes_testrun/` temporarily inside the public checkout so
 collaborators can reproduce the current Apple Silicon build while keeping all
