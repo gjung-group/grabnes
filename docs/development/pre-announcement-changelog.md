@@ -50,9 +50,36 @@ details, measured results, and limitations are in
   data with GNU Fortran 12.2.1 (`-O3` and `-O0 -fcheck=all`) and with Intel
   `ifort` 2021.6 + MKL (1 and 4 OpenMP threads): band files byte-identical,
   DOS files within 2e-13. The four TAPW pytest cases pass.
-- **Not validated:** runs with more than one MPI process (the examples
-  crash), OpenMP with GNU Fortran, Kubo transport (not reproducible from run
-  to run), and all TAPW, SOC, Berry-curvature, and semiclassical functionality.
+- **Not validated:** OpenMP with GNU Fortran, Kubo time evolution and
+  conductivity, and all TAPW, SOC, Berry-curvature, and semiclassical
+  functionality. Runs with more than one MPI process are not supported.
+
+### Follow-up investigation (same day)
+
+- **Examples 03 and 04** are now documented as regression tests of one
+  specific Hamiltonian, with its active terms listed. A new tool,
+  `tools/hamiltonian/verify_tables.py`, rebuilds that Hamiltonian
+  independently; it agrees with the solver to 1e-4 eV and traces the
+  remainder to the neighbor search (lattice images chosen by distance only, a
+  truncated and non-symmetric interlayer set). The reference files are
+  unchanged and these defects are documented, not fixed.
+- **Default F2G2 model** assessed: correctly assembled to 1e-4 eV; its Dirac
+  point at -0.33 eV follows from the parameters (`-3 t2 + 6 t5`). No F2G2
+  reference data were added; the parameter values still need to be checked
+  against their source.
+- **`TB.NeighLevels` / `Neigh.CutAtNN3`** analyzed; the controls overlap and
+  can contradict each other. A single-control design is recommended in the
+  validation document; the interface was not changed.
+- **MPI.** Multi-process runs never worked in this source: the domain
+  decomposition is switched off in `ParallelDiv`. The solver now refuses to
+  start on more than one process instead of corrupting memory.
+- **Kubo DOS.** Run-to-run differences are the expected noise of a
+  clock-seeded random-phase state; `setSeed`/`seedValue` make runs
+  reproducible. The recursion DOS of graphene agrees with the exact result
+  within its statistical error.
+- **`WriteDataFiles .true.`** no longer stops at the hopping table.
+- **Harness.** `run_examples.sh` gained three checks: `hamiltonian_tables`,
+  `kubo_graphene_dos`, and `two_mpi_processes`.
 
 Sections 1, 5, and 6 below describe the state before this work; where they
 mention the test copy or a `grabnes_testrun` executable, this section

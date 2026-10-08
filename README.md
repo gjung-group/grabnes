@@ -38,7 +38,7 @@ reference data:
 
 ```sh
 ./grabnes_testrun/smoke_test.sh      # build + graphene bands
-./grabnes_testrun/run_examples.sh    # build + all four examples
+./grabnes_testrun/run_examples.sh    # build + all four examples + solver checks
 ```
 
 Tested compilers, measured results, and known limitations are recorded in
@@ -54,7 +54,8 @@ Tested compilers, measured results, and known limitations are recorded in
 | [`04_twisted_bilayer_dos`](examples/04_twisted_bilayer_dos/) | Small commensurate twisted-bilayer density of states |
 
 Each directory contains an input file, launcher, plotting script, explanation,
-and known-good reference data. See the [examples guide](examples/README.md) for
+and reference data. GRABNES currently runs on a single MPI process; use OpenMP
+threads (Intel build) for parallel execution. See the [examples guide](examples/README.md) for
 runtime and executable-selection details.
 
 ## Repository layout

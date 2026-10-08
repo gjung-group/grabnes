@@ -48,6 +48,9 @@ GRABNES accepts the input filename as its first argument:
 bin/grabnes Gendata.in > job.out
 ```
 
+Start it with a single MPI process. The MPI domain decomposition is disabled
+in this version and the program stops when it is given more than one.
+
 For a minimal calculation with reference output, see
 [`../examples/01_graphene_bands`](../examples/01_graphene_bands/). To build
 and check all examples in one step, run `../grabnes_testrun/run_examples.sh`.
