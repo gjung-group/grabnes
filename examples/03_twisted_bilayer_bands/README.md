@@ -10,24 +10,26 @@ This example is a regression test of one specific Hamiltonian; it is not
 independent evidence that this Hamiltonian is the best description of twisted
 bilayer graphene.
 
-- Intralayer: nearest-neighbor hopping only, -2.9888 eV (the default
-  `TB.Hopping` for a lattice parameter of 2.46 A). `Gendata.in` requests this
-  explicitly with `Neigh.CutAtNN3` and by setting the second- and
-  third-neighbor F2G2 hoppings to zero.
-- Interlayer: two-center form with `vpppi0` = 3.5 eV, `vppsigma0` = 0.48 eV,
-  decay length 0.184 a, interlayer distance 3.34 A, for pairs up to 9.69 A
-  apart in the plane.
+- Intralayer: nearest-neighbor hopping only (`TB.NeighLevels 1`), -2.9888 eV,
+  the default `TB.Hopping` for a lattice parameter of 2.46 A.
+- Interlayer: two-center form of Moon and Koshino, Phys. Rev. B 85, 195458
+  (2012), with `vppsigma0` = 0.48 eV, decay length 0.184 a, interlayer distance
+  3.34 A, for pairs up to 9.69 A apart in the plane. `vpppi0` is 3.5 eV rather
+  than their 2.7 eV. This is a deliberate calibration aimed at a more realistic
+  Dirac velocity; it acts on the velocity when the intralayer hopping also
+  follows the two-center form (`KoshinoIntralayer .true.`), and has a
+  negligible effect in this example, whose velocity is set by `TB.Hopping`.
 
-GRABNES uses the F2G2 intralayer model by default (remove those three lines
-and set `TB.NeighLevels 5`). It moves the Dirac point to about -0.33 eV and
-the band edges by more than 2 eV, and has no reference data yet. The active
-terms, an independent reconstruction accurate to 1e-4 eV, and the assessment
-of the F2G2 variant are documented in
+`TB.NeighLevels` is the number of intralayer neighbor shells. With
+`TB.NeighLevels 5` GRABNES uses its F2G2 intralayer model, which moves the
+Dirac point to about -0.33 eV and the band edges by more than 2 eV; it is
+checked against an independent implementation but has no reference data here.
+
+The reference data were regenerated in October 2026 after the neighbor search
+was corrected (changes up to 1e-4 eV). The solver reproduces an independently
+built Hamiltonian for this example to 4e-16 eV per matrix element; details are
+in
 [`docs/development/cluster-build-and-validation.md`](../../docs/development/cluster-build-and-validation.md).
-
-The relatively large twist angle is intentional: it keeps this tutorial
-calculation small enough for a laptop. Near-magic-angle cells contain thousands
-of atoms and are production calculations, not installation checks.
 
 ## Run
 

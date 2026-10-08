@@ -26,16 +26,11 @@ DOS.Emax 4.0
 Neigh.fastNNnotsquare .true.
 Neigh.LayerNeighbors 100
 Neigh.LayerDistFactor 6.2
-TB.NeighLevels 3
 
-# Intralayer model of the reference data: nearest-neighbor hopping only.
-# The neighbor search stops at the third shell and the second- and
-# third-neighbor F2G2 terms are switched off. Remove these three lines (and
-# raise TB.NeighLevels to 5) for the full F2G2 intralayer model, which gives
-# different bands and therefore needs its own reference data.
-Neigh.CutAtNN3 .true.
-SingleLayert2KSL 0.0
-SingleLayert3K 0.0
+# Intralayer model: nearest-neighbor hopping only (one neighbor shell).
+# TB.NeighLevels 5 selects the full F2G2 intralayer model instead, which gives
+# different bands and has no reference data here.
+TB.NeighLevels 1
 
 WriteDataFiles .false.
 WritePos .false.
