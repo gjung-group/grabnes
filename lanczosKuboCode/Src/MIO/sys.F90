@@ -79,6 +79,9 @@ subroutine SysKill(message,module,func,hold)
    end if
    call SysPrintErrors()
    call SysPrint('*** PROGRAM ABORTED')
+   ! MPI_Abort may end the process without flushing buffered output; make
+   ! sure the error message above is written first.
+   flush(6)
 #ifdef MPI
    call MPI_Abort(MPI_COMM_WORLD,1,ierr)
 #endif /* MPI */
@@ -295,6 +298,9 @@ subroutine SysKillFlush()
    if (nerr==0) return
    call SysPrintErrors()
    call SysPrint('*** PROGRAM ABORTED')
+   ! MPI_Abort may end the process without flushing buffered output; make
+   ! sure the error message above is written first.
+   flush(6)
 #ifdef MPI
    call MPI_Abort(MPI_COMM_WORLD,1,ierr)
 #endif /* MPI */
