@@ -1,62 +1,42 @@
-# GRABNES isolated build report
+# Historical build report: Apple Silicon test copy (September 2026)
 
-Tested on 2026-09-26 on an Apple Silicon (arm64) MacBook Pro running
-macOS 26.5.2. Build products are contained under this test directory and are
-excluded from Git by the local `.gitignore`.
+> **Historical record, not current validation.** This report describes a test
+> performed on 2026-09-26 on an Apple Silicon (arm64) MacBook Pro running
+> macOS 26.5.2, with a **separately patched copy of the solver** that used to
+> live in `grabnes_testrun/lanczosKuboCode/`. That copy has been removed. The
+> report is not evidence that the canonical `lanczosKuboCode/` sources were
+> tested on macOS or on Linux.
+>
+> Current build instructions, results, and limitations are in
+> [`docs/development/cluster-build-and-validation.md`](../docs/development/cluster-build-and-validation.md);
+> the harness is described in [`README.md`](README.md).
 
-## Result
+## What was tested then
 
-- Native arm64 compilation: **PASS**
-- `examples/01_graphene_bands` execution: **PASS**
-- Program summary: `0 errors, 0 warnings`
-- Output comparison: **PASS**, byte-for-byte identical to
-  `reference/bands.dat`
-- SHA-256 of both files:
-  `312203821daaa76b6f9891988b3a4d59f78e1e7cfc0dc0011a262d394e8c9df8`
+- Native arm64 compilation of the test copy with Homebrew GCC 16.2,
+  Open MPI 5.0.11, ARPACK 3.9.1_1, and OpenBLAS 0.3.34, using
+  `-O0 -g -fcheck=all -fbacktrace` and no OpenMP directives. The configuration
+  is preserved as [`config/macos-homebrew.make.sys`](config/macos-homebrew.make.sys).
+- `examples/01_graphene_bands`: the program reported `0 errors, 0 warnings`
+  and `generate.bands` was byte-for-byte identical to `reference/bands.dat`
+  (SHA-256 `312203821daaa76b6f9891988b3a4d59f78e1e7cfc0dc0011a262d394e8c9df8`).
 
-Run the complete clean-build smoke test with:
+## What happened to the changes made in that copy
 
-```sh
-cd /path/to/grabnes/grabnes_testrun
-./smoke_test.sh
-```
+| Change in the test copy | Status in the canonical solver |
+| --- | --- |
+| `.eq.` between logicals replaced by `.eqv.` (`calc.F90`, `diag.F90`) | Applied |
+| Unreachable self-aliasing `move_alloc` block removed (`diag.F90`) | Applied |
+| `size()` of the unassociated MPI receive list guarded (`ham.F90`) | Applied, extended to `calc.F90`, and the list pointers are now initialized to `NULL()` |
+| Array size taken before deallocation in the memory accounting (`MIO/mem_temp.f90`) | Applied |
+| 1024-character file-name buffers in the two code generators | Applied |
+| `-fallow-argument-mismatch`, `-ffree-line-length-none` | In `make.sys.example` |
+| `-std=legacy` | Not needed; not used |
+| `-DTIMER` given explicitly | No longer needed: the Makefile adds it as it was always meant to |
+| OpenMP directives disabled, `libgomp` linked | Kept for GNU Fortran, see the validation document |
+| `nonBulkSmall .true.` and `WriteDataFiles .false.` in the graphene input | Already part of `examples/01_graphene_bands/Gendata.in` |
+| `WritePos .true.` in the test copy of the graphene input | Not kept; the canonical input uses `.false.` |
 
-## Local toolchain
-
-The test uses native Homebrew installations of GCC/GFortran, Open MPI, ARPACK,
-and OpenBLAS. `lanczosKuboCode/make.sys` resolves Homebrew library prefixes at
-build time and obtains the compiler commands from `PATH`; no Homebrew prefix or
-checkout location is hard-coded.
-
-## Compatibility changes made only in this test copy
-
-The source snapshot required several updates for current GFortran. None of
-these changes were applied to the public repository during this test.
-
-1. Legacy MPI argument mismatches are accepted with
-   `-fallow-argument-mismatch`.
-2. Old logical comparisons using `.eq.` were changed to `.eqv.` in
-   `Src/diag.F90` and `Src/calc.F90`.
-3. An unreachable, self-aliasing `move_alloc` block was removed from
-   `Src/diag.F90`.
-4. An unassociated one-process MPI receive-list pointer is guarded before
-   calling `size()` in `Src/ham.F90`.
-5. Memory accounting now obtains an allocation's size before deallocating it
-   in `Src/MIO/mem_temp.f90`.
-6. The two-atom example selects the small-cell neighbor routine with
-   `nonBulkSmall .true.` and disables optional verbose data files. The latter
-   avoids the legacy MIO formatted-record limit of 80 characters.
-7. OpenMP directives remain disabled for this conservative test build, while
-   `libgomp` is linked because the source calls OpenMP query functions.
-8. The legacy MIO code generators use larger filename buffers so the harness
-   also works from a deeply nested checkout path.
-
-The checked build deliberately uses `-O0 -g -fcheck=all -fbacktrace` so bounds,
-pointer, and other runtime errors are detected during the smoke test.
-
-## Remaining modernization note
-
-The generated legacy MPI wrappers compile with argument rank/type warnings.
-They did not prevent the one-process example from producing the exact reference
-result, but should be modernized before treating a warning-free build as a
-release requirement.
+The test copy only ever ran the two-atom graphene example. The additional
+defects found when the canonical solver was built with optimization and run on
+all four examples on Linux are listed in the validation document.

@@ -13,14 +13,7 @@ moire calculations.
 ## Quick start
 
 First compile GRABNES so that the executable is available at
-`lanczosKuboCode/bin/grabnes`. During pre-announcement testing, collaborators
-can instead build the verified test copy once:
-
-```sh
-./grabnes_testrun/smoke_test.sh
-```
-
-The example launchers find either executable automatically. Then run:
+`lanczosKuboCode/bin/grabnes` (see the repository README). Then run:
 
 ```sh
 cd examples/01_graphene_bands
@@ -38,3 +31,11 @@ Each example contains its input, a short explanation, a plotting script, and
 reference data from a known-good calculation. Examples 01 and 02 run in a few
 seconds; examples 03 and 04 use a small, 76-atom commensurate twisted bilayer
 so they remain practical laptop checks rather than production calculations.
+
+All four examples use exact diagonalization and must be run with a single MPI
+process. To check every example against its reference data in one step,
+without writing into this directory, use:
+
+```sh
+./grabnes_testrun/run_examples.sh
+```

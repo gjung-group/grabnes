@@ -1,18 +1,4 @@
-# Compiler and linker output
-lanczosKuboCode/build/
-lanczosKuboCode/bin/
-
-# Generated smoke-test output
-examples/*/job.out
-examples/*/generate.*
-examples/*/kpath_debug_*
-examples/*/BfactorExp.dat
-examples/*/HAB
-examples/*/dx
-examples/*/dy
-examples/*/dz
-examples/*/pos
-examples/*/v
-examples/*/*.png
-examples/*/__pycache__/
-examples/*/*.pyc
+# The harness builds and runs in a temporary directory outside the checkout.
+# This entry only covers an optional in-tree work directory, for example
+#   ./grabnes_testrun/run_examples.sh --work-dir grabnes_testrun/work
+work/
