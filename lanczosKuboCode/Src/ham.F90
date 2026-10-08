@@ -298,6 +298,14 @@ subroutine HamInit()
    call MIO_Print('We use Neigh.fastNNnotsquare by default. This one works as long as the system size is large enough. Otherwise, one has to use one of the specialized routines, for instance when working on commensurate cells that contain less than 10 atoms.','ham')
    call MIO_InputParameter('Neigh.fastNNnotsquareNotRectangle',lll,.false.)
    call MIO_Print('aG ='//trim(num2str(aG)),'ham')
+   if (l .or. ((.not. ll) .and. lll)) then
+      ! fastNN and fastNNnotsquareNotRectangle store the binned atoms in arrays
+      ! of fixed capacity and read past their end as soon as a bin is full,
+      ! which happens for every graphene supercell tested. Refuse them.
+      call MIO_Kill('Neigh.fastNN and Neigh.fastNNnotsquareNotRectangle are not supported: '// &
+        'their binning overruns its arrays. Use the default search (remove these '// &
+        'switches); it handles non-rectangular and small cells.','ham','HamInit')
+   end if
    if (l) then
       aCC = aG/sqrt(3.0_dp)
       cutoff = 1.2_dp

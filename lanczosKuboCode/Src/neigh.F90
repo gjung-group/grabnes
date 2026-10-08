@@ -100,6 +100,9 @@ subroutine NeighSearchLayered(natoms,x,y,z,A1,A2,cut2intra,cut2inter,periodicZ,A
    logical :: keep
    integer, allocatable :: cidx(:), cu(:,:), head(:,:), next(:)
 
+#ifdef TIMER
+   call MIO_TimerCount('nsearch')
+#endif /* TIMER */
    det = A1(1)*A2(2) - A1(2)*A2(1)
    if (abs(det) < tiny(1.0_dp)) call MIO_Kill('The in-plane lattice vectors are parallel','neigh','NeighSearchLayered')
    rmax = sqrt(max(cut2intra,cut2inter))
@@ -236,6 +239,9 @@ subroutine NeighSearchLayered(natoms,x,y,z,A1,A2,cut2intra,cut2inter,periodicZ,A
    call MIO_Print('Neighbour search: '//trim(num2str(minval(Nneigh)))//' to '// &
      trim(num2str(maxval(Nneigh)))//' neighbours per atom, '// &
      trim(num2str(sum(Nneigh)))//' in total','neigh')
+#ifdef TIMER
+   call MIO_TimerStop('nsearch')
+#endif /* TIMER */
 
 end subroutine NeighSearchLayered
 
@@ -957,7 +963,7 @@ subroutine NeighListOld()
 
    call MIO_InputParameter('LatticeParameter',alatt,2.46_dp)
    r0 = alatt/sqrt(3.0_dp)
-   call MIO_InputParameter('Neigh.Distance',r0,r0)
+   call MIO_InputParameter('Neigh.Distance',r0,alatt/sqrt(3.0_dp))
    r0 = r0*1.1_dp
    call MIO_InputParameter('Neigh.CompareAll',small,.false.)
 
