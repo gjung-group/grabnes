@@ -13,6 +13,10 @@ examples linked from the repository README.
    development/building-documentation
    development/cluster-build-and-validation
    development/functionality-status
+   development/release-readiness
+   development/licensing-audit
+   development/citation-checklist
+   development/software-paper-outline
    development/soc-implementation
    development/tapw-chern-optimization
    development/known-issues/berry-curvature

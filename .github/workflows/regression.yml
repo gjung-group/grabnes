@@ -3,8 +3,9 @@
 #
 # STATUS: written on a development branch and NOT yet exercised on GitHub.
 # The suite itself is validated on Fedora 36 with GNU Fortran 12.2 + Intel MPI
-# and with Intel Fortran; the Ubuntu packages and Open MPI below are untested.
-# Expect to adjust it on the first run.
+# and with Intel Fortran; the Ubuntu packages and Open MPI below are untested,
+# and the workflow could not be reproduced locally in a container. Expect to
+# adjust it on the first run (see docs/development/release-readiness.md).
 name: regression
 
 on:

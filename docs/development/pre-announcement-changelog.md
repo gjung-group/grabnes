@@ -144,6 +144,28 @@ details, measured results, and limitations are in
   workflow added but not yet run; no license file (and conflicting license
   statements) and no citation file remain release blockers.
 
+### Release preparation (2026-10-09)
+
+- **Scope.** Physics development is frozen. The four examples are the
+  acceptance criterion for the first release: from a clean clone the
+  documented build succeeds, all four run, reproduce their reference data
+  (bands byte-identical, DOS within 5e-16), and their plotting scripts work.
+- **Effective graphene/hBN model.** Its on-site and bond terms agree with the
+  published expressions, but its stored hopping table is not Hermitian. The
+  solver now reports the asymmetry; `Hopping.Symmetrize` is an optional
+  remedy, off by default. No further change is planned here: the correction
+  is maintained outside this repository.
+- **`GBNtwoLayers`** is left untouched; the single statement of this series
+  inside its branch was restored to the original. `Graphene_Over_BN` is
+  documented as legacy.
+- **Repository cleanup.** 45 tracked macOS executables, 38 duplicated
+  notebook checkpoints, and a `.DS_Store` removed; `.gitignore` extended.
+- **Documents added:** new root README, `release-readiness.md`,
+  `licensing-audit.md`, `citation-checklist.md`, `software-paper-outline.md`,
+  and an index of the development documentation.
+- **Open:** license, author list and citation file, first run of the CI
+  workflow, and whether the notebook collections stay in this repository.
+
 Sections 1, 5, and 6 below describe the state before this work; where they
 mention the test copy or a `grabnes_testrun` executable, this section
 supersedes them.
