@@ -3,7 +3,7 @@
 This page records how the canonical solver (`lanczosKuboCode/`) was built and
 validated on a Linux cluster in October 2026, which defects had to be fixed
 first, and what remains unverified. It replaces the Apple Silicon report of
-September 2026 (`grabnes_testrun/BUILD_REPORT.md`) as the reference for the
+September 2026 (`tests/regression/BUILD_REPORT.md`) as the reference for the
 current source tree.
 
 Everything below was measured; nothing is carried over from the earlier report.
@@ -52,8 +52,8 @@ make -C lanczosKuboCode MAKE_SYS=/path/to/make.sys \
 | Configuration | Flags | Result |
 | --- | --- | --- |
 | GNU, optimized (`make.sys.example`) | `-O3 -g -DMPI -DPOINTER_SIZE=8 -ffree-line-length-none -fallow-argument-mismatch`, link `-fopenmp`, `-larpack -llapack -lblas` | builds, about 70 s on one core |
-| GNU, checked (`grabnes_testrun/config/gfortran.debug.make.sys`) | as above with `-O0 -g -fcheck=all -fbacktrace` | builds, about 25 s |
-| Intel (`grabnes_testrun/config/intel.make.sys`) | `-O2 -g -traceback -DMPI -qopenmp -DPOINTER_SIZE=8`, `-larpack -qmkl=sequential` | builds, about 150 s, no diagnostics |
+| GNU, checked (`tests/regression/config/gfortran.debug.make.sys`) | as above with `-O0 -g -fcheck=all -fbacktrace` | builds, about 25 s |
+| Intel (`tests/regression/config/intel.make.sys`) | `-O2 -g -traceback -DMPI -qopenmp -DPOINTER_SIZE=8`, `-larpack -qmkl=sequential` | builds, about 150 s, no diagnostics |
 | `ifx` | | not tested |
 | GNU on Ubuntu 22.04 (GitHub Actions) | `make.sys.example` with GNU Fortran 11.4.0, Open MPI 4.1.2, reference BLAS/LAPACK, ARPACK | builds; all regression checks pass |
 
@@ -76,10 +76,10 @@ and was deliberately not done here.
 ## Tests
 
 ```sh
-./grabnes_testrun/smoke_test.sh        # build + example 01
-./grabnes_testrun/run_examples.sh      # build + examples 01-04 + solver checks
-./grabnes_testrun/run_examples.sh --debug
-./grabnes_testrun/run_examples.sh --make-sys grabnes_testrun/config/intel.make.sys
+./tests/regression/smoke_test.sh        # build + example 01
+./tests/regression/run_examples.sh      # build + examples 01-04 + solver checks
+./tests/regression/run_examples.sh --debug
+./tests/regression/run_examples.sh --make-sys tests/regression/config/intel.make.sys
 python3 -m pytest tests/tapw
 ```
 

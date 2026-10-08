@@ -60,4 +60,4 @@ physical adequacy of those rules or parameters. The Bloch convention and the
 results for the public examples are described in
 [`docs/development/cluster-build-and-validation.md`](../../docs/development/cluster-build-and-validation.md).
 The regression suite runs the script for three cases
-(`grabnes_testrun/run_examples.sh`).
+(`tests/regression/run_examples.sh`).

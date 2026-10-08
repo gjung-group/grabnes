@@ -37,5 +37,5 @@ process. To check every example against its reference data in one step,
 without writing into this directory, use:
 
 ```sh
-./grabnes_testrun/run_examples.sh
+./tests/regression/run_examples.sh
 ```

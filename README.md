@@ -70,7 +70,7 @@ make
 
 The executable is `lanczosKuboCode/bin/grabnes`. `make.sys` is your local,
 untracked configuration; `make.sys.example` is a working GNU Fortran setup and
-`grabnes_testrun/config/intel.make.sys` an Intel one. Details, including
+`tests/regression/config/intel.make.sys` an Intel one. Details, including
 out-of-tree builds, are in [`lanczosKuboCode/README.md`](lanczosKuboCode/README.md).
 
 With GNU Fortran the OpenMP directives are not compiled (the compiler rejects
@@ -103,8 +103,8 @@ seconds on one core. See the [examples guide](examples/README.md).
 ## Testing and reproducibility
 
 ```sh
-./grabnes_testrun/smoke_test.sh      # build + example 01
-./grabnes_testrun/run_examples.sh    # build + the four examples + further checks
+./tests/regression/smoke_test.sh      # build + example 01
+./tests/regression/run_examples.sh    # build + the four examples + further checks
 python3 -m pytest tests/tapw         # TAPW linear-algebra conventions (Python only)
 ```
 
@@ -115,7 +115,7 @@ The scripts build the solver in a temporary directory, never in the source
 tree, run the example inputs, and compare the results numerically with the
 reference data (bands within 2e-6 eV, DOS within 1e-9 relative). They also
 compare the assembled Hamiltonian, entry by entry, with one constructed
-independently in Python. [`grabnes_testrun/README.md`](grabnes_testrun/README.md)
+independently in Python. [`tests/regression/README.md`](tests/regression/README.md)
 describes every check; measured results for both compilers are in
 [`docs/development/cluster-build-and-validation.md`](docs/development/cluster-build-and-validation.md).
 
@@ -143,7 +143,7 @@ describes every check; measured results for both compilers are in
 
 - [`examples/README.md`](examples/README.md): the supported calculations.
 - [`lanczosKuboCode/README.md`](lanczosKuboCode/README.md): building and running.
-- [`grabnes_testrun/README.md`](grabnes_testrun/README.md): the regression suite.
+- [`tests/regression/README.md`](tests/regression/README.md): the regression suite.
 - [`docs/development/`](docs/development/): validation report, functionality
   status, release-readiness checklist, licensing audit, and development log;
   [`docs/development/README.md`](docs/development/README.md) is the index.
@@ -151,8 +151,8 @@ describes every check; measured results for both compilers are in
   notes on TAPW and spin-orbit input (research functionality).
 - [`tools/`](tools/): analysis scripts, including the independent Hamiltonian
   check.
-- `PyBinding/`, `LAMMPSNotebooks/`, `usefulGeneralScripts/`: research material
-  of the group that is not part of the supported interface.
+- `usefulGeneralScripts/`: research scripts of the group that are not part of
+  the supported interface.
 
 ## Authors and maintenance
 

@@ -12,6 +12,6 @@ Note: GDIS does not seem to be maintained anymore.
 
 Other ways to generate twisted bilayer systems:
 - Code by Manish Group (called Twister)
-- The small piece of code at the beginning of the PyBinding notebook on twisted bilayer systems.
+- The small piece of code at the beginning of the PyBinding notebook on twisted bilayer systems (the `PyBinding/` notebooks are no longer part of this repository; see its Git history).
 
 The PyBinding notebook can read any of these systems as long as they are in .xyz format where the usually obsolete second line is used to pass the cell definition information.

@@ -8,7 +8,7 @@ more than what the listed test establishes. Details and numbers are in
 ## Validated
 
 Compiles, runs, and has a numerical regression test or an independent check in
-`grabnes_testrun/run_examples.sh`.
+`tests/regression/run_examples.sh`.
 
 | Capability | Evidence | Limits |
 | --- | --- | --- |

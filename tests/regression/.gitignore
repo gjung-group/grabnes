@@ -1,0 +1,4 @@
+# The harness builds and runs in a temporary directory outside the checkout.
+# This entry only covers an optional in-tree work directory, for example
+#   ./tests/regression/run_examples.sh --work-dir tests/regression/work
+work/

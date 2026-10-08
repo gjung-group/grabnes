@@ -48,7 +48,7 @@ recorded in `CITATION.cff`; it is not a statement about who holds copyright.
 | --- | --- | --- |
 | Agreement of the co-authors with `GPL-3.0-or-later` for the solver sources that carry no notice | Jeil Jung, Rafael Martinez-Gordillo | `lanczosKuboCode/Src/*.F90`, `*.f90`, `Utils/`, the Makefiles |
 | Whether copyright headers are added to those sources, and naming whom | the three authors and, where applicable, their institutions | same |
-| Terms for the research material | maintainer | `LAMMPSNotebooks/`, `PyBinding/`, `usefulGeneralScripts/`: notebooks, data and scripts without notices, currently covered by the repository license by default |
+| Terms for the remaining research material | maintainer | `usefulGeneralScripts/`, tutorial notebooks: scripts and notebooks without notices, currently covered by the repository license by default |
 | Contributions of other group members named in source comments | maintainer | `ham.F90` and others |
 
 None of these prevents distribution under the GPL as it stands; they are the
@@ -66,9 +66,9 @@ points on which a written record would be prudent before a formal release.
 | Solver sources | `lanczosKuboCode/Src/*.F90`, `*.f90` (27 files) | no copyright or license header | `ham.F90` names as authors "Rafael Martinez-Gordillo (original), Nicolas (modifications), Jinwoo (current version)". The solver descends from the same 2012 code ("Kubo3") as the two libraries |
 | Four utility routines | end of `lanczosKuboCode/Src/ham.F90` (`cosine_transform_data`, `cosine_transform_inverse`, `r8vec_uniform_01`, `timestamp`) | "Author: John Burkardt ... distributed under the GNU LGPL license" | Third-party code; notices must be kept |
 | Commented-out routines | `lanczosKuboCode/Src/kubo.F90`, about lines 420 to 540 | comment "Fait appel a tqli.f, donc aussi a pythag.f (Numerical Recipes)" followed by the routines as comments | Not compiled, but the text of Numerical Recipes routines is not freely redistributable |
-| `fracToCart.py` (eleven copies) | `LAMMPSNotebooks/`, `PyBinding/` | "Copyright (c) 2014, Gavin Heverly-Coulson" with a two-clause BSD-style text | Third-party script; notice must be kept with the file |
+| `fracToCart.py` | `lanczosKuboCode/docs/notebooks/` (ten further copies were under `LAMMPSNotebooks/` and `PyBinding/`, removed since) | "Copyright (c) 2014, Gavin Heverly-Coulson" with a two-clause BSD-style text | Third-party script; notice must be kept with the file |
 | Sphinx configuration | `docs/conf.py`, `lanczosKuboCode/docs/conf.py` | author "Jeil Jung Group"; copyright "2022, Nicolas Leconte" | Metadata only |
-| Notebooks, data, scripts | `LAMMPSNotebooks/`, `PyBinding/`, `usefulGeneralScripts/` | none | Authorship and reuse terms not stated |
+| Notebooks, data, scripts | `usefulGeneralScripts/`, `lanczosKuboCode/docs/notebooks/` (`LAMMPSNotebooks/` and `PyBinding/` were removed from the repository after the audit) | none | Authorship and reuse terms not stated |
 
 Libraries that are linked but not distributed with GRABNES (BLAS, LAPACK,
 ARPACK, MPI) impose no condition on the source distribution; their own

@@ -90,8 +90,7 @@ capabilities outside that set are released as research code.
 | --- | --- | --- |
 | Tracked executables removed | Complete | 45 `a.out` files |
 | Duplicated notebook checkpoints and `.DS_Store` removed; `.gitignore` extended | Complete | |
-| `LAMMPSNotebooks/` (about 380 MB) and `PyBinding/` (about 120 MB) in the software repository | Optional | research material, not used by the solver or the tests; kept for this release by decision of the maintainer. A separate repository would make the code repository about 20 times smaller |
-| Two notebook checkpoints without a live notebook | Maintainer decision | `PyBinding/twistedBilayerGraphene/.ipynb_checkpoints/` |
+| `LAMMPSNotebooks/` and `PyBinding/` | Complete | removed from the repository (about 500 MB of research notebooks and data that the solver and the tests did not use); they remain in the Git history |
 | Absolute paths in three tutorial notebooks | Optional | outputs of earlier runs |
 | Size of the Git history | Optional | unchanged; rewriting history was not attempted |
 

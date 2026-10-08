@@ -24,7 +24,7 @@ make
 The executable is written to `bin/grabnes`. The local `make.sys`, `build/`,
 and `bin/` paths are ignored by Git; keep machine-specific paths in `make.sys`.
 An Intel Fortran configuration that has been tested is
-`../grabnes_testrun/config/intel.make.sys`. The files under `Sys/` are
+`../tests/regression/config/intel.make.sys`. The files under `Sys/` are
 historical site configurations with absolute paths and are kept only as
 starting points.
 
@@ -62,7 +62,7 @@ in this version and the program stops when it is given more than one.
 
 For a minimal calculation with reference output, see
 [`../examples/01_graphene_bands`](../examples/01_graphene_bands/). To build
-and check all examples in one step, run `../grabnes_testrun/run_examples.sh`.
+and check all examples in one step, run `../tests/regression/run_examples.sh`.
 
 ## Clean
 

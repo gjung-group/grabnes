@@ -13,7 +13,7 @@ GPL because all of those terms permit it.
 | Math library | `lanczosKuboCode/Src/math/` | same notice | same |
 | Solver build file | `lanczosKuboCode/Src/Makefile` | "Kubo3 Makefile, Copyright (C) 2012 Rafael Martinez-Gordillo" | no separate terms stated; distributed with the solver |
 | `cosine_transform_data`, `cosine_transform_inverse`, `r8vec_uniform_01`, `timestamp` | end of `lanczosKuboCode/Src/ham.F90` | Author: John Burkardt; "distributed under the GNU LGPL license" | GNU Lesser GPL, no version specified. The LGPL permits use in a GPL-licensed program. License text: `COPYING.LESSER` (version 3), which supplements `LICENSE` |
-| `fracToCart.py` | eleven copies under `LAMMPSNotebooks/` and `PyBinding/` | Copyright (c) 2014, Gavin Heverly-Coulson, with the conditions and disclaimer of a two-clause BSD license in each file | Two-clause BSD license as printed in the files; the notice must stay with them |
+| `fracToCart.py` | `lanczosKuboCode/docs/notebooks/fracToCart.py` | Copyright (c) 2014, Gavin Heverly-Coulson, with the conditions and disclaimer of a two-clause BSD license in the file | Two-clause BSD license as printed in the file; the notice must stay with it |
 
 Libraries that are linked at build time but not distributed with GRABNES:
 

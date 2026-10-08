@@ -15,7 +15,7 @@
 Terms used throughout:
 
 - **Implemented**: the code exists.
-- **Tested**: it runs and passes defined checks in `grabnes_testrun/`.
+- **Tested**: it runs and passes defined checks in `tests/regression/`.
 - **Independently validated**: results were checked against an analytic
   result or a second implementation.
 - **Research / experimental**: present without sufficient validation for

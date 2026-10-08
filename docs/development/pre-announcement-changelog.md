@@ -176,6 +176,16 @@ details, measured results, and limitations are in
   of an aborting run was lost; standard output is now flushed before
   `MPI_Abort`.
 
+### Repository structure (after the merge into `main`)
+
+- `LAMMPSNotebooks/` and `PyBinding/` removed. They held research notebooks,
+  structures, and data (about 500 MB) that the solver, the examples, and the
+  tests did not use. Their contents remain in the Git history.
+- The regression harness moved from `grabnes_testrun/` to `tests/regression/`
+  with all its checks; the commands are now
+  `./tests/regression/smoke_test.sh` and `./tests/regression/run_examples.sh`.
+  Earlier entries of this log use the old path.
+
 Sections 1, 5, and 6 below describe the state before this work; where they
 mention the test copy or a `grabnes_testrun` executable, this section
 supersedes them.

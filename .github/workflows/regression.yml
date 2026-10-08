@@ -1,5 +1,5 @@
 # Builds the canonical solver with GNU Fortran and Open MPI on Ubuntu, runs the
-# four supported examples and the further checks of grabnes_testrun, and
+# four supported examples and the further checks of tests/regression, and
 # compares the results with the committed reference data. Any build failure,
 # solver error, or deviation beyond the tolerances fails the job.
 name: regression
@@ -49,7 +49,7 @@ jobs:
         # The work directory is kept so that later steps can reuse the executable.
         run: |
           set -o pipefail
-          ./grabnes_testrun/run_examples.sh --work-dir "$RUNNER_TEMP/grabnes" 2>&1 | tee "$RUNNER_TEMP/suite.log"
+          ./tests/regression/run_examples.sh --work-dir "$RUNNER_TEMP/grabnes" 2>&1 | tee "$RUNNER_TEMP/suite.log"
 
       - name: Run the example launchers and plotting scripts
         # Informative only: a plotting problem must not hide a numerical result.

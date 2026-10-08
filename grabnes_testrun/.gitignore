@@ -1,4 +1,0 @@
-# The harness builds and runs in a temporary directory outside the checkout.
-# This entry only covers an optional in-tree work directory, for example
-#   ./grabnes_testrun/run_examples.sh --work-dir grabnes_testrun/work
-work/
