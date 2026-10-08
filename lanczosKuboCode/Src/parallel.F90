@@ -28,6 +28,14 @@ subroutine ParallelDiv()
    call MPIAllGather(numThreads,1,nTh,1,MPI_INTEGER)
    nDiv = 1
    nTh = 1
+   ! With nDiv forced to 1 the first process owns every atom and the others
+   ! own none, while most routines still loop over all atoms on every
+   ! process. Stop here instead of overrunning the per-process arrays.
+   if (nProc > 1) then
+      call MIO_Kill('This version of GRABNES must be run with a single MPI '// &
+        'process: the MPI domain decomposition is disabled. Use OpenMP '// &
+        'threads for parallel execution.','parallel','ParallelDiv')
+   end if
 #else
    nDiv = numThreads
    call MIO_Allocate(nTh,1,'nTh','parallel')

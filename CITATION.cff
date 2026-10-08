@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: >-
+  If you use GRABNES, please cite the software using the metadata below,
+  together with the exact version or Git commit that you used.
+type: software
+title: "GRABNES: Graphene and Boron Nitride Electronic Structure"
+abstract: >-
+  GRABNES is a Fortran code for real-space tight-binding calculations of the
+  electronic structure and quantum transport of graphene, hexagonal boron
+  nitride, and the layered and moire systems built from them. It constructs
+  atomistic Hamiltonians and solves them by exact diagonalization (band
+  structures, densities of states) or by Lanczos recursion on large cells.
+authors:
+  - family-names: Jung
+    given-names: Jeil
+  - family-names: Martinez-Gordillo
+    given-names: Rafael
+  - family-names: Leconte
+    given-names: Nicolas
+contact:
+  - family-names: Leconte
+    given-names: Nicolas
+repository-code: "https://github.com/gjung-group/grabnes"
+url: "https://github.com/gjung-group/grabnes"
+license: GPL-3.0-or-later
+keywords:
+  - tight-binding
+  - electronic structure
+  - quantum transport
+  - graphene
+  - hexagonal boron nitride
+  - moire materials
+  - twisted bilayer graphene

@@ -5,12 +5,24 @@
 #   make
 #
 # Required packages: GNU Fortran, MPI, BLAS, LAPACK, and ARPACK.
+# make.sys is ignored by Git; keep machine-specific paths there, not here.
+#
+# -ffree-line-length-none     the sources contain lines longer than 132 columns
+# -fallow-argument-mismatch   the legacy MPI wrappers pass buffers of several
+#                             types to the same MPI routine (GNU Fortran >= 10;
+#                             remove this flag for older compilers)
+#
+# OpenMP directives are deliberately not enabled here: GNU Fortran rejects the
+# POINTER arrays used in several OpenMP REDUCTION clauses of Src/diag.F90, so
+# adding -fopenmp to FCFLAGS does not compile. The OpenMP runtime is still
+# linked (LDFLAGS) because the sources call its query functions.
 
 F90 = mpif90
 F90_SERIAL = gfortran
-FCFLAGS = -O3 -g -DMPI -fopenmp -DPOINTER_SIZE=8
+FCFLAGS = -O3 -g -DMPI -DPOINTER_SIZE=8 \
+          -ffree-line-length-none -fallow-argument-mismatch
 ARFLAGS = rc
 
 INCFLAGS =
 LIBS = -larpack -llapack -lblas
-LDFLAGS =
+LDFLAGS = -fopenmp

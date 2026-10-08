@@ -1,18 +1,12 @@
 #!/bin/sh
+# Minimal GRABNES check: build the canonical solver and reproduce the pristine
+# graphene band structure. See README.md in this directory.
 set -eu
 
-test_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-source_dir="$test_root/lanczosKuboCode"
-example_dir="$test_root/examples/01_graphene_bands"
+. "$(dirname -- "$0")/lib/common.sh"
+parse_args "$@"
+harness_main
 
-(
-    cd "$source_dir"
-    make clean
-    make
-)
+run_example 01_graphene_bands generate.bands bands.dat bands "$bands_atol" "$bands_rtol"
 
-rm -f "$example_dir/generate.bands" "$example_dir/job.out"
-GRABNES_BIN="$source_dir/bin/grabnes" "$example_dir/run.sh"
-
-cmp "$example_dir/generate.bands" "$example_dir/reference/bands.dat"
-printf '%s\n' "PASS: clean build completed and graphene bands match the reference exactly."
+finish "the canonical solver was built and reproduces the graphene reference bands"

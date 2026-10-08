@@ -35,7 +35,8 @@ program mem_gen
                               '(0.0_sp,0.0_sp)', '(0.0_dp,0.0_dp)',"''             "]
    integer, parameter :: maxrank=4
 
-   character(len=100) :: flin1,flin2,flout, line, line2
+   character(len=1024) :: flin1,flin2,flout
+   character(len=100) :: line, line2
    character(len=60) :: str
    character :: rnk
    logical :: exist

@@ -6,8 +6,8 @@ two-dimensional materials.
 
 ## Requirements
 
-- GNU Fortran
-- MPI with an `mpif90` compiler wrapper
+- GNU Fortran (tested: 12.2) or Intel Fortran (tested: `ifort` 2021.6)
+- MPI with a Fortran compiler wrapper (`mpif90`, `mpiifort`, ...)
 - BLAS and LAPACK
 - ARPACK
 - GNU Make
@@ -21,9 +21,24 @@ cp make.sys.example make.sys
 make
 ```
 
-The executable is written to `bin/grabnes`. Site-specific configurations can
-instead be copied from `Sys/` and adjusted for the local compiler and library
-paths. The local `make.sys`, `build/`, and `bin/` paths are ignored by Git.
+The executable is written to `bin/grabnes`. The local `make.sys`, `build/`,
+and `bin/` paths are ignored by Git; keep machine-specific paths in `make.sys`.
+An Intel Fortran configuration that has been tested is
+`../grabnes_testrun/config/intel.make.sys`. The files under `Sys/` are
+historical site configurations with absolute paths and are kept only as
+starting points.
+
+The build does not depend on the current directory and can be placed outside
+the source tree:
+
+```sh
+make -C /path/to/grabnes/lanczosKuboCode \
+     MAKE_SYS=/path/to/make.sys BUILD_DIR=/scratch/build BIN_DIR=/scratch/bin
+```
+
+With GNU Fortran the OpenMP directives are not compiled, because the compiler
+rejects several of them; see
+[`../docs/development/cluster-build-and-validation.md`](../docs/development/cluster-build-and-validation.md).
 
 ## Run
 
@@ -33,8 +48,21 @@ GRABNES accepts the input filename as its first argument:
 bin/grabnes Gendata.in > job.out
 ```
 
+`TB.NeighLevels` (1 to 8) sets the number of intralayer neighbor shells, and
+with it the search radius; the neighbor arrays are sized automatically.
+
+The two-center parameter `vpppi0` depends on the intralayer model: it
+defaults to 2.7 eV (Moon and Koshino) with `KoshinoIntralayer .true.`, where
+it is also the intralayer hopping, and to 3.5 eV with the F2G2-type intralayer
+models, where it only enters the interlayer hopping. The value in use is
+printed in the log.
+
+Start it with a single MPI process. The MPI domain decomposition is disabled
+in this version and the program stops when it is given more than one.
+
 For a minimal calculation with reference output, see
-[`../examples/01_graphene_bands`](../examples/01_graphene_bands/).
+[`../examples/01_graphene_bands`](../examples/01_graphene_bands/). To build
+and check all examples in one step, run `../grabnes_testrun/run_examples.sh`.
 
 ## Clean
 

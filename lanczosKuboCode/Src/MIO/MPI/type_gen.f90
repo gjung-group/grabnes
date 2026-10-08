@@ -19,7 +19,8 @@ program type_gen
                               'complex(sp) ','complex(dp) ']
    character(*), parameter :: label(7) = ['_i','_r','_d','_s','_l','_c','_z']
 
-   character(len=100) :: fl, line, line2
+   character(len=1024) :: fl
+   character(len=100) :: line, line2
    logical :: exist
    integer :: lh, il, it, indx
 

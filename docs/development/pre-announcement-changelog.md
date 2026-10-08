@@ -6,7 +6,179 @@ repository is already publicly accessible, but the work described here should
 be treated as pre-release consolidation until collaborators have reviewed and
 committed it.
 
-Last updated: 2026-09-27
+Last updated: 2026-10-08
+
+## Solver reconciliation, Linux validation, and test harness (2026-10-08)
+
+Work on branch `nicolas/development`, starting from commit `941e859`. Full
+details, measured results, and limitations are in
+[`cluster-build-and-validation.md`](cluster-build-and-validation.md).
+
+- **One solver tree.** The compatibility fixes that existed only in
+  `grabnes_testrun/lanczosKuboCode/` were reviewed individually and applied to
+  `lanczosKuboCode/` (logical `.eqv.`, removal of the dead `move_alloc` block,
+  the MPI receive-list guard, memory accounting, generator file-name buffers).
+  The duplicated solver tree and the duplicated graphene example were then
+  removed from `grabnes_testrun/`.
+- **Further defects fixed.** Building the canonical tree with optimization and
+  running all four examples exposed defects the laptop test had not reached:
+  an undefined `intent(out)` status in the input parser, `MPI_Abort` called
+  without arguments (fatal errors ended in a segmentation fault without their
+  message), two flags used without ever being assigned (`helicalTwistedMBM` in
+  `HamHopping`, `cutAtNN3` in `HamInit`), unchecked writes beyond the neighbor
+  arrays, an uninitialized string in the neighbor routines, and an unguarded
+  `size()` of the receive list in the Kubo setup.
+- **New input parameter** `Neigh.CutAtNN3` (default `.false.`) replaces the
+  never-assigned `cutAtNN3`.
+- **Build system.** The Makefile no longer depends on `$PWD`, supports
+  `MAKE_SYS`, `BUILD_DIR`, and `BIN_DIR` for out-of-tree builds, passes
+  `-DTIMER` to all sub-builds as intended, and no longer rewrites
+  `.version`/`version.info`. `make.sys.example` now contains the flags GNU
+  Fortran needs and does not enable OpenMP directives, which GNU Fortran
+  rejects in `Src/diag.F90`.
+- **Examples 03 and 04.** Their results used to depend on uninitialized
+  memory. The reference files are unchanged; the inputs now state explicitly
+  the model those files correspond to (nearest-neighbor intralayer hopping).
+  Switching the examples to the default F2G2 intralayer model would require
+  new reference data and is left as an open decision.
+- **Harness.** `grabnes_testrun/` is now a small harness that builds the
+  canonical sources out of tree and compares results numerically:
+  `smoke_test.sh` (example 01) and `run_examples.sh` (all four), with checked
+  GNU and Intel configurations. The example launchers no longer look for a
+  test-copy executable.
+- **Validation on Linux x86_64.** All four examples reproduce their reference
+  data with GNU Fortran 12.2.1 (`-O3` and `-O0 -fcheck=all`) and with Intel
+  `ifort` 2021.6 + MKL (1 and 4 OpenMP threads): band files byte-identical,
+  DOS files within 2e-13. The four TAPW pytest cases pass.
+- **Not validated:** OpenMP with GNU Fortran, Kubo time evolution and
+  conductivity, and all TAPW, SOC, Berry-curvature, and semiclassical
+  functionality. Runs with more than one MPI process are not supported.
+
+### Follow-up investigation (same day)
+
+- **Examples 03 and 04** are now documented as regression tests of one
+  specific Hamiltonian, with its active terms listed. A new tool,
+  `tools/hamiltonian/verify_tables.py`, rebuilds that Hamiltonian
+  independently; it agreed with the solver to 1e-4 eV and traced the
+  remainder to the neighbor search (corrected in the next entry).
+- **Default F2G2 model** assessed: correctly assembled to 1e-4 eV; its Dirac
+  point at -0.33 eV follows from the parameters (`-3 t2 + 6 t5`). No F2G2
+  reference data were added; the parameter values still need to be checked
+  against their source.
+- **`TB.NeighLevels` / `Neigh.CutAtNN3`** analyzed; the controls overlap and
+  can contradict each other. A single-control design is recommended in the
+  validation document; the interface was not changed.
+- **MPI.** Multi-process runs never worked in this source: the domain
+  decomposition is switched off in `ParallelDiv`. The solver now refuses to
+  start on more than one process instead of corrupting memory.
+- **Kubo DOS.** Run-to-run differences are the expected noise of a
+  clock-seeded random-phase state; `setSeed`/`seedValue` make runs
+  reproducible. The recursion DOS of graphene agrees with the exact result
+  within its statistical error.
+- **`WriteDataFiles .true.`** no longer stops at the hopping table.
+- **Harness.** `run_examples.sh` gained three checks: `hamiltonian_tables`,
+  `kubo_graphene_dos`, and `two_mpi_processes`.
+
+### Neighbor-search correction and Hamiltonian validation (same day)
+
+- **Neighbor search rewritten.** The default search and its two bulk variants
+  now share one exhaustive routine. It stores the lattice translation that
+  built each periodic image instead of guessing it from a distance, generates
+  as many images as the search radii need, produces a symmetric list, and
+  sizes the arrays from the result. In the 76-atom twisted bilayer the old
+  search attached wrong Bloch phases to 321 of 7223 entries (1.0e-4 eV in the
+  bands), missed 26 % of the interlayer pairs (1.3e-5 eV), and left 659
+  entries without reverse partner (2e-6 eV).
+- **`TB.NeighLevels`** is now the single control for the number of intralayer
+  shells (1 to 8). `Neigh.CutAtNN3` is deprecated but keeps its meaning;
+  values outside the range are refused; `Neigh.LayerNeighbors` only switches
+  the interlayer search on.
+- **Seventh-shell hopping.** In the bilayer intralayer branch the seventh
+  shell received the sixth-shell value (non-default eight-shell models only).
+- **Independent validation.** `tools/hamiltonian/verify_tables.py` now builds
+  a Hamiltonian from positions and parameters alone and compares it with the
+  solver's tables entry by entry: agreement to 4e-16 eV for six cases (three
+  twisted cells, F2G2 and eight-shell models, graphene), with Hermiticity,
+  reciprocal-lattice periodicity, and invariance under unit-cell images
+  checked.
+- **Reference data of examples 03 and 04 replaced** after that validation;
+  the historical files remain in the Git history (commit `b360f13`). Largest
+  change 1.03e-4 eV. Their inputs now use `TB.NeighLevels 1`.
+- **Parameters.** `vpppi0` = 3.5 eV is documented as a deliberate calibration
+  relative to the Moon-Koshino value of 2.7 eV, with the measured Dirac
+  velocities for both; the Moon-Koshino form and remaining values were checked
+  against the preprint. The F2G2 values and the rule for `g0` could not be
+  traced to a source and are marked unverified. No value was changed and no
+  F2G2 reference data were added.
+- **Harness.** New checks: Dirac-point degeneracy, three independent
+  Hamiltonian comparisons, shell-control errors, and the legacy
+  `Neigh.CutAtNN3` equivalence.
+
+### Parameter convention, wider validation, and release readiness (same day)
+
+- **`vpppi0` is model dependent.** It is one variable that sets the intralayer
+  hopping with `KoshinoIntralayer` and the pi part of the interlayer hopping in
+  every model. Its default was 3.5 eV for all models; it is now 2.7 eV (Moon
+  and Koshino) with `KoshinoIntralayer .true.` and 3.5 eV otherwise, and the
+  value is printed. Both combinations are in the regression suite. Measured:
+  with the Koshino intralayer model 3.5 eV instead of 2.7 eV raises the Dirac
+  velocity by 31 to 48 % (13.2 to 3.9 degrees); with the F2G2-type models the
+  choice changes the velocity by 0.03 to 0.3 % only, so the velocity
+  calibration attributed to 3.5 eV is not reproduced by this code and needs
+  clarification by the authors.
+- **More undefined behavior removed:** aliased defaults in `TB.Hopping` and
+  `TB.BNHopping` (zero B-N hopping with GNU `-O3`), hoppings converted through
+  single precision, and an unset factor in the Koshino intralayer hopping
+  (wrong and non-Hermitian matrix with Intel Fortran).
+- **Legacy neighbor routines audited.** `NeighList` agrees with the default
+  search on graphene supercells; `Neigh.fastNN` and
+  `Neigh.fastNNnotsquareNotRectangle` overrun their arrays and are now refused.
+- **Other systems.** hBN monolayer validated against an analytic model;
+  twisted bulk, trilayer-cell, `GBNtwoLayers`, and encapsulated cells pass
+  structural checks only; `Graphene_Over_BN` is inconsistent with the inputs
+  tried and stays unvalidated.
+- **Performance.** Setup (neighbor search and hopping assembly) scales
+  linearly up to 11.5 million atoms and 69 million entries; the search is 6 to
+  15 % of it.
+- **Release readiness.** New page `functionality-status.md`; a GitHub Actions
+  workflow added but not yet run; no license file (and conflicting license
+  statements) and no citation file remain release blockers.
+
+### Release preparation (2026-10-09)
+
+- **Scope.** Physics development is frozen. The four examples are the
+  acceptance criterion for the first release: from a clean clone the
+  documented build succeeds, all four run, reproduce their reference data
+  (bands byte-identical, DOS within 5e-16), and their plotting scripts work.
+- **Effective graphene/hBN model.** Its on-site and bond terms agree with the
+  published expressions, but its stored hopping table is not Hermitian. The
+  solver now reports the asymmetry; `Hopping.Symmetrize` is an optional
+  remedy, off by default. No further change is planned here: the correction
+  is maintained outside this repository.
+- **`GBNtwoLayers`** is left untouched; the single statement of this series
+  inside its branch was restored to the original. `Graphene_Over_BN` is
+  documented as legacy.
+- **Repository cleanup.** 45 tracked macOS executables, 38 duplicated
+  notebook checkpoints, and a `.DS_Store` removed; `.gitignore` extended.
+- **Documents added:** new root README, `release-readiness.md`,
+  `licensing-audit.md`, `citation-checklist.md`, `software-paper-outline.md`,
+  and an index of the development documentation.
+- **License and citation (same day).** GRABNES is distributed under
+  `GPL-3.0-or-later`: `LICENSE`, `COPYING.LESSER`, and
+  `THIRD_PARTY_LICENSES.md` added, `pyproject.toml` made consistent, the
+  commented-out Numerical Recipes routines removed from `kubo.F90`.
+  `CITATION.cff` names the authors Jeil Jung, Rafael Martinez-Gordillo, and
+  Nicolas Leconte; Nicolas Leconte is the current developer and maintainer.
+- **CI.** The workflow now runs on pushes to the development and main
+  branches and on pull requests to main. The development branch was pushed
+  and the workflow passes on GitHub (Ubuntu 22.04, GNU Fortran 11.4, Open MPI
+  4.1.2). Its first complete run showed that with Open MPI the error message
+  of an aborting run was lost; standard output is now flushed before
+  `MPI_Abort`.
+
+Sections 1, 5, and 6 below describe the state before this work; where they
+mention the test copy or a `grabnes_testrun` executable, this section
+supersedes them.
 
 ## Documentation and test organization (working tree)
 
@@ -175,7 +347,7 @@ This was the result of the original build attempt with an obsolete Intel
 Homebrew compiler. A later isolated native Apple Silicon build is documented
 below.
 
-## 6. Isolated native build and smoke-test harness
+## 6. Isolated native build and smoke-test harness (superseded on 2026-10-08)
 
 Added `grabnes_testrun/` temporarily inside the public checkout so
 collaborators can reproduce the current Apple Silicon build while keeping all

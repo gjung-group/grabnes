@@ -3079,7 +3079,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
        call MIO_InputParameter('Spectral.RotateReferenceSystem',rotateRefSystem,.false.)
        gcell1 = gcell
-       if (rotateRefSystem .eq. .true.) then
+       if (rotateRefSystem .eqv. .true.) then
            gg = mmm(1)**2 + mmm(2)**2 + mmm(1)*mmm(2)
            delta = sqrt(real(mmm(3)**2 + mmm(4)**2 + mmm(3)*mmm(4))/gg)
            phi = acos((2.0_dp*mmm(1)*mmm(3)+2.0_dp*mmm(2)*mmm(4) + mmm(1)*mmm(4) + mmm(2)*mmm(3))/(2.0_dp*delta*gg))
@@ -3099,7 +3099,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
-   if (alignRefSystem .eq. .true.) then
+   if (alignRefSystem .eqv. .true.) then
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
@@ -3652,7 +3652,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
        call MIO_InputParameter('Spectral.RotateReferenceSystem',rotateRefSystem,.false.)
        gcell1 = gcell
-       if (rotateRefSystem .eq. .true.) then
+       if (rotateRefSystem .eqv. .true.) then
            gg = mmm(1)**2 + mmm(2)**2 + mmm(1)*mmm(2)
            delta = sqrt(real(mmm(3)**2 + mmm(4)**2 + mmm(3)*mmm(4))/gg)
            phi = acos((2.0_dp*mmm(1)*mmm(3)+2.0_dp*mmm(2)*mmm(4) + mmm(1)*mmm(4) + mmm(2)*mmm(3))/(2.0_dp*delta*gg))
@@ -3672,7 +3672,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
-   if (alignRefSystem .eq. .true.) then
+   if (alignRefSystem .eqv. .true.) then
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
@@ -4200,7 +4200,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
        !print*,"gcell before rotation ", gcell(:,1)
        !print*,"gcell before rotation ", gcell(:,2)
        !print*,"gcell before rotation ", gcell(:,3)
-       if (rotateRefSystem .eq. .true.) then
+       if (rotateRefSystem .eqv. .true.) then
            gg = mmm(1)**2 + mmm(2)**2 + mmm(1)*mmm(2)
            delta = sqrt(real(mmm(3)**2 + mmm(4)**2 + mmm(3)*mmm(4))/gg)
            phi = acos((2.0_dp*mmm(1)*mmm(3)+2.0_dp*mmm(2)*mmm(4) + mmm(1)*mmm(4) + mmm(2)*mmm(3))/(2.0_dp*delta*gg))
@@ -4226,7 +4226,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
-   if (alignRefSystem .eq. .true.) then
+   if (alignRefSystem .eqv. .true.) then
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
@@ -4810,7 +4810,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
        print*,"gcell before rotation ", gcell(:,1)
        print*,"gcell before rotation ", gcell(:,2)
        print*,"gcell before rotation ", gcell(:,3)
-       if (rotateRefSystem .eq. .true.) then
+       if (rotateRefSystem .eqv. .true.) then
            gg = mmm(1)**2 + mmm(2)**2 + mmm(1)*mmm(2)
            delta = sqrt(real(mmm(3)**2 + mmm(4)**2 + mmm(3)*mmm(4))/gg)
            phi = acos((2.0_dp*mmm(1)*mmm(3)+2.0_dp*mmm(2)*mmm(4) + mmm(1)*mmm(4) + mmm(2)*mmm(3))/(2.0_dp*delta*gg))
@@ -4836,7 +4836,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
-   if (alignRefSystem .eq. .true.) then
+   if (alignRefSystem .eqv. .true.) then
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
@@ -5446,7 +5446,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
        !print*,"gcell before rotation ", gcell(:,1)
        !print*,"gcell before rotation ", gcell(:,2)
        !print*,"gcell before rotation ", gcell(:,3)
-       if (rotateRefSystem .eq. .true.) then
+       if (rotateRefSystem .eqv. .true.) then
            gg = mmm(1)**2 + mmm(2)**2 + mmm(1)*mmm(2)
            delta = sqrt(real(mmm(3)**2 + mmm(4)**2 + mmm(3)*mmm(4))/gg)
            phi = acos((2.0_dp*mmm(1)*mmm(3)+2.0_dp*mmm(2)*mmm(4) + mmm(1)*mmm(4) + mmm(2)*mmm(3))/(2.0_dp*delta*gg))
@@ -5472,7 +5472,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
-   if (alignRefSystem .eq. .true.) then
+   if (alignRefSystem .eqv. .true.) then
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
@@ -8711,14 +8711,6 @@ subroutine generate_G_list_from_rcell(rcell, NGrange, Gx, Gy, NG)
 
   NG = count
 
-  ! Optionally trim arrays to actual size
-  if (count < nmax) then
-     call move_alloc(Gx, Gx, stat=i)
-     call move_alloc(Gy, Gy, stat=i)
-     allocate(Gx(count), Gy(count))
-     Gx(:) = Gx(1:count)
-     Gy(:) = Gy(1:count)
-  end if
 end subroutine generate_G_list_from_rcell
 
 subroutine generate_shifted_G_list_reduced(rcell, k_ref, NGrange, Gx, Gy, NG, center_point, apply_BZ_filter)

@@ -1,0 +1,15 @@
+# Checked GNU Fortran build used by 'smoke_test.sh --debug'.
+#
+# Same as lanczosKuboCode/make.sys.example with optimization replaced by
+# runtime checks (array bounds, pointers, ...), so that the tests also detect
+# invalid memory accesses.
+
+F90 = mpif90
+F90_SERIAL = gfortran
+FCFLAGS = -O0 -g -fcheck=all -fbacktrace -DMPI -DPOINTER_SIZE=8 \
+          -ffree-line-length-none -fallow-argument-mismatch
+ARFLAGS = rc
+
+INCFLAGS =
+LIBS = -larpack -llapack -lblas
+LDFLAGS = -fopenmp

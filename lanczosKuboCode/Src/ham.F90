@@ -108,6 +108,7 @@ subroutine HamInit()
 
    use neigh,                only : NeighList, maxNeigh, Nneigh, neighCell, NList,neighD,Nradii, fastNNnotsquare, fastNNnotsquareSmall, fastNN, fastNNnotsquareBulk, fastNNnotsquareBulkSmall
    use neigh,                only : fastNNnotsquareNotRectangle
+   use neigh,                only : NeighShellCutoff2
    use atoms,                only : inode1, inode2, Species, nAt, Rat, AtomsSetCart, layerIndex, in1, in2, frac, interlayerDistances
    use atoms,                only : AtomsSetFrac, displacements
    use interface,            only : InterfacePot2
@@ -136,6 +137,7 @@ subroutine HamInit()
 
    ! Neighbor counting
    integer :: inplaneNeigh, outplaneNeigh  ! In-plane and out-of-plane neighbor counts
+   integer :: nShells, modelShells         ! Intralayer shells searched / reached by the model
    integer :: maxnn                        ! Maximum number of neighbors
 
    ! Loop variables
@@ -296,6 +298,14 @@ subroutine HamInit()
    call MIO_Print('We use Neigh.fastNNnotsquare by default. This one works as long as the system size is large enough. Otherwise, one has to use one of the specialized routines, for instance when working on commensurate cells that contain less than 10 atoms.','ham')
    call MIO_InputParameter('Neigh.fastNNnotsquareNotRectangle',lll,.false.)
    call MIO_Print('aG ='//trim(num2str(aG)),'ham')
+   if (l .or. ((.not. ll) .and. lll)) then
+      ! fastNN and fastNNnotsquareNotRectangle store the binned atoms in arrays
+      ! of fixed capacity and read past their end as soon as a bin is full,
+      ! which happens for every graphene supercell tested. Refuse them.
+      call MIO_Kill('Neigh.fastNN and Neigh.fastNNnotsquareNotRectangle are not supported: '// &
+        'their binning overruns its arrays. Use the default search (remove these '// &
+        'switches); it handles non-rectangular and small cells.','ham','HamInit')
+   end if
    if (l) then
       aCC = aG/sqrt(3.0_dp)
       cutoff = 1.2_dp
@@ -306,24 +316,27 @@ subroutine HamInit()
       call MIO_Print('fastNN finished','ham')
    else if (ll) then
       aCC = aG/sqrt(3.0_dp)
-      if (tbnn==1) then
-          cutoff2 = aCC**2 * 1.2_dp**2
-      else if (tbnn==2) then
-          cutoff2 = aG**2 * 1.2_dp**2
-      else if (tbnn>2) then
-          if (cutAtNN3) then
-             cutoff2 = (aG**2 + aCC**2) * 1.2_dp**2
-             call MIO_Print('We go to third nearest neighbors (intralayer) (are you sure it is enough?)','ham')
-          else
-             call MIO_InputParameter('F2G2Model',F2G2Model,.true.)
-             if (F2G2Model) then
-                 call MIO_Print('We go to fifth nearest neighbors (intralayer) as in the F2G2 model','ham')
-                 cutoff2 = ((3.0_dp*aCC)**2) * 1.2_dp**2
-             else
-                 call MIO_Print('We go to eight nearest neighbors (intralayer) as in the Kaxiras model','ham')
-                 cutoff2 = ((4.0_dp*aCC)**2) * 1.2_dp**2
-             end if
-          end if
+      ! TB.NeighLevels is the number of intralayer neighbour shells. It sets
+      ! the search radius through the shell table of the neigh module; the
+      ! neighbour arrays are sized by the search itself.
+      nShells = tbnn
+      call MIO_InputParameter('Neigh.CutAtNN3',cutAtNN3,.false.)
+      if (cutAtNN3) then
+         ! Legacy flag: it limited the search to three shells when
+         ! TB.NeighLevels was larger than 2.
+         call MIO_Print('Neigh.CutAtNN3 is deprecated; use TB.NeighLevels 3 instead','ham')
+         nShells = min(nShells,3)
+      end if
+      cutoff2 = NeighShellCutoff2(nShells,aCC)
+      call MIO_Print('Intralayer neighbours: '//trim(num2str(nShells))//' shell(s), in-plane radius '// &
+        trim(num2str(sqrt(cutoff2),4))//' Ang','ham')
+      call MIO_InputParameter('F2G2Model',F2G2Model,.true.)
+      modelShells = 8
+      if (F2G2Model) modelShells = 5
+      if (nShells < modelShells) then
+         call MIO_Print('Intralayer hopping terms beyond shell '//trim(num2str(nShells))// &
+           ' are not included (the intralayer models reach shell '//trim(num2str(modelShells))// &
+           '); raise TB.NeighLevels to include them','ham')
       end if
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,0)
       call MIO_InputParameter('Bulk',bulk,.false.)
@@ -343,28 +356,25 @@ subroutine HamInit()
       A1 = ucell(:,1)
       A2 = ucell(:,2)
       A3 = ucell(3,3)
-      !print*, "A1 and A2", A1, A2
-      inplaneNeigh=sum(numN(1:tbnn))
-      maxnn = inplaneNeigh + outplaneNeigh !to be adjusted for accuracy
       !ALLOCATE(nn(natoms,maxnn))
       !ALLOCATE(near(natoms))
       if (frac) call AtomsSetCart()
       !print*, cutoff2, cutoff2bis
       if (bulk) then
          if (bulksmall) then
-             call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,A3,maxnn)
+             call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2,A3)
          else
-             call fastNNnotsquareBulk(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,A3,maxnn)
+             call fastNNnotsquareBulk(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2,A3)
          end if
       else
          if (small) then
-            call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,A3,maxnn)
+            call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2,A3)
             !call fastNNnotsquareSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,maxnn) # this one doesn't work
             !for now, let's use bulk, but add a large amount of free space to avoid interactions between periodic images in z
             !direction
-            !call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,A3,maxnn)
+            !call fastNNnotsquareBulkSmall(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2,A3)
          else
-            call fastNNnotsquare(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
+            call fastNNnotsquare(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2)
          end if
       end if
       call MIO_Print('fastNNnotsquare finished','ham')
@@ -3335,6 +3345,74 @@ subroutine HamPrintNormalStats(pzn, nfallback)
 end subroutine HamPrintNormalStats
 #endif /* DEBUG */
 
+!> @brief Hermiticity of the hopping table when position-dependent bond terms
+!!        are present (MoireOffDiag, tBGOffDiag, GBNOffDiag).
+!! @details These terms change the hopping of a bond by an amount evaluated at
+!!          the position of the atom the bond starts from, so the entries
+!!          i -> m and m -> i of the same bond differ by the variation of the
+!!          moire function across the bond. The largest difference is
+!!          reported. With Hopping.Symmetrize .true. every such pair is replaced
+!!          by its Hermitian average, which corresponds to evaluating the term
+!!          at the bond centre; the default leaves the table as it is, which
+!!          is the historical behaviour (the diagonalisation routines then use
+!!          the entry of the lower-numbered atom, the Kubo routines both).
+subroutine HamCheckHermiticity()
+
+   use atoms,  only : nAt
+   use neigh,  only : NList, Nneigh, neighCell
+   use tbpar,  only : g0
+
+   logical :: moireOD, tbgOD, gbnOD, symmetrize
+   integer :: i, j, m, j2, npairs, nmissing
+   real(dp) :: asym, maxAsym
+   complex(dp) :: avg
+
+   call MIO_InputParameter('MoireOffDiag',moireOD,.false.)
+   call MIO_InputParameter('tBGOffDiag',tbgOD,.false.)
+   call MIO_InputParameter('GBNOffDiag',gbnOD,.false.)
+   if (.not. (moireOD .or. tbgOD .or. gbnOD)) return
+   call MIO_InputParameter('Hopping.Symmetrize',symmetrize,.false.)
+
+   maxAsym = 0.0_dp
+   npairs = 0
+   nmissing = 0
+   do i=1,nAt
+      do j=1,Nneigh(i)
+         m = NList(j,i)
+         if (m < i) cycle
+         ! reverse entry: atom m -> atom i with the opposite lattice translation
+         do j2=1,Nneigh(m)
+            if (NList(j2,m)==i .and. all(neighCell(:,j2,m)==-neighCell(:,j,i))) exit
+         end do
+         if (j2 > Nneigh(m)) then
+            nmissing = nmissing + 1
+            cycle
+         end if
+         if (m==i .and. j2<=j) cycle
+         npairs = npairs + 1
+         asym = abs(hopp(j,i)-conjg(hopp(j2,m)))
+         maxAsym = max(maxAsym,asym)
+         if (symmetrize) then
+            avg = 0.5_dp*(hopp(j,i)+conjg(hopp(j2,m)))
+            hopp(j,i) = avg
+            hopp(j2,m) = conjg(avg)
+         end if
+      end do
+   end do
+   if (nmissing > 0) then
+      call MIO_Print('Hopping table: '//trim(num2str(nmissing))//' entries without reverse entry','ham')
+   end if
+   if (symmetrize) then
+      call MIO_Print('Hopping table symmetrized (Hopping.Symmetrize): largest difference between the two '// &
+        'directions of a bond was '//trim(num2str(maxAsym*g0,6))//' eV','ham')
+   else
+      call MIO_Print('Hopping table not Hermitian: the two directions of a bond differ by up to '// &
+        trim(num2str(maxAsym*g0,6))//' eV (position-dependent bond terms); set Hopping.Symmetrize .true. '// &
+        'to use their Hermitian average','ham')
+   end if
+
+end subroutine HamCheckHermiticity
+
 !> @brief Fill the MPI halo region of pzn for remote neighbour atoms, reusing
 !!        the neigh send/receive lists (same exchange pattern as
 !!        kubosubs::KuboUpdate_d). No-op for serial runs / nProc < 2.
@@ -4713,7 +4791,24 @@ subroutine HamHopping
          !call MIO_InputParameter('BLdelta',BLdelta,0.184*aG)
          ! Koshino
          aCC = aG/sqrt(3.0_dp)
-         call MIO_InputParameter('vpppi0',vpppi0,3.5_dp)
+         ! vpppi0 is one parameter with two roles: it scales the pi part of the
+         ! two-centre INTERLAYER hopping in every model, and with
+         ! KoshinoIntralayer it is also the INTRALAYER nearest-neighbour hopping.
+         ! Its default therefore follows the intralayer model: 2.7 eV, the
+         ! original Moon-Koshino value, with KoshinoIntralayer; 3.5 eV, the
+         ! calibration that goes with the F2G2-type intralayer models, otherwise.
+         call MIO_InputParameter('KoshinoIntralayer',KoshinoIntralayer,.false.)
+         if (KoshinoIntralayer) then
+            call MIO_InputParameter('vpppi0',vpppi0,2.7_dp)
+            call MIO_Print('Two-centre Vpppi0 = '//trim(num2str(vpppi0,4))// &
+              ' eV (intralayer and interlayer; default 2.7 with KoshinoIntralayer)','ham')
+         else
+            call MIO_InputParameter('vpppi0',vpppi0,3.5_dp)
+            if (.not. MIO_StringComp(BilayerModel,'None')) then
+               call MIO_Print('Two-centre Vpppi0 = '//trim(num2str(vpppi0,4))// &
+                 ' eV (interlayer pi term only; default 3.5 without KoshinoIntralayer)','ham')
+            end if
+         end if
          vpppi0 = vpppi0/g0
          call MIO_InputParameter('vppsigma0',vppsigma0,0.48_dp)
          call MIO_InputParameter('BLdelta',BLdelta,0.184_dp*aG)
@@ -5632,6 +5727,7 @@ subroutine HamHopping
          !end if
          call MIO_InputParameter('threeLayers',threeLayers,.false.)
          call MIO_InputParameter('fourLayersSandwiched',fourLayersSandwiched,.false.)
+         call MIO_InputParameter('helicalTwistedMBM',helicalTwistedMBM,.false.)
          call MIO_InputParameter('fiveLayersSandwiched',fiveLayersSandwiched,.false.)
          call MIO_InputParameter('sixLayersSandwiched',sixLayersSandwiched,.false.)
          call MIO_InputParameter('sevenLayersSandwiched',sevenLayersSandwiched,.false.)
@@ -5782,7 +5878,8 @@ subroutine HamHopping
          ! interlayerTwoCenter() can be called branch-free at every site; it is
          ! only populated (owned atoms + MPI halo) when the flag is set.
 #ifdef MPI
-         pzNGhost = size(rcvList)
+         pzNGhost = 0
+         if (associated(rcvList)) pzNGhost = size(rcvList)
 #else
          pzNGhost = 0
 #endif /* MPI */
@@ -6758,7 +6855,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (encapsulatedThreeLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -6979,7 +7076,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (encapsulatedFourLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -7200,7 +7297,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (encapsulatedFiveLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -7421,7 +7518,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (encapsulatedSixLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -7642,7 +7739,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (encapsulatedSevenLayers) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -7863,7 +7960,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (t3GwithBN) then
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -8034,7 +8131,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                            !print*, "F2G2", hopp(j,i)
                         !else if (BNBNtwoLayers) then
@@ -8187,7 +8284,7 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                            !print*, "F2G2", hopp(j,i)
                         !else if (BNBNtwoLayers) then
@@ -8427,11 +8524,14 @@ subroutine HamHopping
                                delta = 0.0_dp
                            end if
                            !print*, "we are adding the gn values"
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
                         else if (MIO_StringComp(BilayerModel,'Koshino') .or. MIO_StringComp(BilayerModel,'Mayou') .or. MIO_StringComp(BilayerModel,'HTC') .or. MIO_StringComp(SinglelayerModel,'HTC') ) then
                            if (frac) call AtomsSetCart()
                            if (KoshinoIntralayer .or. MayouIntralayer) then
+                              ! The interlayer renormalisation factor (KoshinoSR) is not
+                              ! meant for intralayer pairs and may not be set yet here.
+                              renormalizeHoppingFactorAAp = 1.0_dp
                               if (MIO_StringComp(BilayerModel,'Koshino')) then
                                  !print*, "adding the inplane Koshino terms"
                                  if (frac) call AtomsSetCart()
@@ -8701,7 +8801,7 @@ subroutine HamHopping
                                                 hopp(j,i) = hopp(j,i) + t5KB
                                            end if
                                       end if
-                                 else if (dist .gt. 2.0_dp*aG*0.9_dp .and. dist .lt. 2.0_dp*aG*1.1_dp) then
+                                 else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then ! narrow: the seventh shell is only 4 % further out
                                       !if (i.eq.1) print*, "assigning intralayer F2G2 terms 6", delta
                                       hopp(j,i) = hopp(j,i) + t6K
                                  else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
@@ -8745,7 +8845,7 @@ subroutine HamHopping
                                   delta = 0.0_dp
                               end if
                               !print*, "we are adding the gn values"
-                              hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta) ! Konda, use the chosen value of delta
+                              hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp) ! Konda, use the chosen value of delta
                            end if
                         else if (MIO_StringComp(BilayerModel,'BLKaxiras') .or. MIO_StringComp(BilayerModel,'BLSrivani')) then ! this is where we assign the intralayer F2G2
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
@@ -8939,7 +9039,7 @@ subroutine HamHopping
                                              hopp(j,i) = hopp(j,i) + t5KB
                                         end if
                                    end if
-                              else if (dist .gt. 2.0_dp*aG*0.9_dp .and. dist .lt. 2.0_dp*aG*1.1_dp) then
+                              else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then ! narrow: the seventh shell is only 4 % further out
                                    !if (i.eq.1) print*, "assigning intralayer F2G2 terms 6", delta
                                    hopp(j,i) = hopp(j,i) + t6K
                               else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
@@ -8956,7 +9056,7 @@ subroutine HamHopping
                            if (d > 1.5_dp) then
                                delta = 0.0_dp
                            end if
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta)
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp)
                         else if (MIO_StringComp(BilayerModel,'Srivani')) then
                            !print*, "adding Srivani in plane terms"
                            !if (frac) call AtomsSetCart()
@@ -8984,13 +9084,13 @@ subroutine HamHopping
                            if (d > 1.5_dp) then
                                delta = 0.0_dp
                            end if
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) + 1.0_dp*delta )
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) + 1.0_dp*delta ,kind=dp)
                         else
                            !print*, i, j, cmplx(gn(Species(i),Species(NList(j,i)),ilvl))
                            if (d > 1.5_dp) then
                                delta = 0.0_dp
                            end if
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta)
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta,kind=dp)
                         end if
                         exit
                      end if
@@ -10962,7 +11062,7 @@ subroutine HamHopping
                     !end if
                   else
                     d = sqrt(dot_product(NeighD(1:2,j,i),NeighD(1:2,j,i)))
-                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay))
+                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay),kind=dp)
                   end if
                else ! end of INTERLAYER
                   hopp(j,i) = hopp(j,i) + 0.0_dp
@@ -10981,7 +11081,7 @@ subroutine HamHopping
                     iii = NList(j,i)
                     do jj=1,Nneigh(iii)
                        if(NList(jj,iii).eq.i) then
-                           hopp(j,i) = hopp(j,i) + cmplx(hopp(jj,iii))
+                           hopp(j,i) = hopp(j,i) + cmplx(hopp(jj,iii),kind=dp)
                        end if
                     end do
                  end if
@@ -11136,7 +11236,7 @@ subroutine HamHopping
                                                ! instance)
                               delta = 0.0_dp
                           end if
-                          hopp(j,i) = hopp(j,i) - cmplx(1.0_dp*delta )
+                          hopp(j,i) = hopp(j,i) - cmplx(1.0_dp*delta ,kind=dp)
                           exit
                        end if
                     end do
@@ -11149,7 +11249,7 @@ subroutine HamHopping
                     !end if
                  else
                     d = sqrt(dot_product(NeighD(1:2,j,i),NeighD(1:2,j,i)))
-                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay))
+                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay),kind=dp)
                  end if
               end do
           end do
@@ -12045,11 +12145,15 @@ subroutine HamHopping
       !$OMP END PARALLEL DO
    end if
 
+   call HamCheckHermiticity()
+
    call MIO_InputParameter('WriteDataFiles',w,.false.)
    if (w) then
       !print*, "prefix is ", prefix
       !print*, "here it is only printing the first 3 neighbor hoppings!!!"
-      call file%Open(name=trim(prefix)//'.'//'s.mag',serial=.true.)
+      ! One record holds every hopping of an atom; the default record length
+      ! (maxlinel) is too short for that.
+      call file%Open(name=trim(prefix)//'.'//'s.mag',serial=.true.,recl=64*maxNeigh)
       !open(1,FILE='s')
       u = file%GetUnit()
       do i=1,nAt

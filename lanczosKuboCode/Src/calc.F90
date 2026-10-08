@@ -216,7 +216,8 @@ subroutine CalcKubo()
    call MIO_Allocate(a,nRecurs,'a','calc')
    call MIO_Allocate(b,nRecurs,'b','calc')
 #ifdef MPI
-   sz = size(rcvList)
+   sz = 0
+   if (associated(rcvList)) sz = size(rcvList)
 #else
    sz = 0
 #endif /* MPI */
@@ -827,7 +828,7 @@ subroutine CalcDiag()
       end if
    end if
    if (dos) then
-      if (PDOS .eq. .true.) then
+      if (PDOS .eqv. .true.) then
          call DiagPDOS()
       else
          call DiagDOS()

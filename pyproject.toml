@@ -8,7 +8,15 @@ version = "3.0b0"
 description = "GRABNES (GRAphene and Boron Nitride Electronic Structure) - Fortran-backend notebooks for electronic-structure and quantum-transport calculations in layered 2D materials"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "Proprietary"}
+license = {text = "GPL-3.0-or-later"}
+authors = [
+    {name = "Jeil Jung"},
+    {name = "Rafael Martinez-Gordillo"},
+    {name = "Nicolas Leconte"},
+]
+maintainers = [
+    {name = "Nicolas Leconte"},
+]
 keywords = [
     "computational-physics",
     "electronic-structure",
@@ -22,6 +30,7 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Topic :: Scientific/Engineering :: Physics",
     "Programming Language :: Fortran",
     "Programming Language :: Python :: 3",

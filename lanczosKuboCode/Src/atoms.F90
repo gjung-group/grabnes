@@ -1349,6 +1349,10 @@ subroutine AtomsConstruct(X,mm,angle,label,d,yShift)
    real(dp) :: basis(3,2)
    character(len=80) :: str
 
+   if (mm(1)==0 .and. mm(2)==0) then
+      call MIO_Kill('The supercell indices are zero: MoireCellParameters must be given for this type of system', &
+        'atoms','AtomsLattice')
+   end if
    ncell = mm(1)**2 + mm(1)*mm(2) + mm(2)**2
    call MIO_Allocate(X,[3,ncell*2],'X','atoms')
    a = angle*pi/180.0_dp
@@ -1484,6 +1488,10 @@ subroutine AtomsConstructBasedOnFastNN(X,mm,angle,label,d,yShift, natoms)
    integer :: safetycounter
 
 
+   if (mm(1)==0 .and. mm(2)==0) then
+      call MIO_Kill('The supercell indices are zero: MoireCellParameters must be given for this type of system', &
+        'atoms','AtomsLattice')
+   end if
    ncell = mm(1)**2 + mm(1)*mm(2) + mm(2)**2
    call MIO_Allocate(X,[3,ncell*2],'X','atoms')
    a = angle*pi/180.0_dp
