@@ -487,6 +487,8 @@ subroutine HamInit()
    end if
    call MIO_InputParameter('RandomStrain',randomStrain,.false.)
    if (randomStrain) then
+     call MIO_Kill('RandomStrain is not supported at present: the routine it calls (GaussHeight) uses a '// &
+       'work array that is never allocated.','ham','HamInit')
      if (frac) call AtomsSetCart()
      call GaussHeight()
      call MIO_InputParameter('WriteDataFiles',prnt,.false.)
@@ -500,6 +502,8 @@ subroutine HamInit()
    end if
    call MIO_InputParameter('printBubble',printBubble,.false.)
    if (printBubble) then
+     call MIO_Kill('printBubble is not supported: it is a diagnostic with a hard-coded atom index (3328).', &
+       'ham','HamInit')
      call MIO_InputParameter('bubbleSigmaR',sigma,1.0_dp)
      call MIO_InputParameter('bubbleHeight',w,1.0_dp)
      if (frac) call AtomsSetCart()
@@ -1030,6 +1034,12 @@ subroutine HamOnSite()
          call MIO_InputParameter('InterlayerDistance',z0,3.35_dp)
          call MIO_InputParameter('sublatticeBasis',sublatticeBasis,.false.)
          call MIO_InputParameter('addDisplacements',addDisplacements,.false.)
+         if (addDisplacements) then
+            if (.not. associated(displacements)) then
+               call MIO_Kill('addDisplacements needs the table of displacements, which is read only with '// &
+                 'TypeOfSystem ReadXYZ and GBNuseDisplacementFile or tBGuseDisplacementFile.','ham','HamOnSite')
+            end if
+         end if
       end if
 ! --- ---
 
@@ -3495,6 +3505,42 @@ subroutine HamPrintNormalStats(pzn, nfallback)
 end subroutine HamPrintNormalStats
 #endif /* DEBUG */
 
+!> @brief Stop if the assembled Hamiltonian contains NaN or infinite values.
+!! @details Some model switches are not valid for every structure (a
+!!          distance outside the range of a fit, a division by a vanishing
+!!          length) and then produce non-finite hoppings or on-site energies.
+!!          Every later result would silently be meaningless, so the run stops.
+subroutine HamCheckFinite()
+
+   use, intrinsic :: ieee_arithmetic, only : ieee_is_finite
+   use atoms,  only : inode1, inode2
+   use neigh,  only : Nneigh
+
+   integer :: i, j, nhop, nons, ifirst
+
+   nhop = 0
+   nons = 0
+   ifirst = 0
+   do i=inode1,inode2
+      if (.not. ieee_is_finite(H0(i))) then
+         nons = nons + 1
+         if (ifirst==0) ifirst = i
+      end if
+      do j=1,Nneigh(i)
+         if (.not. (ieee_is_finite(real(hopp(j,i),dp)) .and. ieee_is_finite(aimag(hopp(j,i))))) then
+            nhop = nhop + 1
+            if (ifirst==0) ifirst = i
+         end if
+      end do
+   end do
+   if (nhop + nons > 0) then
+      call MIO_Kill('The Hamiltonian contains non-finite values: '//trim(num2str(nhop))//' hopping and '// &
+        trim(num2str(nons))//' on-site entries (first at atom '//trim(num2str(ifirst))//'). The selected '// &
+        'combination of model switches is not valid for this structure.','ham','HamCheckFinite')
+   end if
+
+end subroutine HamCheckFinite
+
 !> @brief Hermiticity of the hopping table when position-dependent bond terms
 !!        are present (MoireOffDiag, tBGOffDiag, GBNOffDiag).
 !! @details These terms change the hopping of a bond by an amount evaluated at
@@ -3513,14 +3559,17 @@ subroutine HamCheckHermiticity()
    use neigh,  only : NList, Nneigh, neighCell
    use tbpar,  only : g0
 
-   logical :: moireOD, tbgOD, gbnOD, moireMid
+   logical :: moireOD, tbgOD, gbnOD, moireMid, haldane, haldanePhase
    integer :: i, j, m, j2, npairs, nmissing
    real(dp) :: asym, maxAsym
 
    call MIO_InputParameter('MoireOffDiag',moireOD,.false.)
    call MIO_InputParameter('tBGOffDiag',tbgOD,.false.)
    call MIO_InputParameter('GBNOffDiag',gbnOD,.false.)
-   if (.not. (moireOD .or. tbgOD .or. gbnOD)) return
+   call MIO_InputParameter('HaldaneNNN',haldane,.false.)
+   call MIO_InputParameter('HaldaneSpecifyPhase',haldanePhase,.false.)
+   haldanePhase = haldane .and. haldanePhase
+   if (.not. (moireOD .or. tbgOD .or. gbnOD .or. haldanePhase)) return
    call MIO_InputParameter('MoireOffDiagMidpoint',moireMid,.false.)
 
    maxAsym = 0.0_dp
@@ -3547,7 +3596,12 @@ subroutine HamCheckHermiticity()
    if (nmissing > 0) then
       call MIO_Print('Hopping table: '//trim(num2str(nmissing))//' entries without reverse entry','ham')
    end if
-   if (moireOD .and. moireMid) then
+   if (haldanePhase .and. .not. (moireOD .or. tbgOD .or. gbnOD)) then
+      if (maxAsym*g0 > 1.0e-9_dp) then
+         call MIO_Print('WARNING: the hopping table is NOT Hermitian with HaldaneNNN and HaldaneSpecifyPhase: '// &
+           'the two directions of a bond differ by up to '//trim(num2str(maxAsym*g0,6))//' eV.','ham')
+      end if
+   else if (moireOD .and. moireMid) then
       call MIO_Print('Hopping table with MoireOffDiagMidpoint: the two directions of a bond differ by up to '// &
         trim(num2str(maxAsym*g0,6))//' eV','ham')
    else if (moireOD .and. .not. (tbgOD .or. gbnOD)) then
@@ -4991,6 +5045,11 @@ subroutine HamHopping
 
          call MIO_InputParameter('TypeOfSystem',str,'Graphene')
          call MIO_InputParameter('TypeOfBL',BilayerModel,'None')
+         if (MIO_StringComp(BilayerModel,'Jeil')) then
+            call MIO_Kill('TypeOfBL Jeil is not supported at present: its neighbour bookkeeping reads beyond '// &
+              'its arrays for every structure tested (tests/regression/model_survey.py). Use another '// &
+              'interlayer model, for instance Koshino.','ham','HamHopping')
+         end if
          call MIO_InputParameter('TypeOfSL',SinglelayerModel,'None') ! then we don't have to change the code and keep the bilayer parts even for the single layer
          call MIO_InputParameter('addExponentialDecayForDihedral',addExponentialDecayForDihedral,.false.)
          call MIO_InputParameter('MoireBilayerTopAngle',MoireBilayerTopAngle,0.0_dp)
@@ -5931,6 +5990,12 @@ subroutine HamHopping
          call MIO_InputParameter('MoireOffDiag',l,.false.)
          call MIO_InputParameter('GBNOffDiag',GBNOffDiag,.false.)
          call MIO_InputParameter('addDisplacements',addDisplacements,.false.)
+         if (addDisplacements) then
+            if (.not. associated(displacements)) then
+               call MIO_Kill('addDisplacements needs the table of displacements, which is read only with '// &
+                 'TypeOfSystem ReadXYZ and GBNuseDisplacementFile or tBGuseDisplacementFile.','ham','HamOnSite')
+            end if
+         end if
          ! Opt-in: evaluate the MoireOffDiag bond term at the bond midpoint (Hermitian H) instead of at atom i
          call MIO_InputParameter('MoireOffDiagMidpoint',moireMid,.false.)
          moireMid = moireMid .and. l
@@ -6176,6 +6241,7 @@ subroutine HamHopping
          !!!$OMP& PRIVATE (expFactor, dist, yDistance, DBShiftRatio,boundaryWidth, limit2, limit1, limit0), &
          !!!$OMP& PRIVATE (nnnn), &
          !$OMP PARALLEL DO PRIVATE(d,nlay,delta,del,realH,imagH,Habjj,dx,dy,dxTemp,dyTemp,HBL,HAA,HAB,HBA,dxi,dxj), &
+         !$OMP& FIRSTPRIVATE (BLdelta, twistAngleGrad), &
          !$OMP& PRIVATE(realH_b,imagH_b,Habjj_b,dx_b,dy_b,dxTemp_b,dyTemp_b), &
          !$OMP& PRIVATE(realH_t,imagH_t,Habjj_t,dx_t,dy_t,dxTemp_t,dyTemp_t), &
          !$OMP& PRIVATE (dyi,dyj,vpppi,vppsigma,posOrNeg,jj,jj1,jj2,maxDist,k,firstNN), &
@@ -11481,6 +11547,7 @@ subroutine HamHopping
               end if
               do j=1,Nneigh(i)
                  !if (abs(NeighD(3,j,i))<0.01_dp) then
+                 jj = NList(j,i)
                  if (layerIndex(i) .eq. layerIndex(jj)) then
                     d = sqrt(NeighD(1,j,i)**2+NeighD(2,j,i)**2)
                     do ilvl=1,tbnn
@@ -12089,6 +12156,15 @@ subroutine HamHopping
       call MIO_InputParameter('bubbleRadius',bubbleRadius,100.0_dp)
       call MIO_Allocate(onsiteShift,nAt,'onsiteShift','ham')
 
+      if (totImp > 0) then
+         if (.not. associated(indxImp)) then
+            call MIO_Kill('realisticBubbles is not supported at present: the list of bubble centres it '// &
+              'uses is never filled.','ham','HamHopping')
+         else if (size(indxImp) < totImp) then
+            call MIO_Kill('realisticBubbles is not supported at present: the list of bubble centres it '// &
+              'uses is never filled.','ham','HamHopping')
+         end if
+      end if
       do ii=1,totImp
         !$OMP PARALLEL DO PRIVATE(dx,dy,dist2,bubbleR,bubbleTheta,dlij)
         do i=1,nAt
@@ -12440,6 +12516,7 @@ subroutine HamHopping
       !$OMP END PARALLEL DO
    end if
 
+   call HamCheckFinite()
    call HamCheckHermiticity()
 
    call MIO_InputParameter('WriteDataFiles',w,.false.)
@@ -12472,16 +12549,20 @@ subroutine HamHopping
       call file%Open(name=trim(prefix)//'.'//'HABreal',serial=.true.)
       !open(1,FILE='e')
       u = file%GetUnit()
-      do i=1,nAt
-         write(u,*) HABreal(i)
-      end do
+      if (associated(HABreal)) then
+         do i=1,min(nAt,size(HABreal))
+            write(u,*) HABreal(i)
+         end do
+      end if
       call file%Close()
       call file%Open(name=trim(prefix)//'.'//'HABimag',serial=.true.)
       !open(1,FILE='e')
       u = file%GetUnit()
-      do i=1,nAt
-         write(u,*) HABimag(i)
-      end do
+      if (associated(HABimag)) then
+         do i=1,min(nAt,size(HABimag))
+            write(u,*) HABimag(i)
+         end do
+      end if
       call file%Close()
       call file%Open(name=trim(prefix)//'.'//'pos',serial=.true.)
       !open(1,FILE='e')

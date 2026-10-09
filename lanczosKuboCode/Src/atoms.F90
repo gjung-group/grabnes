@@ -13,7 +13,7 @@ module atoms
    integer, public, pointer :: indxDiv(:), procAt(:), indxNode(:), secAt(:)
    integer, public, pointer :: Species(:), SpeciesTemp(:)
    integer, public, pointer :: layerIndex(:)
-   real(dp), public, pointer :: interlayerDistances(:), displacements(:,:)
+   real(dp), public, pointer :: interlayerDistances(:)=>NULL(), displacements(:,:)=>NULL()
    real(dp), public, pointer :: displacements_b(:,:), displacements_t(:,:)
    real(dp), public :: dIntLay, nEl
    real(dp), public :: phiForEffectiveModel
@@ -967,6 +967,14 @@ subroutine AtomsPos()
    inode1 = indxNode(Node+1)
    inode2 = indxNode(Node+2)-1
    if (nDiv == 1) then
+      ! in1 and in2 are THREADPRIVATE. Without a thread decomposition the first
+      ! thread owns every atom; the others must get an EMPTY range, otherwise
+      ! their unset bounds (0,0) make every "do i=in1,in2" loop inside a parallel
+      ! region touch element 0.
+      !$OMP PARALLEL
+      in1 = 1
+      in2 = 0
+      !$OMP END PARALLEL
       in1 = 1
       in2 = nAt
    else
