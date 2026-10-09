@@ -21,7 +21,8 @@ concurrency:
 jobs:
   gnu:
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    # The suite takes about 8 minutes on a workstation (one thread), including the model survey.
+    timeout-minutes: 60
     env:
       # Open MPI refuses to start more processes than cores without this
       # (used only by the check that two MPI processes are refused).
@@ -70,7 +71,7 @@ jobs:
         run: |
           echo "::notice::$(gfortran --version | head -n 1) / $(mpirun --version | head -n 1)"
           if [ -f "$RUNNER_TEMP/suite.log" ]; then
-            grep -E 'FAIL|MISMATCH|ERROR|above the limit' "$RUNNER_TEMP/suite.log" | head -n 8 |
+            grep -E 'FAIL|MISMATCH|ERROR|DIFFERS|above the limit' "$RUNNER_TEMP/suite.log" | head -n 8 |
               while IFS= read -r line; do echo "::error::$line"; done
           fi
           if [ -f "$RUNNER_TEMP/grabnes/build.log" ]; then
@@ -86,6 +87,8 @@ jobs:
           path: |
             ${{ runner.temp }}/suite.log
             ${{ runner.temp }}/grabnes/build.log
+            ${{ runner.temp }}/grabnes/model_survey.log
+            ${{ runner.temp }}/grabnes/physics.log
             ${{ runner.temp }}/grabnes/run/*/job.out
             ${{ runner.temp }}/grabnes/run/*/job.err
             ${{ runner.temp }}/grabnes/run/*/verify_tables.log
