@@ -1,0 +1,28 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv-docs/
+
+# Generated documentation
+docs/_build/
+
+# Platform and editor files
+.DS_Store
+*.swp
+*.swo
+
+# Compiled programs and objects
+a.out
+*.o
+*.mod
+*.a
+*.exe
+
+# Notebook state
+.ipynb_checkpoints/
+
+# Local build configuration and solver build products
+lanczosKuboCode/make.sys
+lanczosKuboCode/build/
+lanczosKuboCode/bin/

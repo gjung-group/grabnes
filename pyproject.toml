@@ -1,0 +1,99 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grabnes"
+version = "3.0b0"
+description = "GRABNES (GRAphene and Boron Nitride Electronic Structure) - Fortran-backend notebooks for electronic-structure and quantum-transport calculations in layered 2D materials"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "GPL-3.0-or-later"}
+authors = [
+    {name = "Jeil Jung"},
+    {name = "Rafael Martinez-Gordillo"},
+    {name = "Nicolas Leconte"},
+]
+maintainers = [
+    {name = "Nicolas Leconte"},
+]
+keywords = [
+    "computational-physics",
+    "electronic-structure",
+    "quantum-transport",
+    "graphene",
+    "2d-materials",
+    "tight-binding",
+    "fortran",
+    "condensed-matter",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Programming Language :: Fortran",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+dependencies = [
+    "numpy>=1.20.0",
+    "scipy>=1.7.0",
+    "matplotlib>=3.4.0",
+    "jupyter>=1.0.0",
+]
+
+[project.optional-dependencies]
+pybinding = [
+    "pybinding>=0.9.5",
+]
+docs = [
+    "Sphinx>=7.3.0",
+    "breathe>=4.35.0",
+    "sphinx-rtd-theme>=2.0.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+all = [
+    "grabnes[pybinding,docs,dev]",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/gjung-group/grabnes"
+Repository = "https://github.com/gjung-group/grabnes.git"
+Issues = "https://github.com/gjung-group/grabnes/issues"
+
+[tool.setuptools]
+packages = []
+# This is primarily a Fortran project with Python utilities
+# Python scripts are meant to be used directly from the repository
+
+[tool.setuptools.package-data]
+"*" = ["*.in", "*.dat", "reference/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+ignore_missing_imports = true

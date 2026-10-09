@@ -1,0 +1,50 @@
+#=================================================
+#
+# Linux platform
+# Compiler: Intel
+# Parallel mode
+# 
+#=================================================
+
+#OMPI_ROOT=/share/apps/openmpi-1.4-intel
+#OMPI_ROOT=/usr/local/opt/openmpi/1.6.4/intel/12.1/
+#OMPI_ROOT=/opt/apps/intel13/mvapich2/1.9/
+#OMPI_ROOT=/opt/apps/intel15/mvapich2/2.1/
+#OMPI_ROOT=/opt/apps/intel15/mvapich2/2.1/
+#OMPI_ROOT=/opt/intel/Compiler/14.0.4/bin/intel64/ifort
+#OMPI_ROOT=/opt/intel/MPI/5.0.3.049/intel64/
+OMPI_ROOT=/opt/intel/compilers_and_libraries_2017.0.098/linux/mpi/intel64/
+
+
+
+F90 = $(OMPI_ROOT)/bin/mpif90
+#F90 = $(OMPI_ROOT)/bin/gfortran
+#F90 = mpif90
+#F90_SERIAL=/opt/intel/compilers_and_libraries_2017/linux/bin/intel64/ifort
+F90_SERIAL=$(OMPI_ROOT)/bin/mpif90
+#FCFLAGS = -O0 -DMPI -DDEBUG -openmp -DPOINTER_SIZE=8 -g -traceback -check all -fp-stack-check
+FCFLAGS = -O3 -DMPI -DDEBUG -DPOINTER_SIZE=8 -g -free -fopenmp
+ARFLAGS = rc
+
+#EXTRA_LIBS=-liomp5
+#EXTRA_LIBS=-openmp
+EXTRA_LIBS=-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl -lgomp
+EXTRA_LIBS=
+#SPRNGROOT=/home/rmartinez/builds/sprng4-intel
+#INCSPRNG=-I$(SPRNGROOT)/include
+#LIBSPRNG=$(SPRNGROOT)/lib/libsprng.a
+#LIBMPI=-I/opt/openmpi/include -L/opt/openmpi/lib -lmpi_cxx -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl
+
+MKLROOT=/opt/intel/MKL/11.3.3.210/compilers_and_libraries_2016.3.210/linux/mkl/
+INCMKL=-I$(MKLROOT)/include/intel64/lp64 -I$(MKLROOT)/include
+LIBBLAS = $(MKLROOT)/lib/intel64_lin/libmkl_blas95_lp64.a
+LIBLAPACK = $(MKLROOT)/lib/intel64_lin/libmkl_lapack95_lp64.a -Wl,--start-group $(MKLROOT)/lib/intel64_lin/libmkl_sequential.a $(MKLROOT)/lib/intel64_lin/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64_lin/libmkl_core.a -Wl,--end-group -lpthread -lgomp
+
+INCFLAGS=$(INCMKL) $(INCSPRNG)
+
+LIBS = $(LIBMPI) $(LIBSPRNG)  \
+       $(LIBLAPACK) $(LIBBLAS) \
+       $(EXTRA_LIBS)
+
+LIBS = $(LIBLAPACK) $(LIBBLAS) \
+       $(EXTRA_LIBS)

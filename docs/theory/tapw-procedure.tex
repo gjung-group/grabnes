@@ -1,0 +1,381 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{physics}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{graphicx}
+
+\geometry{margin=1in}
+
+% Code formatting
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    commentstyle=\color{green!60!black},
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray}
+}
+
+\title{Twisted Angle Planar Wave (TAPW) Method Implementation\\
+Band Structure Calculation Procedure}
+\author{GRABNES contributors}
+\date{Pre-release technical note}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+The Twisted Angle Planar Wave (TAPW) method is implemented in the \texttt{DiagBands} routine for calculating electronic band structures of moiré systems. This document provides a comprehensive overview of the TAPW procedure from entry into \texttt{DiagBands} through generation of the \texttt{generate.bands} file, excluding Chern number calculations.
+
+\section{Overview of TAPW Flow}
+
+The TAPW calculation follows this sequence:
+\begin{enumerate}
+    \item \textbf{Parameter Setup}: Read TAPW parameters and initialize coordinate systems
+    \item \textbf{G-vector Generation}: Create reciprocal space grid around reference K-point
+    \item \textbf{Basis Construction}: Build TAPW basis functions using plane waves
+    \item \textbf{Hamiltonian Projection}: Project tight-binding Hamiltonian onto TAPW basis
+    \item \textbf{Diagonalization}: Solve eigenvalue problem for each k-point
+    \item \textbf{Output Generation}: Write band structure to \texttt{generate.bands}
+\end{enumerate}
+
+\section{Detailed Implementation}
+
+\subsection{Entry Point and Parameter Setup}
+
+The TAPW calculation begins when \texttt{useTAPW = .true.} in the \texttt{DiagBands} routine:
+
+\begin{lstlisting}[language=Fortran,caption=TAPW Entry Point]
+! In DiagBands routine
+else if (useTAPW) then
+   call MIO_Print('calling TAPW routine for '//trim(num2str(ip)),'diag')
+   call DiagH0TAPW(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, 
+                   maxNeigh, hopp, NList, Nneigh, neighCell, neig)
+end if
+E(:, is, ip) = ELoc
+\end{lstlisting}
+
+Key parameters are read from input:
+\begin{itemize}
+    \item \texttt{Diag.N\_G}: Number of G-vectors (\texttt{tapwNG})
+    \item \texttt{Diag.MoireAngle}: Rotation angle for graphene lattice
+\end{itemize}
+
+\subsection{Coordinate System Construction}
+
+\subsubsection{Graphene Reciprocal Lattice}
+
+The code constructs rotated graphene reciprocal vectors \texttt{rG}:
+
+\begin{equation}
+\mathbf{a}_1 = a_G \begin{pmatrix} 1 \\ 0 \end{pmatrix}, \quad
+\mathbf{a}_2 = a_G \begin{pmatrix} \cos(60°) \\ \sin(60°) \end{pmatrix}
+\end{equation}
+
+After rotation by \texttt{moireAngle}:
+\begin{equation}
+\mathbf{a}'_i = \begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{pmatrix} \mathbf{a}_i
+\end{equation}
+
+Reciprocal vectors are computed as:
+\begin{equation}
+\mathbf{rG} = 2\pi \cdot (\mathbf{A}^T)^{-1}
+\end{equation}
+
+\begin{lstlisting}[language=Fortran,caption=Reciprocal Lattice Construction]
+! Build graphene lattice vectors (60-degree structure)
+sGlattice(1,1) = 1.0_dp * aG                    ! (aG, 0)
+sGlattice(2,1) = 0.0_dp
+sGlattice(1,2) = cos(60.0_dp*pi/180.0_dp) * aG  ! (aG*cos60°, aG*sin60°)
+sGlattice(2,2) = sin(60.0_dp*pi/180.0_dp) * aG
+
+! Apply rotation
+rotation_angle = moireAngle * pi / 180.0_dp
+sGlattice = matmul(reshape((/ cos_rot, sin_rot, -sin_rot, cos_rot /), 
+                           (/2,2/)), sGlattice)
+
+! Convert to reciprocal space: rG = 2π * inverse(lattice.T)
+rG = 2.0_dp * pi * transpose(sGlattice_inv)
+\end{lstlisting}
+
+\subsubsection{Reference K-point}
+
+The K-point in graphene's Brillouin zone is calculated as:
+\begin{equation}
+\mathbf{k}_{ref} = \frac{2}{3}\mathbf{b}_1 + \frac{1}{3}\mathbf{b}_2
+\end{equation}
+
+\begin{lstlisting}[language=Fortran,caption=K-point Calculation]
+real(dp), parameter :: refF(2) = (/ 2.0_dp/3.0_dp, 1.0_dp/3.0_dp /)
+k_ref = refF(1)*rG(:,1) + refF(2)*rG(:,2)
+\end{lstlisting}
+
+\subsection{G-vector Generation}
+
+The TAPW method generates a set of reciprocal lattice vectors around the reference K-point. Two methods are implemented:
+
+\subsubsection{Hexagonal Shell Method}
+
+\begin{lstlisting}[language=Fortran,caption=G-vector Generation]
+call generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG)
+\end{lstlisting}
+
+This generates G-vectors as:
+\begin{equation}
+\mathbf{G}_{n_1,n_2} = n_1 \mathbf{b}_{moire,1} + n_2 \mathbf{b}_{moire,2}
+\end{equation}
+
+The vectors are:
+\begin{enumerate}
+    \item Generated on a grid around \texttt{k\_ref}
+    \item Sorted by distance from the nearest lattice point
+    \item Selected to keep the \texttt{N\_G} closest vectors
+    \item Filtered for uniqueness
+\end{enumerate}
+
+\subsubsection{Triangular Truncation Method}
+
+Alternative method following Python implementation:
+\begin{equation}
+\mathbf{G}_{frac} = \begin{pmatrix} j + k_{ref,x} \\ i + k_{ref,y} \end{pmatrix}
+\end{equation}
+
+Selected within triangular Brillouin zone boundaries.
+
+\subsection{TAPW Basis Construction}
+
+\subsubsection{Basis Functions}
+
+The TAPW basis functions are plane waves modulated by atomic orbitals:
+\begin{equation}
+\phi^{\alpha}_{\mathbf{G}}(\mathbf{r}) = \sum_{\mathbf{R}} e^{i(\mathbf{k} + \mathbf{G}) \cdot (\mathbf{R} + \boldsymbol{\tau}_\alpha)} \psi_\alpha(\mathbf{r} - \mathbf{R} - \boldsymbol{\tau}_\alpha)
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $\alpha$ labels atomic species/sublattices
+    \item $\mathbf{G}$ are the selected reciprocal lattice vectors
+    \item $\mathbf{R}$ are lattice translation vectors
+    \item $\boldsymbol{\tau}_\alpha$ are atomic positions within unit cell
+\end{itemize}
+
+\subsubsection{X-Matrix Construction}
+
+The transformation matrix $X$ connects atomic orbitals to TAPW basis:
+
+\begin{lstlisting}[language=Fortran,caption=X-Matrix Construction]
+call build_X(X, x, y, label, Gx, Gy, N, NG, Nlabel)
+\end{lstlisting}
+
+Matrix elements:
+\begin{equation}
+X_{i,\alpha\mathbf{G}} = e^{i\mathbf{G} \cdot \mathbf{r}_i} \delta_{\alpha,\text{species}(i)}
+\end{equation}
+
+Implemented as:
+\begin{lstlisting}[language=Fortran,caption=X-Matrix Elements]
+do i = 1, N
+   do iG = 1, NG
+      do iLabel = 1, Nlabel
+         if (label(i) == iLabel) then
+            idx = (iLabel-1)*NG + iG
+            phase = Gx(iG)*x(i) + Gy(iG)*y(i)
+            X(i, idx) = cmplx(cos(phase), sin(phase), dp)
+         end if
+      end do
+   end do
+end do
+\end{lstlisting}
+
+\subsection{Hamiltonian Projection}
+
+\subsubsection{Sparse Matrix Construction}
+
+The tight-binding Hamiltonian is first constructed in sparse CSR format:
+
+\begin{lstlisting}[language=Fortran,caption=Sparse Hamiltonian]
+call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, 
+                             neighCell, ns, is, KLoc, cell, 
+                             row_ptr, col_ind, values, sigma)
+\end{lstlisting}
+
+Matrix elements include:
+\begin{equation}
+H_{ij} = \epsilon_i \delta_{ij} + \sum_{\mathbf{R}} t_{ij}(\mathbf{R}) e^{i\mathbf{k} \cdot \mathbf{R}}
+\end{equation}
+
+where $t_{ij}(\mathbf{R})$ are hopping parameters and $\epsilon_i$ are on-site energies.
+
+\subsubsection{TAPW Projection}
+
+The projected Hamiltonian in TAPW space:
+\begin{equation}
+H^{TAPW} = X^\dagger H X
+\end{equation}
+
+\begin{lstlisting}[language=Fortran,caption=Hamiltonian Projection]
+call transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj)
+\end{lstlisting}
+
+Matrix dimensions: $M = N_G \times N_{label}$ where $N_{label}$ typically equals 2 (sublattices A and B).
+
+\subsection{Eigenvalue Solution}
+
+The projected Hamiltonian is diagonalized using LAPACK:
+
+\begin{equation}
+H^{TAPW} \psi^{TAPW}_n = E_n \psi^{TAPW}_n
+\end{equation}
+
+\begin{lstlisting}[language=Fortran,caption=Diagonalization]
+allocate(eigvals(M))
+lwork = 2*M
+allocate(ZWorkLoc(2*M), DWorkLoc(3*M))
+
+call ZHEEV('V','U', M, Hproj, M, eigvals, ZWorkLoc, lwork, DWorkLoc, info)
+
+if (info /= 0) then
+   print *, "Diagonalization failed: ZHEEV info =", info
+   stop
+end if
+\end{lstlisting}
+
+\subsection{K-point Loop and Progress Tracking}
+
+The TAPW calculation is performed for each k-point in the path:
+
+\begin{lstlisting}[language=Fortran,caption=K-point Loop]
+do ip = 1, ptsTot
+   ! Progress tracking for TAPW (show every 10%)
+   if (useTAPW .and. modulo(ip, max(1, int(ptsTot/10))) == 0) then
+      call MIO_Print('TAPW progress: '//trim(num2str(nint(100.0_dp*ip/ptsTot)))//
+                     '% ('//trim(num2str(ip))//'/'//trim(num2str(ptsTot))//
+                     ' k-points)', 'diag')
+   end if
+   
+   do is = 1, nspin
+      KptsLoc = Kpts(:, ip)
+      call DiagH0TAPW(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, 
+                      maxNeigh, hopp, NList, Nneigh, neighCell, neig)
+      E(:, is, ip) = ELoc
+   end do
+end do
+\end{lstlisting}
+
+\section{Output Generation}
+
+\subsection{Band Structure File}
+
+After all k-points are calculated, the results are written to \texttt{generate.bands}:
+
+\begin{lstlisting}[language=Fortran,caption=Band Output]
+! Write TAPW matrix size header
+if (useTAPW) then
+   write(uu,'(A,I0)') '# TAPW matrix size: M = ', M_tapw
+end if
+
+! Write eigenvalues for each k-point
+do ip = 1, ptsTot
+   do is = 1, nspin
+      do i = 1, nAt
+         write(uu, *) E(i, is, ip)
+      end do
+   end do
+end do
+\end{lstlisting}
+
+\subsection{Debug Output Files}
+
+Several debug files are generated:
+\begin{itemize}
+    \item \texttt{brillouin\_zones\_debug.dat}: Brillouin zone vertices and K-points
+    \item \texttt{moire\_bz\_debug.dat}: Moiré BZ information
+    \item \texttt{g\_vectors\_debug.dat}: Generated G-vectors
+    \item \texttt{kpath\_debug\_*}: K-path coordinates
+\end{itemize}
+
+\section{Key Equations Summary}
+
+\subsection{Core TAPW Equations}
+
+\begin{align}
+\text{Basis functions:} \quad & \phi^{\alpha}_{\mathbf{G}}(\mathbf{r}) = \sum_{\mathbf{R}} e^{i(\mathbf{k} + \mathbf{G}) \cdot (\mathbf{R} + \boldsymbol{\tau}_\alpha)} \psi_\alpha(\mathbf{r} - \mathbf{R} - \boldsymbol{\tau}_\alpha) \\
+\text{Transformation matrix:} \quad & X_{i,\alpha\mathbf{G}} = e^{i\mathbf{G} \cdot \mathbf{r}_i} \delta_{\alpha,\text{species}(i)} \\
+\text{Projected Hamiltonian:} \quad & H^{TAPW} = X^\dagger H X \\
+\text{Eigenvalue equation:} \quad & H^{TAPW} \psi^{TAPW}_n = E_n \psi^{TAPW}_n
+\end{align}
+
+\subsection{Coordinate Systems}
+
+\begin{align}
+\text{Graphene lattice:} \quad & \mathbf{a}_1 = a_G(1,0), \quad \mathbf{a}_2 = a_G(\cos 60°, \sin 60°) \\
+\text{Reciprocal lattice:} \quad & \mathbf{rG} = 2\pi \cdot (\mathbf{A}^T)^{-1} \\
+\text{K-point:} \quad & \mathbf{k}_{ref} = \frac{2}{3}\mathbf{b}_1 + \frac{1}{3}\mathbf{b}_2 \\
+\text{G-vectors:} \quad & \mathbf{G}_{n_1,n_2} = n_1 \mathbf{b}_{1} + n_2 \mathbf{b}_{2}
+\end{align}
+
+\section{Implementation Parameters}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Parameter} & \textbf{Variable} & \textbf{Description} \\
+\hline
+\texttt{Diag.N\_G} & \texttt{tapwNG} & Number of G-vectors (default: 180) \\
+\texttt{Diag.MoireAngle} & \texttt{moireAngle} & Rotation angle in degrees \\
+\texttt{refF} & \texttt{(2/3, 1/3)} & Fractional K-point coordinates \\
+\texttt{Nlabel} & 2 & Number of sublattices (A, B) \\
+\texttt{M} & \texttt{NG × Nlabel} & TAPW matrix dimension \\
+\hline
+\end{tabular}
+\caption{Key TAPW Parameters}
+\end{table}
+
+\section{Computational Complexity}
+
+\begin{itemize}
+    \item \textbf{G-vector generation}: $O(N_G \log N_G)$ for sorting
+    \item \textbf{X-matrix construction}: $O(N \times N_G \times N_{label})$
+    \item \textbf{Hamiltonian projection}: $O(N_{sparse} \times M)$ where $N_{sparse}$ is number of non-zero elements
+    \item \textbf{Diagonalization}: $O(M^3)$ per k-point
+    \item \textbf{Total per k-point}: $O(M^3)$ dominated by diagonalization
+\end{itemize}
+
+For typical parameters ($N_G = 180$, $N_{label} = 2$), $M = 360$, making diagonalization the computational bottleneck.
+
+\section{Verification and Debugging}
+
+The implementation includes comprehensive verification:
+\begin{itemize}
+    \item Direct-reciprocal lattice duality checks
+    \item G-vector uniqueness and ordering verification  
+    \item Hamiltonian Hermiticity validation
+    \item Matrix norm consistency checks
+    \item Coordinate system orientation verification
+\end{itemize}
+
+\section{Conclusion}
+
+The TAPW implementation provides a systematic approach to calculating electronic band structures in moiré systems by:
+\begin{enumerate}
+    \item Constructing appropriate reciprocal space grids
+    \item Building plane wave basis functions
+    \item Projecting tight-binding Hamiltonians onto reduced subspaces
+    \item Efficiently solving eigenvalue problems
+    \item Generating standard band structure output
+\end{enumerate}
+
+The method effectively reduces the computational complexity from the full supercell size to a manageable projected space while maintaining the essential physics of the moiré system.
+
+\end{document}

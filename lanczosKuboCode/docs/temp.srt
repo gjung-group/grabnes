@@ -1,0 +1,97 @@
+
+calc.f90
+--------
+
+.. f:automodule:: calc
+
+cell.f90
+--------
+
+.. f:automodule:: cell
+
+constants.f90
+-------------
+
+.. f:automodule:: constants
+
+diag.f90
+--------
+
+.. f:automodule:: diag
+
+gauss.f90
+---------
+
+.. f:automodule:: gauss
+
+hybrid.f90
+----------
+
+.. f:automodule:: hybrid
+
+interface.f90
+-------------
+
+.. f:automodule:: interface
+
+kubo.f90
+--------
+
+.. f:automodule:: kubo
+
+kuboarrays.f90
+--------------
+
+.. f:automodule:: kuboarrays
+
+kubosubs.f90
+------------
+
+.. f:automodule:: kubosubs
+
+magf.f90
+--------
+
+.. f:automodule:: magf
+
+math.f90
+--------
+
+.. f:automodule:: math
+
+name.f90
+--------
+
+.. f:automodule:: name
+
+neigh.f90
+---------
+
+.. f:automodule:: neigh
+
+parallel.f90
+------------
+
+.. f:automodule:: parallel
+
+random.f90
+----------
+
+.. f:automodule:: random
+
+scf.f90
+-------
+
+.. f:automodule:: scf
+
+tbpar.f90
+---------
+
+.. f:automodule:: tbpar
+
+version.f90
+-----------
+
+.. f:automodule:: version
+
+

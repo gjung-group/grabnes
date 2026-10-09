@@ -1,0 +1,27 @@
+# Homebrew (macOS, Apple Silicon) GNU configuration.
+#
+# Preserved from the former grabnes_testrun source snapshot, where it was used
+# for the September 2026 MacBook validation described in ../BUILD_REPORT.md.
+# It has not been re-run against the canonical solver since that snapshot was
+# removed. Library prefixes are discovered with brew, not hard-coded.
+
+
+F90 = mpif90
+F90_SERIAL = gfortran
+FCFLAGS = -O0 -g -fcheck=all -fbacktrace -fopenmp -DMPI -DNO_MKL -DTIMER -DPOINTER_SIZE=8 \
+          -std=legacy -ffree-line-length-none -fallow-argument-mismatch
+ARFLAGS = rc
+
+INCFLAGS =
+ARPACK_PREFIX ?= $(shell brew --prefix arpack 2>/dev/null)
+OPENBLAS_PREFIX ?= $(shell brew --prefix openblas 2>/dev/null)
+
+ifneq ($(strip $(and $(ARPACK_PREFIX),$(OPENBLAS_PREFIX))),)
+LIBS = -L$(ARPACK_PREFIX)/lib -larpack \
+       -L$(OPENBLAS_PREFIX)/lib -lopenblas
+LDFLAGS = -fopenmp -Wl,-rpath,$(ARPACK_PREFIX)/lib \
+          -Wl,-rpath,$(OPENBLAS_PREFIX)/lib
+else
+LIBS = -larpack -lopenblas
+LDFLAGS = -fopenmp
+endif

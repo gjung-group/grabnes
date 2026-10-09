@@ -1,0 +1,28 @@
+# Portable GNU Fortran configuration for GRABNES
+#
+# Copy this file before building:
+#   cp make.sys.example make.sys
+#   make
+#
+# Required packages: GNU Fortran, MPI, BLAS, LAPACK, and ARPACK.
+# make.sys is ignored by Git; keep machine-specific paths there, not here.
+#
+# -ffree-line-length-none     the sources contain lines longer than 132 columns
+# -fallow-argument-mismatch   the legacy MPI wrappers pass buffers of several
+#                             types to the same MPI routine (GNU Fortran >= 10;
+#                             remove this flag for older compilers)
+#
+# -fopenmp                    OpenMP directives (thread-parallel loops)
+# -DNO_MKL                    BLAS/LAPACK other than Intel MKL: the shift-invert
+#                             sparse solver (Diag.SparseUseShift), which needs
+#                             MKL PARDISO, is then unavailable
+
+F90 = mpif90
+F90_SERIAL = gfortran
+FCFLAGS = -O3 -g -fopenmp -DMPI -DNO_MKL -DPOINTER_SIZE=8 \
+          -ffree-line-length-none -fallow-argument-mismatch
+ARFLAGS = rc
+
+INCFLAGS =
+LIBS = -larpack -llapack -lblas
+LDFLAGS = -fopenmp

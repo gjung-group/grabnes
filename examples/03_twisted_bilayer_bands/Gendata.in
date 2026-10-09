@@ -1,0 +1,37 @@
+Description Commensurate twisted-bilayer graphene band structure
+Prefix generate
+
+TypeOfSystem TwistedBilayerBasedOnMoireCell
+TypeOfBL Koshino
+
+MoireCellParameters 3 2 2 3
+SuperCell 1
+twoLayers .true.
+twoLayersZ1 18.33
+twoLayersZ2 21.67
+InterlayerDistance 3.34
+CellHeight 40.0
+
+Kubo.Calc .false.
+Diag.Calc .true.
+Calculate.Bands .true.
+
+Bands.NumPoints 12
+&begin Bands.Path 4
+2/3  1/3  0.0  # K
+0.0  0.0  0.0  # Gamma
+0.5  0.0  0.0  # M
+2/3  1/3  0.0  # K'
+&end Bands.Path
+
+Neigh.fastNNnotsquare .true.
+Neigh.LayerNeighbors 100
+Neigh.LayerDistFactor 6.2
+
+# Intralayer model: nearest-neighbor hopping only (one neighbor shell).
+# TB.NeighLevels 5 selects the full F2G2 intralayer model instead, which gives
+# different bands and has no reference data here.
+TB.NeighLevels 1
+
+WriteDataFiles .false.
+WritePos .false.

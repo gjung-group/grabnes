@@ -1,0 +1,10 @@
+# Generated calculation logs and data
+*/job.out
+*/generate.*
+*/kpath_debug_*
+*/file.*
+
+# Generated plots and Python caches
+*/*.png
+*/__pycache__/
+*/*.pyc
