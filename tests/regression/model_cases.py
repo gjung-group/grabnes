@@ -467,7 +467,10 @@ case("xyz4_sandwiched+bilayerF2G2_default", "xyz4_sandwiched", "x4", middleTwist
 # With identical sources and inputs these cases give a different Hamiltonian (or end differently) with the
 # checked GNU build, the optimised GNU build and the Intel build: they use variables that are never set
 # in this configuration, or random numbers. Their fingerprint is not compared; they are listed so that
-# the defect stays visible until each one is repaired or refused. Found 2026-10-09.
+# the defect stays visible until each one is repaired or refused. Found 2026-10-09; 51 before the
+# "not set" markers of ham.F90, 33 with them. With the Intel compiler a marked value does not always
+# propagate (its default floating-point model may drop a NaN), which is why some cases are refused by the
+# GNU builds and run with Intel.
 COMPILER_DEPENDENT = {
     'eff+MoireAddSecondMoire',
     'eff+MoireAddSecondMoire+Midpoint',
@@ -489,35 +492,17 @@ COMPILER_DEPENDENT = {
     'graphene+deltaDisorder',
     'graphene+realisticBubbles',
     'graphene+sinusModulation',
-    'graphene@bands',
-    'graphene@bands+NeighList',
-    'graphene@bands+NeighList+LayerNeighbors',
     'sys_MoireEncapsulatedBilayer',
     'sys_MoireEncapsulatedBilayer+removeF2G2Flag',
-    'sys_Trilayer',
     'sys_Trilayer+TrilayerAddShift',
-    'tbg+BLKaxiras+BilayerOneParameter',
-    'tbg+BLKaxiras+BilayerThreeParameters',
-    'tbg+BLKaxiras+addExponentialDecayForDihedral',
-    'tbg+BLKaxiras+changeLatticeParameterForSrivaniModel',
-    'tbg+BLKaxiras+deactivateV3',
     'tbg+BLKaxiras+deactivateV6',
     'tbg+BLKaxiras+findThetasGeometrically',
     'tbg+BLKaxiras+newFittingFunctions',
     'tbg+BLKaxiras+oldParameterSet',
-    'tbg+BLKaxiras+onlyV0',
     'tbg+BLKaxiras+oppositedxdy',
     'tbg+BLKaxiras+sublatticeDependent',
     'tbg+BLKaxiras+sublatticeIndependent',
     'tbg+BLKaxiras+switchV3Sign',
-    'tbg+BLKaxiras+useBNGSrivani',
-    'tbg+BLKaxiras+useBNGKaxiras',
-    'tbg+BLKaxiras+useOnlyVAB',
-    'tbg+BLKaxiras+useTheta',
-    'tbg+BLKaxiras+useThetaIJ',
-    'tbg+BLSrivani+sublatticeDependent',
-    'tbg+TypeOfBL_BLKaxiras',
     'tbg+TypeOfBL_BLKaxiras+NeighLevels1',
     'tbg+twistedBLAddShift',
-    'xyz3_enc+GBNOffDiag',
 }

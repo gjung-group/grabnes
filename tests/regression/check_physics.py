@@ -13,6 +13,10 @@ hbn_gap         Monolayer hBN, nearest-neighbor hopping, 3 x 3 cell (the K point
                 hopping term vanishes, so the band edges are exactly the two on-site energies, each twice.
 sparse_dense    Twisted bilayer (364 atoms): the 20 levels returned by the sparse solver (ARPACK, levels
                 nearest to zero energy) against the dense diagonalization, in both directions.
+tapw_two_way    The same bilayer with the plane-wave reduction (TAPW, 124 states per valley instead of 364):
+                within 1 eV of charge neutrality the levels of the K and K' runs together must be the exact
+                levels, one to one (equal counts, each within 0.05 meV), at three k-points. Control: with a
+                wrong moire angle the same comparison must fail, so the test can tell a wrong basis.
 
 Exit status 1 if a check fails. Requires NumPy.
 """
@@ -56,14 +60,14 @@ class Runner:
     def __init__(self, a):
         self.a, self.failures = a, 0
 
-    def run(self, name, text):
+    def run(self, name, text, threads="2"):
         d = os.path.join(self.a.work, name)
         shutil.rmtree(d, ignore_errors=True)
         os.makedirs(d)
         open(os.path.join(d, "Gendata.in"), "w").write("Prefix generate\n" + text)
         with open(os.path.join(d, "job.out"), "w") as out:
             rc = subprocess.run(self.a.launcher.split() + [os.path.abspath(self.a.bin), "Gendata.in"], cwd=d, stdout=out,
-                                stderr=subprocess.STDOUT, preexec_fn=unlimited_stack, env=dict(os.environ, OMP_NUM_THREADS="2", OMP_STACKSIZE="512M"), timeout=900).returncode
+                                stderr=subprocess.STDOUT, preexec_fn=unlimited_stack, env=dict(os.environ, OMP_NUM_THREADS=threads, OMP_STACKSIZE="512M"), timeout=900).returncode
         if rc != 0:
             raise RuntimeError(f"the solver ended with status {rc} (see {d}/job.out)")
         # header: three lines, then "nAt nspin nk"; every k-point is its path length followed by the levels,
@@ -148,6 +152,44 @@ def sparse_dense(r):
     return problems
 
 
+TBG = ("TypeOfSystem TwistedBilayerBasedOnMoireCell\nTypeOfBL Koshino\nMoireCellParameters 6 5 5 6\ntwoLayers .true.\n"
+       "twoLayersZ1 18.33\ntwoLayersZ2 21.67\nInterlayerDistance 3.34\nCellHeight 40.0\nNeigh.LayerNeighbors 100\n"
+       "Neigh.LayerDistFactor 6.2\n" + BANDS + path([(0.21, 0.37), (0.0, 0.0), (0.5, 0.0), (0.21, 0.37)]))
+
+
+def tapw_two_way(r):
+    exact = r.run("tapw_exact", TBG)
+
+    def valleys(tag, angle):
+        return [r.run(f"tapw_{tag}_{v}", TBG + "useTAPW .true.\nuseDenseMatrixTAPW .true.\nDiag.N_G 5\nTAPW.aG 2.46\n"
+                      f"Diag.MoireAngle {angle}\nDiag.UseKprimeValley {flag}\n", threads="1")
+                for v, flag in (("K", ".false."), ("Kp", ".true."))]
+
+    def compare(runs, label):
+        worst, equal_counts = 0.0, True
+        for k in range(3):
+            e = np.sort(exact[k])
+            e0 = 0.5 * (e[len(e) // 2 - 1] + e[len(e) // 2])
+            t = np.sort(np.concatenate([x[k] for x in runs]))
+            t, ew = t[(t != 0.0) & (abs(t - e0) < 1.0)], e[abs(e - e0) < 1.0]
+            same = len(t) == len(ew) and len(t) > 0
+            d = float(np.max(abs(t - ew))) if same else float("inf")
+            print(f"  {label}, k-point {k + 1}: TAPW levels {len(t)}, exact levels {len(ew)}, largest difference "
+                  + (f"{d * 1e3:.4f} meV" if same else "undefined"))
+            equal_counts &= same
+            worst = max(worst, d)
+        return equal_counts, worst
+
+    problems = []
+    ok, worst = compare(valleys("angle0", "0.0"), "moire angle 0")
+    if not ok or worst > 5e-5:
+        problems.append("the TAPW levels of the two valleys are not the exact levels within 1 eV of neutrality")
+    ok, worst = compare(valleys("control", "26.9955"), "control (wrong angle)")
+    if ok and worst < 5e-3:
+        problems.append("the control with a wrong moire angle also agrees: the comparison is not sensitive")
+    return problems
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--bin", required=True)
@@ -158,6 +200,7 @@ def main():
     r.check("landau_levels", lambda: landau_levels(r))
     r.check("hbn_gap", lambda: hbn_gap(r))
     r.check("sparse_dense", lambda: sparse_dense(r))
+    r.check("tapw_two_way", lambda: tapw_two_way(r))
     print()
     print("PASS: all physics checks" if not r.failures else f"FAIL: {r.failures} physics check(s)")
     sys.exit(1 if r.failures else 0)
