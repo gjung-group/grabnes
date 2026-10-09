@@ -182,6 +182,10 @@ subroutine SCFHam0(N,H,E,K,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
    integer :: i, j, in, info
    real(dp) :: R(3)
 
+#ifdef DEBUG
+   call MIO_Debug('SCFHam0',0)
+#endif /* DEBUG */
+
    H = 0.0_dp
    do i=1,N
       H(i,i) = H0(i)
@@ -195,6 +199,10 @@ subroutine SCFHam0(N,H,E,K,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
    if (info/=0) then
       call MIO_Kill('Error in diagonalization','scf','SCFHam0')
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('SCFHam0',1)
+#endif /* DEBUG */
 
 end subroutine SCFHam0
 
@@ -211,6 +219,10 @@ subroutine SCFHam(N,H,E,charge,ns,K,cell,H0,maxN,hopp,NList,Nneigh,neighCell,Spe
 
    integer :: i, j, in, info
    real(dp) :: R(3), zz
+
+#ifdef DEBUG
+   call MIO_Debug('SCFHam',0)
+#endif /* DEBUG */
 
    H = 0.0_dp
    do i=1,N
@@ -231,6 +243,10 @@ subroutine SCFHam(N,H,E,charge,ns,K,cell,H0,maxN,hopp,NList,Nneigh,neighCell,Spe
       call MIO_Kill('Error in diagonalization','scf','SCFHam')
    end if
 
+#ifdef DEBUG
+   call MIO_Debug('SCFHam',1)
+#endif /* DEBUG */
+
 end subroutine SCFHam
 
 subroutine SCFInit(N)
@@ -241,11 +257,19 @@ subroutine SCFInit(N)
    real(dp) :: W(1), W2(1)
    integer :: INFO
 
+#ifdef DEBUG
+   call MIO_Debug('SCFInit',0)
+#endif /* DEBUG */
+
    call ZHEEV('N','L',N,A,N,W,OPT,-1,W2,INFO)
    if (INFO /= 0) call MIO_Kill('Error in workspace query for SCF diagonalization','scf','SCFInit')
    lwork = int(OPT(1))
    call MIO_Allocate(ZWork,lwork,'ZWork','scf')
    call MIO_Allocate(DWork,3*N-2,'DWork','scf')
+
+#ifdef DEBUG
+   call MIO_Debug('SCFInit',1)
+#endif /* DEBUG */
 
 end subroutine SCFInit
 

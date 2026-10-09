@@ -42,6 +42,10 @@ subroutine AtomsRotate(angle)
    real(dp), intent(in) :: angle
    real(dp) :: a, tempRat1
 
+#ifdef DEBUG
+   call MIO_Debug('AtomsRotate',0)
+#endif /* DEBUG */
+
    a = angle*pi/180.0_dp
    !$OMP PARALLEL DO
    do i=1,nAt
@@ -50,6 +54,10 @@ subroutine AtomsRotate(angle)
         Rat(2,i) = tempRat1 * sin(a) + Rat(2,i) * cos(a)
    end do
    !$OMP END PARALLEL DO
+
+#ifdef DEBUG
+   call MIO_Debug('AtomsRotate',1)
+#endif /* DEBUG */
 
 end subroutine AtomsRotate
 
@@ -1228,6 +1236,10 @@ subroutine AtomsConstruct(X,mm,angle,label,d,yShift)
    real(dp) :: basis(3,2)
    character(len=80) :: str
 
+#ifdef DEBUG
+   call MIO_Debug('AtomsConstruct',0)
+#endif /* DEBUG */
+
    if (mm(1)==0 .and. mm(2)==0) then
       call MIO_Kill('The supercell indices are zero: MoireCellParameters must be given for this type of system', &
         'atoms','AtomsLattice')
@@ -1289,6 +1301,10 @@ subroutine AtomsConstruct(X,mm,angle,label,d,yShift)
    end do
    !$OMP END PARALLEL DO
 
+#ifdef DEBUG
+   call MIO_Debug('AtomsConstruct',1)
+#endif /* DEBUG */
+
 end subroutine AtomsConstruct
 
 subroutine AtomsConstructAsymm(X,mm,mm2,angle,label,d,yShift)
@@ -1310,6 +1326,10 @@ subroutine AtomsConstructAsymm(X,mm,mm2,angle,label,d,yShift)
    character(len=80) :: str
 
    ! Modified
+#ifdef DEBUG
+   call MIO_Debug('AtomsConstructAsymm',0)
+#endif /* DEBUG */
+
    ncell = mm(1)*mm2(1) + mm(1)*mm(2) + mm(2)**2
    ! Modified
 
@@ -1356,6 +1376,10 @@ subroutine AtomsConstructAsymm(X,mm,mm2,angle,label,d,yShift)
    end do
    !$OMP END PARALLEL DO
 
+#ifdef DEBUG
+   call MIO_Debug('AtomsConstructAsymm',1)
+#endif /* DEBUG */
+
 end subroutine AtomsConstructAsymm
 
 subroutine AtomsRibbons(type,nC,nBN,n,X,Sp)
@@ -1379,6 +1403,10 @@ subroutine AtomsRibbons(type,nC,nBN,n,X,Sp)
    integer, intent(out) :: Sp(n)
 
    integer :: i
+
+#ifdef DEBUG
+   call MIO_Debug('AtomsRibbons',0)
+#endif /* DEBUG */
 
    if (type=='Z' .or. type=='z') then
       do i=1,nC
@@ -1417,6 +1445,10 @@ subroutine AtomsRibbons(type,nC,nBN,n,X,Sp)
          X(3,i) = 0.50_dp
       end do
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('AtomsRibbons',1)
+#endif /* DEBUG */
 
 end subroutine AtomsRibbons
 

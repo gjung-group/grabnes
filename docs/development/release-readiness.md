@@ -148,6 +148,21 @@ Recorded so that they are not lost; none is required for the first release.
   part only. To be wired in and validated.
 - **Geometry names that are tested in the source but not accepted:**
   `TwistedBilayerBasedOnMoireCellRectangular`, `BLtoSLYoungju`, `Hybrid`.
+- **Keys read with different defaults in different places.** Most are the
+  parameter sets of different models read under one name (`SingleLayert2KSL`,
+  `BilayertAB1`, `CAA`, `PhiAA`, ...), which is harmless but undocumented. A
+  few are inconsistencies whose resolution changes a default and is therefore
+  left to a decision:
+  `SuperCell` (1 everywhere, but 60 where `ham.F90` computes the moire length
+  for `periodicStrain` and the strained-moire terms);
+  `CellSize` (50; 55 for the position of `MoireBilayerElectricFieldInvert`;
+  1 in two spectral-function routines);
+  `InterlayerDistance` (3.22; 3.35 in two branches of `ham.F90`);
+  `MagField.Integer` (0; 1 where `ham.F90` reads it for `FrankMagneticField`);
+  `Neigh.LayerNeighbors` (0, 1 or 2 depending on the routine);
+  `Epsilon` (0.01; 0.001 in `DiagHamChern`);
+  `bubbleSigmaR` (1.0 and 1.42); `vpppi0` (2.7 and 3.5);
+  `MoirePotCabG` (0.002235 and 0.001987).
 - **MPI domain decomposition**, disabled at present.
 
 ## Minimum actions before the announcement

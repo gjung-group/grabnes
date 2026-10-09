@@ -8965,11 +8965,18 @@ subroutine cart_to_frac_coords(cart_coords, basis_vectors, frac_coords)
   integer :: i
 
   ! Calculate inverse of basis vectors matrix
+#ifdef DEBUG
+  call MIO_Debug('cart_to_frac_coords',0)
+#endif /* DEBUG */
+
   det = basis_vectors(1,1) * basis_vectors(2,2) - basis_vectors(1,2) * basis_vectors(2,1)
 
   if (abs(det) < 1.0e-12_dp) then
      call MIO_Print('Warning: Singular basis vectors matrix in cart_to_frac_coords','diag')
      frac_coords = cart_coords  ! Fallback
+#ifdef DEBUG
+     call MIO_Debug('cart_to_frac_coords',1)
+#endif /* DEBUG */
      return
   end if
 
@@ -8983,6 +8990,10 @@ subroutine cart_to_frac_coords(cart_coords, basis_vectors, frac_coords)
      frac_coords(i, 1) = inv_basis(1,1) * cart_coords(i,1) + inv_basis(1,2) * cart_coords(i,2)
      frac_coords(i, 2) = inv_basis(2,1) * cart_coords(i,1) + inv_basis(2,2) * cart_coords(i,2)
   end do
+
+#ifdef DEBUG
+  call MIO_Debug('cart_to_frac_coords',1)
+#endif /* DEBUG */
 
 end subroutine cart_to_frac_coords
 
@@ -10199,6 +10210,10 @@ subroutine DiagHamArpack(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,n
    complex(dp) :: ZWorkLoc(lwork)
    real(dp) :: DWorkLoc(3*N-2)
 
+#ifdef DEBUG
+   call MIO_Debug('DiagHamArpack',0)
+#endif /* DEBUG */
+
    HLoc = 0.0_dp
    do i=1,N
       HLoc(i,i) = H0(i)
@@ -10227,6 +10242,10 @@ subroutine DiagHamArpack(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,n
    if (info/=0) then
       call MIO_Kill('Error in diagonalization','diag','DiagHamArpack')
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('DiagHamArpack',1)
+#endif /* DEBUG */
 
 end subroutine DiagHamArpack
 
@@ -10265,6 +10284,10 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
 
    integer :: nTS
    integer :: kk
+
+#ifdef DEBUG
+   call MIO_Debug('DiagSpectralWeightNishi',0)
+#endif /* DEBUG */
 
    call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
@@ -10330,6 +10353,10 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
    end if
 
    ! steps
+
+#ifdef DEBUG
+   call MIO_Debug('DiagSpectralWeightNishi',1)
+#endif /* DEBUG */
 
 end subroutine DiagSpectralWeightNishi
 

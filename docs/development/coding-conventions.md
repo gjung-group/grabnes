@@ -66,10 +66,14 @@ October 2026 showed to be necessary.
 - The name passed is the name of the routine, exactly. The exit call has the
   argument 1 and is placed before every `return` as well as at the end.
 - The original files follow this throughout (`kubo.F90`, `gauss.F90`,
-  `magf.F90`, `cell.F90`: every routine). The later files do not: 3 of 36
-  routines in `ham.F90`, 16 of 119 in `diag.F90`, 2 of 17 in `neigh.F90`,
-  none in `calc.F90`. A trace of those files is therefore incomplete, and the
-  clean-up adds the two calls to every routine.
+  `magf.F90`, `cell.F90`: every routine). The later files did not (3 of 36
+  routines in `ham.F90`, 16 of 119 in `diag.F90`, 2 of 17 in `neigh.F90`, none
+  in `calc.F90`). `tools/maintenance/add_debug_trace.py` adds the two calls to
+  the subroutines that lack them, with two exceptions that are deliberate:
+  a routine called from inside a parallel region (several threads would write
+  at once; this includes everything below the k-point loop of `DiagBands`) and
+  a routine called once per atom or bond are not traced. New routines of
+  those kinds stay without trace; every other new subroutine gets it.
 - The same pair exists for timing, `MIO_TimerCount('module::Routine')` and
   `MIO_TimerStop`, under `#ifdef TIMER`.
 

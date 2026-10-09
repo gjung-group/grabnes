@@ -118,6 +118,10 @@ subroutine NeighSearchLayered(natoms,x,y,z,A1,A2,cut2intra,cut2inter,periodicZ,A
    logical :: keep
    integer, allocatable :: cidx(:), cu(:,:), head(:,:), next(:)
 
+#ifdef DEBUG
+   call MIO_Debug('NeighSearchLayered',0)
+#endif /* DEBUG */
+
 #ifdef TIMER
    call MIO_TimerCount('nsearch')
 #endif /* TIMER */
@@ -270,6 +274,10 @@ subroutine NeighSearchLayered(natoms,x,y,z,A1,A2,cut2intra,cut2inter,periodicZ,A
    call MIO_TimerStop('nsearch')
 #endif /* TIMER */
 
+#ifdef DEBUG
+   call MIO_Debug('NeighSearchLayered',1)
+#endif /* DEBUG */
+
 end subroutine NeighSearchLayered
 
 !> @brief Shell radii, the Kubo copy of the list, and optional data files.
@@ -279,11 +287,19 @@ subroutine NeighFinishSearch()
 
    logical :: prnt
 
+#ifdef DEBUG
+   call MIO_Debug('NeighFinishSearch',0)
+#endif /* DEBUG */
+
    call NeighSetRadii()
    call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    NList2 = NList
    call MIO_InputParameter('WriteDataFiles',prnt,.false.)
    if (prnt) call NeighWriteDataFiles()
+
+#ifdef DEBUG
+   call MIO_Debug('NeighFinishSearch',1)
+#endif /* DEBUG */
 
 end subroutine NeighFinishSearch
 
@@ -297,6 +313,10 @@ subroutine NeighSetRadii()
    character(len=50) :: str
    integer :: i
 
+#ifdef DEBUG
+   call MIO_Debug('NeighSetRadii',0)
+#endif /* DEBUG */
+
    call MIO_InputParameter('TypeOfSystem',str,'Graphene')
    call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    do i=1,min(tbnn,maxShells)
@@ -307,6 +327,10 @@ subroutine NeighSetRadii()
          Nradii(i,2) = shellRadius(i)*aBN/sqrt(3.0_dp)*1.1_dp
       end if
    end do
+
+#ifdef DEBUG
+   call MIO_Debug('NeighSetRadii',1)
+#endif /* DEBUG */
 
 end subroutine NeighSetRadii
 
@@ -320,6 +344,10 @@ subroutine NeighWriteDataFiles()
    use atoms,                only : nAt, Species, Rat
 
    integer :: i, j
+
+#ifdef DEBUG
+   call MIO_Debug('NeighWriteDataFiles',0)
+#endif /* DEBUG */
 
    open(1,FILE='v')
    open(2,FILE='dx')
@@ -354,6 +382,10 @@ subroutine NeighWriteDataFiles()
    close(21)
    close(22)
 
+#ifdef DEBUG
+   call MIO_Debug('NeighWriteDataFiles',1)
+#endif /* DEBUG */
+
 end subroutine NeighWriteDataFiles
 
 !> @brief Read the neighbour list from the file v instead of searching
@@ -371,6 +403,10 @@ subroutine NeighReadDataFiles()
    logical :: readNeighborDetails
    integer :: i, j, jj, ix, iy, ncell(3)
    real(dp) :: v(3), d
+
+#ifdef DEBUG
+   call MIO_Debug('NeighReadDataFiles',0)
+#endif /* DEBUG */
 
    call MIO_Print('Reading the neighbours from the file v instead of searching for them','neigh')
    call MIO_Allocate(Nneigh,[inode1],[inode2],'Nneigh','neigh')
@@ -422,6 +458,10 @@ subroutine NeighReadDataFiles()
    call NeighSetRadii()
    call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    NList2 = NList
+
+#ifdef DEBUG
+   call MIO_Debug('NeighReadDataFiles',1)
+#endif /* DEBUG */
 
 end subroutine NeighReadDataFiles
 
@@ -1343,6 +1383,10 @@ subroutine fastNNnotsquare(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2)
 
    logical :: readDataFiles
 
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquare',0)
+#endif /* DEBUG */
+
    call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call NeighReadDataFiles()
@@ -1350,6 +1394,10 @@ subroutine fastNNnotsquare(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2)
       call NeighSearchLayered(natoms,x,y,z,A1,A2,cutoff2,cutoff2bis,.false.,0.0_dp,.false.)
       call NeighFinishSearch()
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquare',1)
+#endif /* DEBUG */
 
 end subroutine fastNNnotsquare
 
@@ -1402,6 +1450,10 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
    logical :: readDataFiles, only000Cell
 
    integer :: uX, uY, uZ, nmax, unitsX, unitsY
+
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareSmall',0)
+#endif /* DEBUG */
 
    call MIO_InputParameter('TypeOfSystem',str,'Graphene')
    call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
@@ -1787,6 +1839,10 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
        end if
    end if
 
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareSmall',1)
+#endif /* DEBUG */
+
 end subroutine fastNNnotsquareSmall
 
 subroutine fastNNnotsquareBulk(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2,A3)
@@ -1799,6 +1855,10 @@ subroutine fastNNnotsquareBulk(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2,A3)
 
    logical :: readDataFiles
 
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareBulk',0)
+#endif /* DEBUG */
+
    call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call NeighReadDataFiles()
@@ -1806,6 +1866,10 @@ subroutine fastNNnotsquareBulk(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2,A3)
       call NeighSearchLayered(natoms,x,y,z,A1,A2,cutoff2,cutoff2bis,.true.,A3,.false.)
       call NeighFinishSearch()
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareBulk',1)
+#endif /* DEBUG */
 
 end subroutine fastNNnotsquareBulk
 
@@ -1821,6 +1885,10 @@ subroutine fastNNnotsquareBulkSmall(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2,A3)
 
    logical :: readDataFiles, addSecondLayerInteractions
 
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareBulkSmall',0)
+#endif /* DEBUG */
+
    call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call NeighReadDataFiles()
@@ -1829,6 +1897,10 @@ subroutine fastNNnotsquareBulkSmall(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2,A3)
       call NeighSearchLayered(natoms,x,y,z,A1,A2,cutoff2,cutoff2bis,.true.,A3,addSecondLayerInteractions)
       call NeighFinishSearch()
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareBulkSmall',1)
+#endif /* DEBUG */
 
 end subroutine fastNNnotsquareBulkSmall
 
@@ -1872,6 +1944,10 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    logical :: prnt
 
    real(dp) :: fracFactor, fracFactor2
+
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareNotRectangle',0)
+#endif /* DEBUG */
 
    dx=0.0_dp;dy=0.0_dp;dz=0.0_dp !;dr=0.0_dp
 
@@ -2261,6 +2337,10 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
       close(4)
    end if
 
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareNotRectangle',1)
+#endif /* DEBUG */
+
 end subroutine fastNNnotsquareNotRectangle
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2305,6 +2385,10 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
    logical :: prnt
 
    real(dp) :: distFact
+
+#ifdef DEBUG
+   call MIO_Debug('fastNN',0)
+#endif /* DEBUG */
 
    call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
 
@@ -2547,7 +2631,15 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
       close(4)
    end if
 
+#ifdef DEBUG
+   call MIO_Debug('fastNN',1)
+#endif /* DEBUG */
    RETURN
+
+#ifdef DEBUG
+   call MIO_Debug('fastNN',1)
+#endif /* DEBUG */
+
 END SUBROUTINE fastNN
 
 end module neigh

@@ -31,6 +31,10 @@ subroutine CalcSelect()
    real(dp) :: d, flux, phase, v1(3), v2(3)
    real(dp) :: diffx, diffy, mmphi
 
+#ifdef DEBUG
+   call MIO_Debug('CalcSelect',0)
+#endif /* DEBUG */
+
    call MIO_InputParameter('moireBLShift.Calc',u,.false.)
    if (u) then
        call TBInit()
@@ -103,6 +107,10 @@ subroutine CalcSelect()
        end do
     end if
 
+#ifdef DEBUG
+   call MIO_Debug('CalcSelect',1)
+#endif /* DEBUG */
+
 end subroutine CalcSelect
 
 subroutine CalcKubo()
@@ -137,6 +145,10 @@ subroutine CalcKubo()
    integer u, numberOfLayers
    integer flag1, flag2, n, cellSize, numberOfBNAtoms1, numberOfBNAtoms2, numberOfCAtoms, numberOfAtomsInLayer, maxSpecies
    real(dp) :: delta, limit1, aCC
+
+#ifdef DEBUG
+   call MIO_Debug('CalcKubo',0)
+#endif /* DEBUG */
 
    call MIO_InputParameter('RecursionNumber',nRecurs,700)
    call MIO_InputParameter('NumberofTimeSteps',nT,500)
@@ -453,6 +465,10 @@ subroutine CalcKubo()
                     ac,bc,nEn,Emin,Emax,eps,nRecurs,nPol,nWr)
    end if
 
+#ifdef DEBUG
+   call MIO_Debug('CalcKubo',1)
+#endif /* DEBUG */
+
 end subroutine CalcKubo
 
 !subroutine CalcTunn()
@@ -499,6 +515,10 @@ subroutine CalcTunn()
    real(dp) :: dx,dy,bigKVec(3),bigKVecX,bigKVecY,bigKVecZ, dVec(3)
    complex(dp) :: TAA, TAB
    type(cl_file) :: file1, file2, file3, file4
+
+#ifdef DEBUG
+   call MIO_Debug('CalcTunn',0)
+#endif /* DEBUG */
 
    if (frac) call AtomsSetCart()
    call MIO_InputParameter('bigKVecX',bigKVecX,0.0_dp) ! give the coordinates of K like for the k-path, one by one
@@ -548,6 +568,10 @@ subroutine CalcTunn()
    call file3%Close()
    call file4%Close()
 
+#ifdef DEBUG
+   call MIO_Debug('CalcTunn',1)
+#endif /* DEBUG */
+
 end subroutine CalcTunn
 
 subroutine CalcDiag()
@@ -573,6 +597,10 @@ subroutine CalcDiag()
 #include "calc_semicl.inc"
 #undef SEMICL_SECTION
 #endif
+
+#ifdef DEBUG
+   call MIO_Debug('CalcDiag',0)
+#endif /* DEBUG */
 
    call MIO_InputParameter('Calculate.DOS',dos,.false.)
    call MIO_InputParameter('Calculate.PDOS',PDOS,.false.)
@@ -715,6 +743,10 @@ subroutine CalcDiag()
    else if (spectralEnergyCutNickDale) then
       call DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('CalcDiag',1)
+#endif /* DEBUG */
 
 end subroutine CalcDiag
 

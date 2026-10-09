@@ -32,6 +32,10 @@ subroutine HybridGen(nAt,Rat,Species,in1,in2)
    integer :: clock
    integer, pointer :: seed(:)
 
+#ifdef DEBUG
+   call MIO_Debug('HybridGen',0)
+#endif /* DEBUG */
+
    call random_seed(size = n)
    allocate(seed(n))
    call system_clock(COUNT=clock)
@@ -105,6 +109,10 @@ loop: do
    call MIO_Print('Final percentage: '//trim(num2str(per,2))//'%','hybrid')
    if (l) call MIO_Deallocate(site)
    call MIO_Deallocate(c)
+
+#ifdef DEBUG
+   call MIO_Debug('HybridGen',1)
+#endif /* DEBUG */
 
 end subroutine HybridGen
 

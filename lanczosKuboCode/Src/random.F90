@@ -81,6 +81,10 @@ subroutine RandTest(rng,n)
    real(dp) :: s, r
    type(cl_file) :: file
 
+#ifdef DEBUG
+   call MIO_Debug('RandTest',0)
+#endif /* DEBUG */
+
    filename = trim(prefix)//'.'//trim(num2str(nThread))//'.RNDM'
    u = 200+nThread
    open(u,FILE=filename,STATUS='replace')
@@ -96,6 +100,10 @@ subroutine RandTest(rng,n)
    call MIO_Print('Average: '//trim(num2str(s,12)),'random')
    call MIO_Print('')
    close(u)
+
+#ifdef DEBUG
+   call MIO_Debug('RandTest',1)
+#endif /* DEBUG */
 
 end subroutine RandTest
 

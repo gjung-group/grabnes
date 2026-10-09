@@ -33,6 +33,10 @@ subroutine InterfacePot1()
    real(dp) :: Amp, f, fp, l
    integer :: i
 
+#ifdef DEBUG
+   call MIO_Debug('InterfacePot1',0)
+#endif /* DEBUG */
+
    call MIO_InputParameter('InterfaceClambda',lambda(1,1),6.78_dp)
    call MIO_InputParameter('InterfaceBNlambda',lambda(1,3),12.56_dp)
    call MIO_InputParameter('InterfaceClambda_B',lambda(1,1),lambda(1,1))
@@ -93,6 +97,10 @@ subroutine InterfacePot1()
    call MIO_InputParameter('EdgeHoppingAmp',Ampeh,0.2_dp)
    call MIO_InputParameter('EdgeHoppingDamp',dampeh,0.65_dp)
 
+#ifdef DEBUG
+   call MIO_Debug('InterfacePot1',1)
+#endif /* DEBUG */
+
 end subroutine InterfacePot1
 
 subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
@@ -112,6 +120,10 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
    real(dp), pointer :: Rq(:,:)
    integer, pointer :: s(:)
    real(dp) :: v(3), d, r0
+
+#ifdef DEBUG
+   call MIO_Debug('InterfacePot2',0)
+#endif /* DEBUG */
 
    nQ = 0
    r0 = Nradii(1,1)
@@ -209,6 +221,10 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
 
    call MIO_Deallocate(Rq,'Rq','interface')
    call MIO_Deallocate(s,'s','interface')
+
+#ifdef DEBUG
+   call MIO_Debug('InterfacePot2',1)
+#endif /* DEBUG */
 
 end subroutine InterfacePot2
 

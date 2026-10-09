@@ -3187,6 +3187,10 @@ subroutine ComputePzNormals(pzn, nfallback)
    integer  :: i, ja, jb, nlay
    real(dp) :: acc(3), c(3), ba(3), bb(3), la, lb, rcut, nc, na
 
+#ifdef DEBUG
+   call MIO_Debug('ComputePzNormals',0)
+#endif /* DEBUG */
+
    nfallback = 0
    do i = inode1, inode2
       nlay = (Species(i) - 1) / 2 + 1
@@ -3218,6 +3222,10 @@ subroutine ComputePzNormals(pzn, nfallback)
       end if
    end do
 
+#ifdef DEBUG
+   call MIO_Debug('ComputePzNormals',1)
+#endif /* DEBUG */
+
 end subroutine ComputePzNormals
 
 #ifdef DEBUG
@@ -3237,6 +3245,10 @@ subroutine HamPrintNormalStats(pzn, nfallback)
    real(dp), parameter :: r2d = 180.0_dp / pi
    integer  :: i, lay, laymin, laymax, ntot, imaxtilt
    real(dp) :: nx0, nx1, ny0, ny1, nz0, nz1, m0, m1, mag, tilt, tmax, tsum, maxmagdev
+
+#ifdef DEBUG
+   call MIO_Debug('HamPrintNormalStats',0)
+#endif /* DEBUG */
 
    laymin = minval(layerIndex(inode1:inode2))
    laymax = maxval(layerIndex(inode1:inode2))
@@ -3277,6 +3289,10 @@ subroutine HamPrintNormalStats(pzn, nfallback)
                   '   most-tilted atom = '//trim(num2str(imaxtilt))// &
                   '   max||n|-1| = '//trim(num2str(maxmagdev*1.0e15_dp,4))//' e-15','ham')
    call MIO_Print('  global: max tilt = '//trim(num2str(tmax*r2d,4))//' deg','ham')
+
+#ifdef DEBUG
+   call MIO_Debug('HamPrintNormalStats',1)
+#endif /* DEBUG */
 
 end subroutine HamPrintNormalStats
 #endif /* DEBUG */

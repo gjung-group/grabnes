@@ -35,6 +35,10 @@ contains
         integer :: nnz, k, i, j
 
         ! Count the number of non-zero elements
+#ifdef DEBUG
+        call MIO_Debug('convert_to_csr',0)
+#endif /* DEBUG */
+
         nnz = count(HLoc /= (0.0, 0.0))
 
         ! Allocate CSR arrays
@@ -60,6 +64,11 @@ contains
         print *, 'CSR row_ptr: ', row_ptr
         print *, 'CSR col_ind: ', col_ind
         print *, 'CSR values: ', values
+
+#ifdef DEBUG
+        call MIO_Debug('convert_to_csr',1)
+#endif /* DEBUG */
+
     end subroutine convert_to_csr
 end module sparse_matrix_module
 
