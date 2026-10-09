@@ -626,6 +626,20 @@ subroutine HamOnSite()
    integer :: nQcdw, iq, hq, kq, Dcdw, scX, scY
    integer, allocatable :: Qcdw(:,:)
    real(dp) :: cdwScalar, cdwMass, cdwPhase, argq, Vq
+   ! >>> unset markers
+   real(dp) :: hamUnset                    ! NaN: marks variables that have not been set
+   ! <<< unset markers
+   ! >>> unset markers
+   ! Value of a variable that has not been set: any use of it gives NaN, and the run stops
+   ! in HamCheckFinite instead of continuing with whatever the memory holds.
+   hamUnset = ieee_value(hamUnset, ieee_quiet_nan)
+   dx_b = hamUnset
+   dx_t = hamUnset
+   dy_b = hamUnset
+   dy_t = hamUnset
+   eps2 = hamUnset
+   h = hamUnset
+   ! <<< unset markers
 
 #ifdef DEBUG
    call MIO_Debug('HamOnSite',0)
@@ -1134,6 +1148,38 @@ subroutine HamOnSite()
          if (frac) call AtomsSetCart()
             !$OMP PARALLEL DO PRIVATE(i,dx,dy,dx_b,dx_t,dy_b,dy_t,dxTemp,dyTemp,dxTemp_b,dxTemp_t,dyTemp_b,dyTemp_t, Hjj, Hjj_b, Hjj_t, A, B, C, CAA, CBB, CAA0, CBB0, CApAp, CBpBp, CApAp0, CBpBp0, PhiAA, PhiBB, PhiApAp, PhiBpBp)
             do i=1,nAt
+              ! >>> unset markers
+              dx = hamUnset
+              dy = hamUnset
+              dx_b = hamUnset
+              dx_t = hamUnset
+              dy_b = hamUnset
+              dy_t = hamUnset
+              dxtemp = hamUnset
+              dytemp = hamUnset
+              dxtemp_b = hamUnset
+              dxtemp_t = hamUnset
+              dytemp_b = hamUnset
+              dytemp_t = hamUnset
+              hjj = hamUnset
+              hjj_b = hamUnset
+              hjj_t = hamUnset
+              a = hamUnset
+              b = hamUnset
+              c = hamUnset
+              caa = hamUnset
+              cbb = hamUnset
+              caa0 = hamUnset
+              cbb0 = hamUnset
+              capap = hamUnset
+              cbpbp = hamUnset
+              capap0 = hamUnset
+              cbpbp0 = hamUnset
+              phiaa = hamUnset
+              phibb = hamUnset
+              phiapap = hamUnset
+              phibpbp = hamUnset
+              ! <<< unset markers
               ! Initialize all variables to avoid using uninitialized values
               Hjj = 0.0_dp
               Hjj_b = 0.0_dp
@@ -1781,6 +1827,11 @@ subroutine HamOnSite()
              call MIO_InputParameter('MoireOnlyHZ',w,.false.)
              call MIO_InputParameter('MoireNoH0AndHZ',v,.false.)
              call MIO_InputParameter('MoireH0AndHZ',u,.false.)
+             if (.not. (l .or. w .or. v .or. u)) then
+                call MIO_Kill('The moire potential needs one of MoireH0AndHZ, MoireOnlyH0, MoireOnlyHZ or '// &
+                  'MoireNoH0AndHZ set to .true. to say which on-site terms are applied; without any of them the '// &
+                  'terms were never set. MoireH0AndHZ .true. applies both.','ham','HamOnSite')
+             end if
              call MIO_InputParameter('MoireBilayerTopAngle',MoireBilayerTopAngle,0.0_dp)
              MoireBilayerTopAngleGrad = MoireBilayerTopAngle*pi/180.0_dp
              call MIO_InputParameter('MoireBilayerBottomAngle',MoireBilayerBottomAngle,0.0_dp)
@@ -1790,6 +1841,14 @@ subroutine HamOnSite()
              if (frac) call AtomsSetCart()
              !$OMP PARALLEL DO PRIVATE(i,dx,dy,Hzjj,H0jj,C0d,Czd)
              do i=1,nAt
+               ! >>> unset markers
+               dx = hamUnset
+               dy = hamUnset
+               hzjj = hamUnset
+               h0jj = hamUnset
+               c0d = hamUnset
+               czd = hamUnset
+               ! <<< unset markers
                if (layerIndex(i).eq.1) then ! First layer, no rotation
                    dx = ((1.0_dp+eps) * cos(MoireBilayerBottomAngleGrad) - 1) * (Rat(1,i)) &
                              - ((1.0_dp+eps) * sin(MoireBilayerBottomAngleGrad) * (Rat(2,i)))
@@ -1905,6 +1964,11 @@ subroutine HamOnSite()
              call MIO_InputParameter('MoireOnlyHZ',w,.false.)
              call MIO_InputParameter('MoireNoH0AndHZ',v,.false.)
              call MIO_InputParameter('MoireH0AndHZ',u,.false.)
+             if (.not. (l .or. w .or. v .or. u)) then
+                call MIO_Kill('The moire potential needs one of MoireH0AndHZ, MoireOnlyH0, MoireOnlyHZ or '// &
+                  'MoireNoH0AndHZ set to .true. to say which on-site terms are applied; without any of them the '// &
+                  'terms were never set. MoireH0AndHZ .true. applies both.','ham','HamOnSite')
+             end if
              call MIO_InputParameter('MoireKekule',z,.false.)
              call MIO_InputParameter('MoireAddSecondMoire',zz,.false.)
              call MIO_InputParameter('LatticepercentFactor',epsFactor,1.0_dp)
@@ -1937,6 +2001,14 @@ subroutine HamOnSite()
              if (frac) call AtomsSetCart()
              !$OMP PARALLEL DO PRIVATE(i,dx,dy,Hzjj,H0jj,C0d,Czd)
              do i=1,nAt ! Konda, modify onsite energies
+                ! >>> unset markers
+                dx = hamUnset
+                dy = hamUnset
+                hzjj = hamUnset
+                h0jj = hamUnset
+                c0d = hamUnset
+                czd = hamUnset
+                ! <<< unset markers
                 if (twisted) then
                     dx = Rat(1,i) * ((1.0_dp+eps) * cos(twistAngleGrad) - 1) &
                          - Rat(2,i) * (1.0_dp+eps) * sin(twistAngleGrad)
@@ -2027,6 +2099,14 @@ subroutine HamOnSite()
              if (zz) then ! only used when adding second moire to the same carbon atoms
                 !$OMP PARALLEL DO PRIVATE(i,dx,dy,Hzjj,H0jj,C0d,Czd)
                 do i=1,nAt
+                   ! >>> unset markers
+                   dx = hamUnset
+                   dy = hamUnset
+                   hzjj = hamUnset
+                   h0jj = hamUnset
+                   c0d = hamUnset
+                   czd = hamUnset
+                   ! <<< unset markers
                    if (ll) then
                        if (twisted2) then
                            dx = Rat(1,i) * ((1.0_dp+eps2) * cos(twistAngleGrad2) - 1.0_dp) &
@@ -2113,6 +2193,15 @@ subroutine HamOnSite()
                 call MIO_InputParameter('MoireKekuleEpsFactor',KekuleEpsFactor,sqrt(3.0_dp))
                 !$OMP PARALLEL DO PRIVATE(i,dx,dy,dxPrime,dyPrime,Hkjj,C0d,Czd)
                 do i=1,nAt
+                  ! >>> unset markers
+                  dx = hamUnset
+                  dy = hamUnset
+                  dxprime = hamUnset
+                  dyprime = hamUnset
+                  hkjj = hamUnset
+                  c0d = hamUnset
+                  czd = hamUnset
+                  ! <<< unset markers
                   if (distanceDependentEffectiveModel) then
                      call distanceDependentC(C0d, C0, BfactorC0, interlayerDistances(i), z0)
                      call distanceDependentC(Czd, Cz, BfactorCz, interlayerDistances(i), z0)
@@ -2363,6 +2452,9 @@ subroutine HamOnSite()
       PNPRight = (n*sCell*aG)/6.0_dp * 4.0_dp
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         if (Rat(1,i).lt.PNPLeft) then
            H0(i) = H0(i) - PNPAmp
         else if (Rat(1,i).ge.PNPLeft .and. Rat(1,i).le.PNPRight) then
@@ -2391,6 +2483,9 @@ subroutine HamOnSite()
       limit4 = (n*sCell*aG)
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         if (Rat(1,i).lt.limit2) then
           H = PNPAmp * tanh((Rat(1,i)-limit1)/delta)
         else if ((Rat(1,i).gt.limit2).and.(Rat(1,i).lt.limit4)) then
@@ -2517,6 +2612,9 @@ subroutine HamOnSite()
 
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))*sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(2,i)/(n*sCell*aG))
          if (H.GT.0) then
            H0(i) = H0(i) - (-1.0_dp)**Species(i)*A
@@ -2530,6 +2628,9 @@ subroutine HamOnSite()
 
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))*sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(2,i)/(n*sCell*aG))
          if (H.GT.0) then
            H0(i) = H0(i) + A
@@ -2543,6 +2644,9 @@ subroutine HamOnSite()
       else
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))
          if (H.GT.0) then
            H0(i) = H0(i) + A
@@ -2572,6 +2676,9 @@ subroutine HamOnSite()
 
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         H = sin(2.0_dp*pi*Rat(1,i)/(2.0_dp*aG*NOWH)+P1)*sin(2.0_dp*pi*Rat(2,i)*sqrt(3.0_dp)/(4.0_dp*aG*NOWH)+P2)
          if (H.GT.0) then
            H0(i) = H0(i) - (-1.0_dp)**Species(i)*Amp2
@@ -2584,6 +2691,9 @@ subroutine HamOnSite()
       else
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         H = sin(2.0_dp*pi*Rat(1,i)/(2.0_dp*aG*NOWH)+P1)*sin(2.0_dp*pi*Rat(2,i)*sqrt(3.0_dp)/(4.0_dp*aG*NOWH)+P2)
          if (H.GT.0) then
            H0(i) = H0(i) + Amp2
@@ -2599,6 +2709,9 @@ subroutine HamOnSite()
       if (l) then
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         H = sin(2.0_dp*pi*Rat(1,i)/(2.0_dp*aG*NOWH)+P1)
          if (H.GT.0) then
            H0(i) = H0(i) + Amp2
@@ -2611,6 +2724,9 @@ subroutine HamOnSite()
       else
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         H = sin(2.0_dp*pi*Rat(2,i)*sqrt(3.0_dp)/(4.0_dp*aG*NOWH)+P2)
          if (H.GT.0) then
            H0(i) = H0(i) + Amp2
@@ -2634,6 +2750,9 @@ subroutine HamOnSite()
 
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))
          if (H.GT.0) then
            H0(i) = H0(i) - (-1.0_dp)**Species(i)*Amp3
@@ -2657,6 +2776,9 @@ subroutine HamOnSite()
       limit4 = (n*sCell*aG)
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
         if (Rat(1,i).lt.limit2) then
           H = Amp3 * tanh((Rat(1,i)-limit1)/delta)
         else if ((Rat(1,i).gt.limit2).and.(Rat(1,i).lt.limit4)) then
@@ -2681,6 +2803,9 @@ subroutine HamOnSite()
       !$OMP PARALLEL DO PRIVATE(i,H)
 
       do i = in1,in2
+      ! >>> unset markers
+      h = hamUnset
+      ! <<< unset markers
 
         H = sin(22*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))*sin(19*4.0_dp*pi*Rat(2,i)/(sqrt(3.0_dp)*n*sCell*aG))
 
@@ -2928,6 +3053,10 @@ end if
 
       !$OMP PARALLEL DO PRIVATE(i,iq,hq,kq,argq,Vq)
       do i=1,nAt
+         ! >>> unset markers
+         argq = hamUnset
+         vq = hamUnset
+         ! <<< unset markers
          Vq = 0.0_dp
          do iq=1,nQcdw
             hq = Qcdw(1,iq)

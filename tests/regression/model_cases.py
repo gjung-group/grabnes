@@ -42,6 +42,7 @@ MoirePotPhi0  1.510233401750693
 MoirePotPhiz  0.147131255943122
 MoirePotPhiab  0.342084533390889
 Latticepercent 0-0.0909090909090909
+MoireH0AndHZ .true.
 """ + COMMON
 
 BASES = {
@@ -310,7 +311,12 @@ toggles("tbg", ["KoshinoIntralayer", "MayouIntralayer", "F2G2Model=F", "realStra
 case("graphene+IntralayerRadius", "graphene", **{"Neigh.IntralayerRadius": "5.1134"})
 
 # ================================================================== E. effective moire models
-toggles("eff", ["MoireOffDiag", "MoireOnlyH0", "MoireOnlyHZ", "MoireNoH0AndHZ", "MoireH0AndHZ", "MoireSymmetricPot",
+# the base selects both on-site terms (MoireH0AndHZ); without any of the four selectors the terms are unset
+case("eff+noOnsiteSelection", "eff", MoireH0AndHZ=F)
+case("eff+MoireOnlyH0", "eff", MoireH0AndHZ=F, MoireOnlyH0=T)
+case("eff+MoireOnlyHZ", "eff", MoireH0AndHZ=F, MoireOnlyHZ=T)
+case("eff+MoireNoH0AndHZ", "eff", MoireH0AndHZ=F, MoireNoH0AndHZ=T)
+toggles("eff", ["MoireOffDiag", "MoireSymmetricPot",
                 "switchHzjj", "MoireKekule", "MoireTrilayer", "TrilayerFanZhang", "distanceDependentEffectiveModel",
                 "addDisplacements", "sublatticeBasis", "MoireBilayerElectricField", "MoireBLDeactivateUpperLayer",
                 "MoiretDBLDeactivateUpperLayers", "MoireTwisted", "useLayerSpecificOnsiteEnergyTerms",
@@ -326,9 +332,12 @@ toggles("tbg", ["tBGDiag", "tBGDiagPRB", "tBGOffDiag", "tBGSwitchDxDy", "MoireBi
                 "onlyBottomLayerMassTerm", "MoirePotential"])
 case("tbg+tBGOffDiagPRB", "tbg", tBGOffDiag=T, tBGOffDiagPRB=T)
 toggles("sys_MoireEncapsulatedBilayerMC", ["MoirePotential", "MoireEncapsulatedBilayer", "MoireBLDeactivateUpperLayer",
-                                           "MoiretDBLDeactivateUpperLayers", "MoireBilayerElectricField"], MoireJeil=T)
+                                           "MoiretDBLDeactivateUpperLayers", "MoireBilayerElectricField"], MoireJeil=T,
+        MoireH0AndHZ=T)
 case("sys_MoireEncapsulatedBilayerMC+MoireOffDiag", "sys_MoireEncapsulatedBilayerMC", MoirePotential=T, MoireJeil=T,
-     MoireOffDiag=T)
+     MoireH0AndHZ=T, MoireOffDiag=T)
+case("sys_MoireEncapsulatedBilayerMC+MoirePotential+noOnsiteSelection", "sys_MoireEncapsulatedBilayerMC",
+     MoirePotential=T, MoireJeil=T)
 
 # ================================================================== F. artificial potentials and disorder
 case("graphene+moireCDW", "graphene", moireCDW=T, **{"moireCDW.Amplitude": "0.02", "moireCDW.Denominator": "1",
@@ -472,37 +481,44 @@ case("xyz4_sandwiched+bilayerF2G2_default", "xyz4_sandwiched", "x4", middleTwist
 # propagate (its default floating-point model may drop a NaN), which is why some cases are refused by the
 # GNU builds and run with Intel.
 COMPILER_DEPENDENT = {
-    'eff+MoireAddSecondMoire',
-    'eff+MoireAddSecondMoire+Midpoint',
-    'eff+MoireAddSecondMoire+Twisted2',
-    'eff+MoireSecondMoireRotateFirst_off',
     'eff+MoireTrilayer',
     'graphene+Anderson',
     'graphene+Bubbles',
     'graphene+GaussDisorder',
     'graphene+MoireStrain',
     'graphene+PNP',
-    'graphene+PNPKink',
     'graphene+SquareChecker2219',
     'graphene+SquareFunction',
     'graphene+SquareFunction2',
     'graphene+SublatticeDisorder',
     'graphene+Zterm1D',
-    'graphene+Zterm1DKink',
     'graphene+deltaDisorder',
-    'graphene+realisticBubbles',
     'graphene+sinusModulation',
     'sys_MoireEncapsulatedBilayer',
     'sys_MoireEncapsulatedBilayer+removeF2G2Flag',
+    'sys_Trilayer',
     'sys_Trilayer+TrilayerAddShift',
+    'tbg+BLKaxiras+BilayerOneParameter',
+    'tbg+BLKaxiras+BilayerThreeParameters',
+    'tbg+BLKaxiras+addExponentialDecayForDihedral',
+    'tbg+BLKaxiras+addPressureDependence=F',
+    'tbg+BLKaxiras+changeLatticeParameterForSrivaniModel',
+    'tbg+BLKaxiras+deactivateV3',
     'tbg+BLKaxiras+deactivateV6',
     'tbg+BLKaxiras+findThetasGeometrically',
     'tbg+BLKaxiras+newFittingFunctions',
     'tbg+BLKaxiras+oldParameterSet',
+    'tbg+BLKaxiras+onlyV0',
     'tbg+BLKaxiras+oppositedxdy',
     'tbg+BLKaxiras+sublatticeDependent',
     'tbg+BLKaxiras+sublatticeIndependent',
     'tbg+BLKaxiras+switchV3Sign',
+    'tbg+BLKaxiras+useBNGKaxiras',
+    'tbg+BLKaxiras+useBNGSrivani',
+    'tbg+BLKaxiras+useOnlyVAB',
+    'tbg+BLKaxiras+useTheta',
+    'tbg+BLKaxiras+useThetaIJ',
+    'tbg+TypeOfBL_BLKaxiras',
     'tbg+TypeOfBL_BLKaxiras+NeighLevels1',
     'tbg+twistedBLAddShift',
 }
@@ -510,3 +526,5 @@ COMPILER_DEPENDENT = {
 # The BLKaxiras interlayer model on the generated twisted bilayer uses values that are not set: the GNU
 # builds refuse it (non-finite hoppings); with Intel the outcome changes from build to build.
 COMPILER_DEPENDENT |= {c for c in CASES if c.startswith("tbg+") and "BLKaxiras" in c}
+# TrilayerBasedOnMoireCell: non-finite hoppings with the optimised GNU build only, and not in every build.
+COMPILER_DEPENDENT |= {c for c in CASES if c.startswith("sys_Trilayer")}
