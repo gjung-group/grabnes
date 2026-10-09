@@ -363,6 +363,18 @@
   "fingerprint": "a32d165c6f3e9a63",
   "status": "ok"
  },
+ "graphene+alias_both_names": {
+  "fingerprint": "0257dcae6997c40b",
+  "status": "ok"
+ },
+ "graphene+alias_former_name": {
+  "fingerprint": "0257dcae6997c40b",
+  "status": "ok"
+ },
+ "graphene+alias_new_name": {
+  "fingerprint": "0257dcae6997c40b",
+  "status": "ok"
+ },
  "graphene+bubbleGaussian": {
   "fingerprint": "61909524e9c6043c",
   "status": "INERT"
@@ -439,6 +451,14 @@
   "fingerprint": "5198d81b20c459d2",
   "status": "ok"
  },
+ "graphene+moire_cell_key": {
+  "fingerprint": "c19e089b2bca3e8e",
+  "status": "ok"
+ },
+ "graphene+moire_cell_key_misspelt": {
+  "fingerprint": "c19e089b2bca3e8e",
+  "status": "ok"
+ },
  "graphene+printBubble": {
   "fingerprint": "",
   "status": "REFUSED"
@@ -464,8 +484,8 @@
   "status": "ok"
  },
  "graphene+realisticBubbles": {
-  "fingerprint": "61909524e9c6043c",
-  "status": "INERT"
+  "fingerprint": "",
+  "status": "UNDEFINED"
  },
  "graphene+removeF2G2Flag": {
   "fingerprint": "61909524e9c6043c",
@@ -1264,8 +1284,8 @@
   "status": "ok"
  },
  "xyz2_gbn+GBNOffDiag": {
-  "fingerprint": "",
-  "status": "REFUSED"
+  "fingerprint": "c60f1b557f46d278",
+  "status": "NONHERM"
  },
  "xyz2_gbn+GBNtwoLayersF2G2s": {
   "fingerprint": "db127201db8c0305",
@@ -1312,16 +1332,16 @@
   "status": "ok"
  },
  "xyz2_gbn_relaxed+GBNOffDiag": {
-  "fingerprint": "",
-  "status": "REFUSED"
+  "fingerprint": "f5e7879c890bf758",
+  "status": "NONHERM"
  },
  "xyz2_gbn_relaxed+GBNOffDiag+file": {
-  "fingerprint": "",
-  "status": "REFUSED"
+  "fingerprint": "29bae3f6f3725181",
+  "status": "NONHERM"
  },
  "xyz2_gbn_relaxed+GBNOffDiag+file+harmonic": {
-  "fingerprint": "",
-  "status": "REFUSED"
+  "fingerprint": "29bae3f6f3725181",
+  "status": "NONHERM"
  },
  "xyz2_gbn_relaxed+GBNuseDisplacementFile": {
   "fingerprint": "702286643612607e",
@@ -1476,8 +1496,8 @@
   "status": "ok"
  },
  "xyz3_enc_relaxed+GBNOffDiag+file": {
-  "fingerprint": "",
-  "status": "REFUSED"
+  "fingerprint": "b0075d3240bcccb9",
+  "status": "NONHERM"
  },
  "xyz3_t2BG": {
   "fingerprint": "",
@@ -1504,8 +1524,8 @@
   "status": "ok"
  },
  "xyz4_enc+GBNOffDiag": {
-  "fingerprint": "",
-  "status": "REFUSED"
+  "fingerprint": "034fcbdd7c28ad59",
+  "status": "NONHERM"
  },
  "xyz4_enc+encapsulatedFourLayersF2G2": {
   "fingerprint": "29ac35c4a4ddac3a",

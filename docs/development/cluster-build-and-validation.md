@@ -779,8 +779,9 @@ unset now produces a non-finite matrix element and is stopped. Effects:
 
 - No model that ran and was the same for all compilers changed, with these
   exceptions, which had been using an unset value: `GBNOffDiag` (the amplitude
-  `CabG` of its graphene-layer term is only set by `tBGOffDiag`; refused with
-  that explanation), `TypeOfBL Mayou` on the twisted bilayer, `BLKaxiras` and
+  `CabG` of its graphene-layer term was only set by `tBGOffDiag`; it is now
+  taken from `MoirePotCabG`, and the model runs with the warning that its
+  hopping table is not Hermitian), `TypeOfBL Mayou` on the twisted bilayer, `BLKaxiras` and
   `BLSrivani` with `addPressureDependence .false.`, `BLSrivani` with
   `findThetasGeometrically` (refused through the non-finite check).
 - `realStrain` used the reference distance of the previous neighbor for a

@@ -472,6 +472,18 @@ case("xyz3+middleTwist_default", "xyz3", "x3", middleTwist=None)
 case("xyz4_sandwiched+middleTwist_default", "xyz4_sandwiched", "x4", middleTwist=None)
 case("xyz4_sandwiched+bilayerF2G2_default", "xyz4_sandwiched", "x4", middleTwist=None, forceBilayerF2G2Intralayer=T)
 
+# ------------------------------------------------------------------ alternative key names
+# A key may be given under its Section.Name form or under its former name (input library). The pairs are
+# declared here in the input file; all three cases must build the one-shell Hamiltonian of graphene+NeighLevels1.
+ALIAS = "&begin Input.Aliases 1\nHam.Shells TB.NeighLevels\n&end Input.Aliases"
+case("graphene+alias_new_name", "graphene", **{"TB.NeighLevels": None, "Ham.Shells": "1", "&alias": ALIAS})
+case("graphene+alias_former_name", "graphene", **{"TB.NeighLevels": "1", "&alias": ALIAS})
+case("graphene+alias_both_names", "graphene", **{"TB.NeighLevels": "5", "Ham.Shells": "1", "&alias": ALIAS})
+# The key that cell.F90 read with a spelling mistake until October 2026 is kept as a compiled-in alternative
+# name: both spellings must build the same cell.
+case("graphene+moire_cell_key", "graphene", basedOnMoireCellParameters=T, MoireCellParameters="5 0 0 5")
+case("graphene+moire_cell_key_misspelt", "graphene", basedOnMoireCellParamters=T, MoireCellParameters="5 0 0 5")
+
 # ------------------------------------------------------------------ results that depend on the compiler
 # With identical sources and inputs these cases give a different Hamiltonian (or end differently) with the
 # checked GNU build, the optimised GNU build and the Intel build: they use variables that are never set
@@ -531,3 +543,6 @@ COMPILER_DEPENDENT = {
 COMPILER_DEPENDENT |= {c for c in CASES if c.startswith("tbg+") and "BLKaxiras" in c}
 # TrilayerBasedOnMoireCell: non-finite hoppings with the optimised GNU build only, and not in every build.
 COMPILER_DEPENDENT |= {c for c in CASES if c.startswith("sys_Trilayer")}
+# realisticBubbles: the number of bubbles is drawn at random. With none the switch does nothing; with one or
+# more the run is refused (the list of bubble centres is never filled). Which of the two happens varies.
+COMPILER_DEPENDENT.add("graphene+realisticBubbles")

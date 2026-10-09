@@ -5624,13 +5624,6 @@ subroutine HamHopping
 
          call MIO_InputParameter('MoirePotCabG',CabG_global,0.002235_dp)
          call MIO_InputParameter('tBGSwitchDxDy',tBGSwitchDxDy,.false.)
-         if (GBNOffDiag .and. .not. tBGOffDiag) then
-            ! The term of the graphene layers is evaluated with the amplitude CabG, which is only
-            ! set inside the tBGOffDiag block. Without it the amplitude was whatever the memory held.
-            call MIO_Kill('GBNOffDiag is not supported at present: the amplitude of its graphene-layer term '// &
-              '(CabG) is never set unless tBGOffDiag is on as well, so the term was undefined. Which '// &
-              'amplitude it should use (MoirePotCab or MoirePotCabG) has to be decided first.','ham','HamHopping')
-         end if
 
          call MIO_Allocate(HABreal,[inode1],[inode2],'H0','ham')
          call MIO_Allocate(HABimag,[inode1],[inode2],'H0','ham')
@@ -6051,7 +6044,8 @@ subroutine HamHopping
               end if
             end if
             if (GBNOffDiag) then
-                !if (i.eq. 1) print*, "adding the offdiagonal intralyer terms for GBN"
+                ! Amplitude of the graphene-layer term: MoirePotCabG (the tBGOffDiag block sets it otherwise)
+                if (.not. tBGOffDiag) CabG = CabG_global/g0
                 if (GBNuseDisplacementFile) then
                    if (encapsulatedThreeLayers .and. layerIndex(i).eq.2) then
                       dx_b = displacements_b(1,i)*cos(GlobalPhiL2a)+displacements_b(2,i)*sin(GlobalPhiL2a)

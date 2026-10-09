@@ -143,6 +143,9 @@ Recorded so that they are not lost; none is required for the first release.
 - **Hermitian evaluation of the remaining position-dependent bond terms**
   (`tBGOffDiag`, `GBNOffDiag`, the non-plain variants of `MoireOffDiag`), in the
   way `MoireOffDiagMidpoint` does it for the plain effective model.
+- **Hopping part of the PIA spin-orbit term.** `ApplyPIAHopping` exists but is
+  not called and was never tested, so `PIASOCterm` acts through its on-site
+  part only. To be wired in and validated.
 - **Geometry names that are tested in the source but not accepted:**
   `TwistedBilayerBasedOnMoireCellRectangular`, `BLtoSLYoungju`, `Hybrid`.
 - **MPI domain decomposition**, disabled at present.

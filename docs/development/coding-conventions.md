@@ -153,7 +153,9 @@ Each rule answers a defect that was found (see
 ## Renaming keys without breaking inputs
 
 Bringing the 587 keys without a section to the `Section.Name` form must not
-invalidate existing input files. The way to do it, not implemented yet:
+invalidate existing input files. The mechanism is in the input library
+(`Src/MIO/input.F90`); the table of names (`Src/MIO/input_aliases.inc`) is
+filled once the names in `input-key-renaming-proposal.md` are settled:
 
 1. One table in the input library maps every new name to its former name
    (`Ham.RealStrain` to `realStrain`, `Stack.MiddleTwist` to `middleTwist`).
@@ -166,6 +168,18 @@ invalidate existing input files. The way to do it, not implemented yet:
 4. The variables inside the solver are not renamed by this; only the strings
    passed to `MIO_InputParameter` change, which is a mechanical edit that
    `tools/input/list_input_keys.py` and the model survey check.
+
+A pair is declared with `call InputAddAlias('Section.Name','formerName')` in
+`input_aliases.inc`, or, for a trial, in the input file itself:
+
+```
+&begin Input.Aliases 1
+Ham.Shells  TB.NeighLevels
+&end Input.Aliases
+```
+
+A key is found under either name whichever of the two the solver asks for, so
+the table can be filled before the strings in the sources are changed.
 
 The former names stay accepted indefinitely unless a later release decides
 otherwise and announces it.

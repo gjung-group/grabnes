@@ -41,7 +41,7 @@ subroutine CellGet()
    call MIO_InputParameter('SuperCellY',sCell2,1)
    if (MIO_StringComp(str,'Graphene') .or. MIO_StringComp(str,'BoronNitride') &
     .or. MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer')) then
-      call MIO_InputParameter('basedOnMoireCellParamters',ll,.false.)
+      call MIO_InputParameter('basedOnMoireCellParameters',ll,.false.)
       if (ll) then
           uc(:,1) = (/aG,0.0_dp/)
           uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)

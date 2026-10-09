@@ -32,12 +32,20 @@ module input
 
    logical, save :: warned_parallel_once = .false.
 
+   ! Alternative names of keys: aliasNew(i) is the Section.Name form of the key that the sources
+   ! or older input files call aliasOld(i). Either name may be asked for and either may be given.
+   integer, parameter :: maxAlias = 2000, aliasLen = 80
+   character(len=aliasLen), save :: aliasNew(maxAlias), aliasOld(maxAlias)
+   logical, save :: aliasOldUsed(maxAlias) = .false., aliasBoth(maxAlias) = .false.
+   integer, save :: nAlias = 0
+
    public :: InputInit
    public :: InputClose
    public :: InputParameter
    public :: InputFindBlock
    public :: InputBlock
    public :: InputSearchLabel
+   public :: InputAddAlias
 
    interface InputParameter
       module procedure InputPar_i, InputPar_d, InputPar_r, InputPar_l, InputPar_s
@@ -161,6 +169,8 @@ subroutine InputInit(success)
 #ifdef TIMER
    call TimerStop('input')
 #endif /* TIMER */
+   ! after the timer is stopped: the block routines used here start it themselves
+   call InputAliasInit()
 #ifdef DEBUG
    call DebugPrint('MIO:InputInit',1)
 #endif /* DEBUG */
@@ -273,6 +283,7 @@ subroutine InputClose()
 #ifdef TIMER
    call TimerCount('input')
 #endif /* TIMER */
+   call InputAliasReport()
    call InFile%Close()
    call InLns%Close()
 
@@ -1397,7 +1408,219 @@ end subroutine InputBl_s
 !******************************************************************************
 
 
-!****** Function: InputSearchLabel ********************************************
+!****** Function: InputSearchLabel *********************************************
+!******************************************************************************
+!
+!  Search a key in the input file, taking alternative names into account.
+!
+!  A key can have two names (InputAddAlias): the Section.Name form and the
+!  former name. The solver may ask for either, and the input file may contain
+!  either. If the file contains both, the Section.Name form is used and the
+!  conflict is reported at the end of the run. Labels of blocks (starting with
+!  '&') have no alternative names.
+!
+!******************************************************************************
+function InputSearchLabel(label,str,lineid) result(found)
+
+   implicit none
+
+   character(*), intent(in) :: label
+   character(*), intent(out), optional :: str
+   integer, intent(out), optional :: lineid
+   logical :: found
+
+   integer :: ia, idOther
+   logical :: isOld, foundOther
+   character(len=maxrecl) :: strOther
+
+   found = InputSearchLabelRaw(label,str,lineid)
+   if (nAlias == 0) return
+   if (len_trim(label) == 0) return
+   if (label(1:1) == '&') return
+   call InputAliasFind(label,ia,isOld)
+   if (ia == 0) return
+   if (isOld) then
+      ! asked by its former name: the Section.Name form has priority if it is in the file
+      foundOther = InputSearchLabelRaw(trim(aliasNew(ia)),strOther,idOther)
+      if (foundOther) then
+         if (found) aliasBoth(ia) = .true.
+         found = .true.
+         if (present(str)) str = strOther
+         if (present(lineid)) lineid = idOther
+      else if (found) then
+         aliasOldUsed(ia) = .true.
+      end if
+   else
+      foundOther = InputSearchLabelRaw(trim(aliasOld(ia)),strOther,idOther)
+      if (found) then
+         if (foundOther) aliasBoth(ia) = .true.
+      else if (foundOther) then
+         found = .true.
+         aliasOldUsed(ia) = .true.
+         if (present(str)) str = strOther
+         if (present(lineid)) lineid = idOther
+      end if
+   end if
+
+end function InputSearchLabel
+!****** End function: InputSearchLabel ****************************************
+!******************************************************************************
+
+
+!****** Subroutine: InputAddAlias *********************************************
+!******************************************************************************
+!
+!  Declare that the key newName (Section.Name form) and the key oldName are
+!  the same key.
+!
+!******************************************************************************
+subroutine InputAddAlias(newName,oldName)
+
+   use sys,                  only : SysKill
+
+   implicit none
+
+   character(*), intent(in) :: newName, oldName
+
+   if (nAlias >= maxAlias) call SysKill('Too many alternative key names','input','InputAddAlias')
+   if (len_trim(newName) > aliasLen .or. len_trim(oldName) > aliasLen) then
+      call SysKill('Key name too long: '//trim(newName)//' / '//trim(oldName),'input','InputAddAlias')
+   end if
+   nAlias = nAlias + 1
+   aliasNew(nAlias) = adjustl(newName)
+   aliasOld(nAlias) = adjustl(oldName)
+
+end subroutine InputAddAlias
+!****** End subroutine: InputAddAlias *****************************************
+!******************************************************************************
+
+
+!****** Subroutine: InputAliasFind ********************************************
+!******************************************************************************
+!
+!  Index of the pair of names that label belongs to (0 if none), and whether
+!  label is the former name. Keys are not case sensitive.
+!
+!******************************************************************************
+subroutine InputAliasFind(label,ia,isOld)
+
+   implicit none
+
+   character(*), intent(in) :: label
+   integer, intent(out) :: ia
+   logical, intent(out) :: isOld
+
+   integer :: i
+   character(len=aliasLen) :: key
+
+   ia = 0
+   isOld = .false.
+   if (len_trim(label) > aliasLen) return
+   key = InputLower(label)
+   do i=1,nAlias
+      if (key == InputLower(aliasOld(i))) then
+         ia = i
+         isOld = .true.
+         return
+      else if (key == InputLower(aliasNew(i))) then
+         ia = i
+         return
+      end if
+   end do
+
+end subroutine InputAliasFind
+!****** End subroutine: InputAliasFind ****************************************
+!******************************************************************************
+
+
+!****** Function: InputLower **************************************************
+!******************************************************************************
+function InputLower(string) result(low)
+
+   implicit none
+
+   character(*), intent(in) :: string
+   character(len=aliasLen) :: low
+
+   integer :: i, c
+
+   low = adjustl(string)
+   do i=1,len_trim(low)
+      c = ichar(low(i:i))
+      if (c >= ichar('A') .and. c <= ichar('Z')) low(i:i) = char(c + 32)
+   end do
+
+end function InputLower
+!****** End function: InputLower **********************************************
+!******************************************************************************
+
+
+!****** Subroutine: InputAliasInit ********************************************
+!******************************************************************************
+!
+!  Fill the table of alternative key names: the pairs compiled into the
+!  library (input_aliases.inc) and those of the optional input block
+!
+!     &begin Input.Aliases n
+!     Section.Name  formerName
+!     ...
+!     &end Input.Aliases
+!
+!******************************************************************************
+subroutine InputAliasInit()
+
+   implicit none
+
+   integer :: n, i
+   character(len=aliasLen), allocatable :: c1(:), c2(:)
+
+#include "input_aliases.inc"
+
+   if (InputFindBl_i('Input.Aliases',n)) then
+      if (n > 0) then
+         allocate(c1(n), c2(n))
+         call InputBl_s('Input.Aliases',1,c1)
+         call InputBl_s('Input.Aliases',2,c2)
+         do i=1,n
+            call InputAddAlias(trim(c1(i)),trim(c2(i)))
+         end do
+         deallocate(c1, c2)
+      end if
+   end if
+
+end subroutine InputAliasInit
+!****** End subroutine: InputAliasInit ****************************************
+!******************************************************************************
+
+
+!****** Subroutine: InputAliasReport ******************************************
+!******************************************************************************
+!
+!  At the end of the run: keys given under both names, and former names used.
+!
+!******************************************************************************
+subroutine InputAliasReport()
+
+   implicit none
+
+   integer :: i
+
+   do i=1,nAlias
+      if (aliasBoth(i)) then
+         write(*,'(A)') 'input: WARNING: the input file contains both "'//trim(aliasNew(i))//'" and its former name "'// &
+           trim(aliasOld(i))//'"; the value of "'//trim(aliasNew(i))//'" was used.'
+      else if (aliasOldUsed(i)) then
+         write(*,'(A)') 'input: note: the key "'//trim(aliasOld(i))//'" is now called "'//trim(aliasNew(i))// &
+           '"; the former name keeps working.'
+      end if
+   end do
+
+end subroutine InputAliasReport
+!****** End subroutine: InputAliasReport **************************************
+!******************************************************************************
+
+
+!****** Function: InputSearchLabelRaw *******************************************
 !******************************************************************************
 !
 !  Looks for label in input file, copy the line (without the label) in string.
@@ -1415,7 +1638,7 @@ end subroutine InputBl_s
 ! logical found                  : True if the label is found, false if not
 !
 !******************************************************************************
-function InputSearchLabel(label,str,lineid) result(found)
+function InputSearchLabelRaw(label,str,lineid) result(found)
 
    use string,               only : StringComp
    use sys,                  only : SysIOErr
@@ -1436,9 +1659,11 @@ function InputSearchLabel(label,str,lineid) result(found)
    integer(kind=MPI_OFFSET_KIND) :: nbytes
 #endif /* MPI */
    character(len=maxrecl) :: line
-   logical :: equal, id, wr
+   character(len=maxrecl) :: low
+   logical :: equal, id, wr, inAlias
 
    found = .false.
+   inAlias = .false.
    if (present(lineid)) then
       id = .true.
       lineid = 0
@@ -1467,6 +1692,11 @@ function InputSearchLabel(label,str,lineid) result(found)
       read(uin,'(a)',IOSTAT=iostat) line
       call SysIOErr(iostat,'input','InputSearchLabel')
 #endif /* MPI */
+      ! The lines of the block Input.Aliases are key names, not keys
+      low = InputLower(adjustl(line))
+      if (index(low,'&end')==1) inAlias = .false.
+      if (inAlias) cycle
+      if (index(low,'&begin')==1 .and. index(low,'input.aliases')>0) inAlias = .true.
       equal = StringComp(line,label)
       if (.not. equal) cycle
       if (wr) then
@@ -1482,7 +1712,7 @@ function InputSearchLabel(label,str,lineid) result(found)
       exit
    end do
 
-end function InputSearchLabel
+end function InputSearchLabelRaw
 !****** End function: InputSearchLabel ****************************************
 !******************************************************************************
 
