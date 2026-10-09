@@ -550,6 +550,7 @@ end subroutine HamInit
 !! - Applies optional Gaussian/interface potentials
 !! @see HamInit
 subroutine HamOnSite()
+   use, intrinsic :: ieee_arithmetic, only : ieee_value, ieee_quiet_nan, ieee_is_nan
    use random,               only : RandSeedFromInput
    use atoms,                only : indxNode, Rat, Species, indxDiv, AtomsSetFrac, AtomsSetCart, AtomsRotate
    use atoms,                only : inode1, inode2, in1, in2, nAt, nAtC1, frac, layerIndex
@@ -4257,6 +4258,7 @@ subroutine HamHopping
 
    real(dp) :: n1minm1, n2minm2, dist2, distXY, distXYZ
    real(dp) :: aCC, refDist
+   integer :: nStrainNoRef                  ! realStrain: hoppings of bonds outside every shell window
 
    logical :: prnt
 
@@ -4831,6 +4833,127 @@ subroutine HamHopping
    logical :: Frank
    integer :: n1, n2, lllll, nnnnn, mB
    real(dp) :: diffx, diffy, mmphi
+   ! >>> unset markers
+   real(dp) :: hamUnset                    ! NaN: marks variables that have not been set
+   ! <<< unset markers
+   ! >>> unset markers
+   ! Value of a variable that has not been set: any use of it gives NaN, and the run stops
+   ! in HamCheckFinite instead of continuing with whatever the memory holds.
+   hamUnset = ieee_value(hamUnset, ieee_quiet_nan)
+   a0aa = hamUnset
+   a0ab = hamUnset
+   aval = hamUnset
+   b0aa = hamUnset
+   b0ab = hamUnset
+   bval = hamUnset
+   c0aa = hamUnset
+   c0ab = hamUnset
+   c1_0 = hamUnset
+   c10_0 = hamUnset
+   c10_1 = hamUnset
+   c10_2 = hamUnset
+   c1_1 = hamUnset
+   c11_0 = hamUnset
+   c11_1 = hamUnset
+   c11_2 = hamUnset
+   c1_2 = hamUnset
+   c12_0 = hamUnset
+   c12_1 = hamUnset
+   c12_2 = hamUnset
+   c13_0 = hamUnset
+   c13_1 = hamUnset
+   c13_2 = hamUnset
+   c14_0 = hamUnset
+   c14_1 = hamUnset
+   c14_2 = hamUnset
+   c2_0 = hamUnset
+   c2_1 = hamUnset
+   c2_2 = hamUnset
+   c3_0 = hamUnset
+   c3_1 = hamUnset
+   c3_2 = hamUnset
+   c4_0 = hamUnset
+   c4_1 = hamUnset
+   c4_2 = hamUnset
+   c5_0 = hamUnset
+   c5_1 = hamUnset
+   c5_2 = hamUnset
+   c6_0 = hamUnset
+   c6_1 = hamUnset
+   c6_2 = hamUnset
+   c7_0 = hamUnset
+   c7_1 = hamUnset
+   c7_2 = hamUnset
+   c8_0 = hamUnset
+   c8_1 = hamUnset
+   c8_2 = hamUnset
+   c9_0 = hamUnset
+   c9_1 = hamUnset
+   c9_2 = hamUnset
+   d0aa = hamUnset
+   d0ab = hamUnset
+   del = hamUnset
+   dx_b = hamUnset
+   dx_t = hamUnset
+   dy_b = hamUnset
+   dy_t = hamUnset
+   eps2 = hamUnset
+   h0aa = hamUnset
+   h0ab = hamUnset
+   imagh = hamUnset
+   imagh_b = hamUnset
+   imagh_t = hamUnset
+   kappa0 = hamUnset
+   kappa6 = hamUnset
+   kappa6b = hamUnset
+   lambda0 = hamUnset
+   lambda0aap = hamUnset
+   lambda0abp = hamUnset
+   lambda0baap = hamUnset
+   lambda0babp = hamUnset
+   lambda3 = hamUnset
+   lambda3abp = hamUnset
+   lambda3babp = hamUnset
+   lambda6 = hamUnset
+   lambda6b = hamUnset
+   mmphi = hamUnset
+   p1j0aa = hamUnset
+   p1j0ab = hamUnset
+   p1k0aa = hamUnset
+   p1k0ab = hamUnset
+   p2j0aa = hamUnset
+   p2j0ab = hamUnset
+   p2k0aa = hamUnset
+   p2k0ab = hamUnset
+   p3j0aa = hamUnset
+   p3j0ab = hamUnset
+   p3k0aa = hamUnset
+   p3k0ab = hamUnset
+   realh = hamUnset
+   realh_b = hamUnset
+   realh_t = hamUnset
+   renormalizehoppingfactoraap = hamUnset
+   renormalizehoppingfactorabp = hamUnset
+   renormalizehoppingfactorbap = hamUnset
+   renormalizehoppingfactorbbp = hamUnset
+   t2k = hamUnset
+   t2kn = hamUnset
+   t6ksl = hamUnset
+   t7ksl = hamUnset
+   t8ksl = hamUnset
+   theta = hamUnset
+   theta12 = hamUnset
+   theta21 = hamUnset
+   x3 = hamUnset
+   x6 = hamUnset
+   x6b = hamUnset
+   xi0 = hamUnset
+   xi3 = hamUnset
+   xi6 = hamUnset
+   xi6b = hamUnset
+   xshift = hamUnset
+   yshift = hamUnset
+   ! <<< unset markers
 
 #ifdef DEBUG
    call MIO_Debug('HamHopping',0)
@@ -4918,6 +5041,10 @@ subroutine HamHopping
       if (.not. frac) call AtomsSetFrac()
       !$OMP PARALLEL DO PRIVATE(v1,v2)
       do i=1,nAt
+         ! >>> unset markers
+         v1 = hamUnset
+         v2 = hamUnset
+         ! <<< unset markers
          do j=1,Nneigh(i)
             h1 = 0.50_dp*hStr*(sin(twopi*Rat(1,i)*sCell)+sin(twopi*Rat(2,i)*sCell))
             h2 = 0.50_dp*hStr*(sin(twopi*Rat(1,NList(j,i))*sCell)+sin(twopi*Rat(2,NList(j,i))*sCell))
@@ -6225,6 +6352,13 @@ subroutine HamHopping
 
          call MIO_InputParameter('MoirePotCabG',CabG_global,0.002235_dp)
          call MIO_InputParameter('tBGSwitchDxDy',tBGSwitchDxDy,.false.)
+         if (GBNOffDiag .and. .not. tBGOffDiag) then
+            ! The term of the graphene layers is evaluated with the amplitude CabG, which is only
+            ! set inside the tBGOffDiag block. Without it the amplitude was whatever the memory held.
+            call MIO_Kill('GBNOffDiag is not supported at present: the amplitude of its graphene-layer term '// &
+              '(CabG) is never set unless tBGOffDiag is on as well, so the term was undefined. Which '// &
+              'amplitude it should use (MoirePotCab or MoirePotCabG) has to be decided first.','ham','HamHopping')
+         end if
 
          call MIO_Allocate(HABreal,[inode1],[inode2],'H0','ham')
          call MIO_Allocate(HABimag,[inode1],[inode2],'H0','ham')
@@ -6293,6 +6427,165 @@ subroutine HamHopping
          !$OMP& REDUCTION (+:countG1, countG2, countG3, countG4, countG5, countG6, countG7, countG8), &
          !$OMP& REDUCTION (+:countBN1, countBN2, countBN3, countBN4, countBN5, countBN6, countBN7, countBN8)
          do i=1,nAt
+            ! >>> unset markers
+            d = hamUnset
+            delta = hamUnset
+            del = hamUnset
+            realh = hamUnset
+            imagh = hamUnset
+            habjj = cmplx(hamUnset,hamUnset,dp)
+            dx = hamUnset
+            dy = hamUnset
+            dxtemp = hamUnset
+            dytemp = hamUnset
+            hbl = cmplx(hamUnset,hamUnset,dp)
+            haa = cmplx(hamUnset,hamUnset,dp)
+            hab = cmplx(hamUnset,hamUnset,dp)
+            hba = cmplx(hamUnset,hamUnset,dp)
+            dxi = hamUnset
+            dxj = hamUnset
+            realh_b = hamUnset
+            imagh_b = hamUnset
+            habjj_b = cmplx(hamUnset,hamUnset,dp)
+            dx_b = hamUnset
+            dy_b = hamUnset
+            dxtemp_b = hamUnset
+            dytemp_b = hamUnset
+            realh_t = hamUnset
+            imagh_t = hamUnset
+            habjj_t = cmplx(hamUnset,hamUnset,dp)
+            dx_t = hamUnset
+            dy_t = hamUnset
+            dxtemp_t = hamUnset
+            dytemp_t = hamUnset
+            dyi = hamUnset
+            dyj = hamUnset
+            vpppi = hamUnset
+            vppsigma = hamUnset
+            posorneg = hamUnset
+            maxdist = hamUnset
+            rbar = hamUnset
+            v0 = hamUnset
+            v3 = hamUnset
+            v6 = hamUnset
+            theta = hamUnset
+            d122 = hamUnset
+            d232 = hamUnset
+            d132 = hamUnset
+            d232f = hamUnset
+            cabd = hamUnset
+            fc = hamUnset
+            renormalizehoppingfactoraap = hamUnset
+            renormalizehoppingfactorbbp = hamUnset
+            renormalizehoppingfactorabp = hamUnset
+            renormalizehoppingfactorbap = hamUnset
+            uvec = hamUnset
+            vvec = hamUnset
+            vvecr = hamUnset
+            epskax = hamUnset
+            lambda0 = hamUnset
+            lambda3 = hamUnset
+            lambda6 = hamUnset
+            lambda6b = hamUnset
+            xi0 = hamUnset
+            xi3 = hamUnset
+            xi6 = hamUnset
+            xi6b = hamUnset
+            x3 = hamUnset
+            x6 = hamUnset
+            x6b = hamUnset
+            kappa0 = hamUnset
+            kappa6 = hamUnset
+            kappa6b = hamUnset
+            signchange = hamUnset
+            a0aa = hamUnset
+            b0aa = hamUnset
+            c0aa = hamUnset
+            d0aa = hamUnset
+            h0aa = hamUnset
+            j0aa = hamUnset
+            k0aa = hamUnset
+            a3aa = hamUnset
+            b3aa = hamUnset
+            c3aa = hamUnset
+            d3aa = hamUnset
+            a6aa = hamUnset
+            b6aa = hamUnset
+            c6aa = hamUnset
+            d6aa = hamUnset
+            a0ba = hamUnset
+            b0ba = hamUnset
+            c0ba = hamUnset
+            d0ba = hamUnset
+            h0ba = hamUnset
+            j0ba = hamUnset
+            k0ba = hamUnset
+            a3ba = hamUnset
+            b3ba = hamUnset
+            c3ba = hamUnset
+            d3ba = hamUnset
+            a6ba = hamUnset
+            b6ba = hamUnset
+            c6ba = hamUnset
+            d6ba = hamUnset
+            a0ab = hamUnset
+            b0ab = hamUnset
+            c0ab = hamUnset
+            d0ab = hamUnset
+            h0ab = hamUnset
+            j0ab = hamUnset
+            k0ab = hamUnset
+            a3ab = hamUnset
+            b3ab = hamUnset
+            c3ab = hamUnset
+            d3ab = hamUnset
+            a6ab = hamUnset
+            b6ab = hamUnset
+            c6ab = hamUnset
+            d6ab = hamUnset
+            a0bb = hamUnset
+            b0bb = hamUnset
+            c0bb = hamUnset
+            d0bb = hamUnset
+            h0bb = hamUnset
+            j0bb = hamUnset
+            k0bb = hamUnset
+            a3bb = hamUnset
+            b3bb = hamUnset
+            c3bb = hamUnset
+            d3bb = hamUnset
+            a6bb = hamUnset
+            b6bb = hamUnset
+            c6bb = hamUnset
+            d6bb = hamUnset
+            v0aa = hamUnset
+            v3aa = hamUnset
+            v6aa = hamUnset
+            v0ab = hamUnset
+            v3ab = hamUnset
+            v6ab = hamUnset
+            v0aap = hamUnset
+            v3aap = hamUnset
+            v6aap = hamUnset
+            v0abp = hamUnset
+            v3abp = hamUnset
+            v6abp = hamUnset
+            v0bap = hamUnset
+            v3bap = hamUnset
+            v6bap = hamUnset
+            v0bbp = hamUnset
+            v3bbp = hamUnset
+            v6bbp = hamUnset
+            theta12 = hamUnset
+            theta21 = hamUnset
+            aval = hamUnset
+            bval = hamUnset
+            cabg = hamUnset
+            expfactor = hamUnset
+            dist = hamUnset
+            distxy = hamUnset
+            distxyz = hamUnset
+            ! <<< unset markers
             delta = 0.0
             nlay = (Species(i)-1)/2 + 1
             del(1) = 0.0_dp
@@ -11466,6 +11759,18 @@ subroutine HamHopping
           !$OMP& PRIVATE(Cabd), &
           !$OMP& REDUCTION (+:numberOfDel1,numberOfDel2,numberOfDel3,numberOfInterlayerHoppings)
           do i=1,nAt
+              ! >>> unset markers
+              d = hamUnset
+              delta = hamUnset
+              del = hamUnset
+              realh = hamUnset
+              imagh = hamUnset
+              habjj = cmplx(hamUnset,hamUnset,dp)
+              dx = hamUnset
+              dy = hamUnset
+              hbl = cmplx(hamUnset,hamUnset,dp)
+              cabd = hamUnset
+              ! <<< unset markers
               delta = 0.0
               nlay = (Species(i)-1)/2 + 1
               if (l) then
@@ -11695,6 +12000,9 @@ subroutine HamHopping
       !d_tij   = d_tij + t*exp(-3.37*((d_lij+1.42)/1.42-1))-t;
       !$OMP PARALLEL DO PRIVATE(dlij)
       do i=1,nAt
+         ! >>> unset markers
+         dlij = hamUnset
+         ! <<< unset markers
          do j=1,Nneigh(i)
            if (NeighD(3,j,i) .lt. 0.01_dp) then
              !dlij = NINT(10**6 * 1.0_dp/(aG/sqrt(3.0_dp)) * (epsxx(i) * NeighD(1,j,i)**2.0_dp + epsyy(i) * NeighD(2,j,i)**2.0_dp + 2.0_dp * epsxy(i) * NeighD(1,j,i)*NeighD(2,j,i))) * 10**(-6)
@@ -11728,12 +12036,21 @@ subroutine HamHopping
 ! aGR --> aG
 ! aBN1R --> aBN1 = aBN/sqrt(3)
 ! aBNR --> aBN
-      !$OMP PARALLEL DO PRIVATE(dist, refDist, dsel)
+      nStrainNoRef = 0
+      !$OMP PARALLEL DO PRIVATE(dist, refDist, dsel) REDUCTION(+:nStrainNoRef)
       do i=1,nAt
+         ! >>> unset markers
+         dist = hamUnset
+         refdist = hamUnset
+         dsel = hamUnset
+         ! <<< unset markers
          do j=1,Nneigh(i)
             if (layerIndex(i).eq.layerIndex(NList(j,i))) then
                dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp +NeighD(3,j,i)**2.0_dp)
                dsel = dist   ! shell classifier: the 3-D length (default) or the rigid-reference in-plane length
+               ! no reference distance yet for this bond: it must come from one of the shell windows below,
+               ! not from the previous neighbour
+               refDist = hamUnset
                if (shellsFromRigid) dsel = HamRigidBondXY(i, NList(j,i), NeighD(:,j,i))
                if (GBNtwoLayers) then
                   if (layerIndex(i).eq.1) then
@@ -11982,6 +12299,13 @@ subroutine HamHopping
                       refDist = accR*3.0_dp
                   end if
                end if
+               if (ieee_is_nan(refDist)) then
+                  ! The length of this bond lies in no shell window, so it has no reference distance.
+                  ! A bond without hopping (a shell the model does not use) needs none; a bond WITH a
+                  ! hopping is counted and left without strain factor.
+                  if (hopp(j,i) /= cmplx(0.0_dp,0.0_dp,dp)) nStrainNoRef = nStrainNoRef + 1
+                  cycle
+               end if
                if (onlyFirstNeighborRealStrain) then
                    if (dist < 1.5_dp) then
                        !print*,  "doing NN1"
@@ -11995,6 +12319,12 @@ subroutine HamHopping
          end do
       end do
       !$OMP END PARALLEL DO
+      if (nStrainNoRef > 0) then
+         call MIO_Print('WARNING: realStrain: '//trim(num2str(nStrainNoRef))//' intralayer hoppings belong to bonds '// &
+           'whose length lies in no neighbour-shell window; they were left WITHOUT strain factor (earlier versions '// &
+           'used the reference distance of the previous neighbour). The structure is strained or corrugated beyond '// &
+           'the shell windows: check it, and consider shellsFromRigidPositions.','ham')
+      end if
    end if
    !print*, hopp
 
@@ -12040,6 +12370,9 @@ subroutine HamHopping
       !d_tij   = d_tij + t*exp(-3.37*((d_lij+1.42)/1.42-1))-t;
       !$OMP PARALLEL DO PRIVATE(dlij)
       do i=1,nAt
+         ! >>> unset markers
+         dlij = hamUnset
+         ! <<< unset markers
          do j=1,Nneigh(i)
            if (NeighD(3,j,i) .lt. 0.01_dp) then
              !dlij = NINT(10**6 * 1.0_dp/(aG/sqrt(3.0_dp)) * (epsxx(i) * NeighD(1,j,i)**2.0_dp + epsyy(i) * NeighD(2,j,i)**2.0_dp + 2.0_dp * epsxy(i) * NeighD(1,j,i)*NeighD(2,j,i))) * 10**(-6)
@@ -12184,6 +12517,14 @@ subroutine HamHopping
       do ii=1,totImp
         !$OMP PARALLEL DO PRIVATE(dx,dy,dist2,bubbleR,bubbleTheta,dlij)
         do i=1,nAt
+          ! >>> unset markers
+          dx = hamUnset
+          dy = hamUnset
+          dist2 = hamUnset
+          bubbler = hamUnset
+          bubbletheta = hamUnset
+          dlij = hamUnset
+          ! <<< unset markers
           !do ic1=-1,1; do ic2=-1,1
            dx = (Rat(1,indxImp(ii)) - Rat(1,i))! + ic1*ucell(1,1) + ic2*ucell(1,2)
            dy = (Rat(2,indxImp(ii)) - Rat(2,i))! + ic1*ucell(2,1) + ic2*ucell(2,2)
@@ -12463,6 +12804,9 @@ subroutine HamHopping
       print*, Nneigh(1)
       !$OMP PARALLEL DO PRIVATE(d)
       do i=1,nAt
+         ! >>> unset markers
+         d = hamUnset
+         ! <<< unset markers
          ! Check if Haldane should be applied to this layer
          if (.not. HaldaneEnabledForLayer(layerIndex(i))) then
             cycle

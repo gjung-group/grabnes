@@ -6934,11 +6934,10 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     allocate(ax(N))
     allocate(rd(ncv,3))
 
-    ! Ensure correct size of nev and ncv
-    if ( (nev < 1) .or. (nev >= ncv) .or. (ncv > N) ) then
-        print *, 'Error: invalid parameters - nev=', nev, 'ncv=', ncv, 'N=', N
-        error stop 1
-    end if
+    ! (The work arrays above are a leftover of the sparse solver; this routine does not call it. The
+    ! checks of nev, ncv and of the uninitialised start vector that stood here stopped TAPW runs on
+    ! cells of fewer than ten times Bands.SparseNeig atoms, and at random when the memory of the
+    ! unset start vector happened to hold NaN.)
 
     ! Initialize arrays
     !v = 0.0d0
@@ -6998,13 +6997,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
         error stop 1
     end if
 
-     ! Debug print for resid
-    if (any(resid /= resid)) then
-        print *, 'Error: resid contains NaN values initially.'
-        error stop 1
-    end if
 
-    resid_norm = sqrt(sum(abs(resid)**2))
 
     ! Debug prints
     !print *, 'Initial resid norm: ', resid_norm
