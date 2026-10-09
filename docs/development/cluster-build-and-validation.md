@@ -742,6 +742,40 @@ the conductivity remain untested, and the other initialization routines
 - **`ifx`, macOS, Open MPI, MPICH, OpenBLAS:** not tested with the current
   sources.
 
+## Survey of the model switches (October 2026)
+
+`tests/regression/model_survey.py` runs one or more small cases for every model
+switch of the solver (`model_cases.py`) and records how each run ends and a
+fingerprint of the Hamiltonian it builds. It was first run with the checked GNU
+build, then with the optimized GNU and Intel builds. What it found, and what
+was done:
+
+| Finding | Cases | Action |
+| --- | --- | --- |
+| Interlayer decay length shared between OpenMP threads while taking two values; stacks mixing graphene and hBN got a run-dependent, non-Hermitian Hamiltonian with several threads | `encapsulatedFourLayers`, `t2GBN`, `BNt2GBN`, `t3GwithBN` | fixed (thread-private) |
+| Per-thread atom range unset on all threads but the first; every loop over it touched element 0 | `NeighList`, Gaussian disorder | fixed (empty range) |
+| Neighbor index never set in the second-moire bond term | `MoireAddSecondMoire` | fixed |
+| Intralayer parameters of the Bernal-bilayer F2G2 model used without being set: zero, pi, or NaN depending on the compiler | multilayer stacks without `middleTwist`, `fourLayers` | `middleTwist` is now the default unless `forceBilayerF2G2Intralayer`; the remaining combination is refused |
+| Non-finite hoppings or on-site energies, run ended normally | `TypeOfBL BLKaxiras` on a twisted bilayer, `singleLayerXYZ`, `MoireTrilayer` | refused (`HamCheckFinite`) |
+| Reads beyond array bounds | `TypeOfBL Jeil`, `RandomStrain`, `printBubble`, `realisticBubbles`, `addDisplacements` without table | refused |
+| `stop` after an error message ended the run with status 0 | 46 places in `diag.F90` | `error stop` |
+| Size of an unallocated array queried | TAPW work arrays, layer lists of the SOC and Haldane terms | fixed |
+| Spin terms without effect outside TAPW; unfinished self-consistency module | `ZeemanTerm`, `PseudoZeemanTerm`, `IsingSOCterm`; `RashbaSOCterm`; `SpinPolarized` with `EnableSCF` | warning; refused; refused |
+| TAPW with several OpenMP threads aborted with an unrelated message | | refused with instructions |
+| Disorder seeded from the clock only | `Anderson`, `Bubbles`, `GaussDisorder`, `deltaDisorder`, `SublatticeDisorder` | `setSeed` now applies (`RandSeedFromInput`) |
+| Legacy search `NeighList` without `Neigh.CompareAll` gives bands several eV off | graphene cells of 72 to 3200 atoms | warning |
+| Non-Hermitian table without notice | `HaldaneNNN` with `HaldaneSpecifyPhase` | warning |
+| A key given twice: the first value was used silently | | warning |
+
+**Still open.** 51 cases give a different Hamiltonian with the three builds for
+identical input; they are listed in `model_cases.COMPILER_DEPENDENT`. GNU
+Fortran reports about 120 local variables of `HamHopping` that may be used
+without being set, and the variables private to the parallel loops cannot be
+checked by the compiler. 55 switches had no effect on any of the 37 structures
+tried; some need companion input that the survey does not give, some are
+probably dead. TAPW is not covered: on a 364-atom generated cell it stops at
+the second k-point in a sparse-solver routine.
+
 ## Suggested next regression tests
 
 Ordered by the amount of existing functionality each one protects:
