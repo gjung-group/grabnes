@@ -41,7 +41,6 @@ subroutine moireBLShiftInit()
       print*, "hereclap", mSi, mSf
    end if
 
-
 #ifdef TIMER
    call MIO_TimerStop('moireBLShift')
 #endif /* TIMER */
@@ -95,7 +94,6 @@ subroutine moireBLShiftValue(mS)
       end if
    end if
 
-
 #ifdef TIMER
    call MIO_TimerStop('moireBLShift')
 #endif /* TIMER */
@@ -104,7 +102,5 @@ subroutine moireBLShiftValue(mS)
 #endif /* DEBUG */
 
 end subroutine moireBLShiftValue
-
-
 
 end module moireBLShift

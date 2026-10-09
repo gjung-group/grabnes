@@ -59,19 +59,15 @@ subroutine RandSeed(self,thread)
    logical :: randomSeed
 
    call MIO_InputParameter('randomSeed',randomSeed,.true.)
-   !call system_clock(clock)
    if (randomSeed) then
       seed = 932117 + thread
    else
       seed = 932117
    end if
-   !seed = 99991 + clock + thread
-   !seed = prime(mod(thread,8)+1) + clock + thread
    self%state(1) = seed
    self%state(2:ns) = default_seed(2:ns)
 
 end subroutine RandSeed
-
 
 function RandNum(self) result(rand)
 
@@ -105,8 +101,6 @@ subroutine RandTest(rng,n)
    real(dp) :: s, r
    type(cl_file) :: file
 
-   !call MIO_InputParameter('RandomTest',test,.false.)
-   !call MIO_InputParameter('RandomTestNumber',ntest,100)
    filename = trim(prefix)//'.'//trim(num2str(nThread))//'.RNDM'
    u = 200+nThread
    open(u,FILE=filename,STATUS='replace')

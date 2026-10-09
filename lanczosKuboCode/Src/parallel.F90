@@ -64,7 +64,6 @@ subroutine ParallelDiv()
    end if
 #ifdef MPI
    !$OMP Parallel
-   !procID = sum(nTh(:Node)) + nThread + 1
    procID = 1
    !$OMP End Parallel
 #else

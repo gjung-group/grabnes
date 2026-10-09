@@ -72,72 +72,13 @@ subroutine CalcSelect()
                     do j=1,Nneigh(i)
                        read(222,*) hoppR(j,i), hoppI(j,i)
                        hopp(j,i) = (hoppR(j,i) + cmplx_i * hoppI(j,i))
-                       !print*, i,j,Nneigh(i),hopp(j,i)
                     end do
-                    !print*, hopp(:,i)
                  end do
                  close(222)
                  if (magfield) then
-                    !if (Frank) then
-                    !   if (frac) call AtomsSetCart()
-                    !   do i=1,nAt
-                    !      do j=1,Nneigh(i)
-                    !         diffx = neighD(1,j,i)
-                    !         diffy = neighD(2,j,i)
-                    !         if (abs(diffy).lt.0.1d0 .and. diffx .gt. 0.1_dp) then
-                    !             l = 1
-                    !             n = 3
-                    !         else if (abs(diffy).lt.0.1d0 .and. diffx .lt. -0.1_dp) then
-                    !             l = 3
-                    !             n = 1
-                    !         else if (diffy.gt.0.1d0 .and. diffx .lt. -0.1_dp) then
-                    !             l = 1
-                    !             n = 2
-                    !         else if (diffy.lt.-0.1d0 .and. diffx .gt. 0.1_dp) then
-                    !             l = 2
-                    !             n = 1
-                    !         else if (diffy.lt.-0.1d0 .and. diffx .lt. -0.1_dp) then
-                    !             l = 1
-                    !             n = 2
-                    !         else if (diffy.lt.0.1d0 .and. diffx .gt. 0.1_dp) then
-                    !             l = 2
-                    !             n = 1
-                    !         else if (diffy.gt.0.1d0 .and. diffx .gt. 0.1_dp) then
-                    !             l = 3
-                    !             n = 4
-                    !         else if (diffy.lt.-0.1d0 .and. diffx .lt. -0.1_dp) then
-                    !             l = 4
-                    !             n = 3
-                    !         else if (diffy.lt.-0.1d0 .and. diffx .gt. 0.1_dp) then
-                    !             l = 3
-                    !             n = 4
-                    !         else if (diffy.lt.0.1d0 .and. diffx .lt. -0.1_dp) then
-                    !             l = 3
-                    !             n = 4
-                    !         end if
-                    !         n2 = norm(ucell(:,2))/sqrt(3.0_dp)*3.0/2.0/aG ! n2 = N_y
-                    !         n1 = norm(ucell(:,1))/(3.0*aG/sqrt(3.0_dp))/2.0_dp  ! n1 = Nx/2
-                    !         if (l .eq. 1 .and. n .eq. 3) mmphi = -1.d0 / n2 * (j-1)
-                    !         if (l .eq. 1 .and. n .eq. 2 .and. diffy .ge. 0.d0) mmphi = -1.d0 / n1 * (i-1)
-                    !         if (l .eq. 1 .and. n .eq. 2 .and. diffy .lt. 0.d0) mmphi = 0.d0
-                    !         if (l .eq. 2 .and. n .eq. 1 .and. diffy .ge. 0.d0) mmphi = 0.d0
-                    !         if (l .eq. 2 .and. n .eq. 1 .and. diffy .lt. 0.d0) mmphi = 1.d0 / n1 * (i-1)
-                    !         if (l .eq. 2 .and. n .eq. 0) mmphi= 1.d0 / n2 * (j-1)
-                    !         if (l .eq. 3 .and. n .eq. 0 .and. diffy .ge. 0.d0) mmphi= 0.d0
-                    !         if (l .eq. 3 .and. n .eq. 0 .and. diffy .lt. 0.d0) mmphi= 1.d0 / n1 * (i-1)+1.d0/ n1 / 2.d0
-                    !         if (l .eq. 3 .and. n .eq. 1) mmphi= 1.d0 / n2 * (j-1)
-                    !         if (l .eq. 4 .and. n .eq. 2) mmphi= -1.d0 / n2 * (j-1)
-                    !         if (l .eq. 4 .and. n .eq. 3 .and. diffy .ge. 0.d0) mmphi= -1.d0 / n1 * (i-1)-1.d0/ n1 / 2.d0
-                    !         if (l .eq. 4 .and. n .eq. 3 .and. diffy .lt. 0.d0) mmphi= 0.d0
                     !         !flux = Bmag*pi/fluxq
                     !         !print*, "flux, B, pi, fluxq", flux, Bmag, pi, fluxq
-                    !         print*, "Magnetic field using Franks approach: ", mB / n2 / n1 * 39471.80806616257_dp, "T"
-                    !         phase = -mmphi*2.0_dp*pi*mB
                     !         !print*, "phase= ", phase, v1, v2
-                    !         hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
-                    !      end do
-                    !   end do
-                    !else
                        if (frac) call AtomsSetCart()
                        flux = Bmag*pi/fluxq
                        print*, "flux, B, pi, fluxq", flux, Bmag, pi, fluxq
@@ -148,13 +89,10 @@ subroutine CalcSelect()
                              v2 = CrossProd(v1,v2)
                              v1 = CrossProd(Rat(:,i),Rat(:,NList(j,i))) + v2 ! Implementation of third expersion in Cresti's notes
                              phase = flux*v1(3)/1.0d20
-                             !print*, "phase= ", phase, v1, v2
                              hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
                           end do
                        end do
-                    !end if
                  end if
-                 !print*, hopp
              else
                 call HamHopping()
              end if
@@ -262,41 +200,18 @@ subroutine CalcKubo()
         call MIO_InputParameter('encapsulatedSixLayers',encapsulatedSixLayers,.false.)
         call MIO_InputParameter('t3BG',t3BG,.false.)
         call MIO_InputParameter('PDOSPNP',PDOSPNP,.false.)
-        !if (PDOSInterpolation) then
         !  !call PDOSByInterpolation()
-        !  call MIO_InputParameter('PDOS_A',PDOS_A,1)
-        !  call MIO_InputParameter('PDOS_Cp',PDOS_Cp,1)
-        !  call MIO_InputParameter('PDOS_B',PDOS_B,1)
-        !  call MIO_InputParameter('PDOS_Ap',PDOS_Ap,1)
-        !  call MIO_InputParameter('PDOS_C',PDOS_C,1)
-        !  call MIO_InputParameter('PDOS_Bp',PDOS_Bp,1)
         !  ! Calculate each of the 6 high symmetry sites
         !  ! PDOS_A, corresponds to AA site
-        !  write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', PDOS_A
-        !  call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
-        !  prefix = './'//trim(prefix)
-        !  call system('mkdir '//trim(prefix))
-        !  coordinates = trim(prefix)//'/'//'coords'
         !  call file%Open(name=coordinates,serial=.true.)
-        !  u = file%GetUnit()
-        !  write(u,*) i, Rat(1,i), Rat(2,i), Rat(3,i)
         !  call file%Close()
-        !  prefix = trim(prefix)//'/'//trim(sysname)
-        !  call KuboInitWFPDOS(Psi,i)
-        !  call KuboDOS(Psi,Psin,Psinm1,a,b,H,H0,hopp,NList2,nRecurs,eps,nEn,Emin,Emax)
-        !  call KuboReadDOS(i, DOSA)
-        !  do i=1, nenergy
         !     phi1 =
         !     C1 =
         !     C1p =
         !     phi2 =
         !     C2 =
         !     C0
-        !     do i=inode1,inode2
 
-        !     end do
-        !  end do
-        !else if (PDOSLayer) then
         if (PDOSLayer) then
           if (frac) call AtomsSetCart()
           do i=1, numberOfLayers
@@ -304,16 +219,12 @@ subroutine CalcKubo()
              call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
              prefix = './'//trim(prefix)
              call system('mkdir '//trim(prefix))
-             !coordinates = trim(prefix)//'/'//'coords'
              !call file%Open(name=coordinates,serial=.true.)
-             !u = file%GetUnit()
-             !write(u,*) i, Rat(1,i), Rat(2,i), Rat(3,i)
              !call file%Close()
              prefix = trim(prefix)//'/'//trim(sysname)
              if ((i.eq.1 .or. i.eq.2 .or. i.eq.3 .or. i.eq.4  ) .and. t3BG) then
                 numberOfAtomsInLayer = numberOfCAtoms*sCell*sCell
              else if (i.eq.5 .and. t3BG) then
-!                print*, " t3BGPDOS: ", t3BG
                 numberOfAtomsInLayer = numberOfCAtoms*sCell*sCell
              else if (i.eq.6 .and. t3BG) then
                 numberOfAtomsInLayer = numberOfCAtoms*sCell*sCell
@@ -354,10 +265,7 @@ subroutine CalcKubo()
                 call MIO_Print("Writing files in folder '"//trim(prefix)//"' for "//trim(num2str(numberOfAtomsInLayer))//" atoms",'PDOS')
                 prefix = './'//trim(prefix)
                 call system('mkdir '//trim(prefix))
-                !coordinates = trim(prefix)//'/'//'coords'
                 !call file%Open(name=coordinates,serial=.true.)
-                !u = file%GetUnit()
-                !write(u,*) i, Rat(1,i), Rat(2,i), Rat(3,i)
                 !call file%Close()
                 prefix = trim(prefix)//'/'//trim(sysname)
                 call KuboInitWFLayerAndSpeciesDOS(Psi,i,ii,numberOfLayers,numberOfAtomsInLayer)
@@ -464,8 +372,6 @@ subroutine CalcKubo()
             end if
           end do
         else if (PDOSAtomList) then
-          !call MIO_InputParameter('PDOSNumberOfAtoms',PDOSNumberOfAtoms,10)
-          !call MIO_Allocate(PDOSList,PDOSNumberOfAtoms,'PDOSList','calc')
           call MIO_InputParameter('PDOSList',PDOSList,[1,2,3,4,5,6])
           do j=1,size(PDOSList)
             i = PDOSList(j)
@@ -533,10 +439,8 @@ subroutine CalcKubo()
         end if
    else
         call KuboInitWF(Psi)
-        !print*, " nEn, Emin, Emax: ", nEn, Emin, Emax
         call KuboDOS(Psi,Psin,Psinm1,a,b,H,H0,hopp,NList2,nRecurs,eps,nEn,Emin,Emax)
    end if
-   !print*, "Psi =", Psi
    call MIO_InputParameter('Calculate.Polynomials',pol,.false.)
    call MIO_InputParameter('Calculate.OnlyDOS',onlydos,.false.)
    if (pol .or. .not. onlydos) then
@@ -553,86 +457,30 @@ end subroutine CalcKubo
 
 !subroutine CalcTunn()
 !
-!   use constants,             only : cmplx_i
-!   use atoms,                only : Species, frac, AtomsSetCart
-!   use neigh,                only : Nneigh, NList, NeighD
-!   use atoms,                only : nAt, Species, layerIndex
-!   use cell,                 only : aG, rcell
-!   use tbpar,                only : g0
-!   use ham,                  only : hopp
-!   use math
-!   use name,                 only : prefix
 !
-!   integer :: i, jj, j, u1, u2, u3, u4, numberOfMoires
-!   real(dp) :: TAAR, TAAI, TABR, TABI
-!   real(dp) :: dx,dy,bigKVec(3),bigKVecX,bigKVecY,bigKVecZ, dVec(3)
-!   complex(dp) :: TAA, TAB
 !   type(cl_file) :: file1, file2, file3, file4
 !
-!   if (frac) call AtomsSetCart()
-!   call MIO_InputParameter('bigKVecX',bigKVecX,0.0_dp) ! give the coordinates of K like for the k-path, one by one
-!   call MIO_InputParameter('bigKVecY',bigKVecY,0.0_dp)
-!   call MIO_InputParameter('bigKVecZ',bigKVecZ,0.0_dp)
-!   print*, bigKVecX
-!   print*, bigKVecY
-!   print*, bigKVecZ
-!   bigKVec = [bigKVecX,bigKVecY,bigKVecZ]
-!   bigKVec = bigKVec(1)*rcell(:,1) + bigKVec(2)*rcell(:,2) + bigKVec(3)*rcell(:,3)
-!   print*, "bigKVec: ", bigKVec
-!   call MIO_InputParameter('numberOfMoires',numberOfMoires,1)
 !   call file1%Open(name=trim(prefix)//'.'//'TunnAAR',serial=.true.)
-!   u1 = file1%GetUnit()
 !   call file2%Open(name=trim(prefix)//'.'//'TunnAAI',serial=.true.)
-!   u2 = file2%GetUnit()
 !   call file3%Open(name=trim(prefix)//'.'//'TunnABR',serial=.true.)
-!   u3 = file3%GetUnit()
 !   call file4%Open(name=trim(prefix)//'.'//'TunnABI',serial=.true.)
-!   u4 = file4%GetUnit()
-!   do dx=0.0,aG*255.682280897,aG*255.682280897/11.0_dp
-!      do dy=0,3.0_dp/sqrt(3.0_dp)*aG*255.682280897,3.0_dp/sqrt(3.0_dp)*aG*255.682280897/18.0_dp
-!         dVec = [dx, dy, 0.0_dp]
 !         !print*, "dVec"
 !         !print*, dVec
 !         !print*, dVec(1:2)
-!         TAA = 0.0_dp
-!         TAB = 0.0_dp
-!         do i=1,nAt
-!            do j=1,Nneigh(i)
-!               jj = NList(j,i)
 !               !print*, "dVec", dVec, NeighD(1:2,j,i)
-!               if (layerIndex(i).eq.1 .and.  layerIndex(jj).eq.2) then ! focus on 1 layer only
-!                  if (Species(i).eq.1 .and. Species(jj).eq. 1) then
-!                     TAA = TAA + hopp(j,i)*g0 * exp(cmplx_i*dot_product(bigKVec(1:2),dVec(1:2)+NeighD(1:2,j,i)))
-!                  else if (Species(i).eq.1 .and. Species(jj).eq. 2) then
-!                     TAB = TAB + hopp(j,i)*g0 * exp(cmplx_i*dot_product(bigKVec(1:2),dVec(1:2)+NeighD(1:2,j,i)))
 !                  !else if (Species(i).eq.2 .and. Species(jj).eq. 1) then
 !                  !   TAA = TAA + hopp(j,i) * exp(dot_product(cmplx_i*bigKVec,NeighD(:,j,i)))
 !                  !else if (Species(i).eq.2 .and. Species(jj).eq. 2) then
 !                  !   TAB = TAB + hopp(j,i) * exp(dot_product(cmplx_i*bigKVec,NeighD(:,j,i)))
-!                  endif
 !                  !print*, "temp"
-!               end if
-!            end do
-!         end do
 !         !print*, "TAA: ", TAA
 !         !print*, "TAB: ", TAB
-!         TAAR = real(TAA)/numberOfMoires/(nAt/4.0_dp)
-!         TAAI = imag(TAA)/numberOfMoires/(nAt/4.0_dp)
-!         TABR = real(TAB)/numberOfMoires/(nAt/4.0_dp)
-!         TABI = imag(TAB)/numberOfMoires/(nAt/4.0_dp)
 !         !print*, TAAI
-!         write(u1,*) dx, dy, TAAR
-!         write(u2,*) dx, dy, TAAI
-!         write(u3,*) dx, dy, TABR
-!         write(u4,*) dx, dy, TABI
-!      end do
-!   end do
 !   call file1%Close()
 !   call file2%Close()
 !   call file3%Close()
 !   call file4%Close()
 !
-!end subroutine CalcTunn
 
 subroutine CalcTunn()
 
@@ -671,47 +519,30 @@ subroutine CalcTunn()
    u3 = file3%GetUnit()
    call file4%Open(name=trim(prefix)//'.'//'TunnABI',serial=.true.)
    u4 = file4%GetUnit()
-   !do dx=0.0,aG*255.682280897,aG*255.682280897/11.0_dp
-   !   do dy=0,3.0_dp/sqrt(3.0_dp)*aG*255.682280897,3.0_dp/sqrt(3.0_dp)*aG*255.682280897/18.0_dp
-   !      dVec = [dx, dy, 0.0_dp]
-         !print*, "dVec"
-         !print*, dVec
-         !print*, dVec(1:2)
          do i=1,nAt
             if (Species(i).eq.1 .and. layerIndex(i).eq.1) then
                TAA = 0.0_dp
                TAB = 0.0_dp
                do j=1,Nneigh(i)
                   jj = NList(j,i)
-                  !print*, "dVec", dVec, NeighD(1:2,j,i)
                   if (layerIndex(i).eq.1 .and.  layerIndex(jj).eq.2) then ! focus on 1 layer only
                      if (Species(i).eq.1 .and. Species(jj).eq. 1) then
                         TAA = TAA - hopp(j,i)*g0 * exp(cmplx_i*dot_product(bigKVec(1:2),NeighD(1:2,j,i)))
                      else if (Species(i).eq.1 .and. Species(jj).eq. 2) then
                         TAB = TAB - hopp(j,i)*g0 * exp(cmplx_i*dot_product(bigKVec(1:2),NeighD(1:2,j,i)))
-                     !else if (Species(i).eq.2 .and. Species(jj).eq. 1) then
-                     !   TAA = TAA + hopp(j,i) * exp(dot_product(cmplx_i*bigKVec,NeighD(:,j,i)))
-                     !else if (Species(i).eq.2 .and. Species(jj).eq. 2) then
-                     !   TAB = TAB + hopp(j,i) * exp(dot_product(cmplx_i*bigKVec,NeighD(:,j,i)))
                      endif
-                     !print*, "temp"
                   end if
                end do
                TAAR = real(TAA)/numberOfMoires!/(nAt/4.0_dp)
                TAAI = imag(TAA)/numberOfMoires!/(nAt/4.0_dp)
                TABR = real(TAB)/numberOfMoires!/(nAt/4.0_dp)
                TABI = imag(TAB)/numberOfMoires!/(nAt/4.0_dp)
-               !print*, TAAI
                write(u1,*) Rat(1,i), Rat(2,i), TAAR
                write(u2,*) Rat(1,i), Rat(2,i), TAAI
                write(u3,*) Rat(1,i), Rat(2,i), TABR
                write(u4,*) Rat(1,i), Rat(2,i), TABI
             end if
          end do
-         !print*, "TAA: ", TAA
-         !print*, "TAB: ", TAB
-   !   end do
-   !end do
    call file1%Close()
    call file2%Close()
    call file3%Close()
@@ -889,6 +720,5 @@ end subroutine CalcDiag
 
 !subroutine PDOSByInterpolation()
 !
-!end subroutine PDOSByInterpolation
 
 end module calc

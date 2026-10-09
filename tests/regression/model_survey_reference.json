@@ -669,27 +669,27 @@
  },
  "tbg+BLKaxiras+BilayerOneParameter": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+BilayerThreeParameters": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+addExponentialDecayForDihedral": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+addPressureDependence=F": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+changeLatticeParameterForSrivaniModel": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+deactivateV3": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+deactivateV6": {
   "fingerprint": "",
@@ -709,7 +709,7 @@
  },
  "tbg+BLKaxiras+onlyV0": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+oppositedxdy": {
   "fingerprint": "",
@@ -729,23 +729,23 @@
  },
  "tbg+BLKaxiras+useBNGKaxiras": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+useBNGSrivani": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+useOnlyVAB": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+useTheta": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLKaxiras+useThetaIJ": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+BLSrivani+BilayerOneParameter": {
   "fingerprint": "13eeec627497171f",
@@ -961,7 +961,7 @@
  },
  "tbg+TypeOfBL_BLKaxiras": {
   "fingerprint": "",
-  "status": "REFUSED"
+  "status": "UNDEFINED"
  },
  "tbg+TypeOfBL_BLKaxiras+NeighLevels1": {
   "fingerprint": "",

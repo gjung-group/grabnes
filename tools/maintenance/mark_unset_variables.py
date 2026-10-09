@@ -61,19 +61,25 @@ def main():
     a = p.parse_args()
 
     L = open(a.file, errors="replace").read().split("\n")
-    # drop markers of an earlier run
+
+    def bounds(lines):
+        s0 = next(i for i, l in enumerate(lines) if re.match(rf"\s*subroutine\s+{a.routine}\b", l, re.I))
+        e0 = next(i for i in range(s0 + 1, len(lines)) if re.match(rf"\s*end\s+subroutine\s+{a.routine}\b", lines[i], re.I))
+        return s0, e0
+
+    # drop the markers of an earlier run, in THIS routine only
+    start, end = bounds(L)
     out, skip = [], False
-    for l in L:
-        if l.strip() == BEGIN:
+    for i, l in enumerate(L):
+        inside = start <= i <= end
+        if inside and l.strip() == BEGIN:
             skip = True
-        elif l.strip() == END:
+        elif inside and l.strip() == END:
             skip = False
         elif not skip:
             out.append(l)
     L = out
-
-    start = next(i for i, l in enumerate(L) if re.match(rf"\s*subroutine\s+{a.routine}\b", l, re.I))
-    end = next(i for i in range(start + 1, len(L)) if re.match(rf"\s*end\s+subroutine\s+{a.routine}\b", l := L[i], re.I))
+    start, end = bounds(L)
 
     # declarations of the routine (continuation lines joined)
     kind, i, last_decl = {}, start + 1, start

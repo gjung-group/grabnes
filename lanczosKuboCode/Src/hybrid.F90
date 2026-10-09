@@ -13,7 +13,6 @@ contains
 subroutine HybridGen(nAt,Rat,Species,in1,in2)
 
    use cell,                 only : ucell, aG, area
-   !use random,               only : RandSeed, RandNum, rand_t
    use constants,            only : pi
 
    ! Only hexagons of BN are introduced in the lattice.
@@ -30,7 +29,6 @@ subroutine HybridGen(nAt,Rat,Species,in1,in2)
    integer, pointer :: site(:)
    logical :: l
    !type(rand_t), save :: rng
-   !!$OMP THREADPRIVATE(rng)
    integer :: clock
    integer, pointer :: seed(:)
 
@@ -54,7 +52,6 @@ subroutine HybridGen(nAt,Rat,Species,in1,in2)
    sz = sCell*sz
    Gcell(:,1) = [0.0_dp, aG]
    Gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp]
-   !call RandSeed(rng,nThread)
    do i=1,n
 loop: do
          call random_number(rand)

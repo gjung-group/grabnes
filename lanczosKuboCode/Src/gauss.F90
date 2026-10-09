@@ -22,7 +22,6 @@ subroutine GaussPot(H)
    use atoms,                only : AtomsSetCart, frac
    use cell,                 only : ucell
    use parallel,             only : nDiv, procID
-   !use random,               only : RandNum, RandSeed, rand_t
 
    real(dp), intent(inout) :: H(inode1:)
 
@@ -59,12 +58,9 @@ subroutine GaussPot(H)
 
    call RandSeedFromInput()
 
-   !!$OMP PARALLEL DO PRIVATE(nImp,j)  REDUCTION(+:totImp)
-   !call RandSeed(rng,nThread)
    nImp = nint((inode2-inode1+1)*per)
    do i=1,nImp
       do
-         !j = nint(RandNum(rng)*(in2-in1)) + in1
          call random_number(rand)
          j = nint(rand*(inode2-inode1)) + inode1
          !if (j>in2 .or. j<in1) write(*,*) 'Gauss err, j:', j
@@ -75,7 +71,6 @@ subroutine GaussPot(H)
          end if
       end do
    end do
-   !!$OMP END PARALLEL
 #ifdef MPI
    call MIO_Allocate(impNd,[0],[nProc-1],'impNd','gauss')
    impNd(Node) = totImp
@@ -103,32 +98,20 @@ subroutine GaussPot(H)
    call MPIAllGatherV(MPI_IN_PLACE,0,indxImp,impNd,displ,MPI_INTEGER)
    ic1 = sum(impNd(0:Node-1)) + 1
    ic2 = ic1 + impNd(Node) - 1
-   !ic1 = 1
-   !ic2 = totImp
 #else
    ic1 = 1
    ic2 = totImp
 #endif /* MPI */
    call MIO_Allocate(Amp,totImp,'Amp','gauss')
-   !dx = 0.0_dp
    do i=ic1,ic2
       call random_number(rand)
       Amp(i) = rand
-      !dx = dx + rand
    end do
-   !write(*,*) 'Amp:', dx/totImp
-   !dx = 0.0_dp
-   !do i=1,totImp
-   !   call random_number(rand)
-   !   dx = dx + rand
-   !end do
-   !write(*,*) 'Amp:', dx/totImp
 #ifdef MPI
    call MPIAllGatherV(MPI_IN_PLACE,0,Amp,impNd,displ,MPI_DOUBLE_PRECISION)
    call MIO_Deallocate(displ,'displ','gauss')
 #endif /* MPI */
    dist2ref = (4.0_dp*sigma)**2
-   !open(77+nThread,FILE='ver.'//trim(num2str(nThread)),STATUS='replace')
    !$OMP PARALLEL PRIVATE(dx,dy,dist2)
    do i=in1,in2
       do j=1,totImp
@@ -137,7 +120,6 @@ subroutine GaussPot(H)
             dy = Rat(2,indxImp(j)) - Rat(2,i) + ic1*ucell(2,1) + ic2*ucell(2,2)
             dist2 = dx**2 + dy**2
             if (dist2 <  dist2ref) then
-               !write(77+nThread,*) i, H(i), w*(Amp(j)-0.5_dp)*exp(-dist2/(2.0_dp*sigma**2))
                H(i) = H(i) + w*(Amp(j)-0.5_dp)*exp(-dist2/(2.0_dp*sigma**2))
             end if
          end do; end do
@@ -145,9 +127,6 @@ subroutine GaussPot(H)
    end do
    !$OMP END PARALLEL
 
-   !do i=inode1,inode2
-   !   write(88,*) H(i)
-   !end do
    call MIO_Deallocate(Amp,'Amp','gauss')
    call MIO_Deallocate(indxImp,'indxImp','gauss')
 #ifdef MPI
@@ -168,7 +147,6 @@ subroutine GaussPotDefinedPositions(H)
    use atoms,                only : AtomsSetCart, frac
    use cell,                 only : ucell
    use parallel,             only : nDiv, procID
-   !use random,               only : RandNum, RandSeed, rand_t
 
    real(dp), intent(inout) :: H(inode1:)
 
@@ -199,26 +177,15 @@ subroutine GaussPotDefinedPositions(H)
 
    call RandSeedFromInput()
 
-   !!$OMP END PARALLEL
    totImp = size(indxImp)
    ic1 = 1
    ic2 = totImp
    call MIO_Allocate(Amp,totImp,'Amp','gauss')
-   !dx = 0.0_dp
    do i=ic1,ic2
       call random_number(rand)
       Amp(i) = rand
-      !dx = dx + rand
    end do
-   !write(*,*) 'Amp:', dx/totImp
-   !dx = 0.0_dp
-   !do i=1,totImp
-   !   call random_number(rand)
-   !   dx = dx + rand
-   !end do
-   !write(*,*) 'Amp:', dx/totImp
    dist2ref = (4.0_dp*sigma)**2
-   !open(77+nThread,FILE='ver.'//trim(num2str(nThread)),STATUS='replace')
    !$OMP PARALLEL PRIVATE(dx,dy,dist2)
    do i=in1,in2
       do j=1,totImp
@@ -227,8 +194,6 @@ subroutine GaussPotDefinedPositions(H)
             dy = Rat(2,indxImp(j)) - Rat(2,i) + ic1*ucell(2,1) + ic2*ucell(2,2)
             dist2 = dx**2 + dy**2
             if (dist2 <  dist2ref) then
-               !write(77+nThread,*) i, H(i), w*(Amp(j)-0.5_dp)*exp(-dist2/(2.0_dp*sigma**2))
-               !H(i) = H(i) + w*(Amp(j)-0.5_dp)*exp(-dist2/(2.0_dp*sigma**2))
                H(i) = H(i) + w*exp(-dist2/(2.0_dp*sigma**2))
             end if
          end do; end do
@@ -236,15 +201,9 @@ subroutine GaussPotDefinedPositions(H)
    end do
    !$OMP END PARALLEL
 
-   !do i=inode1,inode2
-   !   write(88,*) H(i)
-   !end do
    call MIO_Deallocate(Amp,'Amp','gauss')
-   !call MIO_Deallocate(indxImp,'indxImp','gauss')
 !#ifdef MPI
-!   call MIO_Deallocate(impNd,'impNd','gauss')
 !#endif /* MPI */
-!   call MIO_Deallocate(def,'def','gauss')
 
 #ifdef DEBUG
    call MIO_Debug('GaussPot',1)
@@ -260,9 +219,6 @@ subroutine GaussHeight()
    use atoms,                only : AtomsSetCart, frac
    use cell,                 only : ucell
    use parallel,             only : nDiv, procID
-   !use random,               only : RandNum, RandSeed, rand_t
-
-   !real(dp), intent(inout) :: H(inode1:)
 
    real(dp) :: per, sigma, w, rand
    real(dp) :: dist2ref, dx, dy, dist2
@@ -292,18 +248,14 @@ subroutine GaussHeight()
    call MIO_Print('  range     : '//trim(num2str(sigma,3))//' Ang')
    call MIO_Print('  strength  : '//trim(num2str(w,3))//' gamma0')
    per = per/100.0_dp
-   !call MIO_Allocate(def,[inode1],[inode2],'def','gauss')
    def = .false.
    totImp = 0
 
    call RandSeedFromInput()
 
-   !!$OMP PARALLEL DO PRIVATE(nImp,j)  REDUCTION(+:totImp)
-   !call RandSeed(rng,nThread)
    nImp = nint((inode2-inode1+1)*per)
    do i=1,nImp
       do
-         !j = nint(RandNum(rng)*(in2-in1)) + in1
          call random_number(rand)
          j = nint(rand*(inode2-inode1)) + inode1
          !if (j>in2 .or. j<in1) write(*,*) 'Gauss err, j:', j
@@ -314,7 +266,6 @@ subroutine GaussHeight()
          end if
       end do
    end do
-   !!$OMP END PARALLEL
 #ifdef MPI
    call MIO_Allocate(impNd,[0],[nProc-1],'impNd','gauss')
    impNd(Node) = totImp
@@ -325,7 +276,6 @@ subroutine GaussHeight()
    call MIO_Print('')
    call MIO_Print('  final percentage          : '//trim(num2str(per,3))//'%')
    call MIO_Print('  total number of impurities: '//trim(num2str(totImp)))
-   !call MIO_Allocate(indxImp,totImp,'indxImp','gauss')
    nImp = 0
    do i=inode1,inode2
       if (def(i)) then
@@ -342,32 +292,20 @@ subroutine GaussHeight()
    call MPIAllGatherV(MPI_IN_PLACE,0,indxImp,impNd,displ,MPI_INTEGER)
    ic1 = sum(impNd(0:Node-1)) + 1
    ic2 = ic1 + impNd(Node) - 1
-   !ic1 = 1
-   !ic2 = totImp
 #else
    ic1 = 1
    ic2 = totImp
 #endif /* MPI */
    call MIO_Allocate(Amp,totImp,'Amp','gauss')
-   !dx = 0.0_dp
    do i=ic1,ic2
       call random_number(rand)
       Amp(i) = rand
-      !dx = dx + rand
    end do
-   !write(*,*) 'Amp:', dx/totImp
-   !dx = 0.0_dp
-   !do i=1,totImp
-   !   call random_number(rand)
-   !   dx = dx + rand
-   !end do
-   !write(*,*) 'Amp:', dx/totImp
 #ifdef MPI
    call MPIAllGatherV(MPI_IN_PLACE,0,Amp,impNd,displ,MPI_DOUBLE_PRECISION)
    call MIO_Deallocate(displ,'displ','gauss')
 #endif /* MPI */
    dist2ref = (4.0_dp*sigma)**2   ! gives the distance for which you have to make the changes
-   !open(77+nThread,FILE='ver.'//trim(num2str(nThread)),STATUS='replace')
    if (MIO_StringComp(str,'MoireEncapsulatedBilayer')) then
      !$OMP PARALLEL PRIVATE(dx,dy,dist2)
      do i=in1,in2
@@ -378,8 +316,6 @@ subroutine GaussHeight()
                 dy = Rat(2,indxImp(j)) - Rat(2,i) + ic1*ucell(2,1) + ic2*ucell(2,2)
                 dist2 = dx**2 + dy**2 !(the correlation function is in x only
                 if (dist2 <  dist2ref) then
-                   !write(77+nThread,*) i, H(i), w*(Amp(j)-0.5_dp)*exp(-dist2/(2.0_dp*sigma**2))
-                   !H(i) = H(i) + w*(Amp(j)-0.5_dp)*exp(-dist2/(2.0_dp*sigma**2))
                    Rat(3,i) = Rat(3,i) + w*(Amp(j)-0.5_dp)*exp(-dx**2/(2.0_dp*sigma**2))
                    do jj=1,Nneigh(i)
                       if (abs(neighD(1,jj,i)) .lt. 0.01_dp .and. abs(neighD(2,jj,i)) .lt. 0.01_dp) then    ! move the position of the atoms right above the ones in the bottom layer (atom jj, top layer)
@@ -408,8 +344,6 @@ subroutine GaussHeight()
               dy = Rat(2,indxImp(j)) - Rat(2,i) + ic1*ucell(2,1) + ic2*ucell(2,2)
               dist2 = dx**2 + dy**2 !(the correlation function is in x only
               if (dist2 <  dist2ref) then
-                 !write(77+nThread,*) i, H(i), w*(Amp(j)-0.5_dp)*exp(-dist2/(2.0_dp*sigma**2))
-                 !H(i) = H(i) + w*(Amp(j)-0.5_dp)*exp(-dist2/(2.0_dp*sigma**2))
                  Rat(3,i) = Rat(3,i) + w*(Amp(j)-0.5_dp)*exp(-dx**2/(2.0_dp*sigma**2))
               end if
            end do; end do
@@ -418,9 +352,6 @@ subroutine GaussHeight()
      !$OMP END PARALLEL
    end if
 
-   !do i=inode1,inode2
-   !   write(88,*) H(i)
-   !end do
    call MIO_Deallocate(Amp,'Amp','gauss')
    call MIO_Deallocate(indxImp,'indxImp','gauss')
 #ifdef MPI

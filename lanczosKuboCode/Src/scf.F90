@@ -147,7 +147,6 @@ subroutine SCFGetCharge
          write(67,*), it, charge(1,i1), charge(2,i1)
       end do
    end do
-   !H0 = Ho
    open(66,FILE="generate.charge")
    do i1=1,nAt
       write(66,*), charge(1,i1), charge(2,i1)
@@ -216,7 +215,6 @@ subroutine SCFHam(N,H,E,charge,ns,K,cell,H0,maxN,hopp,NList,Nneigh,neighCell,Spe
    H = 0.0_dp
    do i=1,N
       H(i,i) = H0(i)
-      !zz = charge(1,i)*charge(2,i) ! Zch
       if (ns==1) then
          H(i,i) = H(i,i) + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
       else

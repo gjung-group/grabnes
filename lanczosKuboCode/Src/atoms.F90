@@ -60,7 +60,6 @@ subroutine AtomsPos()
    use cell,                 only : sCell, sCell2, aG, ucell, rcell, volume, area, aBN
    use constants,            only : pi, twopi
    use hybrid,               only : HybridGen
-   !use gauss,                only : GaussHeight
    use name,                 only : prefix
 
    character(len=80) :: str, str2, str3, str4, str5
@@ -170,11 +169,6 @@ subroutine AtomsPos()
    integer :: SuperCellX, SuperCellY
    logical :: encapsulatedThreeLayers
 
-   !real(dp) :: phiForEffectiveModel
-
-   !real(dp), pointer :: RatTemp(:,:)
-   !integer, pointer :: SpeciesTemp(:)
-
 #ifdef DEBUG
    call MIO_Debug('AtomsPos',0)
 #endif /* DEBUG */
@@ -211,13 +205,9 @@ subroutine AtomsPos()
           nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
           call MIO_Print('Atoms of C:  '//trim(num2str(nAtC)),'atoms')
           phiForEffectiveModel = -phi*180.0_dp/pi
-          !call AtomsConstruct(RatBN,n(3:4),-phi*180.0_dp/pi,'BN',-g, 0.0_dp)
-          !nAtBN = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
-          !call MIO_Print('Atoms of BN: '//trim(num2str(nAtBN)),'atoms')
           nAt = nAtC
           call MIO_Allocate(Rat,[3,nAt],'Rat','atoms')
           Rat(:,1:nAtC) = RatC
-          !Rat(:,nAtC+1:nAt) = RatBN
           call MIO_Print('Total number of atoms: '//trim(num2str(nAt)),'atoms')
           call MIO_Allocate(Species,nAt,'Species','atoms')
           call MIO_Allocate(layerIndex,nAt,'layerIndex','atoms')
@@ -228,11 +218,6 @@ subroutine AtomsPos()
           end do
           !$OMP END PARALLEL DO
 
-          !!$OMP PARALLEL DO
-          !do i=nAtC+1,nAt
-          !   Species(i) = mod(i+1,2) + 3
-          !end do
-          !!$OMP END PARALLEL DO
       else
           call MIO_InputParameter('CellSize',m(1),50)
           call MIO_InputParameter('SuperCellAsymmetric',l,.false.)
@@ -267,7 +252,6 @@ subroutine AtomsPos()
           do i=1,nAt
              Species(i) = mod(i+1,2) + sh
              layerIndex(i) = 1
-             !print*, i, Species(i)
           end do
           !$OMP END PARALLEL DO
           call MIO_InputParameter('distanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
@@ -277,7 +261,6 @@ subroutine AtomsPos()
                 interlayerDistances(i) = 3.35_dp
              end do
           end if
-          !print*, interlayerDistances
       end if
    else if (MIO_StringComp(str,'Graphene_Over_BN')) then
       call MIO_InputParameter('MoireCellParameters',n,[0,0,0,0])
@@ -350,18 +333,14 @@ subroutine AtomsPos()
       call MIO_InputParameter('BernalShift',Bernal,.false.)
       call MIO_InputParameter('bridgeShift',bridge,.false.)
       call MIO_InputParameter('BilayerShiftFactor',shiftFactor,0)
-      !print*, "shiftinfo", n(1), shiftFactor
       if (addShift) then
          if (Bernal) then
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
-            !print*, "yShift= ", yShift, aG/3.0_dp
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
-            !print*, "yShift= ", yShift, aG/3.0_dp
          end if
       else
          yShift = 0.0_dp
-         !print*, "yShift= ", yShift, aG/3.0_dp
       end if
       call AtomsConstruct(RatC2,n(1:2),0.0_dp,'graphene',3.0_dp*g, yShift)
       nAt = nAtC + nAtBN + nAtC2
@@ -389,7 +368,6 @@ subroutine AtomsPos()
       g = n(1)**2 + n(2)**2 + n(1)*n(2)
       delta = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/g)
       phi = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*delta*g))
-      !print*, "phi = ", phi*180_dp/pi
       if (delta<1.0_dp) then
          delta = 1.0_dp/delta
       else
@@ -409,18 +387,14 @@ subroutine AtomsPos()
       call MIO_InputParameter('BernalShift',Bernal,.false.)
       call MIO_InputParameter('bridgeShift',bridge,.false.)
       call MIO_InputParameter('BilayerShiftFactor',shiftFactor,0)
-      !print*, "shiftinfo", n(1), shiftFactor
       if (addShift) then
          if (Bernal) then
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
-            !print*, "yShift= ", yShift, aG/3.0_dp
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
-            !print*, "yShift= ", yShift, aG/3.0_dp
          end if
       else
          yShift = 0.0_dp
-         !print*, "yShift= ", yShift, aG/3.0_dp
       end if
       call AtomsConstruct(RatBN,n(3:4),-phi*180.0_dp/pi,'graphene',-g, yShift)
       nAtBN = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
@@ -434,7 +408,6 @@ subroutine AtomsPos()
       if (createBLDomainBoundary) then
           if (frac) then
               call AtomsSetCart()
-              !print*, "Using cartesian coordinates"
           end if
           call MIO_InputParameter('BLDomainBoundaryWidth',boundaryWidth,60.0_dp)
           call MIO_InputParameter('BLDomainBoundaryTypeArmAA',boundaryTypeArmAA,.false.)
@@ -443,15 +416,6 @@ subroutine AtomsPos()
           limit0 = 0.0_dp
           limit1 = (m(1)*aG)*1.0_dp/2.0_dp
           limit2 = limit1 + boundaryWidth
-          !print*, "BL Domain Boundary limits: ", limit1, limit2
-             !do i=nAtC+1,nAt
-             !   if (Rat(1,i).gt.limit2) then
-             !       Rat(2,i) = Rat(2,i) - 1.42_dp * numberOfShifts
-             !   else if (Rat(1,i).gt.limit1 .and. Rat(1,i).lt.limit2) then
-             !       DBShiftRatio = (Rat(1,i)-limit1)/(limit2-limit1)
-             !       Rat(2,i) = Rat(2,i) - DBShiftRatio * 1.42_dp * numberOfShifts
-             !   end if
-             !end do
           if (boundaryTypeArmAA) then ! check PRB 88 115409
              do i=1,nAtC
                 if (Rat(1,i).gt.limit2) then
@@ -489,7 +453,6 @@ subroutine AtomsPos()
           end if
           ggg = norm(ucell(:,1))
           ORZ = sqrt(3.0)/2.0 * ggg
-          !print*, "ORZ = ", ORZ
           do i=1,nAt
             if (Rat(2,i).gt.ORZ) then
                 Rat(2,i) = Rat(2,i) - ORZ
@@ -507,7 +470,6 @@ subroutine AtomsPos()
       !$OMP END PARALLEL DO
       !$OMP PARALLEL DO
       do i=nAtC+1,nAt
-         !Species(i) = mod(i+1,2) + 3
          Species(i) = mod(i+1,2) + 1
       end do
       !$OMP END PARALLEL DO
@@ -519,7 +481,6 @@ subroutine AtomsPos()
       g = n(1)**2 + n(2)**2 + n(1)*n(2)
       delta = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/g)
       phi = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*delta*g))
-      !print*, "phi = ", phi*180_dp/pi
       if (delta<1.0_dp) then
          delta = 1.0_dp/delta
       else ! invert the indices of top and bottom layers
@@ -539,18 +500,14 @@ subroutine AtomsPos()
       call MIO_InputParameter('BernalShift',Bernal,.false.)
       call MIO_InputParameter('bridgeShift',bridge,.false.)
       call MIO_InputParameter('BilayerShiftFactor',shiftFactor,0)
-      !print*, "shiftinfo", n(1), shiftFactor
       if (addShift) then
          if (Bernal) then
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
-            !print*, "yShift= ", yShift, aG/3.0_dp
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
-            !print*, "yShift= ", yShift, aG/3.0_dp
          end if
       else
          yShift = 0.0_dp
-         !print*, "yShift= ", yShift, aG/3.0_dp
       end if
       call AtomsConstruct(RatBN,n(3:4),-phi*180.0_dp/pi,'graphene',-g, yShift)
       nAtBN = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
@@ -568,7 +525,6 @@ subroutine AtomsPos()
       !$OMP END PARALLEL DO
       !$OMP PARALLEL DO
       do i=nAtC+1,nAt
-         !Species(i) = mod(i+1,2) + 3
          Species(i) = mod(i+1,2) + 1
       end do
       !$OMP END PARALLEL DO
@@ -577,36 +533,21 @@ subroutine AtomsPos()
       call MIO_InputParameter('CellHeight',h,40.0_dp)
       call MIO_InputParameter('InterlayerDistance',dIntLay,3.22_dp) ! Ref. PRB 76, 73103
       call MIO_InputParameter('twistedBilayerAngle',BLAngle,0.0_dp) ! Ref. PRB 76, 73103
-      !print*, "BLAngle ", BLAngle
       call MIO_InputParameter('BilayerShiftFactor',shiftFactor,0) ! Ref. PRB 76, 73103
       m(1) = m(1)*sCell
       m(2) = 0
-      !print*, m(1)
-      !print*, m(2)
       g = dIntLay/(2.0_dp*h)
-      !print*, "g= ", g
       call AtomsConstruct(RatC1,m,0.0_dp,'graphene',g, 0.0_dp)
-      !print*, "RatC1", RatC1(:,10)
       nAtC1 = size(RatC1,2)
       call MIO_Print('Number of atoms in layer1: '//trim(num2str(nAtC1)),'atoms')
-      !yShift = (aG/3.0_dp+shiftFactor*aG)/(m(1)*aG)
       if (MIO_StringComp(str,'MoireEncapsulatedBilayer')) then
-          !yShift = (aG/3.0_dp)/(m(1)*aG)+shiftFactor*aG ! You can put shiftFactor to 1. This shifts the whole unit cell outside the first supercell. Consequently, when using the modulus and Rat()-1 routine, you shift everything back into this first supercell. If you don't proceed like this, one part is inside, the other is outside. When shifting the part outside back inside, you screw up the neighbor routine.
           yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor
-          !print*, "yShift= ", yShift, aG/3.0_dp
       end if
       if (MIO_StringComp(str,'TwistedBilayer')) then
-          !yShift = shiftFactor*aG ! Remove the shift from normal bilayer graphene
           yShift = (aG/3.0_dp)/(m(1)*aG)+shiftFactor*aG
-          !print*, "yShift= ", yShift, aG/3.0_dp
       end if
-      !print*, "yShift= ", yShift, aG/3.0_dp
-      !print*, "shiftFactor= ", shiftFactor
-      !call AtomsConstruct(RatC2,m,BL Angle,'graphene',-g, yShift)
       ncell = m(1)**2 + m(1)*m(2) + m(2)**2
-      !call AtomsConstructBasedOnFastNN(RatC2,m,BLAngle,'graphene',-g, yShift,ncell*2)
       call AtomsConstruct(RatC2,m,BLAngle,'graphene',-g, yShift)
-      !print*, "RatC2", RatC2(:,10)
       nAtC2 = size(RatC2,2)
       call MIO_Print('Number of atoms in layer2: '//trim(num2str(nAtC2)),'atoms')
       sh = 1
@@ -618,7 +559,6 @@ subroutine AtomsPos()
       call MIO_Allocate(Species,nAt,'Species','atoms')
       if (frac) then
           call AtomsSetCart()
-          !print*, "hi1"
       end if
       !$OMP PARALLEL DO
       do i=1,nAt
@@ -627,12 +567,8 @@ subroutine AtomsPos()
       end do
       !$OMP END PARALLEL DO
       if (.not. frac) call AtomsSetFrac()
-      !!$OMP PARALLEL DO
-      !do i=1,nAt
       !    if (Rat(2,i)>1.0_dp) print*, Rat(2,i), "hey"
       !    if (Rat(2,i)>1.0_dp) Rat(2,i) = mod(Rat(2,i) - 1.0_dp,1.0_dp)
-      !end do
-      !!$OMP END PARALLEL DO
    else if (MIO_StringComp(str,'TrilayerBasedOnMoireCell')) then ! Other twisted bilayers seem to have a wrong shift
       call MIO_InputParameter('CellSize',m(1),50)
       call MIO_InputParameter('MoireCellParameters',n,[0,0,0,0])
@@ -641,7 +577,6 @@ subroutine AtomsPos()
       g = n(1)**2 + n(2)**2 + n(1)*n(2)
       delta = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/g)
       phi = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*delta*g))
-      !print*, "phi = ", phi*180_dp/pi
       if (delta<1.0_dp) then
          delta = 1.0_dp/delta
       else
@@ -661,18 +596,14 @@ subroutine AtomsPos()
       call MIO_InputParameter('BernalShift',Bernal,.false.)
       call MIO_InputParameter('bridgeShift',bridge,.false.)
       call MIO_InputParameter('TrilayerShiftFactor',shiftFactor,0)
-      !print*, "shiftinfo", n(1), shiftFactor
       if (addShift) then
          if (Bernal) then
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
-            !print*, "yShift= ", yShift, aG/3.0_dp
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
-            !print*, "yShift= ", yShift, aG/3.0_dp
          end if
       else
          yShift = 0.0_dp
-         !print*, "yShift= ", yShift, aG/3.0_dp
       end if
       call AtomsConstruct(RatC2,n(3:4),-phi*180.0_dp/pi,'graphene',-g, yShift)
       nAtC2 = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
@@ -696,7 +627,6 @@ subroutine AtomsPos()
       !$OMP END PARALLEL DO
       !$OMP PARALLEL DO
       do i=nAtC+1,nAt
-         !Species(i) = mod(i+1,2) + 3
          Species(i) = mod(i+1,2) + 1
       end do
       !$OMP END PARALLEL DO
@@ -728,9 +658,7 @@ subroutine AtomsPos()
       if (readInterlayerDistances) then
          call MIO_Print('Let us read in the interlayerDistance and displacements files, must be sorted after LAMMPS calculation','atoms')
          call MIO_InputParameter('interlayerDistanceFile',str3,'interlayerDistances.dat')
-         !call MIO_InputParameter('displacementsFile',str4,'displacements.txt')
          open(3,FILE=str3,STATUS='old')
-         !open(4,FILE=str4,STATUS='old')
       end if
       call MIO_InputParameter('GBNuseDisplacementFile',GBNuseDisplacementFile,.false.)
       call MIO_InputParameter('tBGuseDisplacementFile',tBGuseDisplacementFile,.false.)
@@ -741,7 +669,6 @@ subroutine AtomsPos()
       do i=1,3
          read(1,*)
       end do
-      !print*, "inside atoms.f90, ucell: ", ucell
       read(1,*) nAt
       call MIO_Allocate(RatTemp,[3,nAt],'RatTemp','atoms')
       call MIO_InputParameter('SuperCellX',SuperCellX,1)
@@ -765,7 +692,6 @@ subroutine AtomsPos()
       if (readInterlayerDistances) then  ! Konda, read in the displacement and interlayer distance file
          do i=1,nAt
             read(3,*) interlayerDistances(i)
-            !read(4,*) (displacements(j,i),j=1,3) ! First is in x, second in y and third is the distance
          end do
       end if
       do i=1,nAt
@@ -789,7 +715,6 @@ subroutine AtomsPos()
          do i=1,nAt
             if (encapsulatedThreeLayers .and. (SpeciesTemp(i).eq.1 .or. SpeciesTemp(i).eq.2)) then
                read(4,*) displacements_b(1,i), displacements_b(2,i), displacements_b(3,i), displacements_t(1,i), displacements_t(2,i), displacements_t(3,i)
-               !print*, "assigning bottom and top displacements"
             else
                read(4,*) (displacements(j,i),j=1,3) ! First is in x, second in y and third is the distance
             end if
@@ -816,22 +741,11 @@ subroutine AtomsPos()
       end if
       close(1)
       close(9)
-      !call MIO_InputParameter('SuperCellX',SuperCellX,1)
-      !call MIO_InputParameter('SuperCellY',SuperCellY,1)
-      !if (SuperCellX .ne. SuperCellY) then
-      !   print*, "adjusting lattice vectors"
-      !   ucell(:,1) = ucell(:,1)*SuperCellX
-      !   ucell(:,2) = ucell(:,2)*SuperCellY
-      !else if (sCell.ne.1) then
-      !   print*, "adjusting lattice vectors"
-      !   ucell(:,:2) = ucell(:,:2)*sCell
-      !end if
       if (SuperCellX .ne. SuperCellY) then
           call MIO_Print('Different number of supercells in X and Y direction','atoms')
           kk = 0
           frac = .false.
           call AtomsSetFracTemp()
-          !print*, "blube", RatTemp(2,:)
           call MIO_InputParameter('readInterlayerDistances',readInterlayerDistances,.false.)
           do ii=1,SuperCellX
              do jj=1,SuperCellY
@@ -859,10 +773,7 @@ subroutine AtomsPos()
           rcell(:,2) = twopi*CrossProd(ucell(:,3),ucell(:,1))/volume
           rcell(:,3) = twopi*CrossProd(ucell(:,1),ucell(:,2))/volume
       else if (sCell.eq.1) then
-          !print*, "only one supercell for READXYZ"
-          !call MIO_Print('Different number of supercells in X and Y direction','atoms')
           Rat = RatTemp
-          !print*, Rat
           Species = SpeciesTemp
           call MIO_InputParameter('readLayerIndex',readLayerIndex,.false.)
           if (readLayerIndex) then
@@ -877,7 +788,6 @@ subroutine AtomsPos()
         kk = 0
         frac = .false.
         call AtomsSetFracTemp()
-        !print*, "blube", RatTemp(2,:)
         call MIO_InputParameter('readInterlayerDistances',readInterlayerDistances,.false.)
         call MIO_InputParameter('readLayerIndex',readLayerIndex,.false.)
         call MIO_InputParameter('GBNuseDisplacementFile',GBNuseDisplacementFile,.false.)
@@ -909,9 +819,6 @@ subroutine AtomsPos()
               kk = kk + 1
            end do
         end do
-        !print*, "blabe", RatTemp(2,:)
-        !print*, "blebe", Rat(2,:)
-        !print*, "blobo", Rat(2,:)
         frac = .true.
         nAt = nAt*sCell*sCell
         call AtomsSetCart()
@@ -927,11 +834,6 @@ subroutine AtomsPos()
    else
       call MIO_Kill('Type of system not recognized','atoms','AtomsPos')
    end if
-   !call MIO_InputParameter('RandomStrain',randomStrain,.false.)
-   !if (randomStrain) then
-   !   if (frac) call AtomsSetCart()
-   !   call GaussHeight()
-   !end if
    call MIO_Allocate(indxDiv,nDiv+1,'indxDiv','atoms')
    call MIO_Allocate(procAt,nAt,'procAt','atoms')
    call MIO_Allocate(secAt,nAt,'secAt','atoms')
@@ -944,16 +846,7 @@ subroutine AtomsPos()
       end if
    end do
    call MIO_Print('Number of electrons: '//trim(num2str(nEl,1)),'atoms')
-   !call MIO_InputParameter('AtomsOrderDeactivated',AtomsOrderDeactivated,.false.)
-   !if (AtomsOrderDeactivated) then
-   !    nDiv = 1
-   !end if
-   !print*, "nDiv= ", nDiv
-   !if (nDiv /=1) then
       call AtomsOrder()
-   !else
-   !   indxDiv = (/1,nAt+1/)
-   !end if
 !#ifdef MPI
    call MIO_Allocate(indxNode,nProc+1,'indxNode','atoms')
    if (nProc>1) then
@@ -983,17 +876,7 @@ subroutine AtomsPos()
       in2 = indxDiv(procID+1) - 1
       !$OMP END PARALLEL
    end if
-   !in1 = 1
-   !in2 = nAt
-   !inode1 = 1
-   !inode2 = nAt
 !#else
-!   call MIO_Allocate(indxNode,2,'indxNode','atoms')
-!   indxNode = [1,nAt+1]
-!   inode1 = 1
-!   inode2 = nAt
-!   in1 = 1
-!   in2 = nAt
 !#endif /* MPI */
    call MIO_InputParameter('TypeOfSystem',str,'Graphene')
    if (MIO_StringComp(str,'Hybrid')) then
@@ -1007,7 +890,6 @@ subroutine AtomsPos()
         .or. MIO_StringComp(str,'ReadXYZ') &
         .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
       call AtomsSetCart()
-      !print*, "lets assign the indices for the layers"
       call MIO_InputParameter('fourLayers',fourLayers,.false.)
       call MIO_InputParameter('fourLayersSandwiched',fourLayersSandwiched,.false.)
       call MIO_InputParameter('helicalTwistedMBM',helicalTwistedMBM,.false.)
@@ -1091,12 +973,6 @@ subroutine AtomsPos()
       call MIO_InputParameter('t3BG',t3BG,.false.)
       call MIO_InputParameter('encapsulatedFourLayers',encapsulatedFourLayers,.false.)
       call MIO_InputParameter('readLayerIndex',readLayerIndex,.false.)
-      !if (GBNtwoLayers) then
-      !    if (Species(i).eq.1 .or. Species(i).eq.2) then
-      !       layerIndex(i) = 1
-      !    else if (Species(i).eq.3 .or. Species(i).eq.4) then
-      !       layerIndex(i) = 2
-      !    end if
       if (readLayerIndex) then
           call MIO_Print('We read the layer indices from an external file, make sure to provide it','atoms')
       else if (fourLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. encapsulatedFourLayers) then
@@ -1323,12 +1199,7 @@ subroutine AtomsPos()
            layerIndex(i) = 1
         end if
       end do
-   !else
-   !   do i=1,nAt
-   !        layerIndex(i) = 1
-   !   end do
    end if
-
 
 #ifdef TIMER
    call MIO_TimerStop('atoms')
@@ -1364,18 +1235,14 @@ subroutine AtomsConstruct(X,mm,angle,label,d,yShift)
    ncell = mm(1)**2 + mm(1)*mm(2) + mm(2)**2
    call MIO_Allocate(X,[3,ncell*2],'X','atoms')
    a = angle*pi/180.0_dp
-   !print*, "Angle= ", a, angle
    ucell(:,1) = [cos(a),sin(a),0.0_dp]
    ucell(:,2) = [cos(a+pi/3.0_dp),sin(a+pi/3.0_dp),0.0_dp]
-   !print*, "ucell ", ucell
    m(:,1) = [mm(1),mm(2)]
    m(:,2) = [-mm(2),mm(1)+mm(2)]
    Rcell = 0.0_dp
    Rcell(:2,:2) = matmul(ucell(:2,:2),m)
-   !print*, "Rcell ", Rcell
    basis = 0.0_dp
    basis(:2,:) = matmul(ucell(:2,:2),bss)
-   !print*, "basis ", basis
    n1 = gcd(m(1,1),m(2,1))
    n2 = ncell/n1
    if (n2 > n1) then
@@ -1392,18 +1259,7 @@ subroutine AtomsConstruct(X,mm,angle,label,d,yShift)
       end do
    end do; end do
    !$OMP END PARALLEL DO
-   !print*, "X", X(:,10)
-   !yShift = yShift/2.0_dp
    ! We need to define a non rotated Rcell to be used in the loop below. Get the reduced coordinates of the rotated cell in the unrotated one
-   !a = 0.0_dp
-   !print*, "Angle= ", a, angle
-   !ucell(:,1) = [cos(a),sin(a),0.0_dp]
-   !ucell(:,2) = [cos(a+pi/3.0_dp),sin(a+pi/3.0_dp),0.0_dp]
-   !print*, "ucell ", ucell
-   !m(:,1) = [mm(1),mm(2)]
-   !m(:,2) = [-mm(2),mm(1)+mm(2)]
-   !Rcell = 0.0_dp
-   !Rcell(:2,:2) = matmul(ucell(:2,:2),m)
    !$OMP PARALLEL DO PRIVATE(f)
    do i1=1,ncell*2
       !if (i1==10) print*, i1
@@ -1411,26 +1267,19 @@ subroutine AtomsConstruct(X,mm,angle,label,d,yShift)
       f(2) = Rcell(1,1)*(X(2,i1)-X(1,i1)*Rcell(2,1)/Rcell(1,1))/(Rcell(2,2)*Rcell(1,1)-Rcell(1,2)*Rcell(2,1))
       f(1) = (X(1,i1)-f(2)*Rcell(1,2))/Rcell(1,1)
       !if (i1==10) print*, "f", f
-      !X(:,i1) = [mod(f(1)+yShift,1.0_dp), mod(f(2)+yShift,1.0_dp), 0.5_dp+d] ! first attemp, didn't work, if i remember well
-      !X(:,i1) = [mod(f(1),1.0_dp)+yShift, mod(f(2),1.0_dp)+yShift, 0.5_dp+d]
       !if (X(1,i1)<0.0_dp) X(1,i1) = mod(X(1,i1) + 1.0_dp,1.0_dp) ! this is if f(1) was giving a negative value in previous line
       !if (X(2,i1)<0.0_dp) X(2,i1) = mod(X(2,i1) + 1.0_dp,1.0_dp)
-      !X(1,i1) = X(1,i1)-yShift
-      !X(2,i1) = X(2,i1)-yShift
       !if (X(1,i1)<0.0_dp) X(1,i1) = mod(X(1,i1) + 1.0_dp,1.0_dp)
       !if (X(1,i1)>1.0_dp) X(1,i1) = mod(X(1,i1) - 1.0_dp,1.0_dp)
       !if (X(2,i1)<0.0_dp) X(2,i1) = mod(X(2,i1) + 1.0_dp,1.0_dp)
       !if (X(2,i1)>1.0_dp) X(2,i1) = mod(X(2,i1) - 1.0_dp,1.0_dp)
       !if (i1==10) print*, "Xin0", X(:,i1)
-      !print*, "yShiftShift", yShift
       X(:,i1) = [mod(f(1),1.0_dp)+yShift, mod(f(2),1.0_dp)+yShift, 0.5_dp+d]
       !if (i1==10) print*, "Xin1", X(:,i1)
       if (X(1,i1)<0.0_dp) X(1,i1) = mod(X(1,i1) + 1.0_dp,1.0_dp)
       !if (i1==10) print*, "Xin2", X(:,i1)
       if (X(2,i1)<0.0_dp) X(2,i1) = mod(X(2,i1) + 1.0_dp,1.0_dp)
       !if (i1==10) print*, "Xin3", X(:,i1)
-      !X(1,i1) = X(1,i1)+yShift
-      !X(2,i1) = X(2,i1)+yShift
       if (X(1,i1)>1.0_dp) X(1,i1) = mod(X(1,i1) - 1.0_dp,1.0_dp)
       !if (i1==10) print*, "Xin4", X(:,i1)
       if (X(2,i1)>1.0_dp) X(2,i1) = mod(X(2,i1) - 1.0_dp,1.0_dp)
@@ -1444,8 +1293,6 @@ end subroutine AtomsConstruct
 
 subroutine AtomsConstructBasedOnFastNN(X,mm,angle,label,d,yShift, natoms)
 
-   !use tbpar,                only : tbnn
-   !use cell,                 only : aG, aBN,ucell
    use math
    use constants,            only : pi
 
@@ -1465,13 +1312,9 @@ subroutine AtomsConstructBasedOnFastNN(X,mm,angle,label,d,yShift, natoms)
    character(len=80) :: str
 
    integer :: natoms
-   !real(dp) :: x(natoms),y(natoms),z(natoms)
-   !integer :: nn(natoms,maxnn)
    real(dp) ::  A1(3),A2(3)
    integer :: num0,num1,num2,num3,num4,num5
    integer :: i,k,l,n
-   !real(dp) :: dx(natoms,maxnn),dy(natoms,maxnn),dz(natoms,maxnn)
-   !real(dp), intent(out) :: dr(natoms,maxnn)
 
    real(dp) :: dx_t,dy_t,dz_t,d2_t
    real(dp) :: xmin,xmax,ymin,ymax,xcell,ycell,rho
@@ -1484,9 +1327,7 @@ subroutine AtomsConstructBasedOnFastNN(X,mm,angle,label,d,yShift, natoms)
    integer :: NNcount,addx,addy
 
    real(dp), parameter :: rad(3) = [1.0_dp/sqrt(3.0_dp),1.0_dp,2.0_dp/sqrt(3.0_dp)]
-   !character(len=50) :: str
 
-   !integer :: ncell(3,9)
    real(dp) :: v(3)
    real(dp) :: rmax
 
@@ -1495,7 +1336,6 @@ subroutine AtomsConstructBasedOnFastNN(X,mm,angle,label,d,yShift, natoms)
 
    integer :: safetycounter
 
-
    if (mm(1)==0 .and. mm(2)==0) then
       call MIO_Kill('The supercell indices are zero: MoireCellParameters must be given for this type of system', &
         'atoms','AtomsLattice')
@@ -1503,18 +1343,14 @@ subroutine AtomsConstructBasedOnFastNN(X,mm,angle,label,d,yShift, natoms)
    ncell = mm(1)**2 + mm(1)*mm(2) + mm(2)**2
    call MIO_Allocate(X,[3,ncell*2],'X','atoms')
    a = angle*pi/180.0_dp
-   !print*, "Angle= ", a, angle
    ucell(:,1) = [cos(a),sin(a),0.0_dp]
    ucell(:,2) = [cos(a+pi/3.0_dp),sin(a+pi/3.0_dp),0.0_dp]
-   !print*, "ucell ", ucell
    m(:,1) = [mm(1),mm(2)]
    m(:,2) = [-mm(2),mm(1)+mm(2)]
    Rcell = 0.0_dp
    Rcell(:2,:2) = matmul(ucell(:2,:2),m)
-   !print*, "Rcell ", Rcell
    basis = 0.0_dp
    basis(:2,:) = matmul(ucell(:2,:2),bss)
-   !print*, "basis ", basis
    n1 = gcd(m(1,1),m(2,1))
    n2 = ncell/n1
    if (n2 > n1) then
@@ -1532,52 +1368,36 @@ subroutine AtomsConstructBasedOnFastNN(X,mm,angle,label,d,yShift, natoms)
    end do; end do
    !$OMP END PARALLEL DO
 
-   !f(2) = Rcell(1,1)*(ynew(n)-xnew(n)*Rcell(2,1)/Rcell(1,1))/(Rcell(2,2)*Rcell(1,1)-Rcell(1,2)*Rcell(2,1))
-   !f(1) = (X(1,n)-f(2)*Rcell(1,2))/Rcell(1,1)
-   !if (f(1)<0 .or. f(1)>1 .or. f(2)<0 .or. f(2) > 0) cycle
-   !i1 = i1+1
-   !X(:,i1) = [mod(f(1),1.0_dp)+yShift, mod(f(2),1.0_dp)+yShift, 0.5_dp+d]
-
-   !x(i) = X(:,1)
-   !y(i) = X(:,2)
-   !z(i) = Z(:,2)
-
    A1 = ucell(:,1)*n1
    A2 = ucell(:,2)*n2
-   !print*, natoms, size(X(1,:))
 
    do i=1,natoms
      xnew(i)=X(1,i); ynew(i)=X(2,i); znew(i)=X(3,i)
    end do
-   !print*, "hola1"
    do i=1,natoms
      n=i+natoms
      xnew(n)=X(1,i)+A1(1)       ! + A2(1)
      ynew(n)=X(2,i)+A1(2)       ! + A2(2)
      znew(n)=X(3,i)
    end do
-   !print*, "hola2"
    do i=1,natoms
      n=i+2*natoms
      xnew(n)=X(1,i)+A1(1)+A2(1) !
      ynew(n)=X(2,i)+A1(2)+A2(2)
      znew(n)=X(3,i)
    end do
-   !print*, "hola3"
    do i=1,natoms
      n=i+3*natoms
      xnew(n)=X(1,i)+A2(1)       ! + A1(1)
      ynew(n)=X(2,i)+A2(2)       ! + A1(2)
      znew(n)=X(3,i)
    end do
-   !print*, "hola4"
    do i=1,natoms
      n=i+4*natoms
      xnew(n)=X(1,i)-A1(1)+A2(1) !
      ynew(n)=X(2,i)-A1(2)+A2(2)
      znew(n)=X(3,i)
    end do
-   !print*, "hola5"
    do i=1,natoms
      n=i+5*natoms
      xnew(n)=X(1,i)-A1(1)       ! + A2(1)
@@ -1607,17 +1427,14 @@ subroutine AtomsConstructBasedOnFastNN(X,mm,angle,label,d,yShift, natoms)
    ymin = minval(ynew); ymax = maxval(ynew)
 
    a = 0.0_dp
-   !print*, "Angle= ", a, angle
    ucell(:,1) = [cos(a),sin(a),0.0_dp]
    ucell(:,2) = [cos(a+pi/3.0_dp),sin(a+pi/3.0_dp),0.0_dp]
-   !print*, "ucell ", ucell
    m(:,1) = [mm(1),mm(2)]
    m(:,2) = [-mm(2),mm(1)+mm(2)]
    Rcell = 0.0_dp
    Rcell(:2,:2) = matmul(ucell(:2,:2),m)
 
    i1 = 0
-   !!$OMP PARALLEL DO PRIVATE(f)
    do n = 1,9*natoms
       f(2) = Rcell(1,1)*(ynew(n)-xnew(n)*Rcell(2,1)/Rcell(1,1))/(Rcell(2,2)*Rcell(1,1)-Rcell(1,2)*Rcell(2,1))
       f(1) = (xnew(n)-f(2)*Rcell(1,2))/Rcell(1,1)
@@ -1629,7 +1446,6 @@ subroutine AtomsConstructBasedOnFastNN(X,mm,angle,label,d,yShift, natoms)
          !if (n.eq.54450) print*, "fb =", f
          i1 = i1+1
          if (i1.gt.natoms) then
-           !print*, "cycled for ", i1
            cycle
          end if
          X(:,i1) = [mod(f(1),1.0_dp)+yShift, mod(f(2),1.0_dp)+yShift, 0.5_dp+d]
@@ -1639,18 +1455,6 @@ subroutine AtomsConstructBasedOnFastNN(X,mm,angle,label,d,yShift, natoms)
          if (X(2,i1)>1.0_dp) X(2,i1) = mod(X(2,i1) - 1.0_dp,1.0_dp)
       end if
    end do
-   !!$OMP END PARALLEL DO
-   !do i=1,natoms
-   !      X(:,i) = X(1,i)*ucell(:,1)*n1 + X(2,i)*ucell(:,2)*n2 + X(3,i)*1.0_dp
-   !end do
-   !open(4,FILE='posInt')
-   !do i=1,natoms
-   !   write(4,*) "C    ", X(1,i),X(2,i),X(3,i)
-   !end do
-   !close(4)
-
-   !print*, "i1 = ", i1, natoms
-
 
 end subroutine AtomsConstructBasedOnFastNN
 
@@ -1673,7 +1477,6 @@ subroutine AtomsConstructAsymm(X,mm,mm2,angle,label,d,yShift)
    character(len=80) :: str
 
    ! Modified
-   !ncell = mm(1)**2 + mm(1)*mm(2) + mm(2)**2
    ncell = mm(1)*mm2(1) + mm(1)*mm(2) + mm(2)**2
    ! Modified
 
@@ -1685,12 +1488,7 @@ subroutine AtomsConstructAsymm(X,mm,mm2,angle,label,d,yShift)
    m(:,1) = [mm(1),mm(2)]
    m(:,2) = [-mm2(2),mm2(1)+mm2(2)] ! I think this takes care of y direction (second column) of m matrix
 
-   !m(:,1) = [mm(1),mm(2)]
-   !m(:,2) = [-mm(2),mm(1)+mm(2)]
-
    !! Added
-   !m2(:,1) = [mm2(1),mm2(2)]
-   !m2(:,2) = [-mm2(2),mm2(1)+mm2(2)]
    !! Added
 
    Rcell = 0.0_dp
@@ -1713,8 +1511,6 @@ subroutine AtomsConstructAsymm(X,mm,mm2,angle,label,d,yShift)
       end do
    end do; end do
    !$OMP END PARALLEL DO
-   !print*, "d =", d
-   !yShift = yShift/2.0_dp
    !$OMP PARALLEL DO PRIVATE(f)
    do i1=1,ncell*2
       f(2) = Rcell(1,1)*(X(2,i1)-X(1,i1)*Rcell(2,1)/Rcell(1,1))/(Rcell(2,2)*Rcell(1,1)-Rcell(1,2)*Rcell(2,1))
@@ -1841,7 +1637,6 @@ subroutine AtomsSetFrac()
    call MIO_Debug('AtomsSetFrac',1)
 #endif /* DEBUG */
 
-
 end subroutine AtomsSetFrac
 
 subroutine AtomsSetCartTemp()
@@ -1894,7 +1689,6 @@ subroutine AtomsSetFracTemp()
    call MIO_Debug('AtomsSetFracTemp',1)
 #endif /* DEBUG */
 
-
 end subroutine AtomsSetFracTemp
 
 subroutine AtomsOrder()
@@ -1941,13 +1735,10 @@ subroutine AtomsOrder()
    call MIO_Debug('AtomsSort',1)
 #endif /* DEBUG */
    !$OMP PARALLEL PRIVATE(ix)
-   !procAt = secAt ! garbage from Nicolas, don't add it again, unless I know
    !what I'm doing
    if (procID==1) then
       indxDiv(1) = 1
-      !print*, "we are in the procID one loop in atoms.f90"
    else
-      !print*, "we are NOT in the procID one loop in atoms.f90"
       ix = (procID-1)*nAt/nDiv + 1
       do
          if (procAt(ix)>=procID) then
@@ -1966,18 +1757,13 @@ subroutine AtomsOrder()
    indxDiv(nDiv+1) = nAt+1
 #ifdef MPI
    allocate(displ(nProc))
-   !call MIO_Allocate(displ,nProc,'displ','atoms')
    displ(1) = 0
    do i=2,nProc
       displ(i) = displ(i-1) + nTh(i-1)
    end do
-   !ix = sum(nTh(:Node)) + 1
-   !iy = ix + numThreads - 1
    call MPIAllGatherV(MPI_IN_PLACE,0,indxDiv,nTh,displ,MPI_INTEGER)
-   !call MIO_Deallocate(displ,'displ','atoms')
    deallocate(displ)
 #endif /* MPI */
-    !print*, "hi7"
    call MIO_Print('')
    call MIO_Print('Atoms distribution:','atoms')
    call MIO_Print('ProcessID   Num. of atoms           Indx1           Indx2','atoms')

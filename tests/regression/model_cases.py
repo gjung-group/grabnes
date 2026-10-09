@@ -506,3 +506,7 @@ COMPILER_DEPENDENT = {
     'tbg+TypeOfBL_BLKaxiras+NeighLevels1',
     'tbg+twistedBLAddShift',
 }
+
+# The BLKaxiras interlayer model on the generated twisted bilayer uses values that are not set: the GNU
+# builds refuse it (non-finite hoppings); with Intel the outcome changes from build to build.
+COMPILER_DEPENDENT |= {c for c in CASES if c.startswith("tbg+") and "BLKaxiras" in c}

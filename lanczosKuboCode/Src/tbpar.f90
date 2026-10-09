@@ -56,10 +56,6 @@ subroutine TBInit()
    end if
    call MIO_InputParameter('TB.OnSiteC',e0_C,0.0_dp)
    e0_C = e0_C/g0
-   !call MIO_InputParameter('TB.OnSiteCA',e0_CA,0.0_dp)
-   !e0_CA = e0_CA/g0
-   !call MIO_InputParameter('TB.OnSiteCB',e0_CB,0.0_dp)
-   !e0_CB = e0_CB/g0
    call MIO_InputParameter('TB.OnSiteC1',e0_C1,0.0_dp)
    e0_C1 = e0_C1/g0
    call MIO_InputParameter('TB.OnSiteC2',e0_C2,0.0_dp)

@@ -145,7 +145,6 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
                d = sqrt(NeighD(1,j,i)**2+NeighD(2,j,i)**2)
                if (d<r0) then
                   nQ = nQ + 1
-                  !Rq(:,nQ) = (Rat(:,i)+Rat(:,NList(j,i)))/2.0_dp
                   Rq(:,nQ) = Rat(:,i) + NeighD(:,j,i)/2.0_dp !*0.43_dp
                   s(nQ) = 1
                   if (edgeHopp) then
@@ -156,7 +155,6 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
                d = sqrt(NeighD(1,j,i)**2+NeighD(2,j,i)**2)
                if (d<r0) then
                   nQ = nQ + 1
-                  !Rq(:,nQ) = (Rat(:,i)+Rat(:,NList(j,i)))/2.0_dp
                   Rq(:,nQ) = Rat(:,i) + NeighD(:,j,i)/2.0_dp !*0.56_dp
                   s(nQ) = -1
                   if (edgeHopp) then
@@ -169,28 +167,21 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
    end do
    call MIO_Print('Number of interface bonds: '//trim(num2str(nQ)),'interface')
    call MIO_Print('')
-   !NcellInt(1) = 0
    do i=inode1,inode2
       do j=1,nQ
          do icy=-NcellInt(2),NcellInt(2); do icx=-NcellInt(1),NcellInt(1)
             v = Rat(:,i) - Rq(:,j) - matmul(ucell,[icx,icy,0])
             d = norm(v)
             if (d < rmaxInt) then
-               !d = d-1.42_dp/2.0_dp
                if (s(j)==1) then
                   H(i) = H(i) + AmpB(Species(i))*exp(-d/lambda(1,Species(i)))/d
-                  !H(i) = H(i) + AmpB(Species(i))*exp(-d/lambda(Species(i)))
                else
                   H(i) = H(i) - AmpN(Species(i))*exp(-d/lambda(2,Species(i)))/d
-                  !H(i) = H(i) - AmpN(Species(i))*exp(-d/lambda(Species(i)))
                end if
             end if
          end do; end do
       end do
    end do
-   !do i=inode1,inode2
-   !   write(77,*) Rat(2,i), H(i)
-   !end do
    if (edgeHopp) then
       nEdgeN = 0
       sz = size(Nradii,1)
@@ -222,4 +213,3 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
 end subroutine InterfacePot2
 
 end module interface
-

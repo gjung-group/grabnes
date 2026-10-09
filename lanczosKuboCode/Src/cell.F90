@@ -81,20 +81,10 @@ subroutine CellGet()
           call MIO_InputParameter('CellSize',n,50)
           call MIO_Print('Length of unit cell: '//trim(num2str(n*aG,5))// &
             ' Ang','cell')
-          !if (l) then
-          !   n2 = n*sCell2
-          !   n = n*sCell
-          !else
              n = n*sCell
-          !end if
           ucell(:,1) = [aG,0.0_dp,0.0_dp]
           ucell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
-          !if (l) then
-          !  ucell(:,1) = ucell(:,1)*n
-          !  ucell(:,2) = ucell(:,2)*n2
-          !else
             ucell = ucell*n
-          !end if
           ucell(:,3) = [0.0_dp,0.0_dp,h]
           aBN = aG
       end if
@@ -167,7 +157,6 @@ subroutine CellGet()
         ' Ang','cell')
       ucell(:,:2) = ucell(:,:2)*sCell
    else if (MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell')) then
-      !aG = 2.4389777651302801_dp
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
       call MIO_InputParameter('MoireCellParameters',m,[0,0,0,0])
@@ -202,7 +191,6 @@ subroutine CellGet()
         ' Ang','cell')
       ucell(:,:2) = ucell(:,:2)*sCell
    else if (MIO_StringComp(str,'TrilayerBasedOnMoireCell')) then
-      !aG = 2.4389777651302801_dp
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
       call MIO_InputParameter('MoireCellParameters',m,[0,0,0,0])
@@ -332,22 +320,11 @@ subroutine CellGet()
       print*, ucell(:,2)
       print*, ucell(:,3)
       close(1)
-      !aBN = aG
       call MIO_InputParameter('LatticeParameterBN',aBN,2.505_dp)
       g = norm(ucell(:,1))
       call MIO_Print('')
       call MIO_Print('Length of unit cell: '//trim(num2str(g,5))// &
         ' Ang','cell')
-      !call MIO_InputParameter('SuperCellX',SuperCellX,1)
-      !call MIO_InputParameter('SuperCellY',SuperCellY,1)
-      !if (SuperCellX .ne. SuperCellY) then
-      !   print*, "adjusting lattice vectors"
-      !   ucell(:,1) = ucell(:,1)*SuperCellX
-      !   ucell(:,2) = ucell(:,2)*SuperCellY
-      !else if (sCell.ne.1) then
-      !   print*, "adjusting lattice vectors"
-      !   ucell(:,:2) = ucell(:,:2)*sCell
-      !end if
    else
       call MIO_Kill('Type of system not recognized','cell','CellGet')
    end if
@@ -362,9 +339,6 @@ subroutine CellGet()
    end if
    call MIO_Print('')
 
-   !frac = .true.
-   !nAt = nAt*SuperCellX*SuperCellY
-   !call AtomsSetCart()
    vn = CrossProd(ucell(:,1),ucell(:,2))
    volume = dot_product(ucell(:,3),vn)
    area = norm(vn)
