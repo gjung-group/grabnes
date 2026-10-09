@@ -18,6 +18,9 @@ tapw_two_way    The same bilayer with the plane-wave reduction (TAPW, 124 states
                 levels, one to one (equal counts, each within 0.05 meV), at three k-points. Control: with a
                 wrong moire angle the same comparison must fail, so the test can tell a wrong basis.
 
+input_messages  Messages of the input library: a key given twice is reported (the first value is used), and a
+                key that nothing reads, here a misspelt one, is listed at the end of the run.
+
 Exit status 1 if a check fails. Requires NumPy.
 """
 import argparse
@@ -190,6 +193,24 @@ def tapw_two_way(r):
     return problems
 
 
+def input_messages(r):
+    rows = r.run("input_messages", "TypeOfSystem Graphene\nCellSize 3\nTB.NeighLevel 3\nCellSize 6\n" + BANDS
+                 + path([(0.0, 0.0), (0.5, 0.0), (0.0, 0.0)]))
+    log = open(os.path.join(r.a.work, "input_messages", "job.out")).read()
+    problems = []
+    if len(rows[0]) != 18:
+        problems.append(f"{len(rows[0])} levels instead of 18: the first value of the repeated key CellSize was not used")
+    if 'the key "CellSize" appears 2 times' not in log:
+        problems.append("the repeated key CellSize is not reported")
+    listed = log.split("were not read in this run")[1].split("....")[0].split() if "were not read in this run" in log else []
+    print("  keys reported as not read: " + (", ".join(x for x in listed if x not in ("input:", "(misspelt,", "or", "not", "used", "by", "the", "selected", "calculation):")) or "none"))
+    if "TB.NeighLevel" not in listed:
+        problems.append("the misspelt key TB.NeighLevel is not listed as not read")
+    if "TB.NeighLevels" in listed or "CellSize" in listed:
+        problems.append("a key that the run reads is listed as not read")
+    return problems
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--bin", required=True)
@@ -201,6 +222,7 @@ def main():
     r.check("hbn_gap", lambda: hbn_gap(r))
     r.check("sparse_dense", lambda: sparse_dense(r))
     r.check("tapw_two_way", lambda: tapw_two_way(r))
+    r.check("input_messages", lambda: input_messages(r))
     print()
     print("PASS: all physics checks" if not r.failures else f"FAIL: {r.failures} physics check(s)")
     sys.exit(1 if r.failures else 0)

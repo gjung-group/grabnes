@@ -83,7 +83,7 @@ def render():
            f"{len(keys)} keys and {len(blocks)} blocks are read by the solver. A key is written as `Key value` on one line of",
            "the input file; a block as `&begin Name N` ... `&end Name`. Keys are not case sensitive. If a key appears",
            "more than once, the first value is used and the solver prints a warning. A key that is not listed here is",
-           "ignored without a message.", "",
+           "not read; the keys of the input file that the run did not read are listed at the end of the output.", "",
            "The default shown is the expression in the source; where it is not a literal, it is computed from other",
            "input. \"Read in\" names the source file and routine, which is where to look for what the key does: most",
            "keys have no other documentation yet.", "",

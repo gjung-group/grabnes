@@ -37,6 +37,10 @@ module input
    integer, parameter :: maxAlias = 2000, aliasLen = 80
    character(len=aliasLen), save :: aliasNew(maxAlias), aliasOld(maxAlias)
    logical, save :: aliasOldUsed(maxAlias) = .false., aliasBoth(maxAlias) = .false.
+   ! Keys of the input file (lower case, each once) and whether the run asked for them
+   character(len=aliasLen), allocatable, save :: fileKeys(:), fileKeysAsWritten(:)
+   logical, allocatable, save :: fileKeyAsked(:)
+   integer, save :: nFileKeys = 0
    integer, save :: nAlias = 0
 
    public :: InputInit
@@ -209,7 +213,7 @@ subroutine InputCheckDuplicates()
    logical, allocatable :: done(:)
    logical :: inblock
 
-   if (nlines < 2) return
+   if (nlines < 1) return
    allocate(keys(nlines), done(nlines))
    n = 0
    inblock = .false.
@@ -259,6 +263,16 @@ subroutine InputCheckDuplicates()
            ' times in the input file; only its FIRST value is used.'
       end if
    end do
+   ! keep the keys, each once, for the report of keys that the run never asked for
+   allocate(fileKeys(max(n,1)), fileKeysAsWritten(max(n,1)), fileKeyAsked(max(n,1)))
+   fileKeyAsked = .false.
+   nFileKeys = 0
+   do i=1,n
+      if (done(i)) cycle
+      nFileKeys = nFileKeys + 1
+      fileKeys(nFileKeys) = InputLower(keys(i))
+      fileKeysAsWritten(nFileKeys) = keys(i)
+   end do
    deallocate(keys, done)
 
 end subroutine InputCheckDuplicates
@@ -284,6 +298,7 @@ subroutine InputClose()
    call TimerCount('input')
 #endif /* TIMER */
    call InputAliasReport()
+   call InputUnusedReport()
    call InFile%Close()
    call InLns%Close()
 
@@ -1435,11 +1450,14 @@ function InputSearchLabel(label,str,lineid) result(found)
    character(len=maxrecl) :: strOther
 
    found = InputSearchLabelRaw(label,str,lineid)
-   if (nAlias == 0) return
    if (len_trim(label) == 0) return
    if (label(1:1) == '&') return
+   call InputMarkAsked(label)
+   if (nAlias == 0) return
    call InputAliasFind(label,ia,isOld)
    if (ia == 0) return
+   call InputMarkAsked(trim(aliasNew(ia)))
+   call InputMarkAsked(trim(aliasOld(ia)))
    if (isOld) then
       ! asked by its former name: the Section.Name form has priority if it is in the file
       foundOther = InputSearchLabelRaw(trim(aliasNew(ia)),strOther,idOther)
@@ -1591,6 +1609,63 @@ subroutine InputAliasInit()
 
 end subroutine InputAliasInit
 !****** End subroutine: InputAliasInit ****************************************
+!******************************************************************************
+
+
+!****** Subroutine: InputMarkAsked ********************************************
+!******************************************************************************
+!
+!  Record that the run asked for a key (for InputUnusedReport).
+!
+!******************************************************************************
+subroutine InputMarkAsked(label)
+
+   implicit none
+
+   character(*), intent(in) :: label
+
+   integer :: i
+   character(len=aliasLen) :: low
+
+   if (nFileKeys == 0) return
+   low = InputLower(label)
+   do i=1,nFileKeys
+      if (fileKeys(i) == low) then
+         fileKeyAsked(i) = .true.
+         exit
+      end if
+   end do
+
+end subroutine InputMarkAsked
+!****** End subroutine: InputMarkAsked ****************************************
+!******************************************************************************
+
+
+!****** Subroutine: InputUnusedReport *****************************************
+!******************************************************************************
+!
+!  At the end of the run: the keys of the input file that nothing asked for.
+!  Such a key is misspelt, or belongs to a part of the code that the selected
+!  calculation does not use.
+!
+!******************************************************************************
+subroutine InputUnusedReport()
+
+   implicit none
+
+   integer :: i, n
+
+   if (nFileKeys == 0) return
+   n = count(.not. fileKeyAsked(1:nFileKeys))
+   if (n == 0) return
+   write(*,'(A,I0,A)') 'input: note: ', n, ' key(s) of the input file were not read in this run (misspelt, or not'// &
+     ' used by the selected calculation):'
+   do i=1,nFileKeys
+      if (.not. fileKeyAsked(i)) write(*,'(A)') 'input:    '//trim(fileKeysAsWritten(i))
+   end do
+
+end subroutine InputUnusedReport
+!****** End subroutine: InputUnusedReport *************************************
 !******************************************************************************
 
 
