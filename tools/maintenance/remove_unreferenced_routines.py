@@ -42,7 +42,7 @@ def main():
         for i, name in heads:
             n = name.lower()
             uses = len(re.findall(r"(?<!\w)" + re.escape(n) + r"(?!\w)", everything))
-            ends = len(re.findall(r"end\s+(?:subroutine|function)\s+" + re.escape(n) + r"(?!\w)", everything))
+            ends = len(re.findall(r"end[ \t]+(?:subroutine|function)[ \t]+" + re.escape(n) + r"(?!\w)", everything))
             if uses - ends - 1 <= 0 and n not in keep:
                 e = next((j for j in range(i + 1, len(L)) if re.match(rf"\s*end\s+(subroutine|function)\s+{name}\b", L[j], re.I)), None)
                 if e is None:

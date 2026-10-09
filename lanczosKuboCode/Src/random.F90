@@ -49,26 +49,6 @@ subroutine RandSeedFromInput()
 
 end subroutine RandSeedFromInput
 
-subroutine RandSeed(self,thread)
-
-   type(rand_t), intent(inout) :: self
-   integer, intent(in) :: thread
-
-   integer :: clock, seed
-
-   logical :: randomSeed
-
-   call MIO_InputParameter('randomSeed',randomSeed,.true.)
-   if (randomSeed) then
-      seed = 932117 + thread
-   else
-      seed = 932117
-   end if
-   self%state(1) = seed
-   self%state(2:ns) = default_seed(2:ns)
-
-end subroutine RandSeed
-
 function RandNum(self) result(rand)
 
    type(rand_t), intent(inout) :: self

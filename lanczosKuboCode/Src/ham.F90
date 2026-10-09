@@ -3545,49 +3545,6 @@ subroutine diagoGBN(Hdjj,dx,dy,Cjj,Phijj,Cjj0)
     return
 end subroutine diagoGBN
 
-!> @brief Compute diagonal onsite energy with conjugate phase.
-!! @param[out] Hdjj   Diagonal onsite energy
-!! @param[in]  dx,dy  In-plane displacements
-!! @param[in]  Cjj    Coupling amplitude
-!! @param[in]  Phijj  Phase factor (conjugated)
-subroutine diagoConj(Hdjj,dx,dy,Cjj,Phijj)
-
-    use constants
-    use cell,                 only : aG
-    real(dp), intent(in):: Cjj, Phijj
-    real(dp):: dx, dy, G1
-    real(dp), intent(out) :: Hdjj
-
-    G1 = 4.0_dp*pi/sqrt(3.0_dp)/(aG)
-
-    Hdjj = 2.0_dp*Cjj*real( (exp(cmplx_i*G1*dy) &
-               + 2.0_dp*exp(-cmplx_i*G1*dy/2.0_dp)*cos(sqrt(3.0_dp)*G1*dx/2.0_dp))*exp(-cmplx_i*Phijj) )
-
-    return
-end subroutine diagoConj
-
-!> @brief Compute diagonal onsite energy with constant offset.
-!! @param[out] Hdjj   Diagonal onsite energy
-!! @param[in]  dx,dy  In-plane displacements
-!! @param[in]  Cjj    Coupling amplitude
-!! @param[in]  Phijj  Phase factor
-!! @param[in]  Cjj0   Constant offset
-subroutine diago2(Hdjj,dx,dy,Cjj,Phijj,Cjj0)
-
-    use constants
-    use cell,                 only : aG
-    real(dp), intent(in):: Cjj, Phijj,Cjj0
-    real(dp):: dx, dy, G1
-    real(dp), intent(out) :: Hdjj
-
-    G1 = 4.0_dp*pi/sqrt(3.0_dp)/(aG)
-
-    Hdjj = Cjj0 + 2.0_dp*Cjj*real( (exp(-cmplx_i*G1*dy) &
-           + 2.0_dp*exp(cmplx_i*G1*dy/2.0_dp)*cos(sqrt(3.0_dp)*G1*dx/2.0_dp))*exp(cmplx_i*Phijj) )
-
-    return
-end subroutine diago2
-
 !> @brief Compute off-diagonal hopping using cosine modulation.
 !! @param[out] Hodjj  Off-diagonal hopping element
 !! @param[in]  dx,dy  In-plane displacements
@@ -3824,23 +3781,6 @@ subroutine harmonicApprox(dx,dy,A,B,C, Hjj)
     return
 
 end subroutine
-
-!> @brief Compute interlayer BL coupling phase factor HBL.
-!! @param[out] HBL   Complex coupling value
-!! @param[in]  dx    Relative x displacement
-!! @param[in]  dy    Relative y displacement
-!! @param[in]  tAB   Base interlayer hopping amplitude
-subroutine interlayerBL(HBL,dx,dy,tAB)
-   use constants
-   use cell,                 only : aG
-   real(dp), intent(in)::  dx, dy, tAB
-   real(dp):: G1
-   complex*16, intent(out) :: HBL
-
-   HBL = tAB
-
-   return
-end subroutine interlayerBL
 
 !> @brief Interlayer coupling for AB stacking between layers.
 !! @param[out] HAB      Complex AB coupling

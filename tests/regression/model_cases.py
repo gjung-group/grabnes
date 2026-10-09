@@ -523,6 +523,9 @@ COMPILER_DEPENDENT = {
     'tbg+twistedBLAddShift',
 }
 
+# The on-site potentials that differ with Intel only (sinusModulation, SquareFunction*, SquareChecker2219, PNP,
+# Zterm1D) are functions of the Cartesian x or y of an atom that are not periodic in the hexagonal cell: atoms on
+# the cell boundary are placed on one side or the other depending on rounding, which changes their value.
 # The BLKaxiras interlayer model on the generated twisted bilayer uses values that are not set: the GNU
 # builds refuse it (non-finite hoppings); with Intel the outcome changes from build to build.
 COMPILER_DEPENDENT |= {c for c in CASES if c.startswith("tbg+") and "BLKaxiras" in c}
