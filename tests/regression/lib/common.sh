@@ -262,6 +262,44 @@ run_hamiltonian_check() {
     fi
 }
 
+# Survey of every model switch (model_survey.py): each of its small cases must
+# end as recorded (ok, refused, non-Hermitian, ...) and reproduce the stored
+# fingerprint of its Hamiltonian or eigenvalues. Needs NumPy.
+run_model_survey() {
+    printf '\n%s\n' "== model_survey"
+    if ! python3 -c 'import numpy' >/dev/null 2>&1; then
+        printf '%s\n' "  SKIP: NumPy is not available"
+        return 0
+    fi
+    survey_status=0
+    python3 "$harness_dir/model_survey.py" --bin "$grabnes_bin" --work "$work_dir/model_survey" \
+        --launcher "${GRABNES_LAUNCHER:-}" --check > "$work_dir/model_survey.log" 2>&1 || survey_status=$?
+    grep -E '^(summary|DIFFERS|PASS|FAIL)' "$work_dir/model_survey.log" | sed 's/^/  /'
+    if [ "$survey_status" -ne 0 ]; then
+        printf '%s\n' "  FAIL: see $work_dir/model_survey.log"
+        failures=$((failures + 1))
+    fi
+}
+
+# Known-answer checks of features without a public example (check_physics.py):
+# Landau levels of graphene, the band gap of hBN, sparse against dense
+# diagonalization. Needs NumPy.
+run_physics_checks() {
+    if ! python3 -c 'import numpy' >/dev/null 2>&1; then
+        printf '\n%s\n%s\n' "== physics checks" "  SKIP: NumPy is not available"
+        return 0
+    fi
+    physics_status=0
+    python3 "$harness_dir/check_physics.py" --bin "$grabnes_bin" --work "$work_dir/physics" \
+        --launcher "${GRABNES_LAUNCHER:-}" > "$work_dir/physics.log" 2>&1 || physics_status=$?
+    grep -vE '^(PASS|FAIL): ' "$work_dir/physics.log" | sed '/^$/N;/^\n$/D'
+    failures=$((failures + $(grep -c '^  FAIL' "$work_dir/physics.log" || true)))
+    if [ "$physics_status" -ne 0 ] && ! grep -q '^  FAIL' "$work_dir/physics.log"; then
+        printf '%s\n' "  FAIL: see $work_dir/physics.log"
+        failures=$((failures + 1))
+    fi
+}
+
 # Symmetry check without stored reference: the four Dirac states of example 03
 # at the moire K point (first k-point, bands 37-40) form two degenerate pairs.
 # The historical neighbor search split them by 1e-4 eV.

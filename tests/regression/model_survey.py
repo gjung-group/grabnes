@@ -21,7 +21,7 @@ and, with --check, compares status and fingerprint with the stored reference
                             [--check | --update-reference] [--report FILE.md]
 
 The fingerprint is a hash of the sorted list of (atom, neighbour, lattice translation, hopping)
-and of the on-site energies, rounded to 1e-9 g0. It does not depend on the order of the
+and of the on-site energies, rounded to 1e-6 g0. It does not depend on the order of the
 neighbour list. Use a checked build (tests/regression/config/gfortran.debug.make.sys) to turn
 out-of-bounds accesses into CRASH lines instead of silent wrong numbers.
 
@@ -40,14 +40,25 @@ import sys
 
 import numpy as np
 
+
+def unlimited_stack():
+    """Run the solver with the largest stack the system allows: builds that keep automatic arrays on the
+    stack (Intel Fortran by default) otherwise end with a segmentation fault for a few thousand atoms."""
+    import resource
+    hard = resource.getrlimit(resource.RLIMIT_STACK)[1]
+    resource.setrlimit(resource.RLIMIT_STACK, (hard, hard))
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "..", "tools", "hamiltonian"))
 from verify_tables import load  # noqa: E402
 
 sys.path.insert(0, HERE)
-from model_cases import BASES, CASES, STRUCTURES  # noqa: E402
+from model_cases import BASES, CASES, COMPILER_DEPENDENT, STRUCTURES  # noqa: E402
 
 REFERENCE = os.path.join(HERE, "model_survey_reference.json")
+# Decimals (in units of g0) kept in the fingerprint: coarse enough to be the same for every compiler and
+# optimisation level, fine enough (about 3 micro-eV) to see any change of a model.
+DIGITS = 6
 
 # Appended to every input: assemble the Hamiltonian, write the tables, stop after a short recursion.
 RUN_MODE = {
@@ -58,10 +69,22 @@ RUN_MODE = {
 }
 
 
+# Cases with "@mode": "bands" are diagonalised at two generic k-points instead; their fingerprint is that of
+# the eigenvalues. This is the observable for terms that do not enter the hopping table (spin, spin-orbit).
+BANDS_MODE = {
+    "Kubo.Calc": ".false.", "Diag.Calc": ".true.", "Calculate.OnlyDOS": ".false.", "Calculate.Bands": ".true.",
+    "Bands.NumPoints": "1", "Bands.UseSameNumberOfPoints": ".true.", "WriteDataFiles": ".false.",
+    "&path": "&begin Bands.Path 3\n0.21 0.37 0.0\n0.40 0.13 0.0\n0.0 0.0 0.0\n&end Bands.Path",
+}
+
+
 def build_input(base, changes):
     """Base text with the keys of `changes` replaced (first occurrence) or appended; value None removes a key."""
     lines = BASES[base].strip("\n").split("\n")
     todo = dict(RUN_MODE)
+    changes = dict(changes)
+    if changes.pop("@mode", "tables") == "bands":
+        todo.update(BANDS_MODE)
     todo.update(changes)
     out, inblock = [], False
     for line in lines:
@@ -85,7 +108,24 @@ def build_input(base, changes):
     return "\n".join(out) + "\n"
 
 
-def classify(run_dir, rc, timed_out):
+def classify_bands(run_dir, info):
+    path = os.path.join(run_dir, "generate.bands")
+    try:
+        values = [float(x) for line in open(path).read().split("\n")[4:] for x in line.split()]
+    except Exception as exc:
+        info.update(status="CRASH", message=f"band file not readable: {exc}"[:300])
+        return info
+    if not values:
+        info.update(status="CRASH", message="empty band file")
+    elif not np.all(np.isfinite(values)):
+        info.update(status="NAN", message="non-finite eigenvalues")
+    else:
+        info.update(entries=len(values), fingerprint=hashlib.sha1(
+            repr([round(v, 5) + 0.0 for v in values]).encode()).hexdigest()[:16])
+    return info
+
+
+def classify(run_dir, rc, timed_out, mode="tables"):
     log = open(os.path.join(run_dir, "job.out"), errors="replace").read() if os.path.exists(
         os.path.join(run_dir, "job.out")) else ""
     tail = [l.strip() for l in log.split("\n") if l.strip()]
@@ -97,8 +137,10 @@ def classify(run_dir, rc, timed_out):
     if not finished:
         runtime = [l for l in tail if re.search(r"Fortran runtime error|SIGSEGV|SIGFPE|SIGABRT|severe|"
                                                 r"Segmentation|Backtrace|Index '", l)]
-        killed = [l for l in tail if re.search(r"\bERROR\b|Error:|killed|MIO_Kill|not supported|must be", l)]
-        if runtime:
+        killed = [l for l in tail if re.search(r"\bERROR\b", l)] or \
+                 [l for l in tail if re.search(r"Error:|killed|not supported", l)]
+        # the solver's own stop comes first: a signal raised while it aborts does not make it a crash
+        if runtime and not (killed and "PROGRAM ABORTED" in log):
             info.update(status="CRASH", message=" | ".join(runtime[:2])[:300])
         elif killed:
             start = next(i for i, l in enumerate(tail) if l == killed[0])
@@ -106,6 +148,8 @@ def classify(run_dir, rc, timed_out):
         else:
             info.update(status="CRASH", message=("rc=%d; last line: " % rc + (tail[-1] if tail else "no output"))[:300])
         return info
+    if mode == "bands":
+        return classify_bands(run_dir, info)
     try:
         t = load(run_dir, "generate")
     except Exception as exc:  # the run ended but the tables are unusable
@@ -132,11 +176,11 @@ def classify(run_dir, rc, timed_out):
             continue
         asym = max(asym, abs(t["hop"][es[0]] - np.conj(t["hop"][partner[0]])))
     info.update(asym=float(asym), unpaired=unpaired)
-    rows = sorted((i, m) + r + (round(float(t["hop"][es[0]].real), 9) + 0.0, round(float(t["hop"][es[0]].imag), 9) + 0.0)
+    rows = sorted((i, m) + r + (round(float(t["hop"][es[0]].real), DIGITS) + 0.0, round(float(t["hop"][es[0]].imag), DIGITS) + 0.0)
                   for (i, m, r), es in key.items())
     h = hashlib.sha1()
     h.update(repr(rows).encode())
-    h.update(repr([round(float(x), 9) + 0.0 for x in t["h0"]]).encode())
+    h.update(repr([round(float(x), DIGITS) + 0.0 for x in t["h0"]]).encode())
     info["fingerprint"] = h.hexdigest()[:16]
     notes = []
     if duplicates:
@@ -168,7 +212,7 @@ def main():
 
     env = dict(os.environ, OMP_NUM_THREADS="2")
     results, base_print = {}, {}
-    names = [c for c in CASES if fnmatch.fnmatch(c, a.only) or c in BASES]
+    names = [c for c in CASES if fnmatch.fnmatch(c, a.only) or c in BASES or c.endswith("@bands")]
     for name in names:
         base, changes, *rest = CASES[name]
         files = rest[0] if rest else None
@@ -182,14 +226,16 @@ def main():
         with open(os.path.join(d, "job.out"), "w") as out:
             try:
                 rc = subprocess.run(a.launcher.split() + [os.path.abspath(a.bin), "Gendata.in"], cwd=d, stdout=out,
-                                    stderr=subprocess.STDOUT, env=env, timeout=a.timeout).returncode
+                                    stderr=subprocess.STDOUT, preexec_fn=unlimited_stack, env=env, timeout=a.timeout).returncode
             except subprocess.TimeoutExpired:
                 timed_out = True
-        r = classify(d, rc, timed_out)
+        mode = changes.get("@mode", "tables")
+        r = classify(d, rc, timed_out, mode)
         r["base"] = base
-        if name == base:
-            base_print[base] = r["fingerprint"]
-        elif r["status"] == "ok" and r["fingerprint"] and r["fingerprint"] == base_print.get(base):
+        reference_case = name == base or (mode == "bands" and name.endswith("@bands"))
+        if reference_case:
+            base_print[(base, mode)] = r["fingerprint"]
+        elif r["status"] == "ok" and r["fingerprint"] and r["fingerprint"] == base_print.get((base, mode)):
             r["status"] = "INERT"
         results[name] = r
         print(f"{name:34s} {r['status']:8s} atoms {r['atoms']:5d} entries {r['entries']:7d} {r['fingerprint']:16s} "
@@ -206,7 +252,12 @@ def main():
             for name, r in results.items():
                 f.write(f"| `{name}` | `{r['base']}` | {r['status']} | {r['atoms']} | {r['entries']} | "
                         f"`{r['fingerprint']}` | {r['message'].replace('|', '/')} |\n")
-    compact = {k: dict(status=v["status"], fingerprint=v["fingerprint"]) for k, v in results.items()}
+    # a case whose result depends on the compiler is recorded as such and not compared
+    compact = {k: (dict(status="UNDEFINED", fingerprint="") if k in COMPILER_DEPENDENT
+                   else dict(status=v["status"], fingerprint=v["fingerprint"])) for k, v in results.items()}
+    undefined = sum(1 for k in results if k in COMPILER_DEPENDENT)
+    if undefined:
+        print(f"{undefined} case(s) are listed as compiler dependent (model_cases.COMPILER_DEPENDENT) and are not compared")
     if a.update_reference:
         ref = json.load(open(REFERENCE)) if os.path.exists(REFERENCE) else {}
         ref.update(compact)

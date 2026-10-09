@@ -22,5 +22,7 @@ run_other_system_checks
 run_shell_control_checks
 run_kubo_check
 run_mpi_guard_check
+run_physics_checks
+run_model_survey
 
 finish "the canonical solver was built and passes all example and solver checks"

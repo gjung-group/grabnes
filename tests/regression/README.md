@@ -45,6 +45,35 @@ The examples use exact diagonalization and must be started with **one MPI
 process**; see the limitations in
 [`docs/development/cluster-build-and-validation.md`](../../docs/development/cluster-build-and-validation.md).
 
+## Survey of the model switches
+
+`model_survey.py` runs one or more small cases (tens to hundreds of atoms) for
+every model switch of the solver; the cases are listed in `model_cases.py`. The
+solver only assembles the Hamiltonian, or diagonalises it at two k-points for
+terms that act on the spin. For every case the script records how the run ended
+
+| Status | Meaning |
+| --- | --- |
+| `ok` | ended normally; the tables are finite and Hermitian |
+| `INERT` | as `ok`, but identical to the base input: the switch had no effect in this configuration |
+| `NONHERM` | the two directions of a bond differ, or a reverse entry is missing |
+| `REFUSED` | the solver stopped with its own error message |
+| `CRASH`, `NAN` | abnormal end, or non-finite values |
+
+and a fingerprint of the Hamiltonian (or of the eigenvalues) that does not
+depend on the order of the neighbor list. `run_examples.sh` compares both with
+`model_survey_reference.json`, so a change in any model is detected. A case
+that is `REFUSED`, `INERT`, or `NONHERM` in the reference documents the present
+state of that switch; it is not a statement that the switch is correct.
+
+```sh
+# table for one family of cases, with a build that checks array bounds
+python3 tests/regression/model_survey.py --bin /path/to/grabnes --only 'xyz4*' --report survey.md
+# after an intended change of a model: inspect the differences, then record them
+python3 tests/regression/model_survey.py --bin /path/to/grabnes --check
+python3 tests/regression/model_survey.py --bin /path/to/grabnes --update-reference
+```
+
 ## Requirements
 
 - GNU Make, a Fortran compiler with an MPI wrapper, BLAS/LAPACK, and ARPACK,
