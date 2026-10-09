@@ -21,8 +21,9 @@ Compiles, runs, and has a numerical regression test or an independent check in
 | Build with GNU Fortran 12 and Intel `ifort` 2021.6 | All checks pass with optimized, checked, and Intel builds | One MPI process |
 | Magnetic field (`MagField.Integer`) | Landau levels of a 1152-atom graphene cell at 137 T: zero mode exact and twofold, E_1 to E_3 within 0.16 %, 0.31 %, 0.47 % of the Dirac formula, independent of k | One field, graphene |
 | hBN on-site energies | Band edges of monolayer hBN at K equal the two on-site energies | |
+| Plane-wave reduction (`useTAPW`, dense) | 364-atom twisted bilayer: within 1 eV of neutrality the K and K' levels together equal the exact levels one to one (0.001 meV) at three k-points; fails with a wrong moire angle, as it must | One cell, generated structure, one OpenMP thread |
 | Sparse diagonalization (`sparseDiagSolver`, ARPACK) | The 20 levels nearest zero energy of a 364-atom twisted bilayer equal the dense result at three k-points | Without shift-invert |
-| Every model switch | `tests/regression/model_survey.py`: more than 400 small cases; each must end as recorded and reproduce the fingerprint of its Hamiltonian with the GNU and Intel builds | The survey records the present state of a switch (working, without effect, refused, non-Hermitian), not its physical correctness; 51 cases depend on the compiler and are listed as such |
+| Every model switch | `tests/regression/model_survey.py`: more than 400 small cases; each must end as recorded and reproduce the fingerprint of its Hamiltonian with the GNU and Intel builds | The survey records the present state of a switch (working, without effect, refused, non-Hermitian), not its physical correctness; 33 cases depend on the compiler and are listed as such |
 
 ## Partially validated
 
