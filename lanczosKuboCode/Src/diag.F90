@@ -659,7 +659,7 @@ subroutine DiagBands()
 
    use cell,                 only : rcell, ucell, aG
    use atoms,                only : nAt
-   use ham,                  only : H0, hopp, nspin, RashbaSOCterm
+   use ham,                  only : H0, hopp, nspin, RashbaSOCterm, IsingSOCterm
    use neigh,                only : NList, Nneigh, neighCell,maxNeigh
    use name,                 only : prefix
    use tbpar,                only : g0
@@ -708,6 +708,22 @@ subroutine DiagBands()
     call MIO_InputParameter('sparseDiagSolver',sparseDiagSolver,.false.)
     call MIO_InputParameter('useTAPW',useTAPW,.false.)
     call MIO_InputParameter('useDenseMatrixTAPW',useDenseMatrixTAPW,.false.)
+    ! The Zeeman, Ising and Rashba terms are implemented in the TAPW path only.
+    if (.not. useTAPW) then
+       block
+          logical :: zeeman, pzeeman
+          call MIO_InputParameter('ZeemanTerm',zeeman,.false.)
+          call MIO_InputParameter('PseudoZeemanTerm',pzeeman,.false.)
+          if (zeeman .or. pzeeman .or. IsingSOCterm) then
+             call MIO_Print('WARNING: ZeemanTerm, PseudoZeemanTerm and IsingSOCterm are implemented for TAPW '// &
+               'calculations only (useTAPW .true.); they have NO effect on this calculation.','diag')
+          end if
+          if (RashbaSOCterm .and. nspin == 1) then
+             call MIO_Kill('RashbaSOCterm is implemented for TAPW calculations only (useTAPW .true.).', &
+               'diag','DiagBands')
+          end if
+       end block
+    end if
 
    if (useDifferentLatticeVectors) then
        ucell(1,2) = 0.0_dp
@@ -6051,7 +6067,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     ! Ensure correct size of nev and ncv
     if ( (nev < 1) .or. (nev >= ncv) .or. (ncv > N) ) then
         print *, 'Error: invalid parameters - nev=', nev, 'ncv=', ncv, 'N=', N
-        stop
+        error stop 1
     end if
 
     ! Initialize arrays
@@ -6107,13 +6123,13 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     ! Check resid for initial state
     if (size(resid) /= N) then
         print *, 'Error: resid size mismatch: ', size(resid), ' expected: ', N
-        stop
+        error stop 1
     end if
 
      ! Debug print for resid
     if (any(resid /= resid)) then
         print *, 'Error: resid contains NaN values initially.'
-        stop
+        error stop 1
     end if
 
     resid_norm = sqrt(sum(abs(resid)**2))
@@ -6135,7 +6151,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     ! Debug prints for CSR matrix
     if (any(values /= values)) then
         print *, 'Error: values contains NaN values after initialization.'
-        stop
+        error stop 1
     end if
 
 
@@ -6180,7 +6196,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
        call pardiso(pt, maxfct, mnum, mtype, phase, nnn, a, ia, ja, idum, nrhs, iparm, msglvl, ddum, ddum, error)
        if (error /= 0) then
           print *, 'DiagHamSparse: PARDISO factorisation error ', error
-          stop
+          error stop 1
        end if
        call MIO_Print('DiagHamSparse: factor of H - shift: '//trim(num2str(iparm(18)))//' non-zeros, '// &
           trim(num2str(iparm(14)))//' perturbed pivots','diag')
@@ -6208,7 +6224,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
         print *, 'Error with znaupd, INFO = ', info
         print *, 'iparam: ', iparam
         print *, 'ipntr: ', ipntr
-        stop
+        error stop 1
     else
         print *, 'znaupd converged successfully'
     endif
@@ -6337,7 +6353,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
                             workd(ipntr(1)), workd(ipntr(2)), error)
                if (error /= 0) then
                   print *, 'DiagHamSparse: PARDISO solve error ', error
-                  stop
+                  error stop 1
                end if
                !status = mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0_dp, mkl_handle, descr, b, x)
                !if (status /= SPARSE_STATUS_SUCCESS) then
@@ -6354,7 +6370,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
                !!end if
            else
                print *, 'Error: ido has unexpected value ', ido
-               stop
+               error stop 1
            end if
            !print*, 'Solve iteration completed ... '
 
@@ -6362,7 +6378,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
            call znaupd(ido, bmat, nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr, workd, workl, lworkl, rwork, info)
            if (info /= 0) then
                print *, 'Error with znaupd during iteration, info = ', info
-               stop
+               error stop 1
            end if
            !print*, 'znaupd iteration finished ...'
            !iter = iter + 1
@@ -6386,14 +6402,14 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
                !print *, 'Output vector:', workd(ipntr(2):ipntr(2)+nn-1)
            else
                print *, 'Error: ido has unexpected value ', ido
-               stop
+               error stop 1
            end if
 
            ! ARPACK iteration
            call znaupd(ido, bmat, nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr, workd, workl, lworkl, rwork, info)
            if (info /= 0) then
                print *, 'Error with znaupd during iteration, info = ', info
-               stop
+               error stop 1
            end if
        end do
     end if
@@ -6469,7 +6485,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     endif
     if (info /= 0) then
         print *, 'Error with zneupd, ierr = ', info
-        stop
+        error stop 1
     end if
     print *, "eigenvalues: ", d
 
@@ -6580,10 +6596,10 @@ subroutine sparse_upper_sorted(N, row_ptr, col_ind, values, ia, ja, a)
        end do
        if (l == ia(i)) then
           print *, 'sparse_upper_sorted: empty row ', i
-          stop
+          error stop 1
        else if (ja(ia(i)) /= i) then
           print *, 'sparse_upper_sorted: missing diagonal in row ', i
-          stop
+          error stop 1
        end if
        a(ia(i)) = real(a(ia(i)))
     end do
@@ -6707,7 +6723,7 @@ subroutine sparse_count_below(N, ia, ja, a, nE, dE, nbelow, ok)
     call pardiso(ptc, maxfct, mnum, mtype, phase, M, b, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
     if (error /= 0) then
        print *, 'sparse_count_below: PARDISO analysis error ', error
-       stop
+       error stop 1
     end if
     do ie = 1, nE
        bw = b
@@ -6716,7 +6732,7 @@ subroutine sparse_count_below(N, ia, ja, a, nE, dE, nbelow, ok)
        call pardiso(ptc, maxfct, mnum, mtype, phase, M, bw, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
        if (error /= 0) then
           print *, 'sparse_count_below: PARDISO factorisation error ', error
-          stop
+          error stop 1
        end if
        if (iparmc(14) /= 0 .or. iparmc(22) + iparmc(23) /= M) ok = .false.
        if (cplx) then
@@ -6765,6 +6781,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     implicit none
     integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is, neig
     integer, intent(in), optional :: kpoint_index
+    logical :: tapw_pre_ok
     real(dp), intent(out) :: ELoc(N)
     ! Optional output of TAPW eigenvectors; unused unless a caller asks for it.
     complex(dp), intent(out), optional :: evecOut(:,:)
@@ -6920,7 +6937,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ! Ensure correct size of nev and ncv
     if ( (nev < 1) .or. (nev >= ncv) .or. (ncv > N) ) then
         print *, 'Error: invalid parameters - nev=', nev, 'ncv=', ncv, 'N=', N
-        stop
+        error stop 1
     end if
 
     ! Initialize arrays
@@ -6978,13 +6995,13 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ! Check resid for initial state
     if (size(resid) /= N) then
         print *, 'Error: resid size mismatch: ', size(resid), ' expected: ', N
-        stop
+        error stop 1
     end if
 
      ! Debug print for resid
     if (any(resid /= resid)) then
         print *, 'Error: resid contains NaN values initially.'
-        stop
+        error stop 1
     end if
 
     resid_norm = sqrt(sum(abs(resid)**2))
@@ -7035,7 +7052,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ! Debug prints for CSR matrix
     if (any(values /= values)) then
         print *, 'Error: values contains NaN values after initialization.'
-        stop
+        error stop 1
     end if
 
 
@@ -7087,7 +7104,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     det = sGlattice(1,1)*sGlattice(2,2) - sGlattice(1,2)*sGlattice(2,1)
     if (abs(det) < 1e-10_dp) then
         print *, "Error: Lattice matrix is singular, det =", det
-        stop
+        error stop 1
     end if
 
     sGlattice_inv(1,1) =  sGlattice(2,2) / det
@@ -7505,7 +7522,10 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
 
     ! PERFORMANCE OPTIMIZATION: Use pre-allocated arrays if available
-    if (allocated(tapw_Hproj) .and. size(tapw_Hproj,1) >= M .and. size(tapw_Hproj,2) >= M) then
+    ! size() must not be evaluated for an unallocated array, and .and. does not short-circuit
+    tapw_pre_ok = .false.
+    if (allocated(tapw_Hproj)) tapw_pre_ok = (size(tapw_Hproj,1) >= M .and. size(tapw_Hproj,2) >= M)
+    if (tapw_pre_ok) then
         ! Copy from pre-allocated array (no pointer overhead)
     allocate(Hproj(M, M))
         Hproj(1:M, 1:M) = tapw_Hproj(1:M, 1:M)
@@ -7564,7 +7584,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     !call ZHEEV('N','L',N,HLoc,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
 
     ! PERFORMANCE OPTIMIZATION: Use pre-allocated arrays if available
-    if (allocated(tapw_eigvals) .and. size(tapw_eigvals) >= M) then
+    tapw_pre_ok = .false.
+    if (allocated(tapw_eigvals)) tapw_pre_ok = (size(tapw_eigvals) >= M)
+    if (tapw_pre_ok) then
     allocate(eigvals(M))
         eigvals(1:M) = tapw_eigvals(1:M)
         call MIO_Print('Using pre-allocated eigvals array for performance','diag')
@@ -7574,7 +7596,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     end if
 
     lwork = 2*M
-    if (allocated(tapw_ZWorkLoc) .and. size(tapw_ZWorkLoc) >= 2*M) then
+    tapw_pre_ok = .false.
+    if (allocated(tapw_ZWorkLoc)) tapw_pre_ok = (size(tapw_ZWorkLoc) >= 2*M)
+    if (tapw_pre_ok) then
         allocate(ZWorkLoc(2*M))
         ZWorkLoc(1:2*M) = tapw_ZWorkLoc(1:2*M)
         call MIO_Print('Using pre-allocated ZWorkLoc array for performance','diag')
@@ -7583,7 +7607,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
         call MIO_Print('Allocated new ZWorkLoc array (not pre-allocated)','diag')
     end if
 
-    if (allocated(tapw_DWorkLoc) .and. size(tapw_DWorkLoc) >= 3*M) then
+    tapw_pre_ok = .false.
+    if (allocated(tapw_DWorkLoc)) tapw_pre_ok = (size(tapw_DWorkLoc) >= 3*M)
+    if (tapw_pre_ok) then
         allocate(DWorkLoc(3*M))
         DWorkLoc(1:3*M) = tapw_DWorkLoc(1:3*M)
         call MIO_Print('Using pre-allocated DWorkLoc array for performance','diag')
@@ -7750,7 +7776,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (info /= 0) then
        print *, "Diagonalization failed: ZHEEV info =", info
-       stop
+       error stop 1
     end if
 
     ! Extract gap from eigenvalues for comparison with diagonal extraction
@@ -8907,13 +8933,13 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           if (2*M /= stored_M) then
              call MIO_Print('ERROR: M dimension changed between k-points in DiagH0TAPW_withBlockH','diag')
              call MIO_Print('  Stored M: '//trim(num2str(stored_M))//', Current M: '//trim(num2str(2*M)),'diag')
-             stop
+             error stop 1
           end if
 
           ! Verify X matrix dimensions are consistent
           if (.not. allocated(stored_X_matrix)) then
              call MIO_Print('ERROR: stored_X_matrix not allocated but stored_eigenvectors is allocated','diag')
-             stop
+             error stop 1
           end if
           if (size(stored_X_matrix, 1) /= 2*N .or. size(stored_X_matrix, 2) /= 2*M) then
              call MIO_Print('ERROR: Stored X matrix dimensions inconsistent with current calculation','diag')
@@ -10329,7 +10355,7 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
      call MIO_Print('ERROR: No G-vectors selected by triangular truncation!','diag')
      call MIO_Print('This will cause M=0 and matrix dimension errors.','diag')
      call MIO_Print('Check BZ triangle calculation or increase grid size.','diag')
-     stop
+     error stop 1
   end if
 
   ! OPTIONAL DISTANCE-BASED ORDERING: Match generate_shifted_G_list_reduced approach
@@ -10945,17 +10971,17 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
      print *, "ERROR: row_ptr size mismatch!"
      print *, "ERROR: row_ptr has", size(row_ptr), "entries but should have", N+1
      print *, "ERROR: This will cause array bounds violations in sparse multiplication"
-     stop "row_ptr size mismatch in transform_sparse_hamiltonian"
+     error stop "row_ptr size mismatch in transform_sparse_hamiltonian"
   endif
 
   nnz = row_ptr(N+1) - 1
   if (size(values) < nnz) then
      print *, "ERROR: size(values) <", nnz
-     stop "CSR format inconsistency: not enough values"
+     error stop "CSR format inconsistency: not enough values"
   endif
   if (maxval(col_ind(1:nnz)) > N) then
      print *, "ERROR: max(col_ind) >", N
-     stop "col_ind contains out-of-bounds indices for X"
+     error stop "col_ind contains out-of-bounds indices for X"
   endif
 
   ! Validate matrix dimensions
@@ -10963,7 +10989,7 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
      print *, "ERROR: Matrix dimension mismatch!"
      print *, "ERROR: X matrix has", size(X,1), "rows but sparse matrix H has", N, "rows"
      print *, "ERROR: This will cause incorrect matrix multiplication"
-     stop "Matrix dimension mismatch in transform_sparse_hamiltonian"
+     error stop "Matrix dimension mismatch in transform_sparse_hamiltonian"
   endif
 
   ! Allocate Y = H * X
@@ -10975,11 +11001,11 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
         j = col_ind(k)
         if (j < 1 .or. j > N) then
            print *, "ERROR: j = col_ind(k) = ", j, " out of bounds at i=", i, " k=", k
-           stop
+           error stop 1
         endif
         if (k < 1 .or. k > size(values)) then
            print *, "ERROR: k=", k, " out of bounds (values size=", size(values), ")"
-           stop
+           error stop 1
         endif
      end do
   end do
@@ -11671,7 +11697,7 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
                   if (.not. found) then
                       if (l > nnz_temp) then
                          print *, "CSR OVERFLOW: l =", l, " > nnz_temp =", nnz_temp
-                         stop "Sparse matrix allocation overflow in initialize_sparse_matrix"
+                         error stop "Sparse matrix allocation overflow in initialize_sparse_matrix"
                       endif
                       ! Debug first few k-dependent phases for K-point analysis (now using NeighD)
                       if (tapwDebug .and. i <= 3 .and. j <= 2) then
@@ -14728,7 +14754,7 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
          call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
          call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2))),'diag')
          call MIO_Print('  Required: '//trim(num2str(M))//'x'//trim(num2str(kpoint_index)),'diag')
-         stop
+         error stop 1
       end if
    else
       call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
@@ -14957,7 +14983,7 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
    if (M_tapw <= 0) then
       call MIO_Print('ERROR: M_tapw not initialized. TAPW calculation must be performed first.','diag')
       call MIO_Print('Current M_tapw = '//trim(num2str(M_tapw)),'diag')
-      stop
+      error stop 1
    end if
 
    ! CRITICAL FIX: For Berry curvature calculation, use stored_M instead of M_tapw
@@ -14965,7 +14991,7 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
    if (.not. allocated(stored_hamiltonians) .or. .not. allocated(stored_eigenvectors)) then
       call MIO_Print('ERROR: No stored TAPW data available','diag')
       call MIO_Print('TAPW bands calculation must be performed before Chern calculation','diag')
-      stop
+      error stop 1
    end if
 
    ! Use the stored M value to ensure consistency with stored arrays
@@ -14992,7 +15018,7 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
    ! Use the first k-point's data as reference (this should be improved for better k-point handling)
    if (stored_nk < 1) then
       call MIO_Print('ERROR: No k-points stored in TAPW data','diag')
-      stop
+      error stop 1
    end if
 
    ! Extract Hamiltonian and eigenvectors from stored data (use first k-point as reference, spin 1)
@@ -15012,7 +15038,7 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
 
    if (info /= 0) then
       call MIO_Print('ERROR in GetTAPWHamiltonian: ZHEEV failed with info = '//trim(num2str(info)),'diag')
-      stop
+      error stop 1
    end if
 
    call MIO_Print('Successfully extracted TAPW eigenvalues and eigenvectors','diag')
@@ -15508,12 +15534,12 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    ! Check stored data availability (only need X matrix, TB parameters are module-level)
    if (.not. allocated(stored_X_matrix)) then
       call MIO_Print('ERROR: Stored X matrix not available for Option A','diag')
-      stop
+      error stop 1
    end if
 
    if (.not. allocated(stored_hamiltonians) .or. .not. allocated(stored_eigenvectors)) then
       call MIO_Print('ERROR: Stored TAPW data not available for Option A','diag')
-      stop
+      error stop 1
    end if
 
    ! Get dimensions (use module-level variables directly)
@@ -15551,7 +15577,7 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
          call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
          call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2))),'diag')
          call MIO_Print('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index)),'diag')
-         stop
+         error stop 1
       end if
    else
       call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
@@ -15853,12 +15879,12 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    ! Check stored data availability
    if (.not. allocated(stored_X_matrix)) then
       call MIO_Print('ERROR: Stored X matrix not available for SOC Option A','diag')
-      stop
+      error stop 1
    end if
 
    if (.not. allocated(stored_hamiltonians) .or. .not. allocated(stored_eigenvectors)) then
       call MIO_Print('ERROR: Stored TAPW data not available for SOC Option A','diag')
-      stop
+      error stop 1
    end if
 
    ! Get dimensions
@@ -15937,7 +15963,7 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
          call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
          call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
          call MIO_Print('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index))//'x'//trim(num2str(spin_index)),'diag')
-         stop
+         error stop 1
       end if
    else
       call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
@@ -17032,7 +17058,7 @@ subroutine build_tapw_labels(layerIndex, species, N, label, Nlabel)
   allocate(raw_label(N))
   do i = 1, N
      if (layerIndex(i) < 0 .or. species(i) < 0) then
-        stop "build_tapw_labels: negative layer/species not allowed"
+        error stop "build_tapw_labels: negative layer/species not allowed"
      end if
      raw_label(i) = 10*layerIndex(i) + species(i)
   end do
@@ -17376,7 +17402,7 @@ subroutine read_rigid_positions_for_tapw(filename, N, rigid_positions)
     if (i /= 0) then
         call MIO_Print('ERROR: Cannot open rigid position file: '//trim(filename),'diag')
         call MIO_Print('Make sure generateInit.xyz exists in the working directory','diag')
-        stop 'Failed to open rigid position file'
+        error stop 'Failed to open rigid position file'
     end if
 
     ! Read cell vectors (3 lines) - we don't need them but must skip them
@@ -17390,7 +17416,7 @@ subroutine read_rigid_positions_for_tapw(filename, N, rigid_positions)
         call MIO_Print('ERROR: Atom count mismatch!','diag')
         call MIO_Print('  Current system has '//trim(num2str(N))//' atoms','diag')
         call MIO_Print('  Rigid file has '//trim(num2str(N_file))//' atoms','diag')
-        stop 'Atom count mismatch between current system and rigid reference'
+        error stop 'Atom count mismatch between current system and rigid reference'
     end if
 
     ! Read atomic positions (columns 2, 3, 4 are x, y, z)

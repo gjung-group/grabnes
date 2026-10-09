@@ -525,6 +525,11 @@ subroutine NeighList()
    rmax = maxval(Nradii)
    call MIO_InputParameter('Neigh.CompareAll',small,.false.)
    call MIO_InputParameter('Neigh.CompareAll.UltraSmall',ultrasmall,.false.) ! Use this if less than 36 atoms in the system 2*3*3*2 (BL)
+   if (.not. (small .or. ultrasmall)) then
+      call MIO_Print('WARNING: the neighbour search NeighList (Neigh.fastNNnotsquare .false.) without '// &
+        'Neigh.CompareAll .true. gave bands that differ by several eV from the default search for every '// &
+        'graphene cell tested (72 to 3200 atoms). Use the default search, or set Neigh.CompareAll .true.','neigh')
+   end if
    call MIO_InputParameter('Neigh.BLInPlaneInteractionRadius',BLInPlaneInteractionRadius,.false.)
    call MIO_Allocate(NList,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    call MIO_Allocate(Nneigh,[inode1],[inode2],'Nneigh','neigh')

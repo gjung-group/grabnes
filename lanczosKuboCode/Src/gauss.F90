@@ -16,6 +16,7 @@ module gauss
 contains
 
 subroutine GaussPot(H)
+   use random,               only : RandSeedFromInput
 
    use atoms,                only : inode1, inode2, in1, in2, nAt, Rat
    use atoms,                only : AtomsSetCart, frac
@@ -56,12 +57,7 @@ subroutine GaussPot(H)
    def = .false.
    totImp = 0
 
-   call random_seed(size = n)
-   allocate(seed(n))
-   call system_clock(COUNT=clock)
-   seed = clock + 37 * (/ (i - 1, i = 1, n) /)
-   call random_seed(PUT = seed)
-   deallocate(seed)
+   call RandSeedFromInput()
 
    !!$OMP PARALLEL DO PRIVATE(nImp,j)  REDUCTION(+:totImp)
    !call RandSeed(rng,nThread)
@@ -166,6 +162,7 @@ subroutine GaussPot(H)
 end subroutine GaussPot
 
 subroutine GaussPotDefinedPositions(H)
+   use random,               only : RandSeedFromInput
 
    use atoms,                only : inode1, inode2, in1, in2, nAt, Rat
    use atoms,                only : AtomsSetCart, frac
@@ -200,12 +197,7 @@ subroutine GaussPotDefinedPositions(H)
    call MIO_Print('  range     : '//trim(num2str(sigma,3))//' Ang')
    call MIO_Print('  strength  : '//trim(num2str(w,3))//' gamma0')
 
-   call random_seed(size = n)
-   allocate(seed(n))
-   call system_clock(COUNT=clock)
-   seed = clock + 37 * (/ (i - 1, i = 1, n) /)
-   call random_seed(PUT = seed)
-   deallocate(seed)
+   call RandSeedFromInput()
 
    !!$OMP END PARALLEL
    totImp = size(indxImp)
@@ -261,6 +253,7 @@ subroutine GaussPotDefinedPositions(H)
 end subroutine GaussPotDefinedPositions
 
 subroutine GaussHeight()
+   use random,               only : RandSeedFromInput
 
    use neigh,                only : neighD, NList, Nneigh
    use atoms,                only : inode1, inode2, in1, in2, nAt, Rat
@@ -303,12 +296,7 @@ subroutine GaussHeight()
    def = .false.
    totImp = 0
 
-   call random_seed(size = n)
-   allocate(seed(n))
-   call system_clock(COUNT=clock)
-   seed = clock + 37 * (/ (i - 1, i = 1, n) /)
-   call random_seed(PUT = seed)
-   deallocate(seed)
+   call RandSeedFromInput()
 
    !!$OMP PARALLEL DO PRIVATE(nImp,j)  REDUCTION(+:totImp)
    !call RandSeed(rng,nThread)

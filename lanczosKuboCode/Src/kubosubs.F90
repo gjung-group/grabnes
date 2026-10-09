@@ -247,7 +247,7 @@ subroutine KuboFrac(a,b,nRecurs,norm,eps,nEn,Emin,Emax,name,name2)
    call MIO_TimerStop('kubo::Frac')
 #endif /* TIMER */
 #ifdef DEBUG
-   call MIO_Debug('KuboFrac',0)
+   call MIO_Debug('KuboFrac',1)
 #endif /* DEBUG */
 
 end subroutine KuboFrac

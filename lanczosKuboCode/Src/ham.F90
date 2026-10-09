@@ -550,6 +550,7 @@ end subroutine HamInit
 !! - Applies optional Gaussian/interface potentials
 !! @see HamInit
 subroutine HamOnSite()
+   use random,               only : RandSeedFromInput
    use atoms,                only : indxNode, Rat, Species, indxDiv, AtomsSetFrac, AtomsSetCart, AtomsRotate
    use atoms,                only : inode1, inode2, in1, in2, nAt, nAtC1, frac, layerIndex
    use atoms,                only : RatInit
@@ -707,9 +708,12 @@ subroutine HamOnSite()
    call MIO_InputParameter('eightLayersSandwiched',eightLayersSandwiched,.false.)
    call MIO_InputParameter('tenLayersSandwiched',tenLayersSandwiched,.false.)
    call MIO_InputParameter('twentyLayersSandwiched',twentyLayersSandwiched,.false.)
-   call MIO_InputParameter('middleTwist',middleTwist,.false.)
-   call MIO_InputParameter('fourLayers',fourLayers,.false.)
    call MIO_InputParameter('forceBilayerF2G2Intralayer',forceBilayerF2G2Intralayer,.false.)
+   ! middleTwist: single-layer F2G2 parameters in every layer of the multilayer
+   ! stacks. It is the default unless the Bernal-bilayer parameters are requested
+   ! with forceBilayerF2G2Intralayer (same rule in HamHopping).
+   call MIO_InputParameter('middleTwist',middleTwist,.not. forceBilayerF2G2Intralayer)
+   call MIO_InputParameter('fourLayers',fourLayers,.false.)
    call MIO_InputParameter('readRigidXYZ',readRigidXYZ,.false.)
    !end if
    print*, "onsite, B, N, C1, C2", e0_B, e0_N, e0_C1, e0_C2
@@ -2609,12 +2613,7 @@ subroutine HamOnSite()
       call MIO_InputParameter('checkerDensity',checkerDensity,0.1_dp)
       allocate(checkerActivate(checkerDivider,checkerDivider))
       activatedCheckers = 0
-      call random_seed(size = n)
-      allocate(seed(n))
-      call system_clock(COUNT=clock)
-      seed = clock + 37 * (/ (i - 1, i = 1, n) /)
-      call random_seed(PUT = seed)
-      deallocate(seed)
+      call RandSeedFromInput()
    20 do j = 1,checkerDivider
          do k = 1,checkerDivider
             checkerActivate(j,k) = .false.
@@ -3016,12 +3015,7 @@ end if
    ! squarechecker
    call MIO_InputParameter('SublatticeDisorder',l,.false.)
    if (l) then
-      call random_seed(size = n)
-      allocate(seed(n))
-      call system_clock(COUNT=clock)
-      seed = clock + 37 * (/ (i - 1, i = 1, n) /)
-      call random_seed(PUT = seed)
-      deallocate(seed)
+      call RandSeedFromInput()
       call MIO_InputParameter('SublattAmp',A,2.0_dp)
       call MIO_InputParameter('SublattPct',pct,0.1_dp)
       call MIO_Print('Sublattice disorder','ham')
@@ -3041,12 +3035,7 @@ end if
 
    call MIO_InputParameter('Anderson',l,.false.)
    if (l) then
-      call random_seed(size = n)
-      allocate(seed(n))
-      call system_clock(COUNT=clock)
-      seed = clock + 37 * (/ (i - 1, i = 1, n) /)
-      call random_seed(PUT = seed)
-      deallocate(seed)
+      call RandSeedFromInput()
       call MIO_InputParameter('AndersonAmp',A,1.0_dp)
       call MIO_Print('Anderson disorder','ham')
       call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
@@ -3062,12 +3051,7 @@ end if
    end if
    call MIO_InputParameter('deltaDisorder',l,.false.)
    if (l) then
-      call random_seed(size = n)
-      allocate(seed(n))
-      call system_clock(COUNT=clock)
-      seed = clock + 37 * (/ (i - 1, i = 1, n) /)
-      call random_seed(PUT = seed)
-      deallocate(seed)
+      call RandSeedFromInput()
       call MIO_InputParameter('deltaAmp',A,1.0_dp)
       call MIO_Print('delta disorder','ham')
       call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
@@ -3536,7 +3520,8 @@ subroutine HamCheckFinite()
    if (nhop + nons > 0) then
       call MIO_Kill('The Hamiltonian contains non-finite values: '//trim(num2str(nhop))//' hopping and '// &
         trim(num2str(nons))//' on-site entries (first at atom '//trim(num2str(ifirst))//'). The selected '// &
-        'combination of model switches is not valid for this structure.','ham','HamCheckFinite')
+        'combination of model switches is not valid for this structure. One known cause: a model that uses '// &
+        'the Bernal-bilayer F2G2 intralayer parameters without forceBilayerF2G2Intralayer .true.','ham','HamCheckFinite')
    end if
 
 end subroutine HamCheckFinite
@@ -4206,6 +4191,7 @@ end subroutine interlayerBLAA
 !! @see HamInit
 subroutine HamHopping
 
+   use, intrinsic :: ieee_arithmetic, only : ieee_value, ieee_quiet_nan, ieee_is_nan
    use neigh,                only : maxNeigh
    use atoms,                only : in1, in2, nAt, nAtC1, layerIndex, interlayerDistances
    use atoms,                only : phiForEffectiveModel, displacements, displacements_b, displacements_t
@@ -5189,6 +5175,16 @@ subroutine HamHopping
          end if
 
          if (frac) call AtomsSetCart()
+         ! The intralayer parameters of the Bernal-bilayer F2G2 model are set only
+         ! by some of the branches below. Mark them as unset, so that a model that
+         ! uses them without setting them is stopped instead of running with
+         ! whatever the memory holds.
+         t2KA = ieee_value(t2KA, ieee_quiet_nan)
+         t2KB = t2KA
+         t3K = t2KA
+         t4K = t2KA
+         t5KA = t2KA
+         t5KB = t2KA
          if (GBNtwoLayersF2G2s) then
             call MIO_Print('defining the GBNtwoLayersF2G2 parameters','ham')
             t1K = g0/g0
@@ -6075,7 +6071,27 @@ subroutine HamHopping
          call MIO_InputParameter('eightLayersSandwiched',eightLayersSandwiched,.false.)
          call MIO_InputParameter('tenLayersSandwiched',tenLayersSandwiched,.false.)
          call MIO_InputParameter('twentyLayersSandwiched',twentyLayersSandwiched,.false.)
-         call MIO_InputParameter('middleTwist',middleTwist,.false.)
+         ! Default .true. unless forceBilayerF2G2Intralayer asks for the Bernal-bilayer
+         ! parameters: without either, the layers other than the third used
+         ! parameters that were never set.
+         call MIO_InputParameter('middleTwist',middleTwist,.not. forceBilayerF2G2Intralayer)
+         if (threeLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. fiveLayersSandwiched .or. &
+             sixLayersSandwiched .or. sevenLayersSandwiched .or. eightLayersSandwiched .or. tenLayersSandwiched .or. &
+             twentyLayersSandwiched) then
+            if (middleTwist) then
+               call MIO_Print('Intralayer hoppings: single-layer F2G2 parameters in every layer (middleTwist)','ham')
+            else
+               call MIO_Print('Intralayer hoppings: Bernal-bilayer F2G2 parameters in every layer but the third','ham')
+            end if
+         end if
+         if ((threeLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. fiveLayersSandwiched .or. &
+              sixLayersSandwiched .or. sevenLayersSandwiched .or. eightLayersSandwiched .or. tenLayersSandwiched .or. &
+              twentyLayersSandwiched) .and. .not. middleTwist .and. ieee_is_nan(t2KA)) then
+            call MIO_Kill('This layer stack without middleTwist uses the Bernal-bilayer F2G2 intralayer parameters '// &
+              'in every layer but the third, and they are not set. Use middleTwist .true. (single-layer F2G2 '// &
+              'parameters in every layer) or forceBilayerF2G2Intralayer .true. (Bernal-bilayer parameters '// &
+              'Bilayert2KA, Bilayert2KB, Bilayert3K, ...).','ham','HamHopping')
+         end if
          call MIO_InputParameter('fourLayers',fourLayers,.false.)
          call MIO_InputParameter('findThetasGeometrically',findThetasGeometrically,.false.)
          !call MIO_InputParameter('renormalizeHoppings',renormalizeHoppings,.false.)
@@ -12929,7 +12945,7 @@ function SOCEnabledForLayer(layerIndex) result(enabled)
    else
       ! Check if layerIndex is in the SOCLayersArray
       enabled = .false.
-      if (allocated(SOCLayersArray) .and. size(SOCLayersArray) > 0) then
+      if (allocated(SOCLayersArray)) then
          do i = 1, size(SOCLayersArray)
             if (SOCLayersArray(i) == layerIndex) then
                enabled = .true.
@@ -12955,7 +12971,7 @@ function HaldaneEnabledForLayer(layerIndex) result(enabled)
    else
       ! Check if layerIndex is in the HaldaneLayersArray
       enabled = .false.
-      if (allocated(HaldaneLayersArray) .and. size(HaldaneLayersArray) > 0) then
+      if (allocated(HaldaneLayersArray)) then
          do i = 1, size(HaldaneLayersArray)
             if (HaldaneLayersArray(i) == layerIndex) then
                enabled = .true.

@@ -814,6 +814,11 @@ subroutine CalcDiag()
    if (spectralEnergyCut .or. spectralEnergyCutNickDale .or. spectral .or. bands .or. dos .or. bands3D) then
       call DiagInit(nAt)
       if (nspin==2 .and. enableSCF) then
+         ! The self-consistent Hubbard module (scf.F90) was never completed or
+         ! tested and ends with a segmentation fault. Stop with an explanation.
+         call MIO_Kill('Spin-polarized calculations with the self-consistent Hubbard module (EnableSCF, on by '// &
+           'default) are not supported at present: the module is unfinished and untested. Set EnableSCF .false. '// &
+           'to run a two-spin calculation without self-consistency.','calc','CalcDiag')
          call SCFGetCharge()
       else if (nspin==2 .and. .not. enableSCF) then
          ! Initialize arrays needed for two-spin calculations without SCF

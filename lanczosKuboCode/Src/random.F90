@@ -10,6 +10,7 @@ module random
    !public :: RandSeed
    !public :: RandNum
    public :: RandTest
+   public :: RandSeedFromInput
 
    public :: rand_t
 
@@ -22,6 +23,31 @@ module random
    end type rand_t
 
 contains
+
+!> @brief Seed the intrinsic random-number generator for the disorder models.
+!! @details With setSeed .true. the seed is seedValue, so that a disordered
+!!          Hamiltonian can be reproduced; otherwise it comes from the system
+!!          clock, as before.
+subroutine RandSeedFromInput()
+
+   integer :: n, clock, i, seedValue
+   integer, allocatable :: seed(:)
+   logical :: setSeed
+
+   call random_seed(size = n)
+   allocate(seed(n))
+   call MIO_InputParameter('setSeed',setSeed,.false.)
+   call MIO_InputParameter('seedValue',seedValue,123456)
+   if (setSeed) then
+      seed = seedValue
+   else
+      call system_clock(COUNT=clock)
+      seed = clock + 37 * (/ (i - 1, i = 1, n) /)
+   end if
+   call random_seed(PUT = seed)
+   deallocate(seed)
+
+end subroutine RandSeedFromInput
 
 subroutine RandSeed(self,thread)
 
