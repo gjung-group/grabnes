@@ -156,6 +156,7 @@ subroutine InputInit(success)
    uin = InFile%GetUnit()
 #endif /* MPI */
    uln = InLns%GetUnit()
+   call InputCheckDuplicates()
 
 #ifdef TIMER
    call TimerStop('input')
@@ -166,6 +167,92 @@ subroutine InputInit(success)
 
 end subroutine InputInit
 !****** End subroutine: InputInit *********************************************
+!******************************************************************************
+
+
+!****** Subroutine: InputCheckDuplicates **************************************
+!******************************************************************************
+!
+!  Warn about keys that appear more than once in the input file. A key is
+!  searched from the top of the file and its first occurrence is used, so a
+!  second value given further down is silently ignored. The contents of
+!  blocks (&begin ... &end) are data, not keys.
+!
+!******************************************************************************
+subroutine InputCheckDuplicates()
+
+   use string,               only : StringComp
+   use sys,                  only : SysIOErr
+   use mem,                  only : Ssz
+#ifdef MPI
+   use sys,                  only : SysIOErrMPI
+#endif /* MPI */
+
+   implicit none
+
+   integer :: il, i, j, n, l, nrep
+#ifdef MPI
+   integer(kind=MPI_OFFSET_KIND) :: nbytes
+#endif /* MPI */
+   character(len=maxrecl) :: line
+   character(len=maxrecl), allocatable :: keys(:)
+   logical, allocatable :: done(:)
+   logical :: inblock
+
+   if (nlines < 2) return
+   allocate(keys(nlines), done(nlines))
+   n = 0
+   inblock = .false.
+#ifdef MPI
+   nbytes = maxrecl*Ssz
+#else
+   rewind(uin)
+#endif /* MPI */
+   do il=0,nlines-1
+#ifdef MPI
+      call MPI_File_Read_At_All(uin,il*nbytes,line,maxrecl,MPI_CHARACTER,MPI_STATUS_IGNORE,iostat)
+      call SysIOErrMPI(iostat,'input','InputCheckDuplicates')
+      if (ichar(line(maxrecl:maxrecl))==10) then
+         line(maxrecl:maxrecl) = ''
+      end if
+#else
+      read(uin,'(a)',IOSTAT=iostat) line
+      call SysIOErr(iostat,'input','InputCheckDuplicates')
+#endif /* MPI */
+      line = adjustl(line)
+      if (len_trim(line)==0) cycle
+      if (line(1:1)=='#' .or. line(1:1)=='!') cycle
+      if (line(1:1)=='&') then
+         inblock = StringComp(line(1:6),'&begin')
+         cycle
+      end if
+      if (inblock) cycle
+      l = scan(line,' =:')
+      if (l > 1) line = line(1:l-1)
+      n = n + 1
+      keys(n) = line
+   end do
+   done(1:n) = .false.
+   do i=1,n-1
+      if (done(i)) cycle
+      nrep = 1
+      do j=i+1,n
+         if (done(j)) cycle
+         if (len_trim(keys(j)) /= len_trim(keys(i))) cycle
+         if (StringComp(keys(j),trim(keys(i)))) then
+            nrep = nrep + 1
+            done(j) = .true.
+         end if
+      end do
+      if (nrep > 1) then
+         write(*,'(A,I0,A)') 'input: WARNING: the key "'//trim(keys(i))//'" appears ', nrep, &
+           ' times in the input file; only its FIRST value is used.'
+      end if
+   end do
+   deallocate(keys, done)
+
+end subroutine InputCheckDuplicates
+!****** End subroutine: InputCheckDuplicates **********************************
 !******************************************************************************
 
 
