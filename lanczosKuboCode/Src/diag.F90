@@ -1264,10 +1264,22 @@ subroutine DiagBands()
          end if
       else
          ! General case: more than one k-point, use OpenMP
+#ifdef _OPENMP
+         ! TAPW must run with one OpenMP thread: the k-loop below is an OpenMP
+         ! loop, and the TAPW routines called from it read input parameters and
+         ! call threaded LAPACK, neither of which is safe inside it. The threads
+         ! of the linear-algebra library do the parallel work instead.
          if (useTAPW) then
-            call MIO_Print('WARNING: TAPW is being used with OpenMP parallelization. This may cause conflicts between MKL and OpenMP threading.', 'diag')
-            call MIO_Print('Consider setting OMP_NUM_THREADS=1 and MKL_NUM_THREADS=48 for TAPW calculations.', 'diag')
+            block
+               integer, external :: omp_get_max_threads
+               if (omp_get_max_threads() > 1) then
+                  call MIO_Kill('TAPW calculations must be run with one OpenMP thread. Set OMP_NUM_THREADS=1 '// &
+                    'and give the cores to the linear-algebra library instead (MKL_NUM_THREADS or '// &
+                    'OPENBLAS_NUM_THREADS = number of cores), then run again.','diag','DiagBands')
+               end if
+            end block
          end if
+#endif
 
          ! Cache TAPW-related inputs once outside the OpenMP region to avoid nested timer/input
          if (useTAPW .and. .not. tapw_cfg_initialized) then
