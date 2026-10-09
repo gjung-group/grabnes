@@ -14,7 +14,8 @@ subroutine CalcSelect()
 
    use ham,                  only : HamInit, HamHopping, HamOnSite, hopp
    use tbpar,                only : TBInit
-   use magf,                 only : MagfInit, mBi, mBf, MagfValue, mStep, HaldPhaseInit, mPhii, mPhif, HaldPhaseValue, mPhiStep, magfield, Bmag
+   use magf,                 only : MagfInit, mBi, mBf, MagfValue, mStep, HaldPhaseInit, mPhii, mPhif, HaldPhaseValue, &
+         mPhiStep, magfield, Bmag
    use moireBLShift,         only : mSi, mSf, mSStep, moireBLShiftInit, moireBLShiftValue
    use atoms,                only : nAt, Rat, frac, AtomsSetCart
    use neigh,                only : Nneigh, neighCell, NList, maxNeigh, neighD
@@ -89,7 +90,8 @@ subroutine CalcSelect()
                        do i=1,nAt
                           do j=1,Nneigh(i)
                              v1 = Rat(:,i) + Rat(:,NList(j,i))
-                             v2 = neighCell(1,j,i)*ucell(:,1) + neighCell(2,j,i)*ucell(:,2) ! neighCell(1...) contains n1-m1, neighCell(2...) contains n2-m2 (see Cresti's notes)
+                             ! neighCell(1...) contains n1-m1, neighCell(2...) contains n2-m2 (see Cresti's notes)
+                             v2 = neighCell(1,j,i)*ucell(:,1) + neighCell(2,j,i)*ucell(:,2)
                              v2 = CrossProd(v1,v2)
                              v1 = CrossProd(Rat(:,i),Rat(:,NList(j,i))) + v2 ! Implementation of third expersion in Cresti's notes
                              phase = flux*v1(3)/1.0d20
@@ -270,11 +272,13 @@ subroutine CalcKubo()
                    end if
                 end do
                 if (numberOfAtomsInLayer.eq.0) then
-                   call MIO_Print("Warning: No atoms found for layer "//trim(num2str(i))//" species "//trim(num2str(ii))//", skipping",'PDOS')
+                   call MIO_Print("Warning: No atoms found for layer "//trim(num2str(i))//" species "//trim(num2str(ii)) &
+                         //", skipping",'PDOS')
                    cycle
                 end if
                 write(prefix,'(a4,a6,I2.2,a4,I2.2)') 'PDOS','_layer', i, '_sub',ii
-                call MIO_Print("Writing files in folder '"//trim(prefix)//"' for "//trim(num2str(numberOfAtomsInLayer))//" atoms",'PDOS')
+                call MIO_Print("Writing files in folder '"//trim(prefix)//"' for "//trim(num2str(numberOfAtomsInLayer)) &
+                      //" atoms",'PDOS')
                 prefix = './'//trim(prefix)
                 call system('mkdir '//trim(prefix))
                 !call file%Open(name=coordinates,serial=.true.)
@@ -329,7 +333,9 @@ subroutine CalcKubo()
         else if (PDOSMoireSuperMoire) then
           do i=inode1,inode2
             if (.not. frac) call AtomsSetFrac()
-            if ((Rat(1,i) .lt. 1.0_dp/sCell/cellSize*PDOSMoireSuperMoireLength) .and. (Rat(2,i) .lt. 1.0_dp/scell/cellSize*PDOSMoireSuperMoireLength .and. Species(i).eq.1 .and. i.ge.PDOSMinValue)) then
+            if ((Rat(1,i) .lt. 1.0_dp/sCell/cellSize*PDOSMoireSuperMoireLength) &
+                  .and. (Rat(2,i) .lt. 1.0_dp/scell/cellSize*PDOSMoireSuperMoireLength .and. Species(i).eq.1 &
+                  .and. i.ge.PDOSMinValue)) then
                if (frac) call AtomsSetCart()
                write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
                call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
@@ -348,7 +354,11 @@ subroutine CalcKubo()
         else if (PDOSMoireSuperMoire2) then
           do i=inode1,inode2
             if (.not. frac) call AtomsSetFrac()
-            if ((Rat(1,i) .ge. 1.0_dp/sCell/cellSize*PDOSMoireSuperMoireLength) .and. ((Rat(2,i) .ge. 1.0_dp/scell/cellSize*PDOSMoireSuperMoireLength) .and. (Rat(1,i) .lt. 2.0_dp/sCell/cellSize*PDOSMoireSuperMoireLength) .and. (Rat(2,i) .lt. 2.0_dp/scell/cellSize*PDOSMoireSuperMoireLength) .and. (Species(i).eq.1) .and. (i.ge.PDOSMinValue))) then
+            if ((Rat(1,i) .ge. 1.0_dp/sCell/cellSize*PDOSMoireSuperMoireLength) &
+                  .and. ((Rat(2,i) .ge. 1.0_dp/scell/cellSize*PDOSMoireSuperMoireLength) &
+                  .and. (Rat(1,i) .lt. 2.0_dp/sCell/cellSize*PDOSMoireSuperMoireLength) &
+                  .and. (Rat(2,i) .lt. 2.0_dp/scell/cellSize*PDOSMoireSuperMoireLength) .and. (Species(i).eq.1) &
+                  .and. (i.ge.PDOSMinValue))) then
                if (frac) call AtomsSetCart()
                write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
                call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
@@ -367,7 +377,11 @@ subroutine CalcKubo()
         else if (PDOSMoireSuperMoire3) then
           do i=inode1,inode2
             if (.not. frac) call AtomsSetFrac()
-            if ((Rat(1,i) .ge. 2.0_dp/sCell/cellSize*PDOSMoireSuperMoireLength) .and. ((Rat(2,i) .ge. 2.0_dp/scell/cellSize*PDOSMoireSuperMoireLength) .and. (Rat(1,i) .lt. 3.0_dp/sCell/cellSize*PDOSMoireSuperMoireLength) .and. (Rat(2,i) .lt. 3.0_dp/scell/cellSize*PDOSMoireSuperMoireLength) .and. (Species(i).eq.1) .and. (i.ge.PDOSMinValue))) then
+            if ((Rat(1,i) .ge. 2.0_dp/sCell/cellSize*PDOSMoireSuperMoireLength) &
+                  .and. ((Rat(2,i) .ge. 2.0_dp/scell/cellSize*PDOSMoireSuperMoireLength) &
+                  .and. (Rat(1,i) .lt. 3.0_dp/sCell/cellSize*PDOSMoireSuperMoireLength) &
+                  .and. (Rat(2,i) .lt. 3.0_dp/scell/cellSize*PDOSMoireSuperMoireLength) .and. (Species(i).eq.1) &
+                  .and. (i.ge.PDOSMinValue))) then
                if (frac) call AtomsSetCart()
                write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
                call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
@@ -576,11 +590,17 @@ end subroutine CalcTunn
 
 subroutine CalcDiag()
 
-   use diag,                 only : DiagInit, DiagDOS, DiagPDOS, DiagBands, Diag3DBands, DiagBandsG, DiagBandsAroundK, DiagSpectralFunction, DiagSpectralFunctionKGrid, DiagSpectralFunctionKGridInequivalent, DiagSpectralFunctionKGridInequivalentEnergyCut, DiagBandsRashba, DiagChern
+   use diag,                 only : DiagInit, DiagDOS, DiagPDOS, DiagBands, Diag3DBands, DiagBandsG, DiagBandsAroundK, &
+         DiagSpectralFunction, DiagSpectralFunctionKGrid, DiagSpectralFunctionKGridInequivalent, &
+         DiagSpectralFunctionKGridInequivalentEnergyCut, DiagBandsRashba, DiagChern
    use diag,                 only : DiagSpectralFunctionKGridInequivalentEnergyCutNickDale
    use diag,                 only : gWeightsTAPW, gw_b1, gw_b2, gw_ntop, gWeightsHam
    use diag,                 only : layerWeightsTAPW, lw_b1, lw_b2
-   use diag,                 only : DiagSpectralFunctionKGridInequivalent_v2, DiagSpectralFunctionKGridInequivalentEnergyCut_v2, moireAngle, gGridRotationAngle, tapwNG, calculateChern, nk_chern_x, nk_chern_y, fermi_energy, useTriangularTruncation, checkTAPWUnitary, physicalTwistAngle, useKprimeValley, tapwDebug, useRigidPositions, tapwLowdin, tapwBothValleys, tapwValleyDecouple, calculate3DTAPWBands, nk_3D_x, nk_3D_y, gammaCentred3D, socDebug, forceBlockTAPW
+   use diag,                 only : DiagSpectralFunctionKGridInequivalent_v2, &
+         DiagSpectralFunctionKGridInequivalentEnergyCut_v2, moireAngle, gGridRotationAngle, tapwNG, calculateChern, &
+         nk_chern_x, nk_chern_y, fermi_energy, useTriangularTruncation, checkTAPWUnitary, physicalTwistAngle, &
+         useKprimeValley, tapwDebug, useRigidPositions, tapwLowdin, tapwBothValleys, tapwValleyDecouple, &
+         calculate3DTAPWBands, nk_3D_x, nk_3D_y, gammaCentred3D, socDebug, forceBlockTAPW
    use atoms,                only : nAt
    use ham,                  only : nspin
    use scf,                  only : SCFGetCharge, SCFInit, charge

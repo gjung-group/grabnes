@@ -110,7 +110,9 @@ module diag
    public :: DiagSpectralFunctionKGridInequivalentEnergyCut
    public :: DiagSpectralFunctionKGridInequivalentEnergyCut_v2
    public :: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale
-   public :: moireAngle, gGridRotationAngle, skipGRotation, tapwNG, M_tapw, calculateChern, nk_chern_x, nk_chern_y, fermi_energy, useTriangularTruncation, checkTAPWUnitary, physicalTwistAngle, useKprimeValley, tapwDebug, useRigidPositions, tapwLowdin, tapwBothValleys, tapwValleyDecouple, socDebug, forceBlockTAPW
+   public :: moireAngle, gGridRotationAngle, skipGRotation, tapwNG, M_tapw, calculateChern, nk_chern_x, nk_chern_y, &
+         fermi_energy, useTriangularTruncation, checkTAPWUnitary, physicalTwistAngle, useKprimeValley, tapwDebug, &
+         useRigidPositions, tapwLowdin, tapwBothValleys, tapwValleyDecouple, socDebug, forceBlockTAPW
    public :: calculate3DTAPWBands, nk_3D_x, nk_3D_y, gammaCentred3D
 #ifdef SEMICL
    public :: berryFluxTAPW, berryBandMin, berryBandMax
@@ -226,7 +228,8 @@ subroutine DiagDOS()
    end do
    do is=1,nspin
       if (nspin > 1) then
-         call MIO_Print('Diagonalizing spin '//trim(num2str(is))//' of '//trim(num2str(nspin))//': Processing '//trim(num2str(ptot))//' k-points','diag')
+         call MIO_Print('Diagonalizing spin '//trim(num2str(is))//' of '//trim(num2str(nspin))//': Processing ' &
+               //trim(num2str(ptot))//' k-points','diag')
       else
          call MIO_Print('Diagonalizing: Processing '//trim(num2str(ptot))//' k-points','diag')
       end if
@@ -237,7 +240,8 @@ subroutine DiagDOS()
          if (ptot > 1) then
             if (ik == ptot .or. (ik > 0 .and. int(10.0_dp*(ik-1)/ptot) < int(10.0_dp*ik/ptot))) then
                !$OMP CRITICAL
-               call MIO_Print('  k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot))//' ('//trim(num2str(int(100.0_dp*ik/ptot)))//'%)','diag')
+               call MIO_Print('  k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot))//' (' &
+                     //trim(num2str(int(100.0_dp*ik/ptot)))//'%)','diag')
                !$OMP END CRITICAL
             end if
          end if
@@ -268,7 +272,8 @@ subroutine DiagDOS()
          ! Progress reporting every 10% completion
          if (ptot > 1) then
             if (ik == ptot .or. (ik > 0 .and. int(10.0_dp*(ik-1)/ptot) < int(10.0_dp*ik/ptot))) then
-               call MIO_Print('    Accumulating k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot))//' ('//trim(num2str(int(100.0_dp*ik/ptot)))//'%)','diag')
+               call MIO_Print('    Accumulating k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot))//' (' &
+                     //trim(num2str(int(100.0_dp*ik/ptot)))//'%)','diag')
             end if
          end if
          do i1=1,nAt
@@ -433,7 +438,8 @@ subroutine DiagPDOS()
                      ! eigenenergies
                            vectormultip=conjg(HStore(ik,ivec,i1))*HStore(ik,ivec2,i1) !
                            pipj=EStore(ik,i1)*vectormultip
-                           DOS_thread(i2,is,omp_get_thread_num()+1) = DOS_thread(i2,is,omp_get_thread_num()+1) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2)) * pipj
+                           DOS_thread(i2,is,omp_get_thread_num()+1) = DOS_thread(i2,is,omp_get_thread_num()+1) &
+                                 + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2)) * pipj
                            !DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2)) * pipj
                          end do
                          !$OMP END PARALLEL DO
@@ -550,7 +556,8 @@ subroutine Diag3DBands()
    write(uu,'(3i8)') nAt, nspin, ptot
    do is=1,nspin
       do ik=1,ptot
-         if (modulo(ik,int(ptot/10)).eq.0) call MIO_Print('progress is: '//trim(num2str((ik/ptot/10.0_dp*10.0_dp),4))//' percent','diag')
+         if (modulo(ik,int(ptot/10)).eq.0) call MIO_Print('progress is: '//trim(num2str((ik/ptot/10.0_dp*10.0_dp),4)) &
+               //' percent','diag')
          call DiagHam(nAt,nspin,is,H(:,:,is),Eig(:,is),Kgrid(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
          !hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0))
          !lc = min(lc,minval(E(:,is),mask=E(:,is)>Efermi/g0))
@@ -783,9 +790,12 @@ subroutine DiagBands()
                call MIO_Print('Using high-symmetry k-grid definition: k = (i/Nk)*b1 + (j/Nk)*b2','diag')
                call MIO_Print('  This ensures proper sampling of Gamma (0,0), K, and M points','diag')
                if (tapwDebug) call MIO_Print('DEBUG: rcell matrix:','diag')
-               call MIO_Print('  b1 = ['//trim(num2str(rcell(1,1),6))//','//trim(num2str(rcell(2,1),6))//','//trim(num2str(rcell(3,1),6))//']','diag')
-               call MIO_Print('  b2 = ['//trim(num2str(rcell(1,2),6))//','//trim(num2str(rcell(2,2),6))//','//trim(num2str(rcell(3,2),6))//']','diag')
-               call MIO_Print('  b3 = ['//trim(num2str(rcell(1,3),6))//','//trim(num2str(rcell(2,3),6))//','//trim(num2str(rcell(3,3),6))//']','diag')
+               call MIO_Print('  b1 = ['//trim(num2str(rcell(1,1),6))//','//trim(num2str(rcell(2,1),6))//',' &
+                     //trim(num2str(rcell(3,1),6))//']','diag')
+               call MIO_Print('  b2 = ['//trim(num2str(rcell(1,2),6))//','//trim(num2str(rcell(2,2),6))//',' &
+                     //trim(num2str(rcell(3,2),6))//']','diag')
+               call MIO_Print('  b3 = ['//trim(num2str(rcell(1,3),6))//','//trim(num2str(rcell(2,3),6))//',' &
+                     //trim(num2str(rcell(3,3),6))//']','diag')
 
                ! First pass: regular grid
                do j = 0, nk_chern_y-1
@@ -873,7 +883,8 @@ subroutine DiagBands()
          ! Pre-allocate all arrays that are currently allocated per k-point
          if (.not. allocated(tapw_H_dense)) then
             allocate(tapw_H_dense(nAt, nAt))
-            call MIO_Print('Pre-allocated H_dense: '//trim(num2str(nAt))//'x'//trim(num2str(nAt))//' = '//trim(num2str(nAt*nAt*8/1024/1024))//' MB', 'diag')
+            call MIO_Print('Pre-allocated H_dense: '//trim(num2str(nAt))//'x'//trim(num2str(nAt))//' = ' &
+                  //trim(num2str(nAt*nAt*8/1024/1024))//' MB', 'diag')
          end if
 
          if (.not. allocated(tapw_Hproj)) then
@@ -955,7 +966,8 @@ subroutine DiagBands()
                   !$OMP CRITICAL
                   if (.not. allocated(HBlock)) allocate(HBlock(2*nAt, 2*nAt))
                   call BuildBlockHamiltonianOnly(nAt, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, HBlock)
-                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, Nneigh, neighCell, neig, ip)
+                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, &
+                        Nneigh, neighCell, neig, ip)
                   !$OMP END CRITICAL
                else if (useTAPW) then
                   call DiagH0TAPW(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell,neig, ip)
@@ -1050,7 +1062,8 @@ subroutine DiagBands()
                   !$OMP CRITICAL
                   if (.not. allocated(HBlock)) allocate(HBlock(2*nAt, 2*nAt))
                   call BuildBlockHamiltonianOnly(nAt, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, HBlock)
-                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, Nneigh, neighCell, neig, ip)
+                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, &
+                        Nneigh, neighCell, neig, ip)
                   !$OMP END CRITICAL
                else if (useTAPW) then
                   call MIO_Print('calling TAPW routine for '//trim(num2str(ip)),'diag')
@@ -1102,9 +1115,11 @@ subroutine DiagBands()
             do ip=1,ptsTot
                ! For 3D TAPW bands: write kx, ky coordinates instead of cumulative distance
                if (useTAPW) then
-                  write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), ((E(i,is,ip)*g0, i=1,M_tapw),is=1,nspin)
+                  write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), &
+                        ((E(i,is,ip)*g0, i=1,M_tapw),is=1,nspin)
                else
-                  write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), ((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
+                  write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), &
+                        ((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
                end if
             end do
          else
@@ -1211,7 +1226,9 @@ subroutine DiagBands()
                      else
                         forceBlockTAPW_str = 'false'
                      end if
-                     call MIO_Print('DEBUG: forceBlockTAPW flag check - useTAPW='//trim(useTAPW_str)//', forceBlockTAPW='//trim(forceBlockTAPW_str)//', is='//trim(num2str(is))//', ip='//trim(num2str(ip)), 'diag')
+                     call MIO_Print('DEBUG: forceBlockTAPW flag check - useTAPW='//trim(useTAPW_str) &
+                           //', forceBlockTAPW='//trim(forceBlockTAPW_str)//', is='//trim(num2str(is))//', ip=' &
+                           //trim(num2str(ip)), 'diag')
                   end if
                   ! TAPW + Rashba SOC (or forced block path for testing): Build block Hamiltonian once, then use TAPW diagonalization
                   ! Only Rashba requires block Hamiltonian due to spin-flip terms, but forceBlockTAPW allows testing without SOC
@@ -1229,7 +1246,8 @@ subroutine DiagBands()
                   else if (socDebug) then
                      call MIO_Print('BuildBlockHamiltonianOnly completed, calling DiagH0TAPW_withBlockH', 'diag')
                   end if
-                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, Nneigh, neighCell, neig, ip)
+                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, &
+                        Nneigh, neighCell, neig, ip)
                   if (forceBlockTAPW) then
                      call MIO_Print('DiagH0TAPW_withBlockH completed', 'diag')
                   else if (socDebug) then
@@ -1358,9 +1376,11 @@ subroutine DiagBands()
 
                   ! For 3D TAPW bands: write kx, ky coordinates instead of cumulative distance
                   if (useTAPW) then
-                     write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), ((E(i,is,ip)*g0, i=1,M_tapw),is=1,nspin)
+                     write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), &
+                           ((E(i,is,ip)*g0, i=1,M_tapw),is=1,nspin)
                   else
-                     write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), ((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
+                     write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), &
+                           ((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
                   end if
                end do
             else
@@ -2087,7 +2107,8 @@ subroutine DiagSpectralFunction()
       Pkc = 0.0_dp ! spectral weight PkscI(k)
       !$OMP PARALLEL DO PRIVATE (is, ik, nPath, iee, ie)
       do ik=1,ptsTot ! k loop
-            call DiagSpectralWeightWeiKu(nAt,nspin,is,Pkc(ik,:),E(:,is),Kpts(:,ik),KptsG(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+            call DiagSpectralWeightWeiKu(nAt,nspin,is,Pkc(ik,:),E(:,is),Kpts(:,ik),KptsG(:,ik),ucell,H0,maxNeigh,hopp, &
+                  NList,Nneigh,neighCell)
             !!end do
             !hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0)) ! mask restrict search for E smaller than Efermi
             !lc = min(lc,minval(E(:,is),mask=E(:,is)>Efermi/g0))
@@ -2325,7 +2346,8 @@ subroutine DiagSpectralFunctionKGrid()
       end do
       Pkc = 0.0_dp ! spectral weight PkscI(k)
       do ik=1,ptsTot ! k loop
-            call DiagSpectralWeightWeiKu(nAt,nspin,is,Pkc(ik,:,:),E(:,is),Kpts(:,ik),KptsG(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+            call DiagSpectralWeightWeiKu(nAt,nspin,is,Pkc(ik,:,:),E(:,is),Kpts(:,ik),KptsG(:,ik),ucell,H0,maxNeigh,hopp, &
+                  NList,Nneigh,neighCell)
             !!end do
             !hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0)) ! mask restrict search for E smaller than Efermi
             !lc = min(lc,minval(E(:,is),mask=E(:,is)>Efermi/g0))
@@ -2792,24 +2814,33 @@ subroutine DiagSpectralFunctionKGridInequivalent()
          KptsLoc = Kpts(:,ik)
             if (WeiKu) then
                 if (WeiKuOld) then
-                    call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                    call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK, &
+                          ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 else
-                    call DiagSpectralWeightWeiKuInequivalentMoreOrbitals(nAt,nspin,is,PkcLocA,PkcLocB,PkcLocC,PkcLocD,PkcLocE,PkcLocF,PkcLocG,PkcLocH,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                    call DiagSpectralWeightWeiKuInequivalentMoreOrbitals(nAt,nspin,is,PkcLocA,PkcLocB,PkcLocC,PkcLocD, &
+                          PkcLocE,PkcLocF,PkcLocG,PkcLocH,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList, &
+                          Nneigh,neighCell,topBottomRatio)
                 end if
             else if (Lee) then
-                call DiagSpectralWeightWeiKuInequivalentLee(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                call DiagSpectralWeightWeiKuInequivalentLee(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                      gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
             else if (Nishi) then
-                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell,gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell, &
+                      gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
             end if
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                        if (WeiKu) then
                           if (useGaussianBroadening) then
                              !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
-                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
-                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
-                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
+                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
+                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
                           else
                              if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                                  ! A sublattice
@@ -2845,7 +2876,8 @@ subroutine DiagSpectralFunctionKGridInequivalent()
                              Ake4(ik,iee) = Ake4(ik,iee) + real(PkcLocA(ie,4))
                           end if
                        else if (Nishi) then
-                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
+                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0) &
+                                .or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + PkcLocA(ie,1)
                              Ake2(ik,iee) = Ake2(ik,iee) + PkcLocA(ie,2)
                              Ake3(ik,iee) = Ake3(ik,iee) + PkcLocA(ie,3)
@@ -3283,23 +3315,30 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
          KptsLoc = Kpts(:,ik)
             if (WeiKu) then
                 if (WeiKuOld) then
-                    call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                    call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK, &
+                          ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 else
-                    call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                    call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                          gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 end if
             else if (Lee) then
-                call DiagSpectralWeightWeiKuInequivalentLee(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                call DiagSpectralWeightWeiKuInequivalentLee(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                      gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
             else if (Nishi) then
-                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell,gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell, &
+                      gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
             end if
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                        if (WeiKu) then
                           if (useGaussianBroadening) then
                              !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
-                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
-                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
+                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
+                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
                           else if (DirectBand) then
                              if (iee == int(ie-(nAt/2-Epts/2))) then
                                  EAke(ik,iee) = ELoc(ie)
@@ -3338,7 +3377,8 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
                              Ake3(ik,iee) = Ake3(ik,iee) + real(PkcLocA(ie,3))
                           end if
                        else if (Nishi) then
-                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
+                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0) &
+                                .or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + PkcLocA(ie,1)
                              Ake2(ik,iee) = Ake2(ik,iee) + PkcLocA(ie,2)
                              Ake3(ik,iee) = Ake3(ik,iee) + PkcLocA(ie,3)
@@ -3773,22 +3813,29 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
          KptsLoc = Kpts(:,ik)
             if (WeiKu) then
                 if (WeiKuOld) then
-                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK, &
+                         ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 else
-                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                         gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 end if
             else if (Nishi) then
-                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell,gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell, &
+                      gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
             end if
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                        if (WeiKu) then
                           if (useGaussianBroadening) then
                              !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
-                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
-                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
-                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
+                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
+                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
                           else
                              if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                                  ! A sublattice
@@ -3805,7 +3852,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
                              end if
                           end if
                        else if (Nishi) then
-                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
+                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0) &
+                                .or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + PkcLocA(ie,1)
                              Ake2(ik,iee) = Ake2(ik,iee) + PkcLocA(ie,2)
                              Ake3(ik,iee) = Ake3(ik,iee) + PkcLocA(ie,3)
@@ -4254,22 +4302,29 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
          KptsLoc = Kpts(:,ik)
             if (WeiKu) then
                 if (WeiKuOld) then
-                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK, &
+                         ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 else
-                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                         gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 end if
             else if (Nishi) then
-                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell,gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell, &
+                      gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
             end if
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                        if (WeiKu) then
                           if (useGaussianBroadening) then
                              !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
-                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
-                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
-                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
+                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
+                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
                           else if (DirectBand) then
                              if (iee == int(ie-(nAt/2-Epts/2))) then
                                  EAke(ik,iee) = ELoc(ie)
@@ -4302,7 +4357,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
                              end if
                           end if
                        else if (Nishi) then
-                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
+                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0) &
+                                .or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + PkcLocA(ie,1)
                              Ake2(ik,iee) = Ake2(ik,iee) + PkcLocA(ie,2)
                              Ake3(ik,iee) = Ake3(ik,iee) + PkcLocA(ie,3)
@@ -4705,21 +4761,27 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
          KptsLoc = Kpts(:,ik)
             if (WeiKu) then
                 if (WeiKuOld) then
-                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK, &
+                         ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 else
-                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                         gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 end if
             else if (Nishi) then
-                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell,gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell, &
+                      gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
             end if
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                        if (WeiKu) then
                           if (useGaussianBroadening) then
                              !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
-                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
-                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
+                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
+                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
                           else
                              if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                                  Ake1(ik,iee) = Ake1(ik,iee) + abs(PkcLocA(ie,1))**2 !* topBottomRatio
@@ -4728,7 +4790,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
                              end if
                           end if
                        else if (Nishi) then
-                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
+                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0) &
+                                .or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + PkcLocA(ie,1)
                              Ake2(ik,iee) = Ake2(ik,iee) + PkcLocA(ie,2)
                              Ake3(ik,iee) = Ake3(ik,iee) + PkcLocA(ie,3)
@@ -4920,7 +4983,8 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     lworkl= 3*NCV**2 + 5*NCV
 
     max_iter = 10000
-    allocate(resid(N), v(N, ncv), workd(3*N), workl(lworkl), rwork(ncv), d(nev+1), iparam(11), ipntr(14), select(ncv), rand_real(N), rand_imag(N))
+    allocate(resid(N), v(N, ncv), workd(3*N), workl(lworkl), rwork(ncv), d(nev+1), iparam(11), ipntr(14), select(ncv), &
+          rand_real(N), rand_imag(N))
     allocate(z(N,nev))
     allocate(workev(2*ncv))
     allocate(ax(N))
@@ -5191,7 +5255,8 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     if (saveRitz) then
        allocate(EVectors(nn, nev))
-       call zneupd(.true.,'A', select, d, z, nn, sigma, workev, bmat,nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr,workd,workl, lworkl, rwork, info )
+       call zneupd(.true.,'A', select, d, z, nn, sigma, workev, bmat,nn, which, nev, tol, resid, ncv, v, nn, iparam, &
+             ipntr,workd,workl, lworkl, rwork, info )
        nconv = iparam(5)
        do j=1, nconv
           call av(n, v(1,j), ax)
@@ -5218,7 +5283,8 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
        end do
        close(10)
     else
-       call zneupd(.false.,'A', select, d, z, nn, sigma, workev, bmat,nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr,workd,workl, lworkl, rwork, info )
+       call zneupd(.false.,'A', select, d, z, nn, sigma, workev, bmat,nn, which, nev, tol, resid, ncv, v, nn, iparam, &
+             ipntr,workd,workl, lworkl, rwork, info )
 
        ELoc(:nev) = real(d(:nev))
     end if
@@ -5645,7 +5711,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     lworkl= 3*NCV**2 + 5*NCV
 
     max_iter = 10000
-    allocate(resid(N), v(N, ncv), workd(3*N), workl(lworkl), rwork(ncv), d(nev+1), iparam(11), ipntr(14), select(ncv), rand_real(N), rand_imag(N))
+    allocate(resid(N), v(N, ncv), workd(3*N), workl(lworkl), rwork(ncv), d(nev+1), iparam(11), ipntr(14), select(ncv), &
+          rand_real(N), rand_imag(N))
     allocate(z(N,nev))
     allocate(workev(2*ncv))
     allocate(ax(N))
@@ -5725,7 +5792,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        print *, "TAPW:   a2 = cell_real(:,2) =", cell_real(:,2)
     end if
 
-     call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell_real, row_ptr, col_ind, values,sigma)
+     call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell_real, row_ptr, &
+           col_ind, values,sigma)
     print *, "done"
     symmetric = is_structurally_symmetric(values, row_ptr, col_ind, N)
 
@@ -5999,7 +6067,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        print *, "  Updated M_tapw =", M_tapw, "(now matches actual matrix size)"
     else
        ! Always show basic TAPW dimensions
-       if (tapwDebug) call MIO_Print('TAPW matrix: '//trim(num2str(N))//' atoms → '//trim(num2str(M))//' projected states (NG='//trim(num2str(NG))//', Nlabel='//trim(num2str(Nlabel))//')','diag')
+       if (tapwDebug) call MIO_Print('TAPW matrix: '//trim(num2str(N))//' atoms → '//trim(num2str(M)) &
+             //' projected states (NG='//trim(num2str(NG))//', Nlabel='//trim(num2str(Nlabel))//')','diag')
     end if
 
     allocate(XArray(N, M))
@@ -6172,7 +6241,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ! Branch: use dense or sparse matrix approach for TAPW transformation
     if (useDenseMatrixTAPW) then
         call MIO_Print('Using DENSE matrix approach for TAPW transformation','diag')
-        call transform_dense_hamiltonian_tapw(N, M, XArray, Hproj, KLoc, cell_real, H0, maxN, hopp, NList, Nneigh, neighCell, ns, is)
+        call transform_dense_hamiltonian_tapw(N, M, XArray, Hproj, KLoc, cell_real, H0, maxN, hopp, NList, Nneigh, &
+              neighCell, ns, is)
     else
         call MIO_Print('Using SPARSE matrix approach for TAPW transformation','diag')
         ! For large systems (>1M atoms), force sparse approach to avoid memory issues
@@ -6467,7 +6537,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           stored_nspin = ns  ! Store number of spin channels
           ! Calculate actual number of k-points needed based on Chern grid
           stored_nk = nk_chern_x * nk_chern_y
-          call MIO_Print('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points ('//trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))//' grid) for '//trim(num2str(stored_nspin))//' spin channel(s)','diag')
+          call MIO_Print('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points (' &
+                //trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))//' grid) for '//trim(num2str(stored_nspin)) &
+                //' spin channel(s)','diag')
           allocate(stored_eigenvectors(M, M, stored_nk, stored_nspin))
           allocate(stored_hamiltonians(M, M, stored_nk, stored_nspin))
 
@@ -6475,12 +6547,14 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           allocate(stored_X_matrix(N, M))
           stored_X_matrix = XArray
 
-          call MIO_Print('Allocated TAPW storage for Chern calculation: '//trim(num2str(M))//'x'//trim(num2str(M))//'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
+          call MIO_Print('Allocated TAPW storage for Chern calculation: '//trim(num2str(M))//'x'//trim(num2str(M))//'x' &
+                //trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
           call MIO_Print('Stored X matrix ('//trim(num2str(N))//'x'//trim(num2str(M))//') for Berry curvature calculation','diag')
 
           ! VERIFICATION: Check stored data integrity
           call MIO_Print('=== TAPW STORAGE VERIFICATION ===','diag')
-          call MIO_Print('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk='//trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag')
+          call MIO_Print('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk=' &
+                //trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag')
           call MIO_Print('XArray dimensions: '//trim(num2str(size(XArray,1)))//'x'//trim(num2str(size(XArray,2))),'diag')
           call MIO_Print('XArray norm: '//trim(num2str(sqrt(sum(abs(XArray)**2)),8)),'diag')
           call MIO_Print('XArray max element: '//trim(num2str(maxval(abs(XArray)),8)),'diag')
@@ -6507,22 +6581,28 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
              ! CRITICAL FIX: Store TAPW eigenvalues to match eigenvectors
              if (.not. allocated(stored_eigenvalues)) then
                 allocate(stored_eigenvalues(M, stored_nk, stored_nspin))
-                call MIO_Print('Allocated stored_eigenvalues array: '//trim(num2str(M))//'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
+                call MIO_Print('Allocated stored_eigenvalues array: '//trim(num2str(M))//'x'//trim(num2str(stored_nk)) &
+                      //'x'//trim(num2str(stored_nspin)),'diag')
              end if
              stored_eigenvalues(1:M,kpoint_index,is) = eigvals(1:M)  ! Store TAPW eigenvalues
 
              ! DEBUG: Verify eigenvalue storage for first k-point
              if (kpoint_index == 1 .and. is == 1) then
                 call MIO_Print('=== TAPW EIGENVALUE STORAGE VERIFICATION (k-point 1, spin 1) ===','diag')
-                call MIO_Print('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
-                call MIO_Print('First 5 TAPW eigenvalues: ['//trim(num2str(eigvals(1),6))//','//trim(num2str(eigvals(2),6))//','//trim(num2str(eigvals(3),6))//','//trim(num2str(eigvals(4),6))//','//trim(num2str(eigvals(5),6))//']','diag')
-                call MIO_Print('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:M)),6))//','//trim(num2str(maxval(eigvals(1:M)),6))//']','diag')
+                call MIO_Print('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+                      //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
+                call MIO_Print('First 5 TAPW eigenvalues: ['//trim(num2str(eigvals(1),6))//',' &
+                      //trim(num2str(eigvals(2),6))//','//trim(num2str(eigvals(3),6))//','//trim(num2str(eigvals(4),6)) &
+                      //','//trim(num2str(eigvals(5),6))//']','diag')
+                call MIO_Print('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:M)),6))//',' &
+                      //trim(num2str(maxval(eigvals(1:M)),6))//']','diag')
              end if
 
              ! VERIFICATION: Check stored eigenvectors for first k-point
              if (kpoint_index == 1) then
                 call MIO_Print('=== EIGENVECTOR STORAGE VERIFICATION (k-point 1) ===','diag')
-                call MIO_Print('Stored eigenvectors dimensions: '//trim(num2str(size(stored_eigenvectors,1)))//'x'//trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag')
+                call MIO_Print('Stored eigenvectors dimensions: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
+                      //trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag')
                 call MIO_Print('Hproj (eigenvectors) norm: '//trim(num2str(sqrt(sum(abs(Hproj)**2)),8)),'diag')
                 call MIO_Print('Hproj max element: '//trim(num2str(maxval(abs(Hproj)),8)),'diag')
                 call MIO_Print('Hproj min element: '//trim(num2str(minval(abs(Hproj)),8)),'diag')
@@ -6533,7 +6613,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
              end if
           else
              call MIO_Print('ERROR: Cannot store k-point data - array too small','diag')
-             call MIO_Print('  M='//trim(num2str(M))//', stored array size='//trim(num2str(size(stored_eigenvectors,1)))//'x'//trim(num2str(size(stored_eigenvectors,2))),'diag')
+             call MIO_Print('  M='//trim(num2str(M))//', stored array size='//trim(num2str(size(stored_eigenvectors,1))) &
+                   //'x'//trim(num2str(size(stored_eigenvectors,2))),'diag')
           end if
        end if
 
@@ -6954,7 +7035,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     end if
 
     if (tapwDebug) then
-       call MIO_Print('  Generated NG = '//trim(num2str(NG))//' G-vectors, Nlabel = '//trim(num2str(Nlabel))//', M = '//trim(num2str(M)), 'diag')
+       call MIO_Print('  Generated NG = '//trim(num2str(NG))//' G-vectors, Nlabel = '//trim(num2str(Nlabel))//', M = ' &
+             //trim(num2str(M)), 'diag')
     end if
 
     ! Allocate TAPW arrays
@@ -7051,8 +7133,10 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     ! Debug: Show M and NG before projection
     if (tapwDebug .and. present(kpoint_index)) then
-       call MIO_Print('DiagH0TAPW_withBlockH: About to project HBlock (2N='//trim(num2str(2*N))//'×'//trim(num2str(2*N))//') to Hproj (2M='//trim(num2str(2*M))//'×'//trim(num2str(2*M))//')','diag')
-       call MIO_Print('  Using block-diagonal projector XArray (2N='//trim(num2str(2*N))//'×2M='//trim(num2str(2*M))//') to preserve spin structure','diag')
+       call MIO_Print('DiagH0TAPW_withBlockH: About to project HBlock (2N='//trim(num2str(2*N))//'×'//trim(num2str(2*N)) &
+             //') to Hproj (2M='//trim(num2str(2*M))//'×'//trim(num2str(2*M))//')','diag')
+       call MIO_Print('  Using block-diagonal projector XArray (2N='//trim(num2str(2*N))//'×2M='//trim(num2str(2*M)) &
+             //') to preserve spin structure','diag')
        call MIO_Print('  This will perform: Hproj = XArray† * HBlock * XArray','diag')
        call MIO_Print('  Matrix multiplication complexity: O(2M × 2N × 2N) ≈ '//trim(num2str(2*M*2*N*2*N))//' operations','diag')
     end if
@@ -7143,13 +7227,15 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
                 max_rashba = max(max_rashba, abs(test_rashba))
                 test_count = test_count + 1
                 if (test_count <= 5) then
-                   call MIO_Print('  Rashba bond: HBlock('//trim(num2str(test_i))//','//trim(num2str(test_in+N))//') = '//trim(num2str(real(test_rashba),6))//' + i*'//trim(num2str(aimag(test_rashba),6)),'diag')
+                   call MIO_Print('  Rashba bond: HBlock('//trim(num2str(test_i))//','//trim(num2str(test_in+N))//') = ' &
+                         //trim(num2str(real(test_rashba),6))//' + i*'//trim(num2str(aimag(test_rashba),6)),'diag')
                 end if
              end if
           end do
        end do
 
-       call MIO_Print('  Total Rashba bonds checked: '//trim(num2str(test_count))//', max |Rashba| = '//trim(num2str(max_rashba,6)),'diag')
+       call MIO_Print('  Total Rashba bonds checked: '//trim(num2str(test_count))//', max |Rashba| = ' &
+             //trim(num2str(max_rashba,6)),'diag')
 
        deallocate(diag_temp)
     end if
@@ -7321,10 +7407,13 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           ! Debug: Show specific off-diagonal elements to check k-dependence
           ! Also check cross-spin terms (should be non-zero with Rashba)
           if (kpoint_index <= 2 .and. 2*M >= 5) then
-             call MIO_Print('  Hproj(1,2) = '//trim(num2str(real(Hproj(1,2)),6))//' + i*'//trim(num2str(aimag(Hproj(1,2)),6)),'diag')
-             call MIO_Print('  Hproj(2,1) = '//trim(num2str(real(Hproj(2,1)),6))//' + i*'//trim(num2str(aimag(Hproj(2,1)),6)),'diag')
+             call MIO_Print('  Hproj(1,2) = '//trim(num2str(real(Hproj(1,2)),6))//' + i*' &
+                   //trim(num2str(aimag(Hproj(1,2)),6)),'diag')
+             call MIO_Print('  Hproj(2,1) = '//trim(num2str(real(Hproj(2,1)),6))//' + i*' &
+                   //trim(num2str(aimag(Hproj(2,1)),6)),'diag')
              if (2*M >= M+1) then
-                call MIO_Print('  Hproj(1,M+1) [cross-spin] = '//trim(num2str(real(Hproj(1,M+1)),6))//' + i*'//trim(num2str(aimag(Hproj(1,M+1)),6)),'diag')
+                call MIO_Print('  Hproj(1,M+1) [cross-spin] = '//trim(num2str(real(Hproj(1,M+1)),6))//' + i*' &
+                      //trim(num2str(aimag(Hproj(1,M+1)),6)),'diag')
              end if
           end if
        end if
@@ -7341,7 +7430,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              end if
           end do
        end do
-       call MIO_Print('  Hproj trace (first 100×100): '//trim(num2str(trace_Hproj,6))//', norm²: '//trim(num2str(norm_Hproj,6)),'diag')
+       call MIO_Print('  Hproj trace (first 100×100): '//trim(num2str(trace_Hproj,6))//', norm²: ' &
+             //trim(num2str(norm_Hproj,6)),'diag')
 
        deallocate(proj_diag_temp)
     end if
@@ -7396,18 +7486,24 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           end if
        end do
 
-       call MIO_Print('  Consecutive pair check (first 10 pairs: 2i-1 and 2i): '//trim(num2str(eig_pair_count))//'/'//trim(num2str(min(M,10)))//' pairs match','diag')
+       call MIO_Print('  Consecutive pair check (first 10 pairs: 2i-1 and 2i): '//trim(num2str(eig_pair_count))//'/' &
+             //trim(num2str(min(M,10)))//' pairs match','diag')
        if (max_degen_diff > 1e-6_dp) then
-          call MIO_Print('  WARNING: Max eigenvalue pair difference: '//trim(num2str(max_degen_diff,8))//' at pair '//trim(num2str(max_degen_diff_idx)),'diag')
+          call MIO_Print('  WARNING: Max eigenvalue pair difference: '//trim(num2str(max_degen_diff,8))//' at pair ' &
+                //trim(num2str(max_degen_diff_idx)),'diag')
           call MIO_Print('  First 5 consecutive eigenvalue pairs:','diag')
           do check_i = 1, min(5, M)
-             call MIO_Print('    Pair '//trim(num2str(check_i))//': eigvals('//trim(num2str(2*check_i-1))//') = '//trim(num2str(eigvals(2*check_i-1),6))//', eigvals('//trim(num2str(2*check_i))//') = '//trim(num2str(eigvals(2*check_i),6))//', diff = '//trim(num2str(abs(eigvals(2*check_i-1)-eigvals(2*check_i)),8)),'diag')
+             call MIO_Print('    Pair '//trim(num2str(check_i))//': eigvals('//trim(num2str(2*check_i-1))//') = ' &
+                   //trim(num2str(eigvals(2*check_i-1),6))//', eigvals('//trim(num2str(2*check_i))//') = ' &
+                   //trim(num2str(eigvals(2*check_i),6))//', diff = ' &
+                   //trim(num2str(abs(eigvals(2*check_i-1)-eigvals(2*check_i)),8)),'diag')
           end do
        else
           call MIO_Print('  SUCCESS: Eigenvalues form proper consecutive pairs (eigvals(2i-1) ≈ eigvals(2i))','diag')
           call MIO_Print('  First 5 consecutive eigenvalue pairs (should be identical):','diag')
           do check_i = 1, min(5, M)
-             call MIO_Print('    Pair '//trim(num2str(check_i))//': '//trim(num2str(eigvals(2*check_i-1),6))//' (appears twice at indices '//trim(num2str(2*check_i-1))//','//trim(num2str(2*check_i))//')','diag')
+             call MIO_Print('    Pair '//trim(num2str(check_i))//': '//trim(num2str(eigvals(2*check_i-1),6)) &
+                   //' (appears twice at indices '//trim(num2str(2*check_i-1))//','//trim(num2str(2*check_i))//')','diag')
           end do
     end if
 
@@ -7428,7 +7524,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              n_unique = n_unique + 1
           end if
        end do
-       call MIO_Print('  Unique eigenvalue count: '//trim(num2str(n_unique))//' (expected: '//trim(num2str(M))//' unique eigenvalues, each appearing twice)','diag')
+       call MIO_Print('  Unique eigenvalue count: '//trim(num2str(n_unique))//' (expected: '//trim(num2str(M)) &
+             //' unique eigenvalues, each appearing twice)','diag')
        if (n_unique == M) then
           call MIO_Print('  SUCCESS: Exactly M unique eigenvalues (perfect degeneracy)','diag')
        else
@@ -7452,19 +7549,25 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        call MIO_Print('  Positive eigenvalues: '//trim(num2str(n_positive))//' / '//trim(num2str(2*M)),'diag')
        call MIO_Print('  Negative eigenvalues: '//trim(num2str(n_negative))//' / '//trim(num2str(2*M)),'diag')
        call MIO_Print('  Zero eigenvalues: '//trim(num2str(n_zero))//' / '//trim(num2str(2*M)),'diag')
-       call MIO_Print('  ELoc array size: '//trim(num2str(size(ELoc)))//' (will store '//trim(num2str(min(2*M, size(ELoc))))//' eigenvalues)','diag')
+       call MIO_Print('  ELoc array size: '//trim(num2str(size(ELoc)))//' (will store ' &
+             //trim(num2str(min(2*M, size(ELoc))))//' eigenvalues)','diag')
 
        ! Show first and last few eigenvalues
        if (2*M >= 5) then
-          call MIO_Print('  First 5 eigenvalues (lowest energy): ['//trim(num2str(eigvals(1),6))//', '//trim(num2str(eigvals(2),6))//', '//trim(num2str(eigvals(3),6))//', '//trim(num2str(eigvals(4),6))//', '//trim(num2str(eigvals(5),6))//']','diag')
+          call MIO_Print('  First 5 eigenvalues (lowest energy): ['//trim(num2str(eigvals(1),6))//', ' &
+                //trim(num2str(eigvals(2),6))//', '//trim(num2str(eigvals(3),6))//', '//trim(num2str(eigvals(4),6)) &
+                //', '//trim(num2str(eigvals(5),6))//']','diag')
        end if
        if (2*M >= 5) then
-          call MIO_Print('  Last 5 eigenvalues (highest energy): ['//trim(num2str(eigvals(2*M-4),6))//', '//trim(num2str(eigvals(2*M-3),6))//', '//trim(num2str(eigvals(2*M-2),6))//', '//trim(num2str(eigvals(2*M-1),6))//', '//trim(num2str(eigvals(2*M),6))//']','diag')
+          call MIO_Print('  Last 5 eigenvalues (highest energy): ['//trim(num2str(eigvals(2*M-4),6))//', ' &
+                //trim(num2str(eigvals(2*M-3),6))//', '//trim(num2str(eigvals(2*M-2),6))//', ' &
+                //trim(num2str(eigvals(2*M-1),6))//', '//trim(num2str(eigvals(2*M),6))//']','diag')
        end if
 
        ! Check for truncation issue
        if (2*M > size(ELoc)) then
-          call MIO_Print('  WARNING: Truncation will occur! 2M='//trim(num2str(2*M))//' > ELoc size='//trim(num2str(size(ELoc))),'diag')
+          call MIO_Print('  WARNING: Truncation will occur! 2M='//trim(num2str(2*M))//' > ELoc size=' &
+                //trim(num2str(size(ELoc))),'diag')
           call MIO_Print('  Will lose '//trim(num2str(2*M - size(ELoc)))//' eigenvalues (highest energy states)','diag')
           if (size(ELoc)+1 <= 2*M .and. eigvals(size(ELoc)+1) > 0.0_dp) then
              call MIO_Print('  CRITICAL: First lost eigenvalue is POSITIVE: '//trim(num2str(eigvals(size(ELoc)+1),6)),'diag')
@@ -7493,14 +7596,17 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           ELoc(M+1:size(ELoc)) = 0.0_dp
        end if
        if (tapwDebug) then
-          call MIO_Print('TAPW with block H (no SOC): Collapsed '//trim(num2str(2*M))//' eigenvalues to '//trim(num2str(min(M, size(ELoc))))//' unique ones','diag')
+          call MIO_Print('TAPW with block H (no SOC): Collapsed '//trim(num2str(2*M))//' eigenvalues to ' &
+                //trim(num2str(min(M, size(ELoc))))//' unique ones','diag')
        end if
     else
        ! Rashba SOC case: use all 2M eigenvalues (spin-split)
        if (2*M > size(ELoc)) then
           if (tapwDebug) then
-             call MIO_Print('Warning: More TAPW states (2M='//trim(num2str(2*M))//') than output array size ('//trim(num2str(size(ELoc)))//')','diag')
-             call MIO_Print('Taking first '//trim(num2str(size(ELoc)))//' eigenvalues out of '//trim(num2str(2*M))//' total TAPW states','diag')
+             call MIO_Print('Warning: More TAPW states (2M='//trim(num2str(2*M))//') than output array size (' &
+                   //trim(num2str(size(ELoc)))//')','diag')
+             call MIO_Print('Taking first '//trim(num2str(size(ELoc)))//' eigenvalues out of '//trim(num2str(2*M)) &
+                   //' total TAPW states','diag')
              call MIO_Print('  This will only include eigenvalues up to: '//trim(num2str(eigvals(size(ELoc)),6)),'diag')
              if (eigvals(size(ELoc)) < 0.0_dp .and. n_positive > 0) then
                 call MIO_Print('  CRITICAL: All positive eigenvalues will be lost due to truncation!','diag')
@@ -7517,9 +7623,12 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     if (tapwDebug) then
        if (forceBlockTAPW .and. .not. RashbaSOCterm) then
-          call MIO_Print('TAPW with block H (no SOC): Using '//trim(num2str(min(M_tapw, size(ELoc))))//' eigenvalues for output (M_tapw='//trim(num2str(M_tapw))//', ELoc size='//trim(num2str(size(ELoc)))//')','diag')
+          call MIO_Print('TAPW with block H (no SOC): Using '//trim(num2str(min(M_tapw, size(ELoc)))) &
+                //' eigenvalues for output (M_tapw='//trim(num2str(M_tapw))//', ELoc size='//trim(num2str(size(ELoc))) &
+                //')','diag')
        else
-          call MIO_Print('TAPW with block H: Using '//trim(num2str(min(2*M, size(ELoc))))//' eigenvalues for output (2M='//trim(num2str(2*M))//', ELoc size='//trim(num2str(size(ELoc)))//')','diag')
+          call MIO_Print('TAPW with block H: Using '//trim(num2str(min(2*M, size(ELoc)))) &
+                //' eigenvalues for output (2M='//trim(num2str(2*M))//', ELoc size='//trim(num2str(size(ELoc)))//')','diag')
        end if
     end if
 
@@ -7533,7 +7642,9 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           stored_nspin = ns  ! Store number of spin channels
           ! Calculate actual number of k-points needed based on Chern grid
           stored_nk = nk_chern_x * nk_chern_y
-          call MIO_Print('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points ('//trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))//' grid) for '//trim(num2str(stored_nspin))//' spin channel(s)','diag')
+          call MIO_Print('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points (' &
+                //trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))//' grid) for '//trim(num2str(stored_nspin)) &
+                //' spin channel(s)','diag')
           allocate(stored_eigenvectors(2*M, 2*M, stored_nk, stored_nspin))
           allocate(stored_hamiltonians(2*M, 2*M, stored_nk, stored_nspin))
 
@@ -7541,12 +7652,15 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           allocate(stored_X_matrix(2*N, 2*M))
           stored_X_matrix = XArray
 
-          call MIO_Print('Allocated TAPW storage for Chern calculation: '//trim(num2str(2*M))//'x'//trim(num2str(2*M))//'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
-          call MIO_Print('Stored SOC-aware X matrix (2N='//trim(num2str(2*N))//'x 2M='//trim(num2str(2*M))//') for Berry curvature calculation','diag')
+          call MIO_Print('Allocated TAPW storage for Chern calculation: '//trim(num2str(2*M))//'x'//trim(num2str(2*M)) &
+                //'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
+          call MIO_Print('Stored SOC-aware X matrix (2N='//trim(num2str(2*N))//'x 2M='//trim(num2str(2*M)) &
+                //') for Berry curvature calculation','diag')
 
           ! VERIFICATION: Check stored data integrity
           call MIO_Print('=== TAPW STORAGE VERIFICATION (Rashba SOC) ===','diag')
-          call MIO_Print('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk='//trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag')
+          call MIO_Print('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk=' &
+                //trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag')
           call MIO_Print('XArray dimensions: '//trim(num2str(size(XArray,1)))//'x'//trim(num2str(size(XArray,2))),'diag')
           call MIO_Print('XArray norm: '//trim(num2str(sqrt(sum(abs(XArray)**2)),8)),'diag')
           call MIO_Print('XArray max element: '//trim(num2str(maxval(abs(XArray)),8)),'diag')
@@ -7566,7 +7680,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           end if
           if (size(stored_X_matrix, 1) /= 2*N .or. size(stored_X_matrix, 2) /= 2*M) then
              call MIO_Print('ERROR: Stored X matrix dimensions inconsistent with current calculation','diag')
-             call MIO_Print('  Stored: '//trim(num2str(size(stored_X_matrix,1)))//'x'//trim(num2str(size(stored_X_matrix,2))),'diag')
+             call MIO_Print('  Stored: '//trim(num2str(size(stored_X_matrix,1)))//'x' &
+                   //trim(num2str(size(stored_X_matrix,2))),'diag')
              call MIO_Print('  Current: '//trim(num2str(2*N))//'x'//trim(num2str(2*M)),'diag')
           end if
        end if
@@ -7584,7 +7699,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              ! CRITICAL: Store TAPW eigenvalues (now 2M)
              if (.not. allocated(stored_eigenvalues)) then
                 allocate(stored_eigenvalues(2*M, stored_nk, stored_nspin))
-                call MIO_Print('Allocated stored_eigenvalues array: '//trim(num2str(2*M))//'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
+                call MIO_Print('Allocated stored_eigenvalues array: '//trim(num2str(2*M))//'x'//trim(num2str(stored_nk)) &
+                      //'x'//trim(num2str(stored_nspin)),'diag')
              end if
              stored_eigenvalues(1:2*M,kpoint_index,1) = eigvals(1:2*M)
 
@@ -7599,9 +7715,13 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              ! DEBUG: Verify eigenvalue storage for first k-point
              if (kpoint_index == 1 .and. is == 1) then
                 call MIO_Print('=== TAPW EIGENVALUE STORAGE VERIFICATION (Rashba, k-point 1, spin-mixed) ===','diag')
-                call MIO_Print('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
-                call MIO_Print('First 5 TAPW eigenvalues (spin-mixed): ['//trim(num2str(eigvals(1),6))//','//trim(num2str(eigvals(2),6))//','//trim(num2str(eigvals(3),6))//','//trim(num2str(eigvals(4),6))//','//trim(num2str(eigvals(5),6))//']','diag')
-                call MIO_Print('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:2*M)),6))//','//trim(num2str(maxval(eigvals(1:2*M)),6))//']','diag')
+                call MIO_Print('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+                      //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
+                call MIO_Print('First 5 TAPW eigenvalues (spin-mixed): ['//trim(num2str(eigvals(1),6))//',' &
+                      //trim(num2str(eigvals(2),6))//','//trim(num2str(eigvals(3),6))//','//trim(num2str(eigvals(4),6)) &
+                      //','//trim(num2str(eigvals(5),6))//']','diag')
+                call MIO_Print('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:2*M)),6))//',' &
+                      //trim(num2str(maxval(eigvals(1:2*M)),6))//']','diag')
              end if
           end if
        end if
@@ -8103,7 +8223,8 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
 
   if (tapwDebug) call MIO_Print('DEBUG: First 15 raw distances from G_nn:','diag')
   do i = 1, min(15, count)
-     call MIO_Print('  Point '//trim(adjustl(num2str(real(i,dp),0)))//': distance = '//trim(adjustl(num2str(distances(i),6))),'diag')
+     call MIO_Print('  Point '//trim(adjustl(num2str(real(i,dp),0)))//': distance = ' &
+           //trim(adjustl(num2str(distances(i),6))),'diag')
   end do
 
   ! Also check around the center position
@@ -8157,14 +8278,16 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
   ! Sort unique distances to get proper shell ordering
   if (tapwDebug) call MIO_Print('DEBUG: Before sorting - first 5 unique distances:','diag')
   do i = 1, min(5, num_unique)
-     call MIO_Print('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = '//trim(adjustl(num2str(unique_distances(i),6))),'diag')
+     call MIO_Print('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = ' &
+           //trim(adjustl(num2str(unique_distances(i),6))),'diag')
   end do
 
   call sort_distances_with_inverse_update(unique_distances, num_unique, inverse, count)
 
   if (tapwDebug) call MIO_Print('DEBUG: After sorting - first 5 unique distances:','diag')
   do i = 1, min(5, num_unique)
-     call MIO_Print('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = '//trim(adjustl(num2str(unique_distances(i),6))),'diag')
+     call MIO_Print('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = ' &
+           //trim(adjustl(num2str(unique_distances(i),6))),'diag')
   end do
 
   ! Count how many G-vectors we need: inverse < NGrange (Python condition)
@@ -8277,7 +8400,8 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
      call MIO_Print('  G-vectors before BZ filter: '//trim(adjustl(num2str(real(NG_before_filter,dp),0))),'diag')
      call MIO_Print('  G-vectors after BZ filter: '//trim(adjustl(num2str(real(NG_after_filter,dp),0))),'diag')
      call MIO_Print('  G-vectors removed: '//trim(adjustl(num2str(real(NG_before_filter-NG_after_filter,dp),0))),'diag')
-     call MIO_Print('  Efficiency gain: '//trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag')
+     call MIO_Print('  Efficiency gain: ' &
+           //trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag')
   end if
 
   ! No need to reallocate - arrays are already the right size and contain correct data
@@ -8285,7 +8409,8 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
 
   ! CRITICAL: Apply final uniqueness like Python's np.unique(np.vstack(self.G_list),axis=0)
   ! This removes duplicate G-vectors that might come from multiple reference points
-  if (tapwDebug) call MIO_Print('DEBUG: About to call remove_duplicate_G_vectors with NG='//trim(adjustl(num2str(real(NG,dp),0))),'diag')
+  if (tapwDebug) call MIO_Print('DEBUG: About to call remove_duplicate_G_vectors with NG=' &
+        //trim(adjustl(num2str(real(NG,dp),0))),'diag')
   initial_NG = NG
   call remove_duplicate_G_vectors(Gx, Gy, NG)
   if (tapwDebug) call MIO_Print('DEBUG: After remove_duplicate_G_vectors, NG='//trim(adjustl(num2str(real(NG,dp),0))),'diag')
@@ -8311,7 +8436,8 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
 
   if (tapwDebug) call MIO_Print('DEBUG: First 5 distances after final sort:','diag')
   do ii = 1, min(5, NG)
-     call MIO_Print('  '//trim(adjustl(num2str(sel_dist(perm(ii)),6)))//'  ang='//trim(adjustl(num2str(sel_ang(perm(ii)),6))),'diag')
+     call MIO_Print('  '//trim(adjustl(num2str(sel_dist(perm(ii)),6)))//'  ang=' &
+           //trim(adjustl(num2str(sel_ang(perm(ii)),6))),'diag')
   end do
 
   deallocate(sel_dist, sel_ang, perm)
@@ -8336,7 +8462,8 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
   deallocate(Gpoints, distances, inverse, unique_distances)
 
   ! Essential info: G-vector generation summary
-  call MIO_Print('G-grid: Generated NG='//trim(adjustl(num2str(real(NG,dp),0)))//' vectors, NGrange='//trim(adjustl(num2str(real(NGrange,dp),0))),'diag')
+  call MIO_Print('G-grid: Generated NG='//trim(adjustl(num2str(real(NG,dp),0)))//' vectors, NGrange=' &
+        //trim(adjustl(num2str(real(NGrange,dp),0))),'diag')
 
   ! Output G-vectors for matplotlib visualization (thread-safe)
   ! Use critical section to avoid conflicts in parallel execution
@@ -8581,7 +8708,8 @@ subroutine generate_shifted_G_list_with_graphene_BZ(rcell, k_ref, NGrange, Gx, G
   call MIO_Print('  G-vectors after graphene BZ filter: '//trim(adjustl(num2str(real(NG_after_filter,dp),0))),'diag')
   call MIO_Print('  G-vectors removed: '//trim(adjustl(num2str(real(NG_before_filter-NG_after_filter,dp),0))),'diag')
   if (NG_before_filter > 0) then
-     call MIO_Print('  Efficiency gain: '//trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag')
+     call MIO_Print('  Efficiency gain: ' &
+           //trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag')
   end if
 
   ! Output FILTERED G-vectors for matplotlib visualization (overwrites the unfiltered version)
@@ -8641,7 +8769,8 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
   ! We need to express it in fractional coordinates of the moiré lattice for grid selection
   call MIO_Print('k_ref (Cartesian): ['//trim(num2str(k_ref(1),6))//','//trim(num2str(k_ref(2),6))//']','diag')
   call cart_to_frac_single_point(k_ref, bMvec, kkDvec_ind)
-  call MIO_Print('k_ref converted to fractional: ['//trim(num2str(kkDvec_ind(1),6))//','//trim(num2str(kkDvec_ind(2),6))//']','diag')
+  call MIO_Print('k_ref converted to fractional: ['//trim(num2str(kkDvec_ind(1),6))//','//trim(num2str(kkDvec_ind(2),6)) &
+        //']','diag')
 
   ! Set grid size following Python nsize logic
   ! NGrange now controls the density of the G-vector grid (like nsize in Python)
@@ -8779,7 +8908,8 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
 
   if (do_distance_sort) then
      if (tapwDebug) then
-        call MIO_Print('Generated '//trim(num2str(NG))//' G-vectors using triangular truncation with distance-based ordering','diag')
+        call MIO_Print('Generated '//trim(num2str(NG)) &
+              //' G-vectors using triangular truncation with distance-based ordering','diag')
         call MIO_Print('First 5 G-vectors (distance-sorted):','diag')
         do i = 1, min(5, NG)
            ! Recalculate distance for debug output
@@ -9989,7 +10119,8 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
    complex(dp) :: HLocM1dx(N,N), HLocM1dy(N,N), H_derivativeDX(N,N), H_derivativeDY(N,N)
    complex(dp) :: dHdx(N,N)
    complex(dp) :: dHdy(N,N)
-   complex(dp) :: eigvec(N,N), Vxmn(N,N), Vymn(N,N), temp_matrix(N,N), ones_matrix(N,N), difference_matrix(N,N), eigval_matrix(N,N), eigval_repeated_matrix(N, N)
+   complex(dp) :: eigvec(N,N), Vxmn(N,N), Vymn(N,N), temp_matrix(N,N), ones_matrix(N,N), difference_matrix(N,N), &
+         eigval_matrix(N,N), eigval_repeated_matrix(N, N)
    real(dp), intent(out) :: ChernLoc(N)
    complex(dp) :: ChernLocSum(N)
    real(dp) :: ELoc(N)
@@ -10457,9 +10588,11 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
          !   !PkcLoc(1) = PkcLoc(1) + Pkcaux1
          !   !PkcLoc(2) = PkcLoc(2) + Pkcaux3
          do j=1,N ! These are the eigenvectors with band index J
-             do in=1,N ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
+             ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
+             do in=1,N
                  if (Species(in).eq.1) then
-                     PkcLoc(j,1) = PkcLoc(j,1) + exp(-cmplx_i*dot_product(KG, RtsVec(in,:))) * Hts(in,j) ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
+                     ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
+                     PkcLoc(j,1) = PkcLoc(j,1) + exp(-cmplx_i*dot_product(KG, RtsVec(in,:))) * Hts(in,j)
                  else if (Species(in).eq.2) then
                      PkcLoc(j,2) = PkcLoc(j,2) + exp(-cmplx_i*dot_product(KG, RtsVec(in,:))) * Hts(in,j)
                  end if
@@ -10477,7 +10610,8 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
 
 end subroutine DiagSpectralWeightWeiKu
 
-subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
+subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+      Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -10596,7 +10730,8 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
 
 end subroutine DiagSpectralWeightWeiKuInequivalentOld
 
-subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
+subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+      Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -10719,7 +10854,8 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
 
 end subroutine DiagSpectralWeightWeiKuInequivalent
 
-subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLocB,PkcLocC,PkcLocD,PkcLocE,PkcLocF,PkcLocG,PkcLocH,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
+subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLocB,PkcLocC,PkcLocD,PkcLocE,PkcLocF, &
+      PkcLocG,PkcLocH,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -10863,7 +10999,8 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
 
 end subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals
 
-subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
+subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+      Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -11030,7 +11167,8 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
 
 end subroutine DiagSpectralWeightWeiKuInequivalentLee
 
-subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,KptsLoc,KG,cell,gcell1,gcell2,H0,maxN,hopp,NList,Nneigh,neighCell)
+subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,KptsLoc,KG,cell,gcell1,gcell2,H0,maxN, &
+      hopp,NList,Nneigh,neighCell)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -11141,12 +11279,17 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    end if
    ! This one is NISHI
    do j=1,N ! These are the eigenvectors with band index J
-       do in=1,N ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
+       ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
+       do in=1,N
            do inn=1,N
                   if (layerIndex(in).eq.1 .and. layerIndex(inn).eq.1) then
-                      PkcLoc(j,1) = PkcLoc(j,1) + exp(cmplx_i*dot_product(KG, (RtsVec(in,:)-RtsVec(inn,:)))) * conjg(Hts(in,j)) * Hts(inn,j)! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
+                      ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
+                      PkcLoc(j,1) = PkcLoc(j,1) + exp(cmplx_i*dot_product(KG, &
+                            (RtsVec(in,:)-RtsVec(inn,:)))) * conjg(Hts(in,j)) * Hts(inn,j)
                   else if (layerIndex(in).eq.2 .and. layerIndex(inn).eq.2) then
-                      PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtspVec(inn,:)))) * conjg(Htsp(in,j)) * Htsp(inn,j)! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
+                      ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
+                      PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, &
+                            (RtspVec(in,:)-RtspVec(inn,:)))) * conjg(Htsp(in,j)) * Htsp(inn,j)
                   end if
                !       !print*, "hi1"
                !       !PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, RtsVec(in,:))) * Hts(in,j)
@@ -11311,7 +11454,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
    call MIO_Print('Implementing TAPW Berry curvature calculation using ANALYTICAL derivatives...','diag')
    if (soc_enabled) call MIO_Print('SOC-enabled Chern calculation','diag')
-   call MIO_Print('E array dimensions: '//trim(num2str(size(E,1)))//' x '//trim(num2str(size(E,2)))//' x '//trim(num2str(size(E,3))),'diag')
+   call MIO_Print('E array dimensions: '//trim(num2str(size(E,1)))//' x '//trim(num2str(size(E,2)))//' x ' &
+         //trim(num2str(size(E,3))),'diag')
    call MIO_Print('nAt = '//trim(num2str(nAt))//', nk = '//trim(num2str(nk)),'diag')
 
    ! Store k-points array for Option B Berry curvature calculation
@@ -11322,10 +11466,14 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
       ! VERIFICATION: Check stored k-points
       call MIO_Print('=== K-POINTS STORAGE VERIFICATION ===','diag')
-      call MIO_Print('Stored k-points dimensions: '//trim(num2str(size(stored_Kpts,1)))//'x'//trim(num2str(size(stored_Kpts,2))),'diag')
-      call MIO_Print('First k-point: ['//trim(num2str(stored_Kpts(1,1),6))//','//trim(num2str(stored_Kpts(2,1),6))//','//trim(num2str(stored_Kpts(3,1),6))//']','diag')
-      if (nk > 1) call MIO_Print('Second k-point: ['//trim(num2str(stored_Kpts(1,2),6))//','//trim(num2str(stored_Kpts(2,2),6))//','//trim(num2str(stored_Kpts(3,2),6))//']','diag')
-      call MIO_Print('Last k-point: ['//trim(num2str(stored_Kpts(1,nk),6))//','//trim(num2str(stored_Kpts(2,nk),6))//','//trim(num2str(stored_Kpts(3,nk),6))//']','diag')
+      call MIO_Print('Stored k-points dimensions: '//trim(num2str(size(stored_Kpts,1)))//'x' &
+            //trim(num2str(size(stored_Kpts,2))),'diag')
+      call MIO_Print('First k-point: ['//trim(num2str(stored_Kpts(1,1),6))//','//trim(num2str(stored_Kpts(2,1),6))//',' &
+            //trim(num2str(stored_Kpts(3,1),6))//']','diag')
+      if (nk > 1) call MIO_Print('Second k-point: ['//trim(num2str(stored_Kpts(1,2),6))//',' &
+            //trim(num2str(stored_Kpts(2,2),6))//','//trim(num2str(stored_Kpts(3,2),6))//']','diag')
+      call MIO_Print('Last k-point: ['//trim(num2str(stored_Kpts(1,nk),6))//','//trim(num2str(stored_Kpts(2,nk),6))//',' &
+            //trim(num2str(stored_Kpts(3,nk),6))//']','diag')
    end if
 
    ! Make energy window and band selection method configurable
@@ -11357,14 +11505,16 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
    ! Find bands for Chern number calculation
    n_bands_near_fermi = 0
-   max_bands_near_fermi = min(size(E,1), max(n_chern_bands, n_bands_below_fermi + n_bands_above_fermi + 10))  ! Use configured number of bands
+   ! Use configured number of bands
+   max_bands_near_fermi = min(size(E,1), max(n_chern_bands, n_bands_below_fermi + n_bands_above_fermi + 10))
 
    ! Debug: Show eigenvalue range at first k-point
    call MIO_Print('Eigenvalue range at first k-point:','diag')
    call MIO_Print('  First 10 eigenvalues: '//trim(num2str(E(1,1,1)*g0,3))//' to '//trim(num2str(E(10,1,1)*g0,3))//' eV','diag')
    call MIO_Print('  Around band 100: '//trim(num2str(E(max(1,100),1,1)*g0,3))//' eV','diag')
    call MIO_Print('  Around band 500: '//trim(num2str(E(min(size(E,1),500),1,1)*g0,3))//' eV','diag')
-   call MIO_Print('  Last few: '//trim(num2str(E(size(E,1)-2,1,1)*g0,3))//' to '//trim(num2str(E(size(E,1),1,1)*g0,3))//' eV','diag')
+   call MIO_Print('  Last few: '//trim(num2str(E(size(E,1)-2,1,1)*g0,3))//' to '//trim(num2str(E(size(E,1),1,1)*g0,3)) &
+         //' eV','diag')
 
    ! Allocate band indices array
    allocate(band_indices(max_bands_near_fermi))
@@ -11434,7 +11584,9 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
       ! Debug: Show band range calculation
       if (tapwDebug) call MIO_Print('DEBUG: Band range calculation:','diag')
-      call MIO_Print('  Requested: '//trim(num2str(n_bands_below_fermi))//' below + '//trim(num2str(n_bands_above_fermi))//' above = '//trim(num2str(n_bands_below_fermi + n_bands_above_fermi + 1))//' total','diag')
+      call MIO_Print('  Requested: '//trim(num2str(n_bands_below_fermi))//' below + ' &
+            //trim(num2str(n_bands_above_fermi))//' above = ' &
+            //trim(num2str(n_bands_below_fermi + n_bands_above_fermi + 1))//' total','diag')
       call MIO_Print('  Fermi band index: '//trim(num2str(fermi_band_index)),'diag')
       call MIO_Print('  Total bands available: '//trim(num2str(size(E,1))),'diag')
       call MIO_Print('  Requested start_band: '//trim(num2str(fermi_band_index - n_bands_below_fermi)),'diag')
@@ -11456,14 +11608,17 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          iband = start_band + i - 1
          ! Bounds check: ensure iband doesn't exceed available bands
          if (iband > size(E,1)) then
-            call MIO_Print('  ERROR: Calculated band index '//trim(num2str(iband))//' exceeds E array size '//trim(num2str(size(E,1))),'diag')
-            call MIO_Print('    start_band='//trim(num2str(start_band))//', i='//trim(num2str(i))//', n_bands_near_fermi='//trim(num2str(n_bands_near_fermi)),'diag')
+            call MIO_Print('  ERROR: Calculated band index '//trim(num2str(iband))//' exceeds E array size ' &
+                  //trim(num2str(size(E,1))),'diag')
+            call MIO_Print('    start_band='//trim(num2str(start_band))//', i='//trim(num2str(i)) &
+                  //', n_bands_near_fermi='//trim(num2str(n_bands_near_fermi)),'diag')
             ! Truncate to valid range
             n_bands_near_fermi = i - 1
             exit
          end if
          if (iband > stored_M .and. stored_M > 0) then
-            call MIO_Print('  WARNING: Band index '//trim(num2str(iband))//' exceeds stored_M='//trim(num2str(stored_M))//', will be excluded later','diag')
+            call MIO_Print('  WARNING: Band index '//trim(num2str(iband))//' exceeds stored_M='//trim(num2str(stored_M)) &
+                  //', will be excluded later','diag')
          end if
          band_indices(i) = iband
          if (i <= 5 .or. i > n_bands_near_fermi - 5) then  ! Show first and last 5
@@ -11516,7 +11671,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
    if (n_bands_near_fermi >= 1) then
       call MIO_Print('Will calculate Chern numbers for '//trim(num2str(n_bands_near_fermi))//' bands','diag')
       if (n_bands_near_fermi >= 2) then
-         call MIO_Print('First few bands: '//trim(num2str(band_indices(1)))//' to '//trim(num2str(band_indices(min(n_bands_near_fermi,5)))),'diag')
+         call MIO_Print('First few bands: '//trim(num2str(band_indices(1)))//' to ' &
+               //trim(num2str(band_indices(min(n_bands_near_fermi,5)))),'diag')
       end if
 
       ! Calculate area element for BZ integration (2D) - following Python approach
@@ -11599,7 +11755,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
       end if
 
          ! Main Berry curvature calculation loop for this spin channel
-         call MIO_Print('Calculating Berry curvature at '//trim(num2str(nk))//' k-points for spin '//trim(num2str(is))//'...','diag')
+         call MIO_Print('Calculating Berry curvature at '//trim(num2str(nk))//' k-points for spin '//trim(num2str(is)) &
+               //'...','diag')
       call MIO_Print('Processing '//trim(num2str(n_bands_near_fermi))//' bands','diag')
 
       ! Area element already calculated above
@@ -11625,14 +11782,20 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
                call MIO_Print('kpoint_index: '//trim(num2str(ik)),'diag')
                call MIO_Print('spin_index: '//trim(num2str(is)),'diag')
                call MIO_Print('n_bands_near_fermi: '//trim(num2str(n_bands_near_fermi)),'diag')
-               call MIO_Print('band_indices(1:5): ['//trim(num2str(band_indices(1)))//','//trim(num2str(band_indices(2)))//','//trim(num2str(band_indices(3)))//','//trim(num2str(band_indices(4)))//','//trim(num2str(band_indices(5)))//']','diag')
+               call MIO_Print('band_indices(1:5): ['//trim(num2str(band_indices(1)))//',' &
+                     //trim(num2str(band_indices(2)))//','//trim(num2str(band_indices(3)))//',' &
+                     //trim(num2str(band_indices(4)))//','//trim(num2str(band_indices(5)))//']','diag')
                call MIO_Print('E(:,is,ik) dimensions: '//trim(num2str(size(E,1))),'diag')
-               call MIO_Print('E(:,is,ik) first 5 values: ['//trim(num2str(E(1,is,ik),6))//','//trim(num2str(E(2,is,ik),6))//','//trim(num2str(E(3,is,ik),6))//','//trim(num2str(E(4,is,ik),6))//','//trim(num2str(E(5,is,ik),6))//']','diag')
+               call MIO_Print('E(:,is,ik) first 5 values: ['//trim(num2str(E(1,is,ik),6))//',' &
+                     //trim(num2str(E(2,is,ik),6))//','//trim(num2str(E(3,is,ik),6))//','//trim(num2str(E(4,is,ik),6)) &
+                     //','//trim(num2str(E(5,is,ik),6))//']','diag')
             end if
             if (soc_enabled) then
-               call CalculateBerryAtKpointFromStored_OptionA_withSOC(ik, is, band_indices(1:n_bands_near_fermi), E(:,is,ik), berry_curv_bands)
+               call CalculateBerryAtKpointFromStored_OptionA_withSOC(ik, is, band_indices(1:n_bands_near_fermi), &
+                     E(:,is,ik), berry_curv_bands)
             else
-               call CalculateBerryAtKpointFromStored_OptionA(ik, is, band_indices(1:n_bands_near_fermi), E(:,is,ik), berry_curv_bands)
+               call CalculateBerryAtKpointFromStored_OptionA(ik, is, band_indices(1:n_bands_near_fermi), E(:,is,ik), &
+                     berry_curv_bands)
             end if
          else
             call CalculateBerryAtKpointFromStored(ik, is, band_indices(1:n_bands_near_fermi), E(:,is,ik), berry_curv_bands)
@@ -11640,16 +11803,19 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
          ! DEBUG: Verify k-point ordering and coordinates (only if tapwDebug enabled)
          if (tapwDebug .and. (ik <= 5 .or. modulo(ik, max(1, nk/10)) == 0)) then
-            call MIO_Print('DEBUG k-point '//trim(num2str(ik))//': kx='//trim(num2str(Kpts(1,ik),6))//', ky='//trim(num2str(Kpts(2,ik),6))//', kz='//trim(num2str(Kpts(3,ik),6)),'diag')
+            call MIO_Print('DEBUG k-point '//trim(num2str(ik))//': kx='//trim(num2str(Kpts(1,ik),6))//', ky=' &
+                  //trim(num2str(Kpts(2,ik),6))//', kz='//trim(num2str(Kpts(3,ik),6)),'diag')
          end if
 
          ! CRITICAL: Verify k-point correspondence between storage and retrieval (only if tapwDebug enabled)
          if (tapwDebug .and. ik <= 3) then
             call MIO_Print('=== K-POINT CORRESPONDENCE CHECK ===','diag')
             call MIO_Print('Chern calculation k-point '//trim(num2str(ik))//':','diag')
-            call MIO_Print('  Kpts(:,ik) = ['//trim(num2str(Kpts(1,ik),6))//','//trim(num2str(Kpts(2,ik),6))//','//trim(num2str(Kpts(3,ik),6))//']','diag')
+            call MIO_Print('  Kpts(:,ik) = ['//trim(num2str(Kpts(1,ik),6))//','//trim(num2str(Kpts(2,ik),6))//',' &
+                  //trim(num2str(Kpts(3,ik),6))//']','diag')
             if (allocated(stored_Kpts) .and. ik <= size(stored_Kpts,2)) then
-               call MIO_Print('  stored_Kpts(:,ik) = ['//trim(num2str(stored_Kpts(1,ik),6))//','//trim(num2str(stored_Kpts(2,ik),6))//','//trim(num2str(stored_Kpts(3,ik),6))//']','diag')
+               call MIO_Print('  stored_Kpts(:,ik) = ['//trim(num2str(stored_Kpts(1,ik),6))//',' &
+                     //trim(num2str(stored_Kpts(2,ik),6))//','//trim(num2str(stored_Kpts(3,ik),6))//']','diag')
                ! Check if they match
                if (abs(Kpts(1,ik) - stored_Kpts(1,ik)) < 1e-10_dp .and. &
                    abs(Kpts(2,ik) - stored_Kpts(2,ik)) < 1e-10_dp .and. &
@@ -11720,7 +11886,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          target_end = n_target_bands  ! Process n_target_bands closest bands
 
          ! Debug: Show which bands are actually closest
-         if (tapwDebug) call MIO_Print('DEBUG: Bands closest to Fermi energy (E_F = '//trim(num2str(fermi_energy,6))//' eV) for spin '//trim(num2str(is))//':','diag')
+         if (tapwDebug) call MIO_Print('DEBUG: Bands closest to Fermi energy (E_F = '//trim(num2str(fermi_energy,6)) &
+               //' eV) for spin '//trim(num2str(is))//':','diag')
          do i = 1, min(n_target_bands, 5)
             iband = band_indices(sorted_indices(i))
             band_energy_at_gamma = E(iband,is,1) * g0
@@ -11730,7 +11897,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          end do
 
          call MIO_Print('Target bands ('//trim(num2str(n_target_bands))//' closest to Fermi):','diag')
-         if (tapwDebug) call MIO_Print('  DEBUG: E array dimensions: '//trim(num2str(size(E,1)))//' x '//trim(num2str(size(E,2)))//' x '//trim(num2str(size(E,3))),'diag')
+         if (tapwDebug) call MIO_Print('  DEBUG: E array dimensions: '//trim(num2str(size(E,1)))//' x ' &
+               //trim(num2str(size(E,2)))//' x '//trim(num2str(size(E,3))),'diag')
 
          ! Calculate min/max energies of target bands across all k-points
          call MIO_Print('  Energy ranges of target bands:','diag')
@@ -11744,8 +11912,10 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
             iband = band_indices(sorted_indices(i))
             ! Additional bounds check: ensure iband is valid
             if (iband < 1 .or. iband > stored_M) then
-               call MIO_Print('  ERROR: Band index '//trim(num2str(iband))//' out of range [1,'//trim(num2str(stored_M))//'] for target band '//trim(num2str(i)),'diag')
-               call MIO_Print('    This indicates band_indices('//trim(num2str(sorted_indices(i)))//') = '//trim(num2str(iband))//' is invalid','diag')
+               call MIO_Print('  ERROR: Band index '//trim(num2str(iband))//' out of range [1,'//trim(num2str(stored_M)) &
+                     //'] for target band '//trim(num2str(i)),'diag')
+               call MIO_Print('    This indicates band_indices('//trim(num2str(sorted_indices(i)))//') = ' &
+                     //trim(num2str(iband))//' is invalid','diag')
                cycle
             end if
             ! Find min and max energies across all k-points for this band
@@ -11797,18 +11967,21 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          end if
       end if
 
-         call MIO_Print('  Total Chern number (all bands) for spin '//trim(num2str(is))//': C_total = '//trim(num2str(chern_total,6)),'diag')
+         call MIO_Print('  Total Chern number (all bands) for spin '//trim(num2str(is))//': C_total = ' &
+               //trim(num2str(chern_total,6)),'diag')
 
       ! Validation: Check for reasonable Chern number values
          call MIO_Print('=== Validation Checks for Spin '//trim(num2str(is))//' ===','diag')
       if (abs(chern_total) > 10.0_dp) then
-            call MIO_Print('WARNING: Total Chern number unusually large for spin '//trim(num2str(is))//': '//trim(num2str(chern_total,6)),'diag')
+            call MIO_Print('WARNING: Total Chern number unusually large for spin '//trim(num2str(is))//': ' &
+                  //trim(num2str(chern_total,6)),'diag')
       end if
 
       ! Check for NaN or infinite values
       do i = 1, n_bands_near_fermi
          if (chern_bands(i) /= chern_bands(i)) then  ! NaN check
-               call MIO_Print('ERROR: NaN detected in band '//trim(num2str(band_indices(i)))//' for spin '//trim(num2str(is)),'diag')
+               call MIO_Print('ERROR: NaN detected in band '//trim(num2str(band_indices(i)))//' for spin ' &
+                     //trim(num2str(is)),'diag')
          end if
       end do
 
@@ -11967,7 +12140,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    end if
 
    if (kpoint_index > stored_nk .or. kpoint_index < 1) then
-      call MIO_Print('Error: k-point index '//trim(num2str(kpoint_index))//' out of range [1,'//trim(num2str(stored_nk))//']','diag')
+      call MIO_Print('Error: k-point index '//trim(num2str(kpoint_index))//' out of range [1,'//trim(num2str(stored_nk)) &
+            //']','diag')
       berry_curv_bands = 0.0_dp
       return
    end if
@@ -11975,7 +12149,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    ! Check band indices bounds for all bands
    do i = 1, size(band_indices)
       if (band_indices(i) < 1 .or. band_indices(i) > stored_M) then
-         call MIO_Print('Error: Band index '//trim(num2str(band_indices(i)))//' out of range [1,'//trim(num2str(stored_M))//']','diag')
+         call MIO_Print('Error: Band index '//trim(num2str(band_indices(i)))//' out of range [1,' &
+               //trim(num2str(stored_M))//']','diag')
          berry_curv_bands = 0.0_dp
          return
       end if
@@ -12006,12 +12181,15 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    if (kpoint_index == 1) then
       if (tapwDebug) call MIO_Print('CRITICAL DEBUG: Dimension analysis','diag')
       call MIO_Print('  stored_M value: '//trim(num2str(stored_M)),'diag')
-      call MIO_Print('  stored_eigenvectors actual size: '//trim(num2str(size(stored_eigenvectors,1)))//'x'//trim(num2str(size(stored_eigenvectors,2))),'diag')
-      call MIO_Print('  stored_hamiltonians actual size: '//trim(num2str(size(stored_hamiltonians,1)))//'x'//trim(num2str(size(stored_hamiltonians,2))),'diag')
+      call MIO_Print('  stored_eigenvectors actual size: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
+            //trim(num2str(size(stored_eigenvectors,2))),'diag')
+      call MIO_Print('  stored_hamiltonians actual size: '//trim(num2str(size(stored_hamiltonians,1)))//'x' &
+            //trim(num2str(size(stored_hamiltonians,2))),'diag')
       call MIO_Print('  Using safe M = '//trim(num2str(M))//' (actual array dimensions)','diag')
 
       if (stored_M /= M) then
-         call MIO_Print('ERROR: stored_M ('//trim(num2str(stored_M))//') inconsistent with actual array size ('//trim(num2str(M))//')','diag')
+         call MIO_Print('ERROR: stored_M ('//trim(num2str(stored_M))//') inconsistent with actual array size (' &
+               //trim(num2str(M))//')','diag')
          call MIO_Print('This indicates a serious bug in array allocation - using actual array size for safety','diag')
       end if
    end if
@@ -12021,7 +12199,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
       call MIO_Print('Debug: Stored array info:','diag')
       call MIO_Print('  stored_M: '//trim(num2str(stored_M)),'diag')
       call MIO_Print('  stored_nk: '//trim(num2str(stored_nk)),'diag')
-      call MIO_Print('  stored_eigenvectors shape: '//trim(num2str(size(stored_eigenvectors,1)))//'x'//trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag')
+      call MIO_Print('  stored_eigenvectors shape: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
+            //trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag')
       call MIO_Print('  eigval_from_E size: '//trim(num2str(size(eigval_from_E))),'diag')
       call MIO_Print('  Max band index requested: '//trim(num2str(maxval(band_indices))),'diag')
       call MIO_Print('  Using M = '//trim(num2str(M))//' (min of stored_M and actual array dimensions)','diag')
@@ -12056,20 +12235,24 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    ! CRITICAL FIX: Use TAPW eigenvalues instead of TB eigenvalues
    ! The eigenvectors are from TAPW diagonalization, so eigenvalues must be too
    if (allocated(stored_eigenvalues)) then
-      if (size(stored_eigenvalues,1) >= M .and. size(stored_eigenvalues,2) >= kpoint_index .and. size(stored_eigenvalues,3) >= spin_index) then
+      if (size(stored_eigenvalues,1) >= M .and. size(stored_eigenvalues,2) >= kpoint_index &
+            .and. size(stored_eigenvalues,3) >= spin_index) then
          eigval(1:M) = stored_eigenvalues(1:M,kpoint_index,spin_index)
          call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index)),'diag')
-         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M)),6))//','//trim(num2str(maxval(eigval(1:M)),6))//']','diag')
+         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M)),6))//',' &
+               //trim(num2str(maxval(eigval(1:M)),6))//']','diag')
       else
          call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
-         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2))),'diag')
+         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+               //trim(num2str(size(stored_eigenvalues,2))),'diag')
          call MIO_Print('  Required: '//trim(num2str(M))//'x'//trim(num2str(kpoint_index)),'diag')
          error stop 1
       end if
    else
       call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
       call MIO_Print('This will cause eigenvector-eigenvalue misalignment!','diag')
-      call MIO_Print('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//','//trim(num2str(maxval(eigval_from_E),6))//']','diag')
+      call MIO_Print('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//',' &
+            //trim(num2str(maxval(eigval_from_E),6))//']','diag')
       ! Fallback to TB eigenvalues (this is wrong but prevents crash)
    if (size(eigval_from_E) >= M) then
       eigval(1:M) = eigval_from_E(1:M)
@@ -12083,7 +12266,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    if (kpoint_index == 1) then
       call MIO_Print('=== EIGENVALUES VERIFICATION (k-point 1) ===','diag')
       call MIO_Print('Eigenvalues dimensions: '//trim(num2str(size(eigval))),'diag')
-      call MIO_Print('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//','//trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag')
+      call MIO_Print('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//',' &
+            //trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag')
       call MIO_Print('Eigenvalue range: ['//trim(num2str(minval(eigval),6))//','//trim(num2str(maxval(eigval),6))//']','diag')
    end if
 
@@ -12140,7 +12324,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
          call MIO_Print('  |dH_TB/dky| max = '//trim(num2str(maxval(abs(dH_TB_dky)),8)),'diag')
          call MIO_Print('  |dH_TAPW/dkx| max = '//trim(num2str(maxval(abs(dHdkx)),8)),'diag')
          call MIO_Print('  |dH_TAPW/dky| max = '//trim(num2str(maxval(abs(dHdky)),8)),'diag')
-         call MIO_Print('  Amplification factor ≈ '//trim(num2str(maxval(abs(dHdkx))/max(maxval(abs(dH_TB_dkx)),1e-12_dp),2)),'diag')
+         call MIO_Print('  Amplification factor ≈ '//trim(num2str(maxval(abs(dHdkx))/max(maxval(abs(dH_TB_dkx)), &
+               1e-12_dp),2)),'diag')
       end if
 
       ! Clean up TB derivative matrices
@@ -12194,7 +12379,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
       call MIO_Print('  Last band index to access: '//trim(num2str(band_indices(size(band_indices)))),'diag')
 
       if (M /= M_safe) then
-         call MIO_Print('CRITICAL WARNING: M variable ('//trim(num2str(M))//') differs from actual array bounds ('//trim(num2str(M_safe))//')','diag')
+         call MIO_Print('CRITICAL WARNING: M variable ('//trim(num2str(M))//') differs from actual array bounds (' &
+               //trim(num2str(M_safe))//')','diag')
          call MIO_Print('This indicates M was corrupted after array allocation - using M_safe for loops','diag')
       end if
    end if
@@ -12417,10 +12603,12 @@ subroutine build_TAPW_position_differences(delX, delY, M, Gx, Gy, NG, Nlabel)
                call MIO_Print('WARNING: Cached matrix dimensions mismatch - recomputing','diag')
                call MIO_Print('  Expected: '//trim(num2str(M))//'x'//trim(num2str(M)),'diag')
                if (allocated(cached_delX)) then
-                  call MIO_Print('  Cached delX: '//trim(num2str(size(cached_delX,1)))//'x'//trim(num2str(size(cached_delX,2))),'diag')
+                  call MIO_Print('  Cached delX: '//trim(num2str(size(cached_delX,1)))//'x' &
+                        //trim(num2str(size(cached_delX,2))),'diag')
                end if
                if (allocated(cached_delY)) then
-                  call MIO_Print('  Cached delY: '//trim(num2str(size(cached_delY,1)))//'x'//trim(num2str(size(cached_delY,2))),'diag')
+                  call MIO_Print('  Cached delY: '//trim(num2str(size(cached_delY,1)))//'x' &
+                        //trim(num2str(size(cached_delY,2))),'diag')
                end if
             end if
          else
@@ -12519,10 +12707,13 @@ subroutine compute_TB_hamiltonian_derivatives(dH_TB_dkx, dH_TB_dky, N, KLoc, H0,
    ! DEBUG: Check units and magnitudes
    if (N >= 1 .and. Nneigh(1) >= 1) then
       if (tapwDebug) call MIO_Print('DEBUG: Units check for TB derivatives:','diag')
-      call MIO_Print('  KLoc = ['//trim(num2str(KLoc(1),6))//','//trim(num2str(KLoc(2),6))//','//trim(num2str(KLoc(3),6))//'] (1/Angstrom)','diag')
+      call MIO_Print('  KLoc = ['//trim(num2str(KLoc(1),6))//','//trim(num2str(KLoc(2),6))//',' &
+            //trim(num2str(KLoc(3),6))//'] (1/Angstrom)','diag')
       if (NList(1,1) > 0 .and. NList(1,1) <= N) then
-         call MIO_Print('  First NeighD = ['//trim(num2str(NeighD(1,1,1),6))//','//trim(num2str(NeighD(2,1,1),6))//'] (Angstrom)','diag')
-         call MIO_Print('  R used in derivatives = ['//trim(num2str(-NeighD(1,1,1),6))//','//trim(num2str(-NeighD(2,1,1),6))//'] (Angstrom)','diag')
+         call MIO_Print('  First NeighD = ['//trim(num2str(NeighD(1,1,1),6))//','//trim(num2str(NeighD(2,1,1),6)) &
+               //'] (Angstrom)','diag')
+         call MIO_Print('  R used in derivatives = ['//trim(num2str(-NeighD(1,1,1),6))//',' &
+               //trim(num2str(-NeighD(2,1,1),6))//'] (Angstrom)','diag')
          call MIO_Print('  k·R = '//trim(num2str(dot_product(KLoc(1:2), -NeighD(1:2,1,1)),6))//' (dimensionless)','diag')
       end if
    end if
@@ -12577,7 +12768,8 @@ end subroutine compute_TB_hamiltonian_derivatives
 !! @param[in]     NList           Neighbor list
 !! @param[in]     Nneigh          Number of neighbors per atom
 !! @param[in]     neighCell       Neighbor cell indices
-subroutine compute_block_hamiltonian_derivatives(dH_Block_dkx, dH_Block_dky, N, KLoc, cell, H0, maxNeigh, hopp, NList, Nneigh, neighCell)
+subroutine compute_block_hamiltonian_derivatives(dH_Block_dkx, dH_Block_dky, N, KLoc, cell, H0, maxNeigh, hopp, NList, &
+      Nneigh, neighCell)
    ! Compute derivatives of the block Hamiltonian for SOC
    ! dH^Block/dkx and dH^Block/dky using the same gauge as in BuildBlockHamiltonianOnly
    use constants, only : cmplx_i, cmplx_0
@@ -12855,7 +13047,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    M_local = stored_M
    num_bands = size(band_indices)
 
-   call MIO_Print('Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands='//trim(num2str(num_bands)),'diag')
+   call MIO_Print('Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands=' &
+         //trim(num2str(num_bands)),'diag')
 
    ! Allocate arrays
    allocate(H_k(M_local,M_local), eigvec_TAPW(M_local,M_local), eigvec_TB(N_local,M_local))
@@ -12877,20 +13070,24 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    ! CRITICAL FIX: Use TAPW eigenvalues instead of TB eigenvalues
    ! The eigenvectors are from TAPW diagonalization, so eigenvalues must be too
    if (allocated(stored_eigenvalues)) then
-      if (size(stored_eigenvalues,1) >= M_local .and. size(stored_eigenvalues,2) >= kpoint_index .and. size(stored_eigenvalues,3) >= spin_index) then
+      if (size(stored_eigenvalues,1) >= M_local .and. size(stored_eigenvalues,2) >= kpoint_index &
+            .and. size(stored_eigenvalues,3) >= spin_index) then
          eigval(1:M_local) = stored_eigenvalues(1:M_local,kpoint_index,spin_index)
          call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index)),'diag')
-         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//','//trim(num2str(maxval(eigval(1:M_local)),6))//']','diag')
+         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//',' &
+               //trim(num2str(maxval(eigval(1:M_local)),6))//']','diag')
       else
          call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
-         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2))),'diag')
+         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+               //trim(num2str(size(stored_eigenvalues,2))),'diag')
          call MIO_Print('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index)),'diag')
          error stop 1
       end if
    else
       call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
       call MIO_Print('This will cause eigenvector-eigenvalue misalignment!','diag')
-      call MIO_Print('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//','//trim(num2str(maxval(eigval_from_E),6))//']','diag')
+      call MIO_Print('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//',' &
+            //trim(num2str(maxval(eigval_from_E),6))//']','diag')
       ! Fallback to TB eigenvalues (this is wrong but prevents crash)
    if (size(eigval_from_E) >= M_local) then
       eigval(1:M_local) = eigval_from_E(1:M_local)
@@ -12904,7 +13101,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    if (kpoint_index == 1) then
       call MIO_Print('=== EIGENVALUES VERIFICATION (k-point 1) ===','diag')
       call MIO_Print('Eigenvalues dimensions: '//trim(num2str(size(eigval))),'diag')
-      call MIO_Print('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//','//trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag')
+      call MIO_Print('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//',' &
+            //trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag')
       call MIO_Print('Eigenvalue range: ['//trim(num2str(minval(eigval),6))//','//trim(num2str(maxval(eigval),6))//']','diag')
    end if
 
@@ -12946,7 +13144,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
          if (debug_band >= 1 .and. debug_band <= M_local) then
             norm_tapw = real(dot_product(eigvec_TAPW(:,debug_band), eigvec_TAPW(:,debug_band)))
             norm_tb = real(dot_product(eigvec_TB(:,debug_band), eigvec_TB(:,debug_band)))
-            if (tapwDebug) call MIO_Print('DEBUG Option A: Band '//trim(num2str(debug_band))//' norms AFTER renormalization:','diag')
+            if (tapwDebug) call MIO_Print('DEBUG Option A: Band '//trim(num2str(debug_band)) &
+                  //' norms AFTER renormalization:','diag')
             call MIO_Print('  TAPW eigenvector norm: '//trim(num2str(sqrt(norm_tapw),8)),'diag')
             call MIO_Print('  TB eigenvector norm: '//trim(num2str(sqrt(norm_tb),8))//' (should be 1.0)','diag')
          end if
@@ -12998,8 +13197,10 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
          n2 = band_indices(2)
          if (n1 >= 1 .and. n1 <= M_local .and. n2 >= 1 .and. n2 <= M_local) then
             if (tapwDebug) call MIO_Print('DEBUG Option A: Velocity matrix elements:','diag')
-            call MIO_Print('  |Vx_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = '//trim(num2str(abs(Vx_TB(n1,n2)),8)),'diag')
-            call MIO_Print('  |Vy_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = '//trim(num2str(abs(Vy_TB(n1,n2)),8)),'diag')
+            call MIO_Print('  |Vx_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = ' &
+                  //trim(num2str(abs(Vx_TB(n1,n2)),8)),'diag')
+            call MIO_Print('  |Vy_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = ' &
+                  //trim(num2str(abs(Vy_TB(n1,n2)),8)),'diag')
          end if
       end block
    end if
@@ -13044,7 +13245,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
       call MIO_Print('  Last band index to access: '//trim(num2str(band_indices(size(band_indices)))),'diag')
 
       if (M_local /= M_safe) then
-         call MIO_Print('CRITICAL WARNING: M_local ('//trim(num2str(M_local))//') differs from actual array bounds ('//trim(num2str(M_safe))//')','diag')
+         call MIO_Print('CRITICAL WARNING: M_local ('//trim(num2str(M_local))//') differs from actual array bounds (' &
+               //trim(num2str(M_safe))//')','diag')
          call MIO_Print('This indicates M_local was corrupted after array allocation - using M_safe for loops','diag')
       end if
    end if
@@ -13093,7 +13295,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
                do m = 1, min(10, M_safe)
                   if (n /= m .and. n <= size(eigval) .and. m <= size(eigval)) then
                      energy_diff = abs(eigval(n) - eigval(m))
-                     call MIO_Print('  |E('//trim(num2str(n))//') - E('//trim(num2str(m))//')| = '//trim(num2str(energy_diff,12)),'diag')
+                     call MIO_Print('  |E('//trim(num2str(n))//') - E('//trim(num2str(m))//')| = ' &
+                           //trim(num2str(energy_diff,12)),'diag')
                      if (energy_diff < 1.0e-6_dp) then
                         call MIO_Print('    *** VERY SMALL ENERGY DIFFERENCE ***','diag')
                      end if
@@ -13105,8 +13308,10 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
          ! DEBUG: Compare velocity matrix elements for first few bands
          if (kpoint_index == 1 .and. i <= 3) then
             if (tapwDebug) call MIO_Print('DEBUG Option A: Velocity matrix elements for band '//trim(num2str(n))//':','diag')
-            call MIO_Print('  |Vx_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = '//trim(num2str(abs(Vx_TB(n,n+1)),8)),'diag')
-            call MIO_Print('  |Vy_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = '//trim(num2str(abs(Vy_TB(n,n+1)),8)),'diag')
+            call MIO_Print('  |Vx_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = ' &
+                  //trim(num2str(abs(Vx_TB(n,n+1)),8)),'diag')
+            call MIO_Print('  |Vy_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = ' &
+                  //trim(num2str(abs(Vy_TB(n,n+1)),8)),'diag')
             call MIO_Print('  Berry curvature = '//trim(num2str(berry_curv_bands(i),8)),'diag')
          end if
       end if
@@ -13197,7 +13402,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    M_local = stored_M
    num_bands = size(band_indices)
 
-   call MIO_Print('SOC Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands='//trim(num2str(num_bands)),'diag')
+   call MIO_Print('SOC Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands=' &
+         //trim(num2str(num_bands)),'diag')
 
    ! Check X matrix dimensions to determine if block or regular version should be used
    ! For Rashba: stored_X_matrix is 2N×M (from DiagH0TAPW_withBlockH)
@@ -13260,14 +13466,19 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    ! CRITICAL: Use TAPW eigenvalues instead of TB eigenvalues (matches non-SOC Option A)
    ! The eigenvectors are from TAPW diagonalization, so eigenvalues must be too
    if (allocated(stored_eigenvalues)) then
-      if (size(stored_eigenvalues,1) >= M_local .and. size(stored_eigenvalues,2) >= kpoint_index .and. size(stored_eigenvalues,3) >= spin_index) then
+      if (size(stored_eigenvalues,1) >= M_local .and. size(stored_eigenvalues,2) >= kpoint_index &
+            .and. size(stored_eigenvalues,3) >= spin_index) then
          eigval(1:M_local) = stored_eigenvalues(1:M_local,kpoint_index,spin_index)
-         call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index))//', spin '//trim(num2str(spin_index)),'diag')
-         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//','//trim(num2str(maxval(eigval(1:M_local)),6))//']','diag')
+         call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index))//', spin ' &
+               //trim(num2str(spin_index)),'diag')
+         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//',' &
+               //trim(num2str(maxval(eigval(1:M_local)),6))//']','diag')
       else
          call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
-         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
-         call MIO_Print('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index))//'x'//trim(num2str(spin_index)),'diag')
+         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+               //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
+         call MIO_Print('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index))//'x' &
+               //trim(num2str(spin_index)),'diag')
          error stop 1
       end if
    else
@@ -13307,13 +13518,15 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
 
    if (use_block_derivatives) then
       ! Step 3a: temp = dH_Block_dkx * eigvec_TB
-      call zgemm('N', 'N', 2*N_local, M_local, 2*N_local, cmplx_1, dH_Block_dkx, 2*N_local, eigvec_TB, 2*N_local, cmplx_0, temp_TB, 2*N_local)
+      call zgemm('N', 'N', 2*N_local, M_local, 2*N_local, cmplx_1, dH_Block_dkx, 2*N_local, eigvec_TB, 2*N_local, &
+            cmplx_0, temp_TB, 2*N_local)
 
       ! Step 3b: Vx_TB = eigvec_TB† * temp
       call zgemm('C', 'N', M_local, M_local, 2*N_local, cmplx_1, eigvec_TB, 2*N_local, temp_TB, 2*N_local, cmplx_0, Vx_TB, M_local)
 
       ! Repeat for y-direction
-      call zgemm('N', 'N', 2*N_local, M_local, 2*N_local, cmplx_1, dH_Block_dky, 2*N_local, eigvec_TB, 2*N_local, cmplx_0, temp_TB, 2*N_local)
+      call zgemm('N', 'N', 2*N_local, M_local, 2*N_local, cmplx_1, dH_Block_dky, 2*N_local, eigvec_TB, 2*N_local, &
+            cmplx_0, temp_TB, 2*N_local)
       call zgemm('C', 'N', M_local, M_local, 2*N_local, cmplx_1, eigvec_TB, 2*N_local, temp_TB, 2*N_local, cmplx_0, Vy_TB, M_local)
    else
       ! Step 3a: temp = dH_TB_dkx * eigvec_TB
@@ -13370,7 +13583,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    end do
 
    if (tapwDebug) then
-      call MIO_Print('SOC Option A: Skipped '//trim(num2str(skipped_pairs))//'/'//trim(num2str(total_pairs))//' band pairs due to small energy differences','diag')
+      call MIO_Print('SOC Option A: Skipped '//trim(num2str(skipped_pairs))//'/'//trim(num2str(total_pairs)) &
+            //' band pairs due to small energy differences','diag')
    end if
 
    call MIO_Print('SOC Option A: Berry curvature calculation completed for '//trim(num2str(num_bands))//' bands','diag')
@@ -13703,7 +13917,8 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
     call MIO_Print('G-vector coverage analysis:','diag')
     call MIO_Print('  Total G-vectors used: '//trim(num2str(real(NG,dp),0)),'diag')
     call MIO_Print('  Labels (sublattices): '//trim(num2str(real(Nlabel,dp),0)),'diag')
-    call MIO_Print('  TAPW subspace dimension: '//trim(num2str(real(M,dp),0))//' (vs full space: '//trim(num2str(real(N,dp),0))//')','diag')
+    call MIO_Print('  TAPW subspace dimension: '//trim(num2str(real(M,dp),0))//' (vs full space: ' &
+          //trim(num2str(real(N,dp),0))//')','diag')
     call MIO_Print('  Compression ratio: '//trim(num2str(real(N,dp)/real(M,dp),2)),'diag')
 
     ! Cleanup
@@ -14271,7 +14486,8 @@ subroutine verify_projected_hamiltonian_hermiticity(Hproj, M)
    end if
 
    call MIO_Print('Projected H Hermiticity check:','diag')
-   call MIO_Print('  Matrix size M = '//trim(adjustl(num2str(real(M,dp),0)))//', elements checked = '//trim(adjustl(num2str(real(count,dp),0))),'diag')
+   call MIO_Print('  Matrix size M = '//trim(adjustl(num2str(real(M,dp),0)))//', elements checked = ' &
+         //trim(adjustl(num2str(real(count,dp),0))),'diag')
    call MIO_Print('  Max |H(i,j) - H*(j,i)| = '//trim(adjustl(num2str(max_hermitian_dev,10))),'diag')
    call MIO_Print('  Avg |H(i,j) - H*(j,i)| = '//trim(adjustl(num2str(avg_hermitian_dev,10))),'diag')
    call MIO_Print('  Expected: ~0.0 for Hermitian matrix','diag')
@@ -14525,7 +14741,8 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
     end if
 
     if (tapwDebug) call MIO_Print('Dense Hamiltonian matrix constructed, performing TAPW transformation','diag')
-    if (tapwDebug) call MIO_Print('  Matrix dimensions: H('//trim(num2str(N))//'×'//trim(num2str(N))//'), X('//trim(num2str(N))//'×'//trim(num2str(M))//')','diag')
+    if (tapwDebug) call MIO_Print('  Matrix dimensions: H('//trim(num2str(N))//'×'//trim(num2str(N))//'), X(' &
+          //trim(num2str(N))//'×'//trim(num2str(M))//')','diag')
 
     ! Check hermiticity of dense Hamiltonian (only if tapwDebug enabled)
     if (tapwDebug) then
@@ -14558,27 +14775,35 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
             call MIO_Print('  H('//trim(num2str(max_j))//','//trim(num2str(max_i))//') = '//&
                          trim(num2str(real(H_dense(max_j,max_i)),8))//' + i*'//trim(num2str(aimag(H_dense(max_j,max_i)),8)),'diag')
             call MIO_Print('  conjg(H('//trim(num2str(max_j))//','//trim(num2str(max_i))//')) = '//&
-                         trim(num2str(real(conjg(H_dense(max_j,max_i))),8))//' + i*'//trim(num2str(aimag(conjg(H_dense(max_j,max_i))),8)),'diag')
+                         trim(num2str(real(conjg(H_dense(max_j,max_i))),8))//' + i*' &
+                               //trim(num2str(aimag(conjg(H_dense(max_j,max_i))),8)),'diag')
             call MIO_Print('  Error = '//trim(num2str(max_debug_error,8)),'diag')
 
             ! DEBUG: Check if there are duplicate entries in neighbor list for problematic atoms
-            call MIO_Print('DEBUG: Checking neighbor list for atoms '//trim(num2str(max_i))//' and '//trim(num2str(max_j))//':','diag')
+            call MIO_Print('DEBUG: Checking neighbor list for atoms '//trim(num2str(max_i))//' and ' &
+                  //trim(num2str(max_j))//':','diag')
 
             ! Check if max_i has max_j as neighbor
             do j = 1, Nneigh(max_i)
                 if (NList(j, max_i) == max_j) then
-                    call MIO_Print('  Atom '//trim(num2str(max_i))//' has atom '//trim(num2str(max_j))//' as neighbor '//trim(num2str(j)),'diag')
-                    call MIO_Print('  NeighD = ['//trim(num2str(NeighD(1,j,max_i),6))//','//trim(num2str(NeighD(2,j,max_i),6))//']','diag')
-                    call MIO_Print('  hopp = '//trim(num2str(real(hopp(j,max_i)),8))//' + i*'//trim(num2str(aimag(hopp(j,max_i)),8)),'diag')
+                    call MIO_Print('  Atom '//trim(num2str(max_i))//' has atom '//trim(num2str(max_j))//' as neighbor ' &
+                          //trim(num2str(j)),'diag')
+                    call MIO_Print('  NeighD = ['//trim(num2str(NeighD(1,j,max_i),6))//',' &
+                          //trim(num2str(NeighD(2,j,max_i),6))//']','diag')
+                    call MIO_Print('  hopp = '//trim(num2str(real(hopp(j,max_i)),8))//' + i*' &
+                          //trim(num2str(aimag(hopp(j,max_i)),8)),'diag')
                 end if
             end do
 
             ! Check if max_j has max_i as neighbor
             do j = 1, Nneigh(max_j)
                 if (NList(j, max_j) == max_i) then
-                    call MIO_Print('  Atom '//trim(num2str(max_j))//' has atom '//trim(num2str(max_i))//' as neighbor '//trim(num2str(j)),'diag')
-                    call MIO_Print('  NeighD = ['//trim(num2str(NeighD(1,j,max_j),6))//','//trim(num2str(NeighD(2,j,max_j),6))//']','diag')
-                    call MIO_Print('  hopp = '//trim(num2str(real(hopp(j,max_j)),8))//' + i*'//trim(num2str(aimag(hopp(j,max_j)),8)),'diag')
+                    call MIO_Print('  Atom '//trim(num2str(max_j))//' has atom '//trim(num2str(max_i))//' as neighbor ' &
+                          //trim(num2str(j)),'diag')
+                    call MIO_Print('  NeighD = ['//trim(num2str(NeighD(1,j,max_j),6))//',' &
+                          //trim(num2str(NeighD(2,j,max_j),6))//']','diag')
+                    call MIO_Print('  hopp = '//trim(num2str(real(hopp(j,max_j)),8))//' + i*' &
+                          //trim(num2str(aimag(hopp(j,max_j)),8)),'diag')
                 end if
             end do
         else
@@ -14718,7 +14943,8 @@ subroutine GetBandEnergyRange(band_index, min_energy, max_energy, spin_index)
 
    ! Check spin index bounds
    if (is_local < 1 .or. is_local > stored_nspin) then
-      call MIO_Print('WARNING: spin_index '//trim(num2str(is_local))//' out of range [1,'//trim(num2str(stored_nspin))//'], using 1','diag')
+      call MIO_Print('WARNING: spin_index '//trim(num2str(is_local))//' out of range [1,'//trim(num2str(stored_nspin)) &
+            //'], using 1','diag')
       is_local = 1
    end if
 
@@ -14840,10 +15066,12 @@ subroutine verify_eigenvector_eigenvalue_alignment(H, eigvec, eigval, M, kpoint_
 
    ! Report results
    if (alignment_ok) then
-      call MIO_Print('  ✓ Eigenvector-eigenvalue alignment verified (max residual = '//trim(num2str(abs(max_residual),8))//')','diag')
+      call MIO_Print('  ✓ Eigenvector-eigenvalue alignment verified (max residual = ' &
+            //trim(num2str(abs(max_residual),8))//')','diag')
    else
       call MIO_Print('  ✗ EIGENVECTOR-EIGENVALUE MISALIGNMENT DETECTED!','diag')
-      call MIO_Print('  ✗ Maximum residual = '//trim(num2str(abs(max_residual),8))//' (tolerance = '//trim(num2str(tolerance,8))//')','diag')
+      call MIO_Print('  ✗ Maximum residual = '//trim(num2str(abs(max_residual),8))//' (tolerance = ' &
+            //trim(num2str(tolerance,8))//')','diag')
       call MIO_Print('  ✗ This indicates eigenvectors and eigenvalues are from different diagonalizations!','diag')
 
       ! Additional diagnostic for first few bands
@@ -14855,7 +15083,8 @@ subroutine verify_eigenvector_eigenvalue_alignment(H, eigvec, eigval, M, kpoint_
                residual = residual + (H(j,i) - eigval(i) * eigvec(j,i)) * conjg(H(j,i) - eigval(i) * eigvec(j,i))
             end do
             residual = sqrt(residual)
-            call MIO_Print('    Band '//trim(num2str(i))//': λ = '//trim(num2str(eigval(i),6))//', residual = '//trim(num2str(abs(residual),8)),'diag')
+            call MIO_Print('    Band '//trim(num2str(i))//': λ = '//trim(num2str(eigval(i),6))//', residual = ' &
+                  //trim(num2str(abs(residual),8)),'diag')
          end do
       end if
    end if
@@ -14994,7 +15223,8 @@ subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band
       write(filename, '(A,I0,A,I0,A)') 'berry_curvature_bands_', band_indices(1), '_and_', band_indices(2), '.dat'
    else
       ! For 3+ bands, show first and last with count
-      write(filename, '(A,I0,A,I0,A,I0,A)') 'berry_curvature_bands_', band_indices(1), '_to_', band_indices(n_target_bands), '_', n_target_bands, 'bands.dat'
+      write(filename, '(A,I0,A,I0,A,I0,A)') 'berry_curvature_bands_', band_indices(1), '_to_', &
+            band_indices(n_target_bands), '_', n_target_bands, 'bands.dat'
    end if
 
    ! Open file (append mode for multiple k-points)
@@ -15037,9 +15267,11 @@ subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band
       call MIO_Print('=== HOTSPOT DETECTION (k-point 1) ===','diag')
       do i = 1, n_target_bands
          if (abs(berry_curv_bands(i)) > 1.0_dp) then
-            call MIO_Print('  HOTSPOT: Band '//trim(num2str(band_indices(i)))//' |Ω| = '//trim(num2str(abs(berry_curv_bands(i)),6)),'diag')
+            call MIO_Print('  HOTSPOT: Band '//trim(num2str(band_indices(i)))//' |Ω| = ' &
+                  //trim(num2str(abs(berry_curv_bands(i)),6)),'diag')
          else if (abs(berry_curv_bands(i)) > 0.1_dp) then
-            call MIO_Print('  Moderate: Band '//trim(num2str(band_indices(i)))//' |Ω| = '//trim(num2str(abs(berry_curv_bands(i)),6)),'diag')
+            call MIO_Print('  Moderate: Band '//trim(num2str(band_indices(i)))//' |Ω| = ' &
+                  //trim(num2str(abs(berry_curv_bands(i)),6)),'diag')
          end if
       end do
    end if
@@ -15188,7 +15420,8 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
    if (.not. SOCEnabledForLayer(layerIndex(i))) then
       ! Debug output when SOC is skipped due to layer control
       if (socDebug .and. i <= 5 .and. j == 1) then
-         call MIO_Print('SOC skipped: atom i='//trim(num2str(i))//' is in layer '//trim(num2str(layerIndex(i)))//' (not in SOCLayers list)', 'diag')
+         call MIO_Print('SOC skipped: atom i='//trim(num2str(i))//' is in layer '//trim(num2str(layerIndex(i))) &
+               //' (not in SOCLayers list)', 'diag')
       end if
       return
    end if
@@ -15200,8 +15433,10 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
    if (socDebug .and. i <= 2 .and. j <= 10) then  ! Show first 10 neighbors instead of just 2
       acc = 2.46_dp / sqrt(3.0_dp)
       dist = sqrt(neighD(1, j, i)**2.0_dp + neighD(2, j, i)**2.0_dp)
-      call MIO_Print('Rashba Check: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in))//', layer_i='//trim(num2str(layerIndex(i)))//', layer_in='//trim(num2str(layerIndex(in))), 'diag')
-      call MIO_Print('Species_i='//trim(num2str(Species(i)))//', Species_in='//trim(num2str(Species(in)))//', dist='//trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp)), 'diag')
+      call MIO_Print('Rashba Check: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
+            //', layer_i='//trim(num2str(layerIndex(i)))//', layer_in='//trim(num2str(layerIndex(in))), 'diag')
+      call MIO_Print('Species_i='//trim(num2str(Species(i)))//', Species_in='//trim(num2str(Species(in)))//', dist=' &
+            //trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp)), 'diag')
 
       ! Check each condition individually
       if (i == in) then
@@ -15211,7 +15446,8 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
       else if (Species(i) == Species(in)) then
          call MIO_Print('  -> REJECTED: Same species', 'diag')
       else if (dist >= acc * 1.1_dp) then
-         call MIO_Print('  -> REJECTED: Distance too large (dist='//trim(num2str(dist))//' >= cutoff='//trim(num2str(acc*1.1_dp))//')', 'diag')
+         call MIO_Print('  -> REJECTED: Distance too large (dist='//trim(num2str(dist))//' >= cutoff=' &
+               //trim(num2str(acc*1.1_dp))//')', 'diag')
       else
          call MIO_Print('  -> ALL CONDITIONS MET! (A-B nearest neighbor)', 'diag')
       end if
@@ -15230,7 +15466,9 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
 
      ! Debug: Rashba is being applied!
      if (socDebug .and. i <= 2 .and. j <= 10) then  ! Show first 10 neighbors instead of just 2
-        call MIO_Print('*** RASHBA APPLIED *** i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in))//', dist='//trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp))//' (A-B nearest neighbor)', 'diag')
+        call MIO_Print('*** RASHBA APPLIED *** i='//trim(num2str(i))//', j='//trim(num2str(j))//', in=' &
+              //trim(num2str(in))//', dist='//trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp)) &
+              //' (A-B nearest neighbor)', 'diag')
      end if
 
      dx = neighD(1, j, i)
@@ -15245,7 +15483,8 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
 
      ! Debug output for first few bonds
      if (socDebug .and. i <= 2 .and. j <= 10) then  ! Show first 10 neighbors instead of just 2
-        call MIO_Print('Rashba Debug: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in))//', lambdaR='//trim(num2str(lambdaR))//', dx='//trim(num2str(dx))//', dy='//trim(num2str(dy)), 'diag')
+        call MIO_Print('Rashba Debug: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
+              //', lambdaR='//trim(num2str(lambdaR))//', dx='//trim(num2str(dx))//', dy='//trim(num2str(dy)), 'diag')
         call MIO_Print('RashbaHopp = '//trim(num2str(real(RashbaHopp)))//' + i*'//trim(num2str(aimag(RashbaHopp))), 'diag')
         call MIO_Print('Adding to HLoc('//trim(num2str(i))//','//trim(num2str(in+N))//') = spin-flip term', 'diag')
      end if
@@ -15257,11 +15496,14 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
      ! Debug: Check if we're accidentally adding diagonal terms (which would cause global shift)
      if (socDebug .and. i <= 2 .and. j <= 10) then
         if (i == in) then
-           call MIO_Print('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','//trim(num2str(i))//') - this causes global shift!', 'diag')
+           call MIO_Print('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','//trim(num2str(i)) &
+                 //') - this causes global shift!', 'diag')
         else if (i == in + N) then
-           call MIO_Print('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','//trim(num2str(in+N))//') - this causes global shift!', 'diag')
+           call MIO_Print('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','//trim(num2str(in+N)) &
+                 //') - this causes global shift!', 'diag')
         else
-           call MIO_Print('OK: Adding Rashba to off-diagonal spin-flip term HLoc('//trim(num2str(i))//','//trim(num2str(in+N))//')', 'diag')
+           call MIO_Print('OK: Adding Rashba to off-diagonal spin-flip term HLoc('//trim(num2str(i))//',' &
+                 //trim(num2str(in+N))//')', 'diag')
         end if
      end if
 
@@ -15331,7 +15573,8 @@ subroutine BuildBlockHamiltonian(N, KLoc, cell, H0, maxN, hopp, NList, Nneigh, n
 
          ! Debug: Check if we're actually looping through all neighbors
          if (socDebug .and. i <= 2 .and. j <= 5) then
-            call MIO_Print('  Neighbor loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in))//', total_neighbors='//trim(num2str(Nneigh(i))), 'diag')
+            call MIO_Print('  Neighbor loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
+                  //', total_neighbors='//trim(num2str(Nneigh(i))), 'diag')
          end if
 
          ! Only set lower triangular elements (row >= col)
@@ -15438,7 +15681,8 @@ subroutine BuildBlockHamiltonianOnly(N, KLoc, cell, H0, maxN, hopp, NList, Nneig
       ! Build hopping for both spin blocks
       ! Debug: Check neighbor count for first few atoms
       if (socDebug .and. i <= 2) then
-         call MIO_Print('BuildBlockHamiltonianOnly: Atom '//trim(num2str(i))//' has '//trim(num2str(Nneigh(i)))//' neighbors', 'diag')
+         call MIO_Print('BuildBlockHamiltonianOnly: Atom '//trim(num2str(i))//' has '//trim(num2str(Nneigh(i))) &
+               //' neighbors', 'diag')
       end if
 
       do j = 1, Nneigh(i)
@@ -15446,12 +15690,14 @@ subroutine BuildBlockHamiltonianOnly(N, KLoc, cell, H0, maxN, hopp, NList, Nneig
 
          ! Debug: Check if we're actually looping through all neighbors
          if (socDebug .and. i <= 2 .and. j <= 5) then
-            call MIO_Print('  Neighbor loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in))//', total_neighbors='//trim(num2str(Nneigh(i))), 'diag')
+            call MIO_Print('  Neighbor loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
+                  //', total_neighbors='//trim(num2str(Nneigh(i))), 'diag')
          end if
 
          ! Debug: Progress indicator for atom 1
          if (socDebug .and. i == 1 .and. modulo(j, 10) == 0) then
-            call MIO_Print('BuildBlockHamiltonianOnly: Atom 1 progress: j='//trim(num2str(j))//'/'//trim(num2str(Nneigh(i))), 'diag')
+            call MIO_Print('BuildBlockHamiltonianOnly: Atom 1 progress: j='//trim(num2str(j))//'/' &
+                  //trim(num2str(Nneigh(i))), 'diag')
          end if
 
          ! Only set lower triangular elements (row >= col)
@@ -15529,8 +15775,10 @@ subroutine DiagBlockHamiltonian(HBlock, EBlock, N)
 
    ! Debug: Warn about large matrix diagonalization
    if (socDebug) then
-      call MIO_Print('DiagBlockHamiltonian: Starting ZHEEV diagonalization for '//trim(num2str(2*N))//'×'//trim(num2str(2*N))//' matrix (this may take several minutes to hours for large systems)', 'diag')
-      call MIO_Print('  Matrix size: N='//trim(num2str(N))//', 2N='//trim(num2str(2*N))//', estimated memory: ~'//trim(num2str(int(2*N*2*N*16.0_dp/1024.0_dp/1024.0_dp/1024.0_dp)))//' GB', 'diag')
+      call MIO_Print('DiagBlockHamiltonian: Starting ZHEEV diagonalization for '//trim(num2str(2*N))//'×' &
+            //trim(num2str(2*N))//' matrix (this may take several minutes to hours for large systems)', 'diag')
+      call MIO_Print('  Matrix size: N='//trim(num2str(N))//', 2N='//trim(num2str(2*N))//', estimated memory: ~' &
+            //trim(num2str(int(2*N*2*N*16.0_dp/1024.0_dp/1024.0_dp/1024.0_dp)))//' GB', 'diag')
    end if
 
    ! Diagonalize block Hamiltonian
@@ -15555,7 +15803,8 @@ end subroutine DiagBlockHamiltonian
 !! @param[inout]  HBlock  Block Hamiltonian (2N×2N)
 subroutine ApplySOCtoBlock(i, HBlock)
 
-   use ham, only : Zterm, gZeeman, IntrinsicSOCterm, lambdaI, IsingSOCterm, lambdaIsing, PIASOCterm, lambdaPIA, nspin, SOCEnabledForLayer
+   use ham, only : Zterm, gZeeman, IntrinsicSOCterm, lambdaI, IsingSOCterm, lambdaIsing, PIASOCterm, lambdaPIA, nspin, &
+         SOCEnabledForLayer
    use magf, only : BmagZeeman
    use atoms, only : nAt, Species, layerIndex
 

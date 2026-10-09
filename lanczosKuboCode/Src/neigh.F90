@@ -31,7 +31,8 @@ module neigh
    integer, public, parameter :: shellCount(maxShells) = [3,6,3,6,6,6,6,3]
 
    public :: NeighShellCutoff2, NeighShellWarn2
-   public :: NeighList, fastNNnotsquare, fastNNnotsquareSmall, fastNN, fastNNnotsquareNotRectangle, fastNNnotsquareBulk, fastNNnotsquareBulkSmall
+   public :: NeighList, fastNNnotsquare, fastNNnotsquareSmall, fastNN, fastNNnotsquareNotRectangle, fastNNnotsquareBulk, &
+         fastNNnotsquareBulkSmall
 
 contains
 
@@ -478,7 +479,8 @@ subroutine NeighList()
    integer, parameter :: cellneigh(2,9) = reshape([-1,0, 1,0, 0,-1, 0,1, -1,-1, 1,-1, &
                                                   -1,1, 1,1, 0,0],[2,9])
    integer, parameter :: numN(8) = [3,6,3,6,6,6,6,3]
-   real(dp), parameter :: rad(8) = [1.0_dp/sqrt(3.0_dp),1.0_dp,2.0_dp/sqrt(3.0_dp),3.0_dp/sqrt(3.0_dp),3.0_dp/sqrt(3.0_dp),2.0_dp,4.0_dp/sqrt(3.0_dp),4.0_dp/sqrt(3.0_dp)]
+   real(dp), parameter :: rad(8) = [1.0_dp/sqrt(3.0_dp),1.0_dp,2.0_dp/sqrt(3.0_dp),3.0_dp/sqrt(3.0_dp), &
+         3.0_dp/sqrt(3.0_dp),2.0_dp,4.0_dp/sqrt(3.0_dp),4.0_dp/sqrt(3.0_dp)]
 
    real(dp) :: distFact
 
@@ -525,7 +527,8 @@ subroutine NeighList()
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh*2.0_dp
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
-   else if (MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell') .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
+   else if (MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell') &
+         .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
       call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh
@@ -561,7 +564,8 @@ subroutine NeighList()
    end if
    rmax = maxval(Nradii)
    call MIO_InputParameter('Neigh.CompareAll',small,.false.)
-   call MIO_InputParameter('Neigh.CompareAll.UltraSmall',ultrasmall,.false.) ! Use this if less than 36 atoms in the system 2*3*3*2 (BL)
+   ! Use this if less than 36 atoms in the system 2*3*3*2 (BL)
+   call MIO_InputParameter('Neigh.CompareAll.UltraSmall',ultrasmall,.false.)
    if (.not. (small .or. ultrasmall)) then
       call MIO_Print('WARNING: the neighbour search NeighList (Neigh.fastNNnotsquare .false.) without '// &
         'Neigh.CompareAll .true. gave bands that differ by several eV from the default search for every '// &
@@ -584,12 +588,14 @@ subroutine NeighList()
                ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
                                                                   ! Only if it is same unit cell (ix = 0, iy = 0) or neighor cell (e.g. 0 and 1), it might be satisfied (unless the bins are very small)
                if (BLInPlaneInteractionRadius) then
-                  v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+                  ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+                  v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1))
                   vTemp = v
                   vTemp(3) = 0.0_dp
                   rmaxTemp = aG/sqrt(3.0_dp)*1.1_dp*distFact
                else
-                  v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+                  ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+                  v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1))
                   vTemp = v
                   rmaxTemp = rmax
                end if
@@ -675,7 +681,8 @@ subroutine NeighList()
             do ix=-1,1; do iy=-1,1
                if (i==j .and. ix==0 .and. iy==0) cycle
                ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
-               v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+               ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+               v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1))
                                                                   ! Only if it is same unit cell (ix = 0, iy = 0) or neighor cell (e.g. 0 and 1), it might be satisfied (unless the bins are very small)
                d = norm(v)
                if (d<rmax) then
@@ -1756,7 +1763,8 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
              do j=1,Nneigh(i) ! different from ultraSmall because here we already know the neighbors
                 do ix=-5,5; do iy=-5,5
                    if (i==NList(j,i) .and. ix==0 .and. iy==0) cycle
-                   ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
+                   ! We only use one of the nine columns if small, the other columns are used for the other case
+                   ncell(:,1) = [ix,iy,0]
                    v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1))
                    d = norm(v)
                    dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp +NeighD(3,j,i)**2.0_dp)
@@ -2204,7 +2212,8 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
          do ix=-1,1; do iy=-1,1
             if (i==NList(j,i) .and. ix==0 .and. iy==0) cycle
             ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
-            v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+            ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+            v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1))
                                                                ! Only if it is same unit cell (ix = 0, iy = 0) or neighor cell (e.g. 0 and 1), it might be satisfied (unless the bins are very small)
             d = norm(v)
             if (d<rmax) then
@@ -2422,7 +2431,8 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
 
    ! Divide geometry into rectangular cells of size xcell times ycell (units of Angstroms)
    if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer') &
-           .or. MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell') .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
+           .or. MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell') &
+                 .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
       rho   = 4.0_dp / (3.0_dp*DSQRT(3.0_dp)*aCC*aCC)
    else
       rho   = 4.0_dp / (3.0_dp*DSQRT(3.0_dp)*aCC*aCC)

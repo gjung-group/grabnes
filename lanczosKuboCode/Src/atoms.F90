@@ -722,7 +722,8 @@ subroutine AtomsPos()
       if (GBNuseDisplacementFile .or. tBGuseDisplacementFile) then ! Carr format here
          do i=1,nAt
             if (encapsulatedThreeLayers .and. (SpeciesTemp(i).eq.1 .or. SpeciesTemp(i).eq.2)) then
-               read(4,*) displacements_b(1,i), displacements_b(2,i), displacements_b(3,i), displacements_t(1,i), displacements_t(2,i), displacements_t(3,i)
+               read(4,*) displacements_b(1,i), displacements_b(2,i), displacements_b(3,i), displacements_t(1,i), &
+                     displacements_t(2,i), displacements_t(3,i)
             else
                read(4,*) (displacements(j,i),j=1,3) ! First is in x, second in y and third is the distance
             end if
@@ -985,7 +986,8 @@ subroutine AtomsPos()
           call MIO_Print('We read the layer indices from an external file, make sure to provide it','atoms')
       else if (fourLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. encapsulatedFourLayers) then
         do i=1,nAt
-          if (Rat(3,i).lt.((fourLayersZ1+fourLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((fourLayersZ1+fourLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
           elseif (Rat(3,i).gt.((fourLayersZ1+fourLayersZ2)/2.0_dp) .and. Rat(3,i) .lt. (fourLayersZ2+fourLayersZ3)/2.0_dp) then
              layerIndex(i) = 2
@@ -997,7 +999,8 @@ subroutine AtomsPos()
         end do
       else if (fiveLayersSandwiched) then
         do i=1,nAt
-          if (Rat(3,i).lt.((fiveLayersZ1+fiveLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((fiveLayersZ1+fiveLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
           elseif (Rat(3,i).gt.((fiveLayersZ1+fiveLayersZ2)/2.0_dp) .and. Rat(3,i) .lt. (fiveLayersZ2+fiveLayersZ3)/2.0_dp) then
              layerIndex(i) = 2
@@ -1011,7 +1014,8 @@ subroutine AtomsPos()
         end do
       else if (sixLayersSandwiched) then
         do i=1,nAt
-          if (Rat(3,i).lt.((sixLayersZ1+sixLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((sixLayersZ1+sixLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
           elseif (Rat(3,i).gt.((sixLayersZ1+sixLayersZ2)/2.0_dp) .and. Rat(3,i) .lt. (sixLayersZ2+sixLayersZ3)/2.0_dp) then
              layerIndex(i) = 2
@@ -1027,7 +1031,8 @@ subroutine AtomsPos()
         end do
       else if (sevenLayersSandwiched) then
         do i=1,nAt
-          if (Rat(3,i).lt.((sevenLayersZ1+sevenLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((sevenLayersZ1+sevenLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
           elseif (Rat(3,i).gt.((sevenLayersZ1+sevenLayersZ2)/2.0_dp) .and. Rat(3,i) .lt. (sevenLayersZ2+sevenLayersZ3)/2.0_dp) then
              layerIndex(i) = 2
@@ -1045,7 +1050,8 @@ subroutine AtomsPos()
         end do
       else if (eightLayersSandwiched) then
         do i=1,nAt
-          if (Rat(3,i).lt.((eightLayersZ1+eightLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((eightLayersZ1+eightLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
           elseif (Rat(3,i).gt.((eightLayersZ1+eightLayersZ2)/2.0_dp) .and. Rat(3,i) .lt. (eightLayersZ2+eightLayersZ3)/2.0_dp) then
              layerIndex(i) = 2
@@ -1065,7 +1071,8 @@ subroutine AtomsPos()
         end do
       else if (tenLayersSandwiched) then
         do i=1,nAt
-          if (Rat(3,i).lt.((tenLayersZ1+tenLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((tenLayersZ1+tenLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
           elseif (Rat(3,i).gt.((tenLayersZ1+tenLayersZ2)/2.0_dp) .and. Rat(3,i) .lt. (tenLayersZ2+tenLayersZ3)/2.0_dp) then
              layerIndex(i) = 2
@@ -1089,43 +1096,62 @@ subroutine AtomsPos()
         end do
       else if (twentyLayersSandwiched) then
         do i=1,nAt
-          if (Rat(3,i).lt.((twentyLayersZ1+twentyLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((twentyLayersZ1+twentyLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
-          elseif (Rat(3,i).gt.((twentyLayersZ1+twentyLayersZ2)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ2+twentyLayersZ3)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ1+twentyLayersZ2)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ2+twentyLayersZ3)/2.0_dp) then
              layerIndex(i) = 2
-          elseif (Rat(3,i).gt.((twentyLayersZ2+twentyLayersZ3)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ3+twentyLayersZ4)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ2+twentyLayersZ3)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ3+twentyLayersZ4)/2.0_dp) then
              layerIndex(i) = 3
-          elseif (Rat(3,i).gt.((twentyLayersZ3+twentyLayersZ4)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ4+twentyLayersZ5)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ3+twentyLayersZ4)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ4+twentyLayersZ5)/2.0_dp) then
              layerIndex(i) = 4
-          elseif (Rat(3,i).gt.((twentyLayersZ4+twentyLayersZ5)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ5+twentyLayersZ6)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ4+twentyLayersZ5)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ5+twentyLayersZ6)/2.0_dp) then
              layerIndex(i) = 5
-          elseif (Rat(3,i).gt.((twentyLayersZ5+twentyLayersZ6)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ6+twentyLayersZ7)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ5+twentyLayersZ6)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ6+twentyLayersZ7)/2.0_dp) then
              layerIndex(i) = 6
-          elseif (Rat(3,i).gt.((twentyLayersZ6+twentyLayersZ7)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ7+twentyLayersZ8)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ6+twentyLayersZ7)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ7+twentyLayersZ8)/2.0_dp) then
              layerIndex(i) = 7
-          elseif (Rat(3,i).gt.((twentyLayersZ7+twentyLayersZ8)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ8+twentyLayersZ9)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ7+twentyLayersZ8)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ8+twentyLayersZ9)/2.0_dp) then
              layerIndex(i) = 8
-          elseif (Rat(3,i).gt.((twentyLayersZ8+twentyLayersZ9)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ9+twentyLayersZ10)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ8+twentyLayersZ9)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ9+twentyLayersZ10)/2.0_dp) then
              layerIndex(i) = 9
-          elseif (Rat(3,i).gt.((twentyLayersZ9+twentyLayersZ10)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ10+twentyLayersZ11)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ9+twentyLayersZ10)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ10+twentyLayersZ11)/2.0_dp) then
              layerIndex(i) = 10
-          elseif (Rat(3,i).gt.((twentyLayersZ10+twentyLayersZ11)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ11+twentyLayersZ12)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ10+twentyLayersZ11)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ11+twentyLayersZ12)/2.0_dp) then
              layerIndex(i) = 11
-          elseif (Rat(3,i).gt.((twentyLayersZ11+twentyLayersZ12)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ12+twentyLayersZ13)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ11+twentyLayersZ12)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ12+twentyLayersZ13)/2.0_dp) then
              layerIndex(i) = 12
-          elseif (Rat(3,i).gt.((twentyLayersZ12+twentyLayersZ13)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ13+twentyLayersZ14)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ12+twentyLayersZ13)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ13+twentyLayersZ14)/2.0_dp) then
              layerIndex(i) = 13
-          elseif (Rat(3,i).gt.((twentyLayersZ13+twentyLayersZ14)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ14+twentyLayersZ15)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ13+twentyLayersZ14)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ14+twentyLayersZ15)/2.0_dp) then
              layerIndex(i) = 14
-          elseif (Rat(3,i).gt.((twentyLayersZ14+twentyLayersZ15)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ15+twentyLayersZ16)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ14+twentyLayersZ15)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ15+twentyLayersZ16)/2.0_dp) then
              layerIndex(i) = 15
-          elseif (Rat(3,i).gt.((twentyLayersZ15+twentyLayersZ16)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ16+twentyLayersZ17)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ15+twentyLayersZ16)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ16+twentyLayersZ17)/2.0_dp) then
              layerIndex(i) = 16
-          elseif (Rat(3,i).gt.((twentyLayersZ16+twentyLayersZ17)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ17+twentyLayersZ18)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ16+twentyLayersZ17)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ17+twentyLayersZ18)/2.0_dp) then
              layerIndex(i) = 17
-          elseif (Rat(3,i).gt.((twentyLayersZ17+twentyLayersZ18)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ18+twentyLayersZ19)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ17+twentyLayersZ18)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ18+twentyLayersZ19)/2.0_dp) then
              layerIndex(i) = 18
-          elseif (Rat(3,i).gt.((twentyLayersZ18+twentyLayersZ19)/2.0_dp) .and. Rat(3,i) .lt. (twentyLayersZ19+twentyLayersZ20)/2.0_dp) then
+          elseif (Rat(3,i).gt.((twentyLayersZ18+twentyLayersZ19)/2.0_dp) &
+                .and. Rat(3,i) .lt. (twentyLayersZ19+twentyLayersZ20)/2.0_dp) then
              layerIndex(i) = 19
           elseif (Rat(3,i).gt. (twentyLayersZ19+twentyLayersZ20)/2.0_dp) then
              layerIndex(i) = 20
@@ -1133,9 +1159,11 @@ subroutine AtomsPos()
         end do
       else if (threeLayers) then
         do i=1,nAt
-          if (Rat(3,i).lt.((threeLayersZ1+threeLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((threeLayersZ1+threeLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
-          elseif (Rat(3,i).gt.((threeLayersZ1+threeLayersZ2)/2.0_dp) .and. Rat(3,i) .lt. ((threeLayersZ2+threeLayersZ3)/2.0_dp)) then
+          elseif (Rat(3,i).gt.((threeLayersZ1+threeLayersZ2)/2.0_dp) &
+                .and. Rat(3,i) .lt. ((threeLayersZ2+threeLayersZ3)/2.0_dp)) then
              layerIndex(i) = 2
           elseif ( Rat(3,i) .gt. ((threeLayersZ2+threeLayersZ3)/2.0_dp)) then
              layerIndex(i) = 3
@@ -1143,7 +1171,8 @@ subroutine AtomsPos()
         end do
       else if (twoLayers) then
         do i=1,nAt
-          if (Rat(3,i).lt.((twoLayersZ1+twoLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((twoLayersZ1+twoLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
           else
              layerIndex(i) = 2
@@ -1159,9 +1188,11 @@ subroutine AtomsPos()
         end do
       else if (t2GBN) then
         do i=1,nAt
-          if (Rat(3,i).lt.((threeLayersZ1+threeLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((threeLayersZ1+threeLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
-          elseif (Rat(3,i).gt.((threeLayersZ1+threeLayersZ2)/2.0_dp) .and. Rat(3,i) .lt. ((threeLayersZ2+threeLayersZ3)/2.0_dp)) then
+          elseif (Rat(3,i).gt.((threeLayersZ1+threeLayersZ2)/2.0_dp) &
+                .and. Rat(3,i) .lt. ((threeLayersZ2+threeLayersZ3)/2.0_dp)) then
              layerIndex(i) = 2
           elseif ( Rat(3,i) .gt. ((threeLayersZ2+threeLayersZ3)/2.0_dp)) then
              layerIndex(i) = 3
@@ -1169,7 +1200,8 @@ subroutine AtomsPos()
         end do
       else if (t3BG) then
         do i=1,nAt
-          if (Rat(3,i).lt.((sixLayersZ1+sixLayersZ2)/2.0_dp)) then ! we first start by considering only the atoms in the bottom layer
+          ! we first start by considering only the atoms in the bottom layer
+          if (Rat(3,i).lt.((sixLayersZ1+sixLayersZ2)/2.0_dp)) then
              layerIndex(i) = 1
           elseif (Rat(3,i).gt.((sixLayersZ1+sixLayersZ2)/2.0_dp) .and. Rat(3,i) .lt. (sixLayersZ2+sixLayersZ3)/2.0_dp) then
              layerIndex(i) = 2

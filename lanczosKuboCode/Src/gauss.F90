@@ -318,11 +318,13 @@ subroutine GaussHeight()
                 if (dist2 <  dist2ref) then
                    Rat(3,i) = Rat(3,i) + w*(Amp(j)-0.5_dp)*exp(-dx**2/(2.0_dp*sigma**2))
                    do jj=1,Nneigh(i)
-                      if (abs(neighD(1,jj,i)) .lt. 0.01_dp .and. abs(neighD(2,jj,i)) .lt. 0.01_dp) then    ! move the position of the atoms right above the ones in the bottom layer (atom jj, top layer)
+                      ! move the position of the atoms right above the ones in the bottom layer (atom jj, top layer)
+                      if (abs(neighD(1,jj,i)) .lt. 0.01_dp .and. abs(neighD(2,jj,i)) .lt. 0.01_dp) then
                          Rat(3,NList(jj,i)) = Rat(3,NList(jj,i)) + w*(Amp(j)-0.5_dp)*exp(-dx**2/(2.0_dp*sigma**2))
                          do jjj=1,Nneigh(NList(jj,i))
                             if (abs(neighD(1,NList(jjj,NList(jj,i)),NList(jj,i))) .lt. 0.01_dp .and. &
-                                      abs(neighD(3,NList(jjj,NList(jj,i)),NList(jj,i))) .lt. 0.01_dp) then   ! move the atoms that are up from atom jj. This way, every atom jj takes care of one other atom in the top layer.
+                                      ! move the atoms that are up from atom jj. This way, every atom jj takes care of one other atom in the top layer.
+                                      abs(neighD(3,NList(jjj,NList(jj,i)),NList(jj,i))) .lt. 0.01_dp) then
                                Rat(3,NList(jjj,NList(jj,i))) = Rat(3,NList(jjj,NList(jj,i))) &
                                         + w*(Amp(j)-0.5_dp)*exp(-dx**2/(2.0_dp*sigma**2))
                             end if

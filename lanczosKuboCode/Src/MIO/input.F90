@@ -487,7 +487,8 @@ subroutine InputPar_d(label,value,def,str,defstr)
    if (omp_in_parallel()) then
       if (.not. warned_parallel_once) then
          warned_parallel_once = .true.
-         write(0, '(A,A,A,I0)') 'input: WARNING: input read inside OpenMP parallel region for label "', trim(label), '" (thread=', omp_get_thread_num(), ')'
+         write(0, '(A,A,A,I0)') 'input: WARNING: input read inside OpenMP parallel region for label "', trim(label), &
+               '" (thread=', omp_get_thread_num(), ')'
       end if
    end if
 #endif
