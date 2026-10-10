@@ -300,6 +300,25 @@ run_physics_checks() {
     fi
 }
 
+# Files generated from the sources must match them: the key reference (docs/user-guide/input-keys.md) and
+# the key names (every name of the renaming table applied, none left to change).
+run_generated_files_check() {
+    printf '\n%s\n' "== generated_files"
+    repo_root=$(cd "$harness_dir/../.." && pwd)
+    if python3 "$repo_root/tools/input/list_input_keys.py" --check >/dev/null 2>&1; then
+        printf '%s\n' "  PASS: docs/user-guide/input-keys.md matches the sources"
+    else
+        printf '%s\n' "  FAIL: docs/user-guide/input-keys.md is out of date (run tools/input/list_input_keys.py)"
+        failures=$((failures + 1))
+    fi
+    if python3 "$repo_root/tools/input/apply_key_names.py" 2>/dev/null | grep -q ', 0 strings changed in the sources'; then
+        printf '%s\n' "  PASS: the key names in the sources match the renaming table"
+    else
+        printf '%s\n' "  FAIL: the key names in the sources differ from docs/development/input-key-renaming-proposal.md"
+        failures=$((failures + 1))
+    fi
+}
+
 # Symmetry check without stored reference: the four Dirac states of example 03
 # at the moire K point (first k-point, bands 37-40) form two degenerate pairs.
 # The historical neighbor search split them by 1e-4 eV.

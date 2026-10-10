@@ -108,7 +108,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Haldane.BothLayers` | `HaldaneBothLayers` | logical | `.false.` | ham.F90: HamHopping |
 | `Haldane.Flux` | `HaldaneFlux` | real | `0.0` | ham.F90: HamHopping |
 | `Haldane.LayerControl` | `HaldaneLayerControl` | logical | `.false.` | ham.F90: HamInit |
-| `Haldane.NNN` | `HaldaneNNN` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping |
+| `Haldane.NNN` | `HaldaneNNN` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping; ham.F90: HamInit |
 | `Haldane.OppositePhase` | `HaldaneOppositePhase` | logical | `.false.` | ham.F90: HamHopping |
 | `Haldane.PaperOrientation` | `paperOrientation` | logical | `.false.` | ham.F90: HamHopping |
 | `Haldane.Phase` | `HaldanePhase` | real | `0.0` | ham.F90: HamHopping |
