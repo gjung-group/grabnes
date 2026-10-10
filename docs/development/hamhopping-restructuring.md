@@ -78,6 +78,27 @@ design task and not a mechanical one:
   loop (`p1a0AA = 7.639_dp`, ...): every thread writes the same value, which
   works but is a data race in the strict sense and is repeated for every bond.
 
+Target structure (agreed with NL, 11 October 2026): a developer must see at
+once which physical system a piece of code belongs to. `HamHopping` becomes a
+dispatcher that decides the models once, before any loop, and calls
+
+- one routine per **intralayer** model, each with its own loop over the bonds
+  inside a layer;
+- one routine per **interlayer** model, each with its own loop over the bonds
+  between layers;
+- one routine for the bond terms of the moire models (`MoireOffDiag`,
+  `tBGOffDiag`, `GBNOffDiag`);
+- the steps that are separate already (strain, magnetic field, Haldane).
+
+Two passes rather than one loop per complete system, because the intralayer
+and the interlayer choice combine freely and a loop per combination would
+repeat the intralayer code. Today the model is decided again for every bond,
+by string comparisons inside the loop.
+
+A model is moved by adding its routine, running it next to the old branch
+until every survey case of that model gives the same fingerprint, and then
+deleting the old branch.
+
 Order of work proposed:
 
 1. **Parameters out of the loop.** Move the assignments of constants that do
