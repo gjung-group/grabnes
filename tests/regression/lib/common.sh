@@ -351,14 +351,14 @@ PYEOF
 # The Hamiltonian of example 03, of its F2G2 variant, and of a cell smaller
 # than the interlayer search radius, each against the independent model.
 run_hamiltonian_checks() {
-    variant_input hamiltonian_example03 -e 's/^WriteDataFiles .*/WriteDataFiles .true./'
+    variant_input hamiltonian_example03 -e 's/^Output.WriteDataFiles .*/Output.WriteDataFiles .true./'
     run_hamiltonian_check hamiltonian_example03 --intralayer="$nn_elements"
-    variant_input hamiltonian_f2g2 -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
+    variant_input hamiltonian_f2g2 -e 's/^Output.WriteDataFiles .*/Output.WriteDataFiles .true./' \
         -e 's/^TB.NeighLevels .*/TB.NeighLevels 5/'
     run_hamiltonian_check hamiltonian_f2g2 --intralayer="$f2g2_elements"
-    variant_input hamiltonian_small_cell -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
+    variant_input hamiltonian_small_cell -e 's/^Output.WriteDataFiles .*/Output.WriteDataFiles .true./' \
         -e 's/^TB.NeighLevels .*/TB.NeighLevels 5/' \
-        -e 's/^MoireCellParameters .*/MoireCellParameters 2 1 1 2/'
+        -e 's/^Structure.MoireCellParameters .*/Structure.MoireCellParameters 2 1 1 2/'
     run_hamiltonian_check hamiltonian_small_cell --intralayer="$f2g2_elements"
 }
 
@@ -368,8 +368,8 @@ run_hamiltonian_checks() {
 # - F2G2-type intralayer models: default 3.5 eV, used in the interlayer pi term.
 # Both defaults are checked against the independent model and in the log.
 run_parameter_convention_checks() {
-    variant_input koshino_intralayer_default -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
-        -e 's/^TB.NeighLevels .*/TB.NeighLevels 5/' -e '$a KoshinoIntralayer .true.'
+    variant_input koshino_intralayer_default -e 's/^Output.WriteDataFiles .*/Output.WriteDataFiles .true./' \
+        -e 's/^TB.NeighLevels .*/TB.NeighLevels 5/' -e '$a Intralayer.KoshinoIntralayer .true.'
     run_hamiltonian_check koshino_intralayer_default --koshino-intralayer 5 --vpppi0 2.7
     expect_log_line koshino_intralayer_default 'Two-centre Vpppi0 = 2.7000 eV (intralayer and interlayer'
     expect_log_line hamiltonian_f2g2 'Two-centre Vpppi0 = 3.5000 eV (interlayer pi term only'
@@ -389,17 +389,17 @@ expect_log_line() {
 # the default on-site energies. Twisted bulk (periodic along z) and the legacy
 # NeighList routine: structure and consistency only.
 run_other_system_checks() {
-    graphene_variant_input hbn_monolayer -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
-        -e 's/^TypeOfSystem .*/TypeOfSystem BoronNitride/'
+    graphene_variant_input hbn_monolayer -e 's/^Output.WriteDataFiles .*/Output.WriteDataFiles .true./' \
+        -e 's/^Run.TypeOfSystem .*/Run.TypeOfSystem BoronNitride/'
     run_hamiltonian_check hbn_monolayer --g0 3.1 --intralayer=-3.0294 --onsite 3:3.09,4:-1.89 \
         --interlayer-cutoff 1.0 --periodic-z
 
-    variant_input twisted_bulk -e 's/^WriteDataFiles .*/WriteDataFiles .true./' \
-        -e 's/^CellHeight .*/CellHeight 6.68/' -e '$a Bulk .true.'
+    variant_input twisted_bulk -e 's/^Output.WriteDataFiles .*/Output.WriteDataFiles .true./' \
+        -e 's/^Structure.CellHeight .*/Structure.CellHeight 6.68/' -e '$a Stack.Bulk .true.'
     run_hamiltonian_check twisted_bulk --structure-only 1 --periodic-z
 
-    graphene_variant_input supercell_default -e 's/^SuperCell .*/SuperCell 4/' -e '/^nonBulkSmall/d'
-    graphene_variant_input supercell_neighlist -e 's/^SuperCell .*/SuperCell 4/' -e '/^nonBulkSmall/d' \
+    graphene_variant_input supercell_default -e 's/^Structure.SuperCell .*/Structure.SuperCell 4/' -e '/^Stack.NonBulkSmall/d'
+    graphene_variant_input supercell_neighlist -e 's/^Structure.SuperCell .*/Structure.SuperCell 4/' -e '/^Stack.NonBulkSmall/d' \
         -e '$a Neigh.fastNNnotsquare .false.'
     run_solver supercell_default "$work_dir/inputs/supercell_default.in" generate.bands || return 0
     run_solver supercell_neighlist "$work_dir/inputs/supercell_neighlist.in" generate.bands || return 0

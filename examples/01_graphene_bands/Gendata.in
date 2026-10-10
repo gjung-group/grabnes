@@ -1,12 +1,12 @@
-Description Pristine graphene band structure
-Prefix generate
+Run.Description Pristine graphene band structure
+Run.Prefix generate
 
-TypeOfSystem Graphene
+Run.TypeOfSystem Graphene
 
 TB.Hopping 3.1
 
-CellSize 1
-SuperCell 1
+Structure.CellSize 1
+Structure.SuperCell 1
 
 Calculate.OnlyDOS .false.
 Kubo.Calc .false.
@@ -23,7 +23,7 @@ Bands.NumPoints 20
 
 TB.NeighLevels 1
 Neigh.CompareAll .true.
-nonBulkSmall .true.
+Stack.NonBulkSmall .true.
 
-WriteDataFiles .false.
+Output.WriteDataFiles .false.
 WritePos .false.

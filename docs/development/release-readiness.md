@@ -152,12 +152,10 @@ Recorded so that they are not lost; none is required for the first release.
   parameter sets of different models read under one name (`SingleLayert2KSL`,
   `BilayertAB1`, `CAA`, `PhiAA`, ...), which is harmless but undocumented. A
   few are inconsistencies whose resolution changes a default and is therefore
-  left to a decision:
-  `SuperCell` (1 everywhere, but 60 where `ham.F90` computes the moire length
-  for `periodicStrain` and the strained-moire terms);
+  left to a decision (`SuperCell` and `InterlayerDistance` were settled in
+  October 2026: 1 and 3.35 everywhere):
   `CellSize` (50; 55 for the position of `MoireBilayerElectricFieldInvert`;
   1 in two spectral-function routines);
-  `InterlayerDistance` (3.22; 3.35 in two branches of `ham.F90`);
   `MagField.Integer` (0; 1 where `ham.F90` reads it for `FrankMagneticField`);
   `Neigh.LayerNeighbors` (0, 1 or 2 depending on the routine);
   `Epsilon` (0.01; 0.001 in `DiagHamChern`);
