@@ -9,11 +9,14 @@ examples linked from the repository README.
    :maxdepth: 2
    :caption: Guides
 
+   user-guide/input-file
+   user-guide/input-keys
    user-guide/tapw-soc-input
    development/building-documentation
    development/cluster-build-and-validation
    development/functionality-status
    development/release-readiness
+   development/coding-conventions
    development/licensing-audit
    development/citation-checklist
    development/software-paper-outline

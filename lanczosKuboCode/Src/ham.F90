@@ -149,6 +149,7 @@ subroutine HamInit()
    logical :: prnt                  ! Print flag for debugging
    logical :: createBLDomainBoundary ! Create bilayer domain boundary
    logical :: cutAtNN3              ! Cut at third nearest neighbor
+   logical :: haldaneOn             ! The Haldane term is switched on
    logical :: F2G2Model             ! Use F2G2 model
    logical :: readDataFiles         ! Read data from files instead of computing
    logical :: bulk, bulksmall, small ! System size flags
@@ -279,7 +280,8 @@ subroutine HamInit()
    else
       ! SOCLayerControl disabled - allocate empty array (means apply to all layers)
       allocate(SOCLayersArray(0))
-      call MIO_Print('SOC layer control disabled. SOC will be applied to all layers.','ham')
+      if (IntrinsicSOCterm .or. IsingSOCterm .or. RashbaSOCterm .or. PIASOCterm) &
+         call MIO_Print('SOC layer control disabled. SOC will be applied to all layers.','ham')
    end if
 
    ! Layer-specific Haldane control
@@ -315,7 +317,8 @@ subroutine HamInit()
    else
       ! HaldaneLayerControl disabled - allocate empty array (means apply to all layers)
       allocate(HaldaneLayersArray(0))
-      call MIO_Print('Haldane layer control disabled. Haldane will be applied to all layers.','ham')
+      call MIO_InputParameter('Haldane.NNN',haldaneOn,.false.)
+      if (haldaneOn) call MIO_Print('Haldane layer control disabled. Haldane will be applied to all layers.','ham')
    end if
 
    ! Start with finding all the neighbors. This routine will use one of the
@@ -10264,9 +10267,11 @@ subroutine HamHopping
           end do
           !$OMP END PARALLEL DO
         end if
+#ifdef DEBUG
         call MIO_Print(' HAA '//trim(num2str(numberOfHAA1))//' '//trim(num2str(numberOfHAA2)),'HamHopping')
         call MIO_Print(' HAB '//trim(num2str(numberOfHAB1))//' '//trim(num2str(numberOfHAB2)),'HamHopping')
         call MIO_Print(' HBA '//trim(num2str(numberOfHBA1))//' '//trim(num2str(numberOfHBA2)),'HamHopping')
+#endif /* DEBUG */
 
         if (zz) then
           call MIO_InputParameter('Moire.LatticePercentFactor',epsFactor,1.0_dp)
@@ -10427,7 +10432,9 @@ subroutine HamHopping
 ! --- Repeatation ended
         call MIO_Print(' All 3 numbers should be equal '//trim(num2str(numberOfDel1))//' '// &
                       trim(num2str(numberOfDel2))//'  '//trim(num2str(numberOfDel3)),'HamHopping')
-        call MIO_Print(' Number of interlayer hoppings '//trim(num2str(numberOfInterlayerHoppings)),'HamHopping')
+        ! counted in the Bernal and encapsulated branches only: a zero would say nothing about the other models
+        if (numberOfInterlayerHoppings > 0) call MIO_Print(' Number of interlayer hoppings '// &
+           trim(num2str(numberOfInterlayerHoppings)),'HamHopping')
    end if
 
    call MIO_InputParameter('Strain.RandomStrain',randomStrain,.false.)
