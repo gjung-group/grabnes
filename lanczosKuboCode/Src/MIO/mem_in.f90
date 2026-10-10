@@ -83,10 +83,39 @@ subroutine MemPrint()
     implicit none
 
     character(len=50) :: mess
+    character(len=200) :: line
+    character(len=80) :: mess2
+    integer :: u, ios
+    real(kind(1.0d0)) :: kb
 
     call SysPrint('')
     mess = 'Peak memory usage: '//trim(num2bytes(peakMem))
     call SysPrint(mess,'mem')
+    ! The line above counts only the arrays allocated through this library. The peak resident
+    ! memory of the process, as the operating system reports it (Linux), is the number to size jobs with.
+    open(newunit=u,file='/proc/self/status',status='old',action='read',iostat=ios)
+    if (ios == 0) then
+       do
+          read(u,'(a)',iostat=ios) line
+          if (ios /= 0) exit
+          if (line(1:6) == 'VmHWM:') then
+             read(line(7:),*,iostat=ios) kb
+             if (ios == 0) then
+                ! (the lines of this file must stay below 100 columns: the generator of mem.f90 cuts them)
+                if (kb >= 1048576.0d0) then
+                   write(mess2,'(a,f0.2,a)') 'Peak memory of the process (system): ', &
+                      kb/1048576.0d0, ' GB'
+                else
+                   write(mess2,'(a,f0.1,a)') 'Peak memory of the process (system): ', &
+                      kb/1024.0d0, ' MB'
+                end if
+                write(*,'(a)') 'mem: '//trim(mess2)
+             end if
+             exit
+          end if
+       end do
+       close(u)
+    end if
 
 end subroutine MemPrint
 !****** End subroutine: MemPrint **********************************************

@@ -45,6 +45,61 @@ The examples use exact diagonalization and must be started with **one MPI
 process**; see the limitations in
 [`docs/development/cluster-build-and-validation.md`](../../docs/development/cluster-build-and-validation.md).
 
+## Survey of the model switches
+
+`model_survey.py` runs one or more small cases (tens to hundreds of atoms) for
+every model switch of the solver; the cases are listed in `model_cases.py`. The
+solver only assembles the Hamiltonian, or diagonalises it at two k-points for
+terms that act on the spin. For every case the script records how the run ended
+
+| Status | Meaning |
+| --- | --- |
+| `ok` | ended normally; the tables are finite and Hermitian |
+| `INERT` | as `ok`, but identical to the base input: the switch had no effect in this configuration |
+| `NONHERM` | the two directions of a bond differ, or a reverse entry is missing |
+| `REFUSED` | the solver stopped with its own error message |
+| `CRASH`, `NAN` | abnormal end, or non-finite values |
+
+and a fingerprint of the Hamiltonian (or of the eigenvalues) that does not
+depend on the order of the neighbor list. `run_examples.sh` compares both with
+`model_survey_reference.json`, so a change in any model is detected. A case
+that is `REFUSED`, `INERT`, or `NONHERM` in the reference documents the present
+state of that switch; it is not a statement that the switch is correct.
+
+The cases are written with the key names used before October 2026, which the
+solver keeps accepting; the cases ending in `@present_names` repeat some of them
+with every key in its `Section.Name` form and must give the same fingerprint.
+Cases whose result differs between compilers or builds (random disorder, models
+that use values that are never set) are listed in
+`model_cases.COMPILER_DEPENDENT` and are run but not compared.
+
+```sh
+# table for one family of cases, with a build that checks array bounds
+python3 tests/regression/model_survey.py --bin /path/to/grabnes --only 'xyz4*' --report survey.md
+# after an intended change of a model: inspect the differences, then record them
+python3 tests/regression/model_survey.py --bin /path/to/grabnes --check
+python3 tests/regression/model_survey.py --bin /path/to/grabnes --update-reference
+```
+
+## Known-answer checks
+
+`check_physics.py` tests features that the four examples do not exercise
+against results that are known independently:
+
+| Check | What must hold |
+| --- | --- |
+| `landau_levels` | Graphene with one flux quantum through a 1152-atom cell: the zero-energy level twofold, the levels N = 1, 2, 3 on the Dirac formula within the lattice corrections, and no dependence on k |
+| `hbn_gap` | Monolayer hBN: the band edges at the folded K points are the two on-site energies |
+| `sparse_dense` | The levels of the sparse solver are the levels of the dense diagonalization nearest to zero, in both directions |
+| `tapw_two_way` | Plane-wave reduction on a twisted bilayer: the levels of the two valleys together are the exact levels within 1 eV of neutrality, one to one; a run with a wrong moire angle must fail the same comparison |
+| `input_messages` | A repeated key is reported and its first value used; a misspelt key is listed as not read |
+
+```sh
+python3 tests/regression/check_physics.py --bin /path/to/grabnes
+```
+
+`run_examples.sh` runs these checks and the survey after the examples.
+
 ## Requirements
 
 - GNU Make, a Fortran compiler with an MPI wrapper, BLAS/LAPACK, and ARPACK,

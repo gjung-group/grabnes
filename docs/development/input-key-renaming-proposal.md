@@ -1,0 +1,707 @@
+# `Section.Name` forms of the keys that had no section
+
+This table is the source of the renaming. It was applied on 2026-10-10 with
+`tools/input/apply_key_names.py --apply`: the strings in the sources were changed to the second column and
+every pair was written to `lanczosKuboCode/Src/MIO/input_aliases.inc`, so the names of the first column keep
+working. Every key of the solver now has a section.
+
+To change a name: edit the second column and run the tool again. A name that has already been published
+must stay valid: add the pair `call InputAddAlias('Newest.Name','Earlier.Name')` above the marker line of
+`input_aliases.inc` by hand (a key may have several former names).
+
+585 keys.
+
+## BNBN
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `BNBNDiag` | `BNBN.Diag` | ham.F90: HamOnSite |
+| `BNBNuseDisplacementFile` | `BNBN.UseDisplacementFile` | ham.F90: HamOnSite |
+
+## Diag
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `sparseDiagSolver` | `Diag.SparseSolver` | diag.F90: DiagBands |
+
+## Disorder
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `Anderson` | `Disorder.Anderson` | ham.F90: HamOnSite |
+| `AndersonAmp` | `Disorder.AndersonAmp` | ham.F90: HamOnSite |
+| `checkerDensity` | `Disorder.CheckerDensity` | ham.F90: HamOnSite |
+| `checkerDivider` | `Disorder.CheckerDivider` | ham.F90: HamOnSite |
+| `deltaAmp` | `Disorder.DeltaAmp` | ham.F90: HamOnSite |
+| `deltaDisorder` | `Disorder.DeltaDisorder` | ham.F90: HamOnSite |
+| `deltaSkewFactor` | `Disorder.DeltaSkewFactor` | ham.F90: HamOnSite |
+| `GaussDisorder` | `Disorder.GaussDisorder` | ham.F90: HamOnSite |
+| `GaussPotPercentage` | `Disorder.GaussPotPercentage` | gauss.F90: GaussPot |
+| `GaussPotRange` | `Disorder.GaussPotRange` | gauss.F90: GaussPot |
+| `GaussPotStrength` | `Disorder.GaussPotStrength` | gauss.F90: GaussPot |
+| `onsiteShift` | `Disorder.OnsiteShift` | ham.F90: HamOnSite |
+| `SublattAmp` | `Disorder.SublattAmp` | ham.F90: HamOnSite |
+| `SublatticeDisorder` | `Disorder.SublatticeDisorder` | ham.F90: HamOnSite |
+| `SublattPct` | `Disorder.SublattPct` | ham.F90: HamOnSite |
+
+## GBN
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `GBNAngle` | `GBN.Angle` | ham.F90: HamHopping |
+| `GBNOffDiag` | `GBN.OffDiag` | ham.F90: HamCheckHermiticity |
+| `GBNuseDisplacementFile` | `GBN.UseDisplacementFile` | atoms.F90: AtomsPos |
+| `GBNuseHarmonicApprox` | `GBN.UseHarmonicApprox` | ham.F90: HamOnSite |
+
+## Haldane
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `HaldaneBothLayers` | `Haldane.BothLayers` | ham.F90: HamHopping |
+| `HaldaneFlux` | `Haldane.Flux` | ham.F90: HamHopping |
+| `HaldaneLayerControl` | `Haldane.LayerControl` | ham.F90: HamInit |
+| `HaldaneNNN` | `Haldane.NNN` | ham.F90: HamCheckHermiticity |
+| `HaldaneOppositePhase` | `Haldane.OppositePhase` | ham.F90: HamHopping |
+| `HaldanePhase` | `Haldane.Phase` | ham.F90: HamHopping |
+| `HaldaneSetFluxQ` | `Haldane.SetFluxQ` | ham.F90: HamHopping |
+| `HaldaneSpecifyFlux` | `Haldane.SpecifyFlux` | ham.F90: HamHopping |
+| `HaldaneSpecifyPhase` | `Haldane.SpecifyPhase` | ham.F90: HamCheckHermiticity |
+| `HaldaneSpecifyRange` | `Haldane.SpecifyRange` | ham.F90: HamHopping |
+| `HaldaneT2` | `Haldane.T2` | ham.F90: HamHopping |
+| `HaldaneT2Complex` | `Haldane.T2Complex` | ham.F90: HamHopping |
+| `paperOrientation` | `Haldane.PaperOrientation` | ham.F90: HamHopping |
+
+## Hubbard
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `AFOrdering` | `Hubbard.AFOrdering` | scf.F90: SCFGetCharge |
+| `AFOrderingLayer` | `Hubbard.AFOrderingLayer` | scf.F90: SCFGetCharge |
+| `EnableSCF` | `Hubbard.EnableSCF` | calc.F90: CalcDiag |
+| `FOrderingLayer` | `Hubbard.FOrderingLayer` | scf.F90: SCFGetCharge |
+| `HubbardU_B` | `Hubbard.U_B` | tbpar.f90: TBInit |
+| `HubbardU_C` | `Hubbard.U_C` | tbpar.f90: TBInit |
+| `HubbardU_N` | `Hubbard.U_N` | tbpar.f90: TBInit |
+| `SCFMaxIterations` | `Hubbard.SCFMaxIterations` | scf.F90: SCFGetCharge |
+| `SCFMix` | `Hubbard.SCFMix` | scf.F90: SCFGetCharge |
+| `SCFTolerance` | `Hubbard.SCFTolerance` | scf.F90: SCFGetCharge |
+
+## Interlayer
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `addExponentialDecayForDihedral` | `Interlayer.AddExponentialDecayForDihedral` | ham.F90: HamHopping |
+| `addPressureDependence` | `Interlayer.AddPressureDependence` | ham.F90: HamHopping |
+| `addSecondLayerInteractions` | `Interlayer.AddSecondLayerInteractions` | neigh.F90: fastNNnotsquareBulkSmall |
+| `BilayerOneParameter` | `Interlayer.BilayerOneParameter` | ham.F90: HamHopping |
+| `BLdelta` | `Interlayer.BLdelta` | ham.F90: HamHopping |
+| `CAA` | `Interlayer.CAA` | ham.F90: HamOnSite |
+| `CAA0` | `Interlayer.CAA0` | ham.F90: HamOnSite |
+| `CApAp` | `Interlayer.CApAp` | ham.F90: HamOnSite |
+| `CBB` | `Interlayer.CBB` | ham.F90: HamOnSite |
+| `CBB0` | `Interlayer.CBB0` | ham.F90: HamOnSite |
+| `CBpBp` | `Interlayer.CBpBp` | ham.F90: HamOnSite |
+| `changeLatticeParameterForSrivaniModel` | `Interlayer.ChangeLatticeParameterForSrivaniModel` | ham.F90: HamHopping |
+| `corrugatedInterlayerTwoCenter` | `Interlayer.CorrugatedInterlayerTwoCenter` | ham.F90: HamHopping |
+| `couplingFactor` | `Interlayer.CouplingFactor` | ham.F90: HamHopping |
+| `couplingFactor2` | `Interlayer.CouplingFactor2` | ham.F90: HamHopping |
+| `deactivateInterlayer` | `Interlayer.DeactivateInterlayer` | ham.F90: HamHopping |
+| `deactivateInterlayer12` | `Interlayer.DeactivateInterlayer12` | ham.F90: HamHopping |
+| `deactivateInterlayer23` | `Interlayer.DeactivateInterlayer23` | ham.F90: HamHopping |
+| `deactivateInterlayer34` | `Interlayer.DeactivateInterlayer34` | ham.F90: HamHopping |
+| `deactivateInterlayerBG` | `Interlayer.DeactivateInterlayerBG` | ham.F90: HamHopping |
+| `deactivateInterlayert2BG2to3` | `Interlayer.DeactivateInterlayert2BG2to3` | ham.F90: HamHopping |
+| `deactivateInterlayert2GBN1to2` | `Interlayer.DeactivateInterlayert2GBN1to2` | ham.F90: HamHopping |
+| `deactivateInterlayert2GBN2to3` | `Interlayer.DeactivateInterlayert2GBN2to3` | ham.F90: HamHopping |
+| `deactivateInterlayert3BG1to2` | `Interlayer.DeactivateInterlayert3BG1to2` | ham.F90: HamHopping |
+| `deactivateInterlayert3BG2to3` | `Interlayer.DeactivateInterlayert3BG2to3` | ham.F90: HamHopping |
+| `deactivateInterlayert3BG3to4` | `Interlayer.DeactivateInterlayert3BG3to4` | ham.F90: HamHopping |
+| `deactivateInterlayert3BG4to5` | `Interlayer.DeactivateInterlayert3BG4to5` | ham.F90: HamHopping |
+| `deactivateInterlayert3BG5to6` | `Interlayer.DeactivateInterlayert3BG5to6` | ham.F90: HamHopping |
+| `deactivateInterlayerTwisted` | `Interlayer.DeactivateInterlayerTwisted` | ham.F90: HamHopping |
+| `deactivateV3` | `Interlayer.DeactivateV3` | ham.F90: HamHopping |
+| `deactivateV6` | `Interlayer.DeactivateV6` | ham.F90: HamHopping |
+| `differentCouplings` | `Interlayer.DifferentCouplings` | ham.F90: HamHopping |
+| `findThetasGeometrically` | `Interlayer.FindThetasGeometrically` | ham.F90: HamHopping |
+| `InterfaceAmpB` | `Interlayer.InterfaceAmpB` | interface.F90: InterfacePot1 |
+| `InterfaceAmpCB` | `Interlayer.InterfaceAmpCB` | interface.F90: InterfacePot1 |
+| `InterfaceAmpCN` | `Interlayer.InterfaceAmpCN` | interface.F90: InterfacePot1 |
+| `InterfaceAmpN` | `Interlayer.InterfaceAmpN` | interface.F90: InterfacePot1 |
+| `InterfaceBNlambda` | `Interlayer.InterfaceBNlambda` | interface.F90: InterfacePot1 |
+| `InterfaceBNlambda_B` | `Interlayer.InterfaceBNlambda_B` | interface.F90: InterfacePot1 |
+| `InterfaceBNlambda_N` | `Interlayer.InterfaceBNlambda_N` | interface.F90: InterfacePot1 |
+| `InterfaceClambda` | `Interlayer.InterfaceClambda` | interface.F90: InterfacePot1 |
+| `InterfaceClambda_B` | `Interlayer.InterfaceClambda_B` | interface.F90: InterfacePot1 |
+| `InterfaceClambda_N` | `Interlayer.InterfaceClambda_N` | interface.F90: InterfacePot1 |
+| `KoshinoSR` | `Interlayer.KoshinoSR` | ham.F90: HamHopping |
+| `newFittingFunctions` | `Interlayer.NewFittingFunctions` | ham.F90: HamHopping |
+| `oldParameterSet` | `Interlayer.OldParameterSet` | ham.F90: HamHopping |
+| `onlyV0` | `Interlayer.OnlyV0` | ham.F90: HamHopping |
+| `onlyvppsigma` | `Interlayer.Onlyvppsigma` | ham.F90: HamHopping |
+| `oppositedxdy` | `Interlayer.Oppositedxdy` | ham.F90: HamHopping |
+| `PhiAA` | `Interlayer.PhiAA` | ham.F90: HamOnSite |
+| `PhiApAp` | `Interlayer.PhiApAp` | ham.F90: HamOnSite |
+| `PhiBB` | `Interlayer.PhiBB` | ham.F90: HamOnSite |
+| `PhiBpBp` | `Interlayer.PhiBpBp` | ham.F90: HamOnSite |
+| `renormalizeCoupling` | `Interlayer.RenormalizeCoupling` | ham.F90: HamHopping |
+| `renormalizeHoppingFactorAAp` | `Interlayer.RenormalizeHoppingFactorAAp` | ham.F90: HamHopping |
+| `renormalizeHoppingFactorABp` | `Interlayer.RenormalizeHoppingFactorABp` | ham.F90: HamHopping |
+| `renormalizeHoppingFactorBAp` | `Interlayer.RenormalizeHoppingFactorBAp` | ham.F90: HamHopping |
+| `renormalizeHoppingFactorBBp` | `Interlayer.RenormalizeHoppingFactorBBp` | ham.F90: HamHopping |
+| `setnLayersToZero` | `Interlayer.SetnLayersToZero` | ham.F90: HamHopping |
+| `sublatticeDependent` | `Interlayer.SublatticeDependent` | ham.F90: HamHopping |
+| `sublatticeIndependent` | `Interlayer.SublatticeIndependent` | ham.F90: HamHopping |
+| `switchV3Sign` | `Interlayer.SwitchV3Sign` | ham.F90: HamHopping |
+| `TypeOfBL` | `Interlayer.TypeOfBL` | ham.F90: HamHopping |
+| `TypeOfSL` | `Interlayer.TypeOfSL` | ham.F90: HamHopping |
+| `useBNGKaxiras` | `Interlayer.UseBNGKaxiras` | ham.F90: HamHopping |
+| `useBNGSrivani` | `Interlayer.UseBNGSrivani` | ham.F90: HamHopping |
+| `useOnlyVAB` | `Interlayer.UseOnlyVAB` | ham.F90: HamHopping |
+| `useTheta` | `Interlayer.UseTheta` | ham.F90: HamHopping |
+| `useThetaIJ` | `Interlayer.UseThetaIJ` | ham.F90: HamHopping |
+| `vpppi0` | `Interlayer.Vpppi0` | ham.F90: HamHopping |
+| `vppsigma0` | `Interlayer.Vppsigma0` | ham.F90: HamHopping |
+
+## Intralayer
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `Bilayert2KA` | `Intralayer.Bilayert2KA` | ham.F90: HamHopping |
+| `Bilayert2KB` | `Intralayer.Bilayert2KB` | ham.F90: HamHopping |
+| `Bilayert3K` | `Intralayer.Bilayert3K` | ham.F90: HamHopping |
+| `Bilayert4K` | `Intralayer.Bilayert4K` | ham.F90: HamHopping |
+| `Bilayert5KA` | `Intralayer.Bilayert5KA` | ham.F90: HamHopping |
+| `Bilayert5KB` | `Intralayer.Bilayert5KB` | ham.F90: HamHopping |
+| `BilayertAA1` | `Intralayer.BilayertAA1` | ham.F90: HamHopping |
+| `BilayertAA3` | `Intralayer.BilayertAA3` | ham.F90: HamHopping |
+| `BilayertAB1` | `Intralayer.BilayertAB1` | ham.F90: HamHopping |
+| `BilayertAB3` | `Intralayer.BilayertAB3` | ham.F90: HamHopping |
+| `BilayertAB4` | `Intralayer.BilayertAB4` | ham.F90: HamHopping |
+| `BilayertBA0` | `Intralayer.BilayertBA0` | ham.F90: HamHopping |
+| `BilayerThreeParameters` | `Intralayer.BilayerThreeParameters` | ham.F90: HamHopping |
+| `BilayertK6A` | `Intralayer.BilayertK6A` | ham.F90: HamHopping |
+| `BilayertK7A` | `Intralayer.BilayertK7A` | ham.F90: HamHopping |
+| `BilayertK8A` | `Intralayer.BilayertK8A` | ham.F90: HamHopping |
+| `deactivateASubLattice` | `Intralayer.DeactivateASubLattice` | ham.F90: HamOnSite |
+| `deactivateBSubLattice` | `Intralayer.DeactivateBSubLattice` | ham.F90: HamOnSite |
+| `deactivateIntersublattice` | `Intralayer.DeactivateIntersublattice` | ham.F90: HamHopping |
+| `deactivateIntrasublattice` | `Intralayer.DeactivateIntrasublattice` | ham.F90: HamHopping |
+| `deactivateIntraSublatticeForC` | `Intralayer.DeactivateIntraSublatticeForC` | ham.F90: HamHopping |
+| `F2G2Model` | `Intralayer.F2G2Model` | ham.F90: HamHopping |
+| `forceBilayerF2G2Intralayer` | `Intralayer.ForceBilayerF2G2Intralayer` | ham.F90: HamHopping |
+| `KoshinoIntralayer` | `Intralayer.KoshinoIntralayer` | ham.F90: HamHopping |
+| `MayouIntralayer` | `Intralayer.MayouIntralayer` | ham.F90: HamHopping |
+| `removeF2G2Flag` | `Intralayer.RemoveF2G2Flag` | ham.F90: HamHopping |
+| `SingleLayert2KSL` | `Intralayer.SingleLayert2KSL` | ham.F90: HamHopping |
+| `SingleLayert3K` | `Intralayer.SingleLayert3K` | ham.F90: HamHopping |
+| `SingleLayert4K` | `Intralayer.SingleLayert4K` | ham.F90: HamHopping |
+| `SingleLayert5KSL` | `Intralayer.SingleLayert5KSL` | ham.F90: HamHopping |
+| `useOldGrapheneF2G2` | `Intralayer.UseOldGrapheneF2G2` | ham.F90: HamHopping |
+
+## Kubo
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `EnergyMax` | `Kubo.EnergyMax` | calc.F90: CalcKubo |
+| `EnergyMin` | `Kubo.EnergyMin` | calc.F90: CalcKubo |
+| `Epsilon` | `Kubo.Epsilon` | diag.F90: DiagHamChern |
+| `NumberofEnergyPoints` | `Kubo.NumberofEnergyPoints` | calc.F90: CalcKubo |
+| `NumberofTimeSteps` | `Kubo.NumberofTimeSteps` | calc.F90: CalcKubo |
+| `PDOS` | `Kubo.PDOS` | calc.F90: CalcKubo |
+| `PDOSAtomList` | `Kubo.PDOSAtomList` | calc.F90: CalcKubo |
+| `PDOSByNumber` | `Kubo.PDOSByNumber` | calc.F90: CalcKubo |
+| `PDOSDist` | `Kubo.PDOSDist` | calc.F90: CalcKubo |
+| `PDOSIgnoreLayer1and4` | `Kubo.PDOSIgnoreLayer1and4` | calc.F90: CalcKubo |
+| `PDOSLayer` | `Kubo.PDOSLayer` | calc.F90: CalcKubo |
+| `PDOSLayerAndSpecies` | `Kubo.PDOSLayerAndSpecies` | calc.F90: CalcKubo |
+| `PDOSList` | `Kubo.PDOSList` | calc.F90: CalcKubo |
+| `PDOSMinValue` | `Kubo.PDOSMinValue` | calc.F90: CalcKubo |
+| `PDOSMoireSC1` | `Kubo.PDOSMoireSC1` | calc.F90: CalcKubo |
+| `PDOSMoireSuperMoire` | `Kubo.PDOSMoireSuperMoire` | calc.F90: CalcKubo |
+| `PDOSMoireSuperMoire2` | `Kubo.PDOSMoireSuperMoire2` | calc.F90: CalcKubo |
+| `PDOSMoireSuperMoire3` | `Kubo.PDOSMoireSuperMoire3` | calc.F90: CalcKubo |
+| `PDOSMoireSuperMoireLength` | `Kubo.PDOSMoireSuperMoireLength` | calc.F90: CalcKubo |
+| `PDOSNumber` | `Kubo.PDOSNumber` | calc.F90: CalcKubo |
+| `PDOSPNP` | `Kubo.PDOSPNP` | calc.F90: CalcKubo |
+| `PDOSxmax` | `Kubo.PDOSxmax` | calc.F90: CalcKubo |
+| `PDOSxmin` | `Kubo.PDOSxmin` | calc.F90: CalcKubo |
+| `PDOSymax` | `Kubo.PDOSymax` | calc.F90: CalcKubo |
+| `PDOSymin` | `Kubo.PDOSymin` | calc.F90: CalcKubo |
+| `RecursionNumber` | `Kubo.RecursionNumber` | calc.F90: CalcKubo |
+| `seedValue` | `Kubo.SeedValue` | kubo.F90: KuboInitWF |
+| `setSeed` | `Kubo.SetSeed` | kubo.F90: KuboInitWF |
+| `TimeStep` | `Kubo.TimeStep` | calc.F90: CalcKubo |
+
+## MagField
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `FrankMagneticField` | `MagField.FrankMagneticField` | calc.F90: CalcSelect |
+
+## Moire
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `MoireAddSecondMoire` | `Moire.AddSecondMoire` | ham.F90: HamHopping |
+| `MoireBilayerBottomAngle` | `Moire.BilayerBottomAngle` | ham.F90: HamHopping |
+| `MoireBilayerBottomXMax` | `Moire.BilayerBottomXMax` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerBottomXMin` | `Moire.BilayerBottomXMin` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerBottomXShift` | `Moire.BilayerBottomXShift` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerBottomYMax` | `Moire.BilayerBottomYMax` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerBottomYMin` | `Moire.BilayerBottomYMin` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerBottomYShift` | `Moire.BilayerBottomYShift` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerElectricField` | `Moire.BilayerElectricField` | ham.F90: HamOnSite |
+| `MoireBilayerElectricFieldInvert` | `Moire.BilayerElectricFieldInvert` | ham.F90: HamOnSite |
+| `MoireBilayerElectricShift` | `Moire.BilayerElectricShift` | ham.F90: HamOnSite |
+| `MoireBilayerTopAngle` | `Moire.BilayerTopAngle` | ham.F90: HamHopping |
+| `MoireBilayerTopXMax` | `Moire.BilayerTopXMax` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerTopXMin` | `Moire.BilayerTopXMin` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerTopXShift` | `Moire.BilayerTopXShift` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerTopYMax` | `Moire.BilayerTopYMax` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerTopYMin` | `Moire.BilayerTopYMin` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBilayerTopYShift` | `Moire.BilayerTopYShift` | moireBLShift.F90: moireBLShiftValue |
+| `MoireBLDeactivateUpperLayer` | `Moire.BLDeactivateUpperLayer` | ham.F90: HamHopping |
+| `moireBLShiftDefinedValues` | `Moire.BLShiftDefinedValues` | moireBLShift.F90: moireBLShiftInit |
+| `moireBLShiftRange` | `Moire.BLShiftRange` | moireBLShift.F90: moireBLShiftInit |
+| `moireBLShiftRangeSteps` | `Moire.BLShiftRangeSteps` | moireBLShift.F90: moireBLShiftInit |
+| `moireCDW` | `Moire.CDW` | ham.F90: HamOnSite |
+| `MoireFirstMoireMassFactor` | `Moire.FirstMoireMassFactor` | ham.F90: HamHopping |
+| `MoireH0AndHZ` | `Moire.H0AndHZ` | ham.F90: HamOnSite |
+| `MoireHeightAmp` | `Moire.HeightAmp` | ham.F90: HamInit |
+| `MoireJeil` | `Moire.Jeil` | ham.F90: HamOnSite |
+| `MoireKekule` | `Moire.Kekule` | ham.F90: HamOnSite |
+| `MoireKekuleAngle` | `Moire.KekuleAngle` | ham.F90: HamOnSite |
+| `MoireKekuleEpsFactor` | `Moire.KekuleEpsFactor` | ham.F90: HamOnSite |
+| `MoireLayerShift1` | `Moire.LayerShift1` | ham.F90: HamHopping |
+| `MoireLayerShift2` | `Moire.LayerShift2` | ham.F90: HamHopping |
+| `MoireNoH0AndHZ` | `Moire.NoH0AndHZ` | ham.F90: HamOnSite |
+| `MoireOffDiag` | `Moire.OffDiag` | ham.F90: HamCheckHermiticity |
+| `MoireOffDiagMidpoint` | `Moire.OffDiagMidpoint` | ham.F90: HamCheckHermiticity |
+| `MoireOnlyH0` | `Moire.OnlyH0` | ham.F90: HamOnSite |
+| `MoireOnlyHZ` | `Moire.OnlyHZ` | ham.F90: HamOnSite |
+| `MoirePotA` | `Moire.PotA` | ham.F90: HamOnSite |
+| `MoirePotA1` | `Moire.PotA1` | ham.F90: HamOnSite |
+| `MoirePotA2` | `Moire.PotA2` | ham.F90: HamOnSite |
+| `MoirePotB` | `Moire.PotB` | ham.F90: HamOnSite |
+| `MoirePotB1` | `Moire.PotB1` | ham.F90: HamOnSite |
+| `MoirePotB2` | `Moire.PotB2` | ham.F90: HamOnSite |
+| `MoirePotC` | `Moire.PotC` | ham.F90: HamOnSite |
+| `MoirePotC0` | `Moire.PotC0` | ham.F90: HamOnSite |
+| `MoirePotCab` | `Moire.PotCab` | ham.F90: HamHopping |
+| `MoirePotCabBN` | `Moire.PotCabBN` | ham.F90: HamHopping |
+| `MoirePotCabG` | `Moire.PotCabG` | ham.F90: HamHopping |
+| `MoirePotCz` | `Moire.PotCz` | ham.F90: HamOnSite |
+| `MoirePotential` | `Moire.Potential` | ham.F90: HamOnSite |
+| `MoirePotPhi0` | `Moire.PotPhi0` | ham.F90: HamOnSite |
+| `MoirePotPhiab` | `Moire.PotPhiab` | ham.F90: HamHopping |
+| `MoirePotPhiabBN` | `Moire.PotPhiabBN` | ham.F90: HamHopping |
+| `MoirePotPhiabG` | `Moire.PotPhiabG` | ham.F90: HamHopping |
+| `MoirePotPhiz` | `Moire.PotPhiz` | ham.F90: HamOnSite |
+| `MoirePreFactor` | `Moire.PreFactor` | ham.F90: HamOnSite |
+| `MoireSachs` | `Moire.Sachs` | ham.F90: HamOnSite |
+| `MoireSecondMoireMassFactor` | `Moire.SecondMoireMassFactor` | ham.F90: HamHopping |
+| `MoireSecondMoireRotateFirst` | `Moire.SecondMoireRotateFirst` | ham.F90: HamHopping |
+| `MoireStrain` | `Moire.Strain` | ham.F90: HamHopping |
+| `MoireStrainFactor` | `Moire.StrainFactor` | ham.F90: HamInit |
+| `MoireSymmA` | `Moire.SymmA` | ham.F90: HamOnSite |
+| `MoireSymmB` | `Moire.SymmB` | ham.F90: HamOnSite |
+| `MoireSymmetricPot` | `Moire.SymmetricPot` | ham.F90: HamOnSite |
+| `MoiretDBLDeactivateUpperLayers` | `Moire.TDBLDeactivateUpperLayers` | ham.F90: HamHopping |
+| `MoireTrilayer` | `Moire.Trilayer` | ham.F90: HamOnSite |
+| `MoireTrim1` | `Moire.Trim1` | ham.F90: HamOnSite |
+| `MoireTrim2` | `Moire.Trim2` | ham.F90: HamOnSite |
+| `MoireTrin1` | `Moire.Trin1` | ham.F90: HamOnSite |
+| `MoireTrin2` | `Moire.Trin2` | ham.F90: HamOnSite |
+| `MoireTwistAngle` | `Moire.TwistAngle` | ham.F90: HamHopping |
+| `MoireTwistAngle2` | `Moire.TwistAngle2` | ham.F90: HamHopping |
+| `MoireTwisted` | `Moire.Twisted` | ham.F90: HamHopping |
+| `MoireTwisted2` | `Moire.Twisted2` | ham.F90: HamHopping |
+
+## Output
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `keepWaveFunction` | `Output.KeepWaveFunction` | diag.F90: DiagBands |
+| `printBubble` | `Output.PrintBubble` | ham.F90: HamInit |
+| `ReadDataFiles` | `Output.ReadDataFiles` | calc.F90: CalcSelect |
+| `WriteDataFiles` | `Output.WriteDataFiles` | ham.F90: HamHopping |
+
+## Potential
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `addOnsiteEnergyShift` | `Potential.AddOnsiteEnergyShift` | ham.F90: HamOnSite |
+| `addSublatticeMassterm` | `Potential.AddSublatticeMassterm` | ham.F90: HamOnSite |
+| `AddZTerm` | `Potential.AddZTerm` | ham.F90: HamOnSite |
+| `ArmChairShape` | `Potential.ArmChairShape` | ham.F90: HamOnSite |
+| `CDWAmplitude` | `Potential.CDWAmplitude` | ham.F90: HamOnSite |
+| `CDWPeriod` | `Potential.CDWPeriod` | ham.F90: HamOnSite |
+| `CDWUseMassTerm` | `Potential.CDWUseMassTerm` | ham.F90: HamOnSite |
+| `cosinusFactor` | `Potential.CosinusFactor` | ham.F90: HamOnSite |
+| `cosinusMassTermFactor` | `Potential.CosinusMassTermFactor` | ham.F90: HamOnSite |
+| `cosinusModulationAddMassTerm` | `Potential.CosinusModulationAddMassTerm` | ham.F90: HamOnSite |
+| `cosinusModulationPeriod` | `Potential.CosinusModulationPeriod` | ham.F90: HamOnSite |
+| `cosinusModulationUsingPeriod` | `Potential.CosinusModulationUsingPeriod` | ham.F90: HamOnSite |
+| `cosinusModulationUsingPeriodYDirection` | `Potential.CosinusModulationUsingPeriodYDirection` | ham.F90: HamOnSite |
+| `fourLayerOnsiteShifts` | `Potential.FourLayerOnsiteShifts` | ham.F90: HamOnSite |
+| `helicalTwistedMBM_CDW` | `Potential.HelicalTwistedMBM_CDW` | ham.F90: HamOnSite |
+| `onlyBottomLayerMassTerm` | `Potential.OnlyBottomLayerMassTerm` | ham.F90: HamOnSite |
+| `onsiteEnergyShift` | `Potential.OnsiteEnergyShift` | ham.F90: HamOnSite |
+| `PNP` | `Potential.PNP` | ham.F90: HamOnSite |
+| `PNPAmp` | `Potential.PNPAmp` | ham.F90: HamOnSite |
+| `PNPDelta` | `Potential.PNPDelta` | calc.F90: CalcKubo |
+| `PNPKink` | `Potential.PNPKink` | ham.F90: HamOnSite |
+| `sinusFactor` | `Potential.SinusFactor` | ham.F90: HamOnSite |
+| `sinusMassTermFactor` | `Potential.SinusMassTermFactor` | ham.F90: HamOnSite |
+| `sinusModulation` | `Potential.SinusModulation` | ham.F90: HamOnSite |
+| `sinusModulationAddMassTerm` | `Potential.SinusModulationAddMassTerm` | ham.F90: HamOnSite |
+| `sinusModulationPeriod` | `Potential.SinusModulationPeriod` | ham.F90: HamOnSite |
+| `sinusModulationUsingPeriod` | `Potential.SinusModulationUsingPeriod` | ham.F90: HamOnSite |
+| `sinusModulationUsingPeriodYDirection` | `Potential.SinusModulationUsingPeriodYDirection` | ham.F90: HamOnSite |
+| `sinusNumberOfPeriod` | `Potential.SinusNumberOfPeriod` | ham.F90: HamOnSite |
+| `SquareChecker2219` | `Potential.SquareChecker2219` | ham.F90: HamOnSite |
+| `SquareFunction` | `Potential.SquareFunction` | ham.F90: HamOnSite |
+| `SquareFunction2` | `Potential.SquareFunction2` | ham.F90: HamOnSite |
+| `sublatticeMassterm` | `Potential.SublatticeMassterm` | ham.F90: HamOnSite |
+| `TwoDimension` | `Potential.TwoDimension` | ham.F90: HamOnSite |
+| `TwoDimensional` | `Potential.TwoDimensional` | ham.F90: HamOnSite |
+| `useLayerSpecificOnsiteEnergyTerms` | `Potential.UseLayerSpecificOnsiteEnergyTerms` | ham.F90: HamOnSite |
+| `Zterm1D` | `Potential.Zterm1D` | ham.F90: HamOnSite |
+| `Zterm1DAmp` | `Potential.Zterm1DAmp` | ham.F90: HamOnSite |
+| `Zterm1DDelta` | `Potential.Zterm1DDelta` | ham.F90: HamOnSite |
+| `Zterm1DKink` | `Potential.Zterm1DKink` | ham.F90: HamOnSite |
+
+## Run
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `Description` | `Run.Description` | grabnes_start.F90: GrabnesStart |
+| `Prefix` | `Run.Prefix` | grabnes_start.F90: GrabnesStart |
+| `TypeOfSystem` | `Run.TypeOfSystem` | atoms.F90: AtomsPos |
+
+## SOC
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `IntrinsicSOCterm` | `SOC.Intrinsic` | ham.F90: HamInit |
+| `IsingSOCterm` | `SOC.Ising` | ham.F90: HamInit |
+| `LambdaI` | `SOC.LambdaI` | ham.F90: HamInit |
+| `LambdaIsing` | `SOC.LambdaIsing` | ham.F90: HamInit |
+| `LambdaPIA` | `SOC.LambdaPIA` | ham.F90: HamInit |
+| `LambdaR` | `SOC.LambdaR` | ham.F90: HamInit |
+| `PIASOCterm` | `SOC.PIA` | ham.F90: HamInit |
+| `RashbaSOCterm` | `SOC.Rashba` | ham.F90: HamInit |
+| `SOCLayerControl` | `SOC.LayerControl` | ham.F90: HamInit |
+
+## Stack
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `BNBNtwoLayers` | `Stack.BNBNtwoLayers` | ham.F90: HamHopping |
+| `BNt2GBN` | `Stack.BNt2GBN` | ham.F90: HamHopping |
+| `Bulk` | `Stack.Bulk` | ham.F90: HamHopping |
+| `BulkSmall` | `Stack.BulkSmall` | ham.F90: HamInit |
+| `eightLayersSandwiched` | `Stack.EightLayersSandwiched` | atoms.F90: AtomsPos |
+| `eightLayersZ1` | `Stack.EightLayersZ1` | atoms.F90: AtomsPos |
+| `eightLayersZ2` | `Stack.EightLayersZ2` | atoms.F90: AtomsPos |
+| `eightLayersZ3` | `Stack.EightLayersZ3` | atoms.F90: AtomsPos |
+| `eightLayersZ4` | `Stack.EightLayersZ4` | atoms.F90: AtomsPos |
+| `eightLayersZ5` | `Stack.EightLayersZ5` | atoms.F90: AtomsPos |
+| `eightLayersZ6` | `Stack.EightLayersZ6` | atoms.F90: AtomsPos |
+| `eightLayersZ7` | `Stack.EightLayersZ7` | atoms.F90: AtomsPos |
+| `eightLayersZ8` | `Stack.EightLayersZ8` | atoms.F90: AtomsPos |
+| `encapsulatedFiveLayers` | `Stack.EncapsulatedFiveLayers` | ham.F90: HamHopping |
+| `encapsulatedFourLayers` | `Stack.EncapsulatedFourLayers` | atoms.F90: AtomsPos |
+| `encapsulatedFourLayersF2G2` | `Stack.EncapsulatedFourLayersF2G2` | ham.F90: HamHopping |
+| `encapsulatedSevenLayers` | `Stack.EncapsulatedSevenLayers` | ham.F90: HamHopping |
+| `encapsulatedSixLayers` | `Stack.EncapsulatedSixLayers` | calc.F90: CalcKubo |
+| `encapsulatedThreeLayers` | `Stack.EncapsulatedThreeLayers` | atoms.F90: AtomsPos |
+| `fiveLayersSandwiched` | `Stack.FiveLayersSandwiched` | atoms.F90: AtomsPos |
+| `fiveLayersZ1` | `Stack.FiveLayersZ1` | atoms.F90: AtomsPos |
+| `fiveLayersZ2` | `Stack.FiveLayersZ2` | atoms.F90: AtomsPos |
+| `fiveLayersZ3` | `Stack.FiveLayersZ3` | atoms.F90: AtomsPos |
+| `fiveLayersZ4` | `Stack.FiveLayersZ4` | atoms.F90: AtomsPos |
+| `fiveLayersZ5` | `Stack.FiveLayersZ5` | atoms.F90: AtomsPos |
+| `fourLayers` | `Stack.FourLayers` | atoms.F90: AtomsPos |
+| `fourLayerShift1` | `Stack.FourLayerShift1` | ham.F90: HamOnSite |
+| `fourLayerShift2` | `Stack.FourLayerShift2` | ham.F90: HamOnSite |
+| `fourLayerShift3` | `Stack.FourLayerShift3` | ham.F90: HamOnSite |
+| `fourLayerShift4` | `Stack.FourLayerShift4` | ham.F90: HamOnSite |
+| `fourLayersSandwiched` | `Stack.FourLayersSandwiched` | atoms.F90: AtomsPos |
+| `fourLayersZ1` | `Stack.FourLayersZ1` | atoms.F90: AtomsPos |
+| `fourLayersZ2` | `Stack.FourLayersZ2` | atoms.F90: AtomsPos |
+| `fourLayersZ3` | `Stack.FourLayersZ3` | atoms.F90: AtomsPos |
+| `fourLayersZ4` | `Stack.FourLayersZ4` | atoms.F90: AtomsPos |
+| `GBNtwoLayers` | `Stack.GBNtwoLayers` | atoms.F90: AtomsPos |
+| `GBNtwoLayersF2G2s` | `Stack.GBNtwoLayersF2G2s` | ham.F90: HamHopping |
+| `helicalTwistedMBM` | `Stack.HelicalTwistedMBM` | atoms.F90: AtomsPos |
+| `middleTwist` | `Stack.MiddleTwist` | ham.F90: HamHopping |
+| `nonBulkSmall` | `Stack.NonBulkSmall` | ham.F90: HamInit |
+| `oneLayer` | `Stack.OneLayer` | atoms.F90: AtomsPos |
+| `sevenLayersSandwiched` | `Stack.SevenLayersSandwiched` | atoms.F90: AtomsPos |
+| `sevenLayersZ1` | `Stack.SevenLayersZ1` | atoms.F90: AtomsPos |
+| `sevenLayersZ2` | `Stack.SevenLayersZ2` | atoms.F90: AtomsPos |
+| `sevenLayersZ3` | `Stack.SevenLayersZ3` | atoms.F90: AtomsPos |
+| `sevenLayersZ4` | `Stack.SevenLayersZ4` | atoms.F90: AtomsPos |
+| `sevenLayersZ5` | `Stack.SevenLayersZ5` | atoms.F90: AtomsPos |
+| `sevenLayersZ6` | `Stack.SevenLayersZ6` | atoms.F90: AtomsPos |
+| `sevenLayersZ7` | `Stack.SevenLayersZ7` | atoms.F90: AtomsPos |
+| `sixLayersSandwiched` | `Stack.SixLayersSandwiched` | atoms.F90: AtomsPos |
+| `sixLayersZ1` | `Stack.SixLayersZ1` | atoms.F90: AtomsPos |
+| `sixLayersZ2` | `Stack.SixLayersZ2` | atoms.F90: AtomsPos |
+| `sixLayersZ3` | `Stack.SixLayersZ3` | atoms.F90: AtomsPos |
+| `sixLayersZ4` | `Stack.SixLayersZ4` | atoms.F90: AtomsPos |
+| `sixLayersZ5` | `Stack.SixLayersZ5` | atoms.F90: AtomsPos |
+| `sixLayersZ6` | `Stack.SixLayersZ6` | atoms.F90: AtomsPos |
+| `t2BG` | `Stack.T2BG` | atoms.F90: AtomsPos |
+| `t2GBN` | `Stack.T2GBN` | atoms.F90: AtomsPos |
+| `t3BG` | `Stack.T3BG` | atoms.F90: AtomsPos |
+| `t3GwithBN` | `Stack.T3GwithBN` | ham.F90: HamHopping |
+| `tenLayersSandwiched` | `Stack.TenLayersSandwiched` | atoms.F90: AtomsPos |
+| `tenLayersZ1` | `Stack.TenLayersZ1` | atoms.F90: AtomsPos |
+| `tenLayersZ10` | `Stack.TenLayersZ10` | atoms.F90: AtomsPos |
+| `tenLayersZ2` | `Stack.TenLayersZ2` | atoms.F90: AtomsPos |
+| `tenLayersZ3` | `Stack.TenLayersZ3` | atoms.F90: AtomsPos |
+| `tenLayersZ4` | `Stack.TenLayersZ4` | atoms.F90: AtomsPos |
+| `tenLayersZ5` | `Stack.TenLayersZ5` | atoms.F90: AtomsPos |
+| `tenLayersZ6` | `Stack.TenLayersZ6` | atoms.F90: AtomsPos |
+| `tenLayersZ7` | `Stack.TenLayersZ7` | atoms.F90: AtomsPos |
+| `tenLayersZ8` | `Stack.TenLayersZ8` | atoms.F90: AtomsPos |
+| `tenLayersZ9` | `Stack.TenLayersZ9` | atoms.F90: AtomsPos |
+| `threeLayers` | `Stack.ThreeLayers` | atoms.F90: AtomsPos |
+| `threeLayerShort` | `Stack.ThreeLayerShort` | ham.F90: HamHopping |
+| `threeLayersZ1` | `Stack.ThreeLayersZ1` | atoms.F90: AtomsPos |
+| `threeLayersZ2` | `Stack.ThreeLayersZ2` | atoms.F90: AtomsPos |
+| `threeLayersZ3` | `Stack.ThreeLayersZ3` | atoms.F90: AtomsPos |
+| `twentyLayersSandwiched` | `Stack.TwentyLayersSandwiched` | atoms.F90: AtomsPos |
+| `twentyLayersZ1` | `Stack.TwentyLayersZ1` | atoms.F90: AtomsPos |
+| `twentyLayersZ10` | `Stack.TwentyLayersZ10` | atoms.F90: AtomsPos |
+| `twentyLayersZ11` | `Stack.TwentyLayersZ11` | atoms.F90: AtomsPos |
+| `twentyLayersZ12` | `Stack.TwentyLayersZ12` | atoms.F90: AtomsPos |
+| `twentyLayersZ13` | `Stack.TwentyLayersZ13` | atoms.F90: AtomsPos |
+| `twentyLayersZ14` | `Stack.TwentyLayersZ14` | atoms.F90: AtomsPos |
+| `twentyLayersZ15` | `Stack.TwentyLayersZ15` | atoms.F90: AtomsPos |
+| `twentyLayersZ16` | `Stack.TwentyLayersZ16` | atoms.F90: AtomsPos |
+| `twentyLayersZ17` | `Stack.TwentyLayersZ17` | atoms.F90: AtomsPos |
+| `twentyLayersZ18` | `Stack.TwentyLayersZ18` | atoms.F90: AtomsPos |
+| `twentyLayersZ19` | `Stack.TwentyLayersZ19` | atoms.F90: AtomsPos |
+| `twentyLayersZ2` | `Stack.TwentyLayersZ2` | atoms.F90: AtomsPos |
+| `twentyLayersZ20` | `Stack.TwentyLayersZ20` | atoms.F90: AtomsPos |
+| `twentyLayersZ3` | `Stack.TwentyLayersZ3` | atoms.F90: AtomsPos |
+| `twentyLayersZ4` | `Stack.TwentyLayersZ4` | atoms.F90: AtomsPos |
+| `twentyLayersZ5` | `Stack.TwentyLayersZ5` | atoms.F90: AtomsPos |
+| `twentyLayersZ6` | `Stack.TwentyLayersZ6` | atoms.F90: AtomsPos |
+| `twentyLayersZ7` | `Stack.TwentyLayersZ7` | atoms.F90: AtomsPos |
+| `twentyLayersZ8` | `Stack.TwentyLayersZ8` | atoms.F90: AtomsPos |
+| `twentyLayersZ9` | `Stack.TwentyLayersZ9` | atoms.F90: AtomsPos |
+| `twoLayers` | `Stack.TwoLayers` | atoms.F90: AtomsPos |
+| `twoLayersZ1` | `Stack.TwoLayersZ1` | atoms.F90: AtomsPos |
+| `twoLayersZ2` | `Stack.TwoLayersZ2` | atoms.F90: AtomsPos |
+
+## Strain
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `BigBubble` | `Strain.BigBubble` | ham.F90: HamHopping |
+| `bubbleC` | `Strain.BubbleC` | ham.F90: HamHopping |
+| `bubbleGaussian` | `Strain.BubbleGaussian` | ham.F90: HamHopping |
+| `bubbleGaussPotRange` | `Strain.BubbleGaussPotRange` | gauss.F90: GaussPotDefinedPositions |
+| `bubbleGaussPotStrength` | `Strain.BubbleGaussPotStrength` | gauss.F90: GaussPotDefinedPositions |
+| `bubbleHeight` | `Strain.BubbleHeight` | ham.F90: HamInit |
+| `bubbleInPlaneStrain` | `Strain.BubbleInPlaneStrain` | ham.F90: HamHopping |
+| `bubblePercentage` | `Strain.BubblePercentage` | ham.F90: HamHopping |
+| `bubbleRadius` | `Strain.BubbleRadius` | ham.F90: HamHopping |
+| `Bubbles` | `Strain.Bubbles` | ham.F90: HamOnSite |
+| `bubbleShift` | `Strain.BubbleShift` | ham.F90: HamHopping |
+| `bubbleSigmaR` | `Strain.BubbleSigmaR` | ham.F90: HamInit |
+| `GaussHeightPercentage` | `Strain.GaussHeightPercentage` | gauss.F90: GaussHeight |
+| `GaussHeightRange` | `Strain.GaussHeightRange` | gauss.F90: GaussHeight |
+| `GaussHeightStrength` | `Strain.GaussHeightStrength` | gauss.F90: GaussHeight |
+| `manyBubbles` | `Strain.ManyBubbles` | ham.F90: HamHopping |
+| `onlyFirstNeighborRealStrain` | `Strain.OnlyFirstNeighborRealStrain` | ham.F90: HamHopping |
+| `periodicStrain` | `Strain.PeriodicStrain` | ham.F90: HamHopping |
+| `RandomStrain` | `Strain.RandomStrain` | ham.F90: HamHopping |
+| `realisticBubbles` | `Strain.RealisticBubbles` | ham.F90: HamHopping |
+| `realStrain` | `Strain.RealStrain` | ham.F90: HamHopping |
+| `realStrainBeta` | `Strain.RealStrainBeta` | ham.F90: HamHopping |
+| `realStrainReferenceLatticeConstant` | `Strain.RealStrainReferenceLatticeConstant` | ham.F90: HamHopping |
+| `realStrainReferenceLatticeConstantBN` | `Strain.RealStrainReferenceLatticeConstantBN` | ham.F90: HamHopping |
+| `shellsFromRigidPositions` | `Strain.ShellsFromRigidPositions` | ham.F90: HamHopping |
+| `shellsRigidFile` | `Strain.ShellsRigidFile` | ham.F90: HamHopping |
+| `strainedMoire` | `Strain.StrainedMoire` | ham.F90: HamHopping |
+
+## Structure
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `AtomsOrderDeactivated` | `Structure.AtomsOrderDeactivated` | atoms.F90: AtomsOrder |
+| `basedOnMoireCellParameters` | `Structure.BasedOnMoireCellParameters` | atoms.F90: AtomsPos |
+| `BernalReadXYZ` | `Structure.BernalReadXYZ` | ham.F90: HamHopping |
+| `BernalShift` | `Structure.BernalShift` | atoms.F90: AtomsPos |
+| `BilayerShiftFactor` | `Structure.BilayerShiftFactor` | atoms.F90: AtomsPos |
+| `BLDomainBoundaryNRShifts` | `Structure.BLDomainBoundaryNRShifts` | atoms.F90: AtomsPos |
+| `BLDomainBoundaryTypeArmAA` | `Structure.BLDomainBoundaryTypeArmAA` | atoms.F90: AtomsPos |
+| `BLDomainBoundaryTypeArmSP` | `Structure.BLDomainBoundaryTypeArmSP` | atoms.F90: AtomsPos |
+| `BLDomainBoundaryWidth` | `Structure.BLDomainBoundaryWidth` | atoms.F90: AtomsPos |
+| `BNWidth` | `Structure.BNWidth` | atoms.F90: AtomsPos |
+| `bridgeShift` | `Structure.BridgeShift` | atoms.F90: AtomsPos |
+| `CellHeight` | `Structure.CellHeight` | atoms.F90: AtomsPos |
+| `CellSize` | `Structure.CellSize` | diag.F90: DiagSpectralFunctionKGrid |
+| `createBLDomainBoundary` | `Structure.CreateBLDomainBoundary` | atoms.F90: AtomsPos |
+| `displacementsFile` | `Structure.DisplacementsFile` | atoms.F90: AtomsPos |
+| `GrapheneWidth` | `Structure.GrapheneWidth` | atoms.F90: AtomsPos |
+| `InterlayerDistance` | `Structure.InterlayerDistance` | atoms.F90: AtomsPos |
+| `interlayerDistanceFile` | `Structure.InterlayerDistanceFile` | atoms.F90: AtomsPos |
+| `invertDisplacements` | `Structure.InvertDisplacements` | atoms.F90: AtomsPos |
+| `LatticeParameter` | `Structure.LatticeParameter` | atoms.F90: AtomsOrder |
+| `LatticeParameterBN` | `Structure.LatticeParameterBN` | cell.F90: CellGet |
+| `MoireCellParameters` | `Structure.MoireCellParameters` | atoms.F90: AtomsPos |
+| `readInterlayerDistances` | `Structure.ReadInterlayerDistances` | atoms.F90: AtomsPos |
+| `readLayerIndex` | `Structure.ReadLayerIndex` | atoms.F90: AtomsPos |
+| `readRigidXYZ` | `Structure.ReadRigidXYZ` | atoms.F90: AtomsPos |
+| `RibbonType` | `Structure.RibbonType` | atoms.F90: AtomsPos |
+| `rigidPositions` | `Structure.RigidPositions` | atoms.F90: AtomsPos |
+| `singleLayerXYZ` | `Structure.SingleLayerXYZ` | ham.F90: HamHopping |
+| `SublatticeFile` | `Structure.SublatticeFile` | atoms.F90: AtomsPos |
+| `SuperCell` | `Structure.SuperCell` | cell.F90: CellGet |
+| `SuperCellAsymmetric` | `Structure.SuperCellAsymmetric` | atoms.F90: AtomsPos |
+| `SuperCellX` | `Structure.SuperCellX` | atoms.F90: AtomsPos |
+| `SuperCellY` | `Structure.SuperCellY` | atoms.F90: AtomsPos |
+| `TrilayerAddShift` | `Structure.TrilayerAddShift` | atoms.F90: AtomsPos |
+| `TrilayerShiftFactor` | `Structure.TrilayerShiftFactor` | atoms.F90: AtomsPos |
+| `twistedBLAddShift` | `Structure.TwistedBLAddShift` | atoms.F90: AtomsPos |
+| `useSublatticeFile` | `Structure.UseSublatticeFile` | atoms.F90: AtomsPos |
+| `XYZFile` | `Structure.XYZFile` | atoms.F90: AtomsPos |
+
+## TAPW
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `useDenseMatrixTAPW` | `TAPW.UseDenseMatrix` | diag.F90: DiagBands |
+| `useTAPW` | `TAPW.Use` | diag.F90: DiagBands |
+
+## TBG
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `tBGAngle` | `TBG.Angle` | ham.F90: HamHopping |
+| `tBGDiag` | `TBG.Diag` | ham.F90: HamOnSite |
+| `tBGDiagPRB` | `TBG.DiagPRB` | ham.F90: HamOnSite |
+| `tBGOffDiag` | `TBG.OffDiag` | ham.F90: HamCheckHermiticity |
+| `tBGOffDiagPRB` | `TBG.OffDiagPRB` | ham.F90: HamHopping |
+| `tBGSwitchDxDy` | `TBG.SwitchDxDy` | ham.F90: HamHopping |
+| `tBGuseDisplacementFile` | `TBG.UseDisplacementFile` | atoms.F90: AtomsPos |
+
+## Zeeman
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `PseudoZeemanTerm` | `Zeeman.PseudoTerm` | diag.F90: DiagBands |
+| `Spin` | `Zeeman.Spin` | ham.F90: HamInit |
+| `SpinPolarized` | `Zeeman.SpinPolarized` | ham.F90: HamInit |
+| `ZeemanTerm` | `Zeeman.Term` | diag.F90: DiagBands |
+
+## Named in a second pass (10 October 2026)
+
+| Present key | Proposed key | Read in |
+| --- | --- | --- |
+| `addDisplacements` | `Structure.AddDisplacements` | ham.F90: HamHopping |
+| `AmplitudeOfSquare` | `Potential.AmplitudeOfSquare` | ham.F90: HamOnSite |
+| `AmplitudeOfSquare2` | `Potential.AmplitudeOfSquare2` | ham.F90: HamOnSite |
+| `AmplitudeOfSquare3` | `Potential.AmplitudeOfSquare3` | ham.F90: HamOnSite |
+| `BfactorC0` | `Moire.BfactorC0` | ham.F90: HamOnSite |
+| `BfactorCab` | `Moire.BfactorCab` | ham.F90: HamHopping |
+| `BfactorCz` | `Moire.BfactorCz` | ham.F90: HamOnSite |
+| `bigKVecX` | `Tunn.BigKVecX` | calc.F90: CalcTunn |
+| `bigKVecY` | `Tunn.BigKVecY` | calc.F90: CalcTunn |
+| `bigKVecZ` | `Tunn.BigKVecZ` | calc.F90: CalcTunn |
+| `BmagZeeman` | `Zeeman.Bmag` | magf.F90: MagfValue |
+| `CApAp0` | `Interlayer.CApAp0` | ham.F90: HamOnSite |
+| `CBpBp0` | `Interlayer.CBpBp0` | ham.F90: HamOnSite |
+| `distanceDependentEffectiveModel` | `Moire.DistanceDependentEffectiveModel` | atoms.F90: AtomsPos |
+| `dontUseInplaneMoire` | `Moire.DontUseInplaneMoire` | ham.F90: HamOnSite |
+| `EdgeHopping` | `Interface.EdgeHopping` | interface.F90: InterfacePot1 |
+| `EdgeHoppingAmp` | `Interface.EdgeHoppingAmp` | interface.F90: InterfacePot1 |
+| `EdgeHoppingDamp` | `Interface.EdgeHoppingDamp` | interface.F90: InterfacePot1 |
+| `GlobalPhiL1` | `Stack.GlobalPhiL1` | ham.F90: HamHopping |
+| `GlobalPhiL2` | `Stack.GlobalPhiL2` | ham.F90: HamHopping |
+| `GlobalPhiL2a` | `Stack.GlobalPhiL2a` | ham.F90: HamHopping |
+| `GlobalPhiL2b` | `Stack.GlobalPhiL2b` | ham.F90: HamHopping |
+| `GlobalPhiL3` | `Stack.GlobalPhiL3` | ham.F90: HamHopping |
+| `GlobalTwist` | `Stack.GlobalTwist` | ham.F90: HamHopping |
+| `GlobalTwist2` | `Stack.GlobalTwist2` | ham.F90: HamHopping |
+| `HybridPercentage` | `Hybrid.Percentage` | hybrid.F90: HybridGen |
+| `HybridRadius` | `Hybrid.Radius` | hybrid.F90: HybridGen |
+| `HybridRandomSites` | `Hybrid.RandomSites` | hybrid.F90: HybridGen |
+| `KaxirasCutoff` | `Interlayer.KaxirasCutoff` | ham.F90: HamHopping |
+| `KGrid` | `Diag.KGrid` | diag.F90: Diag3DBands |
+| `KGridCut` | `Spectral.KGridCut` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut |
+| `KGridCutX` | `Spectral.KGridCutX` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
+| `KGridCutY` | `Spectral.KGridCutY` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
+| `KGridLowerGridHalf` | `Spectral.KGridLowerGridHalf` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
+| `Latticepercent` | `Moire.LatticePercent` | ham.F90: HamHopping |
+| `LatticepercentFactor` | `Moire.LatticePercentFactor` | ham.F90: HamHopping |
+| `MagField` | `MagField.Value` | magf.F90: MagfInit |
+| `minDelta` | `Interlayer.MinDelta` | ham.F90: HamHopping |
+| `minZ` | `Potential.MinZ` | ham.F90: HamOnSite |
+| `MOCharge` | `Hubbard.MOCharge` | scf.F90: SCFGetCharge |
+| `neighborExpectedNumber` | `Neigh.ExpectedNumber` | neigh.F90: NeighList |
+| `neighborSafetyCheck` | `Neigh.SafetyCheck` | neigh.F90: NeighList |
+| `numberOfBNAtoms1` | `Kubo.NumberOfBNAtoms1` | calc.F90: CalcKubo |
+| `numberOfBNAtoms2` | `Kubo.NumberOfBNAtoms2` | calc.F90: CalcKubo |
+| `numberOfCAtoms` | `Kubo.NumberOfCAtoms` | calc.F90: CalcKubo |
+| `numberOfLayers` | `Kubo.NumberOfLayers` | calc.F90: CalcKubo |
+| `numberOfMoires` | `Tunn.NumberOfMoires` | calc.F90: CalcTunn |
+| `NumberofPolynomials` | `Kubo.NumberofPolynomials` | calc.F90: CalcKubo |
+| `NumberOfWidthHoneycomb` | `Potential.NumberOfWidthHoneycomb` | ham.F90: HamOnSite |
+| `only000Cell` | `Neigh.Only000Cell` | neigh.F90: fastNNnotsquareSmall |
+| `periodicStrainPeriod` | `Strain.PeriodicStrainPeriod` | ham.F90: HamHopping |
+| `periodicStrainu0` | `Strain.PeriodicStrainU0` | ham.F90: HamHopping |
+| `PhaseOfSquareX` | `Potential.PhaseOfSquareX` | ham.F90: HamOnSite |
+| `PhaseOfSquareY` | `Potential.PhaseOfSquareY` | ham.F90: HamOnSite |
+| `PseudoZeemanFactor` | `Zeeman.PseudoFactor` | ham.F90: HamInit |
+| `RandomTest` | `Random.Test` | random_old.F90: RandInit |
+| `RandomTestNumber` | `Random.TestNumber` | random_old.F90: RandInit |
+| `readNeighborDetails` | `Neigh.ReadDetails` | neigh.F90: NeighReadDataFiles |
+| `removeTopMoireInL2` | `Moire.RemoveTopMoireInL2` | ham.F90: HamHopping |
+| `rotationAngle` | `Structure.RotationAngle` | ham.F90: HamHopping |
+| `SeedSet` | `Kubo.SeedSet` | kubo.F90: KuboInitWFLayerAndSpeciesDOS |
+| `strainedMoireMaxDisplacement` | `Strain.StrainedMoireMaxDisplacement` | ham.F90: HamHopping |
+| `sublatticeBasis` | `Potential.SublatticeBasis` | ham.F90: HamOnSite |
+| `switchHzjj` | `Moire.SwitchHzjj` | ham.F90: HamOnSite |
+| `t2Value` | `Intralayer.T2Value` | ham.F90: HamHopping |
+| `tA1A1_1` | `Hopping.tA1A1_1` | ham.F90: HamHopping |
+| `tA1A1_2` | `Hopping.tA1A1_2` | ham.F90: HamHopping |
+| `tA1A2` | `Hopping.tA1A2` | ham.F90: HamHopping |
+| `tA1A2_2` | `Hopping.tA1A2_2` | ham.F90: HamHopping |
+| `tA1A3` | `Hopping.tA1A3` | ham.F90: HamHopping |
+| `tA1A3_2` | `Hopping.tA1A3_2` | ham.F90: HamHopping |
+| `tA1B2` | `Hopping.tA1B2` | ham.F90: HamHopping |
+| `tA1B2_2` | `Hopping.tA1B2_2` | ham.F90: HamHopping |
+| `tA1B3` | `Hopping.tA1B3` | ham.F90: HamHopping |
+| `tA1B3_1` | `Hopping.tA1B3_1` | ham.F90: HamHopping |
+| `tA1B3_2` | `Hopping.tA1B3_2` | ham.F90: HamHopping |
+| `tA2A2_1` | `Hopping.tA2A2_1` | ham.F90: HamHopping |
+| `tA2A2_2` | `Hopping.tA2A2_2` | ham.F90: HamHopping |
+| `tB1A2` | `Hopping.tB1A2` | ham.F90: HamHopping |
+| `tB1A2_1` | `Hopping.tB1A2_1` | ham.F90: HamHopping |
+| `tB1A2_2` | `Hopping.tB1A2_2` | ham.F90: HamHopping |
+| `tB1A3` | `Hopping.tB1A3` | ham.F90: HamHopping |
+| `tB1A3_2` | `Hopping.tB1A3_2` | ham.F90: HamHopping |
+| `tB1B1_1` | `Hopping.tB1B1_1` | ham.F90: HamHopping |
+| `tB1B1_2` | `Hopping.tB1B1_2` | ham.F90: HamHopping |
+| `tB1B2` | `Hopping.tB1B2` | ham.F90: HamHopping |
+| `tB1B2_2` | `Hopping.tB1B2_2` | ham.F90: HamHopping |
+| `timeEvolutionInYDirection` | `Kubo.TimeEvolutionInYDirection` | kubosubs.F90: KuboEvol |
+| `TrilayerDelta` | `Trilayer.Delta` | ham.F90: HamHopping |
+| `TrilayerFanZhang` | `Trilayer.FanZhang` | ham.F90: HamHopping |
+| `TrilayerGamma2` | `Trilayer.Gamma2` | ham.F90: HamHopping |
+| `TrilayerGamma3` | `Trilayer.Gamma3` | ham.F90: HamHopping |
+| `TrilayerGamma4` | `Trilayer.Gamma4` | ham.F90: HamHopping |
+| `Trilayeru1` | `Trilayer.U1` | ham.F90: HamOnSite |
+| `Trilayeru2` | `Trilayer.U2` | ham.F90: HamOnSite |
+| `Trilayeru3` | `Trilayer.U3` | ham.F90: HamOnSite |
+| `twistedBilayerAngle` | `Structure.TwistedBilayerAngle` | atoms.F90: AtomsPos |
+| `twistedBLtbt` | `Interlayer.TwistedBLtbt` | ham.F90: HamHopping |
+| `WriteNumberofSteps` | `Kubo.WriteNumberofSteps` | calc.F90: CalcKubo |
+| `ZeemanFactor` | `Zeeman.Factor` | ham.F90: HamInit |

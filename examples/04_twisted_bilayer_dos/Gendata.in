@@ -1,25 +1,25 @@
-Description Commensurate twisted-bilayer graphene density of states
-Prefix generate
+Run.Description Commensurate twisted-bilayer graphene density of states
+Run.Prefix generate
 
-TypeOfSystem TwistedBilayerBasedOnMoireCell
-TypeOfBL Koshino
+Run.TypeOfSystem TwistedBilayerBasedOnMoireCell
+Interlayer.TypeOfBL Koshino
 
-MoireCellParameters 3 2 2 3
-SuperCell 1
-twoLayers .true.
-twoLayersZ1 18.33
-twoLayersZ2 21.67
-InterlayerDistance 3.34
-CellHeight 40.0
+Structure.MoireCellParameters 3 2 2 3
+Structure.SuperCell 1
+Stack.TwoLayers .true.
+Stack.TwoLayersZ1 18.33
+Stack.TwoLayersZ2 21.67
+Structure.InterlayerDistance 3.34
+Structure.CellHeight 40.0
 
 Kubo.Calc .false.
 Diag.Calc .true.
 Calculate.DOS .true.
 Calculate.Bands .false.
 
-KGrid 8 8 1
-NumberofEnergyPoints 301
-Epsilon 0.08
+Diag.KGrid 8 8 1
+Kubo.NumberofEnergyPoints 301
+Kubo.Epsilon 0.08
 DOS.Emin 0-4.0
 DOS.Emax 4.0
 
@@ -32,5 +32,5 @@ Neigh.LayerDistFactor 6.2
 # different bands and has no reference data here.
 TB.NeighLevels 1
 
-WriteDataFiles .false.
+Output.WriteDataFiles .false.
 WritePos .false.

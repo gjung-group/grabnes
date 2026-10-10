@@ -13,7 +13,6 @@ contains
 subroutine HybridGen(nAt,Rat,Species,in1,in2)
 
    use cell,                 only : ucell, aG, area
-   !use random,               only : RandSeed, RandNum, rand_t
    use constants,            only : pi
 
    ! Only hexagons of BN are introduced in the lattice.
@@ -30,9 +29,12 @@ subroutine HybridGen(nAt,Rat,Species,in1,in2)
    integer, pointer :: site(:)
    logical :: l
    !type(rand_t), save :: rng
-   !!$OMP THREADPRIVATE(rng)
    integer :: clock
    integer, pointer :: seed(:)
+
+#ifdef DEBUG
+   call MIO_Debug('HybridGen',0)
+#endif /* DEBUG */
 
    call random_seed(size = n)
    allocate(seed(n))
@@ -40,21 +42,20 @@ subroutine HybridGen(nAt,Rat,Species,in1,in2)
    seed = clock + 37 * (/ (i - 1, i = 1, n) /)
    call random_seed(PUT = seed)
    deallocate(seed)
-   call MIO_InputParameter('HybridRadius',r,10.0_dp)
+   call MIO_InputParameter('Hybrid.Radius',r,10.0_dp)
    n = nint(2.0_dp*r/(sqrt(3.0_dp)*aG))
    r = sqrt(3.0_dp)*aG*n/2.0_dp
    call MIO_Print('Radius: '//trim(num2str(r,4))//' Ang','hybrid')
-   call MIO_InputParameter('HybridPercentage',per,1.0_dp)
+   call MIO_InputParameter('Hybrid.Percentage',per,1.0_dp)
    per = per/100.0_dp
    n = nint(area*per/(pi*r**2))
    call MIO_Print('Number of hexagonal islands: '//trim(num2str(n)),'hybrid')
    call MIO_Allocate(c,[2,n],'c','hybrid')
-   call MIO_InputParameter('SuperCell',sCell,1)
-   call MIO_InputParameter('CellSize',sz,50)
+   call MIO_InputParameter('Structure.SuperCell',sCell,1)
+   call MIO_InputParameter('Structure.CellSize',sz,50)
    sz = sCell*sz
    Gcell(:,1) = [0.0_dp, aG]
    Gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp]
-   !call RandSeed(rng,nThread)
    do i=1,n
 loop: do
          call random_number(rand)
@@ -70,7 +71,7 @@ loop: do
          exit loop
       end do loop
    end do
-   call MIO_InputParameter('HybridRandomSites',l,.false.)
+   call MIO_InputParameter('Hybrid.RandomSites',l,.false.)
    if (l) then
       call MIO_Allocate(site,n,'site','hybrid')
       do i=1,n
@@ -108,6 +109,10 @@ loop: do
    call MIO_Print('Final percentage: '//trim(num2str(per,2))//'%','hybrid')
    if (l) call MIO_Deallocate(site)
    call MIO_Deallocate(c)
+
+#ifdef DEBUG
+   call MIO_Debug('HybridGen',1)
+#endif /* DEBUG */
 
 end subroutine HybridGen
 

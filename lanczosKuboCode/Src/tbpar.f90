@@ -56,10 +56,6 @@ subroutine TBInit()
    end if
    call MIO_InputParameter('TB.OnSiteC',e0_C,0.0_dp)
    e0_C = e0_C/g0
-   !call MIO_InputParameter('TB.OnSiteCA',e0_CA,0.0_dp)
-   !e0_CA = e0_CA/g0
-   !call MIO_InputParameter('TB.OnSiteCB',e0_CB,0.0_dp)
-   !e0_CB = e0_CB/g0
    call MIO_InputParameter('TB.OnSiteC1',e0_C1,0.0_dp)
    e0_C1 = e0_C1/g0
    call MIO_InputParameter('TB.OnSiteC2',e0_C2,0.0_dp)
@@ -85,28 +81,27 @@ subroutine TBInit()
           end do
       else
           do i=2,tbnn
-             call MIO_InputParameter('HaldaneT2',t2,0.0_dp)
+             call MIO_InputParameter('Haldane.T2',t2,0.0_dp)
              gn(2,1,i) = 0.0_dp !t2  ! We add t2 in the hams.f90 file for the Haldane model
              gn(1,1,i) = 0.0_dp !t2
              gn(2,2,i) = 0.0_dp !t2
           end do
-          print*, "HaldaneT2 = ", t2
       end if
    end if
    do i=1,tbnn; do i1=1,3; do i2=i1+1,4
       gn(i1,i2,i) = gn(i2,i1,i)
    end do; end do; end do
    gn = gn/g0
-   call MIO_InputParameter('TypeOfSystem',line,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',line,'Graphene')
    if (MIO_StringComp(line,'Ribbons')  .or. MIO_StringComp(line,'Hybrid') .or. MIO_StringComp(line,'ReadXYZ')) then
       call MIO_Print('Hopping C-C: '//trim(num2str(g0,3)),'tbpar')
       call MIO_Print('Hopping B-N: '//trim(num2str(gn(4,3,1)*g0,3)),'tbpar')
       call MIO_Print('')
    end if
-   call MIO_InputParameter('HubbardU_C',U(1),3.0_dp)
+   call MIO_InputParameter('Hubbard.U_C',U(1),3.0_dp)
    U(2) = U(1)
-   call MIO_InputParameter('HubbardU_B',U(3),3.0_dp)
-   call MIO_InputParameter('HubbardU_N',U(4),3.0_dp)
+   call MIO_InputParameter('Hubbard.U_B',U(3),3.0_dp)
+   call MIO_InputParameter('Hubbard.U_N',U(4),3.0_dp)
    U = U/g0
 
 end subroutine TBInit

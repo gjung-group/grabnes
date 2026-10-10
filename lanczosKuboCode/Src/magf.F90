@@ -33,22 +33,19 @@ subroutine MagfInit()
    call MIO_TimerCount('magf')
 #endif /* TIMER */
 
-   if (MIO_InputSearchLabel('MagField',line,id)) then
-      call MIO_InputParameter('MagField',Bmag,0.0_dp)
-      !mBi = nint(area*1.0d-20*Bmag/(2.0_dp*fluxq))
+   if (MIO_InputSearchLabel('MagField.Value',line,id)) then
+      call MIO_InputParameter('MagField.Value',Bmag,0.0_dp)
       mBi = nint(area*1.0d-20*Bmag/(fluxq))
       mBf = mBi
-      print*, "chosen magnetic field is ", Bmag, " with index ", mBf
+      call MIO_Print('Magnetic field '//trim(num2str(Bmag,5))//' T, flux index '//trim(num2str(mBf)),'magf')
    else if (MIO_InputSearchLabel('MagField.Integer',line,id)) then
       call MIO_InputParameter('MagField.Integer',mBi,0)
       mBf = mBi
    else
       if (MIO_InputSearchLabel('MagField.InitialB',line,id)) then
          call MIO_InputParameter('MagField.InitialB',Bmag,0.0_dp)
-         !mBi = nint(area*1.0d-20*Bmag/(2.0_dp*fluxq))
          mBi = nint(area*1.0d-20*Bmag/(fluxq))
          call MIO_InputParameter('MagField.FinalB',Bmag,0.0_dp)
-         !mBf = nint(area*1.0d-20*Bmag/(2.0_dp*fluxq))
          mBf = nint(area*1.0d-20*Bmag/(fluxq))
          if (mBi>mBf) then
             mBi = 0
@@ -73,7 +70,6 @@ subroutine MagfInit()
       magfield = .true.
       if (MIO_InputSearchLabel('MagField.Step',line,id)) then
          call MIO_InputParameter('MagField.Step',BStep,1.0_dp)
-         !mStep = nint(area*1.0d-20*BStep/(2.0_dp*fluxq))
          mStep = nint(area*1.0d-20*BStep/(fluxq))
       else
          call MIO_InputParameter('MagField.IntegerStep',mStep,1)
@@ -107,16 +103,11 @@ subroutine MagfValue(mB)
 #endif /* TIMER */
 
    ! Read Zeeman magnetic field parameter (separate from Landau level Bmag)
-   call MIO_InputParameter('BmagZeeman',BmagZeeman,0.0_dp)
+   call MIO_InputParameter('Zeeman.Bmag',BmagZeeman,0.0_dp)
 
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (magfield) then
-      !if ((MIO_StringComp(str,'ReadXYZ')) .and. sCell.ne.1) then ! for my recursion calculations on sandwiched systems for instance
-      !    Bmag = 2.0_dp*mB*fluxq/(area*1.0d-20*sCell*sCell)
-      !else
-          !Bmag = 2.0_dp*mB*fluxq/(area*1.0d-20)
           Bmag = mB*fluxq/(area*1.0d-20)
-      !end if
       if (mBi /= mBf) then
          write(prefix,'(a,I5.5,a,f0.4)') 'm',mB,'_B', Bmag
          call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'magf')
@@ -130,7 +121,6 @@ subroutine MagfValue(mB)
       Bmag = 0.0_dp
    end if
 
-
 #ifdef TIMER
    call MIO_TimerStop('magf')
 #endif /* TIMER */
@@ -139,7 +129,6 @@ subroutine MagfValue(mB)
 #endif /* DEBUG */
 
 end subroutine MagfValue
-
 
 subroutine HaldPhaseInit()
 
@@ -159,10 +148,9 @@ subroutine HaldPhaseInit()
    call MIO_TimerCount('magf')
 #endif /* TIMER */
 
-   !if (MIO_InputSearchLabel('HaldaneSpecifyFlux',line,id)) then
-   call MIO_InputParameter('HaldaneSpecifyFlux',l,.false.)
-   call MIO_InputParameter('HaldaneSpecifyPhase',ll,.false.)
-   call MIO_InputParameter('HaldaneSpecifyRange',lll,.false.)
+   call MIO_InputParameter('Haldane.SpecifyFlux',l,.false.)
+   call MIO_InputParameter('Haldane.SpecifyPhase',ll,.false.)
+   call MIO_InputParameter('Haldane.SpecifyRange',lll,.false.)
    if (l) then
       mPhii = 0
       mPhif = mPhii
@@ -196,7 +184,6 @@ subroutine HaldPhaseInit()
 #endif /* DEBUG */
 
 end subroutine HaldPhaseInit
-
 
 subroutine HaldPhaseValue(mPhi)
 

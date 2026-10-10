@@ -18,8 +18,6 @@ module kubosubs
       module procedure KuboUpdate_d, KuboUpdate_z
    end interface
 
-   !real(dp), save :: Efermi
-
 contains
 
 subroutine KuboRecursion(Psi,Psin,Psinm1,nRecurs,a,b,H,H0,hopp,NList,wr,name)
@@ -43,8 +41,6 @@ subroutine KuboRecursion(Psi,Psin,Psinm1,nRecurs,a,b,H,H0,hopp,NList,wr,name)
    character(len=100) :: filenm
    type(cl_file) :: file
 
-   !integer :: numnum
-
 #ifdef DEBUG
    call MIO_Debug('KuboRecursion',0)
 #endif /* DEBUG */
@@ -52,11 +48,7 @@ subroutine KuboRecursion(Psi,Psin,Psinm1,nRecurs,a,b,H,H0,hopp,NList,wr,name)
    call MIO_TimerCount('kubo::Rec')
 #endif /* TIMER */
 
-   !print*, "OMP get the max threads"
-   !call OMP_GET_MAX_THREADS()
-
    !$OMP PARALLEL
-   !      write(*,*)'Thread rank: ', OMP_GET_THREAD_NUM()
    !$OMP END PARALLEL
 
    call KuboUpdate(Psi,tempZ)
@@ -65,7 +57,6 @@ subroutine KuboRecursion(Psi,Psin,Psinm1,nRecurs,a,b,H,H0,hopp,NList,wr,name)
    do i=1,nAt
       Psinm1(i) = Psi(i)
       cpsi = H0(i)*Psi(i)
-      !do j=1,maxNeigh
       do j=1,Nneigh(i)
          cpsi = cpsi - hopp(j,i)*Psi(NList(j,i))
       end do
@@ -103,7 +94,6 @@ subroutine KuboRecursion(Psi,Psin,Psinm1,nRecurs,a,b,H,H0,hopp,NList,wr,name)
       do i=1,nAt
          cpsi = H0(i)*Psin(i)
          do j=1,Nneigh(i)
-         !do j=1,maxNeigh
             cpsi = cpsi - hopp(j,i)*Psin(NList(j,i))
          end do
          sumc = sumc + cpsi*conjg(Psin(i))
@@ -247,7 +237,7 @@ subroutine KuboFrac(a,b,nRecurs,norm,eps,nEn,Emin,Emax,name,name2)
    call MIO_TimerStop('kubo::Frac')
 #endif /* TIMER */
 #ifdef DEBUG
-   call MIO_Debug('KuboFrac',0)
+   call MIO_Debug('KuboFrac',1)
 #endif /* DEBUG */
 
 end subroutine KuboFrac
@@ -324,7 +314,6 @@ subroutine KuboCn(dT,ac,bc,nPol,c)
    complex(dp), intent(out) :: c(nPol)
 
    real(dp), pointer :: e(:)=>NULL(), d(:)=>NULL(), z(:,:)=>NULL()
-   !real(dp), pointer :: w(:)
    integer :: i, j, info, u
    complex(dp) :: sc
    character(len=100) :: filenm
@@ -343,7 +332,6 @@ subroutine KuboCn(dT,ac,bc,nPol,c)
       call MIO_Allocate(e,nPol,'e','kubosubs')
       call MIO_Allocate(d,nPol,'d','kubosubs')
       call MIO_Allocate(z,(/nPol,nPol/),'z','kubosubs')
-      !call MIO_Allocate(w,2*nPol-2,'w','kubosubs')
       d = ac
       e = bc
       e(2) = sqrt(2.0_dp)*bc
@@ -351,7 +339,6 @@ subroutine KuboCn(dT,ac,bc,nPol,c)
          z(i,i) = 1.0_dp
       end do
       call TQL2(nPol,nPol,d,e,z,info)
-      !call DSTEV('V',nPol,d,e,z,nPol,w,info)
       if (info == 0) then
          do i=1,nPol
             sc = cmplx_0
@@ -361,7 +348,6 @@ subroutine KuboCn(dT,ac,bc,nPol,c)
             c(i)=sc
          enddo
       end if
-      !call MIO_Deallocate(w,'w','kubosubs')
       call MIO_Deallocate(z,'z','kubosubs')
       call MIO_Deallocate(d,'d','kubosubs')
       call MIO_Deallocate(e,'e','kubosubs')
@@ -474,7 +460,7 @@ subroutine KuboEvol(Psi,ZUPsi,Psin,Psinm1,XpnPsi,XpnPsim1,c,H0,hopp,NList,NeighD
    end do
    !$OMP END PARALLEL DO
    call KuboUpdate(Psinm1,tempZ)
-   call MIO_InputParameter('timeEvolutionInYDirection',l,.false.)
+   call MIO_InputParameter('Kubo.TimeEvolutionInYDirection',l,.false.)
    !$OMP PARALLEL DO PRIVATE(cnum,cnum2)
    do i=1,nAt
       cnum = (H0(i)-ac)*Psinm1(i)
@@ -608,7 +594,7 @@ end subroutine KuboUpdate_z
 subroutine KuboFermi(npts)
 
    use atoms,                only : nEl, nAt
-   use math
+   use math,                 only : TrapezoidalInt
 
    integer, parameter :: intorder=5
 
@@ -662,7 +648,6 @@ subroutine TQL2(NM,N,D,E,Z,IER)
 !       2)  A FULL SYMMETRIC MATRIX AFTER A PREVIOUS CALL TO TRED2.
 !
 !     CALLING MODE:
-!               CALL TQL2(NM,N,D,E,Z,IER)
 !     INPUTSS:
 !     NM  (I4)  1ST DIMENSION OF MATRICES A AND Z IN CALLING PROGRAM
 !     N   (I4)  SIZE OF Z

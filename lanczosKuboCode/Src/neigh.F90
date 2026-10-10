@@ -31,7 +31,8 @@ module neigh
    integer, public, parameter :: shellCount(maxShells) = [3,6,3,6,6,6,6,3]
 
    public :: NeighShellCutoff2, NeighShellWarn2
-   public :: NeighList, fastNNnotsquare, fastNNnotsquareSmall, fastNN, fastNNnotsquareNotRectangle, fastNNnotsquareBulk, fastNNnotsquareBulkSmall
+   public :: NeighList, fastNNnotsquare, fastNNnotsquareSmall, fastNN, fastNNnotsquareNotRectangle, fastNNnotsquareBulk, &
+         fastNNnotsquareBulkSmall
 
 contains
 
@@ -117,6 +118,10 @@ subroutine NeighSearchLayered(natoms,x,y,z,A1,A2,cut2intra,cut2inter,periodicZ,A
    integer :: pass, cnt, nclose
    logical :: keep
    integer, allocatable :: cidx(:), cu(:,:), head(:,:), next(:)
+
+#ifdef DEBUG
+   call MIO_Debug('NeighSearchLayered',0)
+#endif /* DEBUG */
 
 #ifdef TIMER
    call MIO_TimerCount('nsearch')
@@ -270,6 +275,10 @@ subroutine NeighSearchLayered(natoms,x,y,z,A1,A2,cut2intra,cut2inter,periodicZ,A
    call MIO_TimerStop('nsearch')
 #endif /* TIMER */
 
+#ifdef DEBUG
+   call MIO_Debug('NeighSearchLayered',1)
+#endif /* DEBUG */
+
 end subroutine NeighSearchLayered
 
 !> @brief Shell radii, the Kubo copy of the list, and optional data files.
@@ -279,11 +288,19 @@ subroutine NeighFinishSearch()
 
    logical :: prnt
 
+#ifdef DEBUG
+   call MIO_Debug('NeighFinishSearch',0)
+#endif /* DEBUG */
+
    call NeighSetRadii()
    call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    NList2 = NList
-   call MIO_InputParameter('WriteDataFiles',prnt,.false.)
+   call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
    if (prnt) call NeighWriteDataFiles()
+
+#ifdef DEBUG
+   call MIO_Debug('NeighFinishSearch',1)
+#endif /* DEBUG */
 
 end subroutine NeighFinishSearch
 
@@ -297,7 +314,11 @@ subroutine NeighSetRadii()
    character(len=50) :: str
    integer :: i
 
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+#ifdef DEBUG
+   call MIO_Debug('NeighSetRadii',0)
+#endif /* DEBUG */
+
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    do i=1,min(tbnn,maxShells)
       Nradii(i,1) = shellRadius(i)*aG/sqrt(3.0_dp)*1.1_dp
@@ -307,6 +328,10 @@ subroutine NeighSetRadii()
          Nradii(i,2) = shellRadius(i)*aBN/sqrt(3.0_dp)*1.1_dp
       end if
    end do
+
+#ifdef DEBUG
+   call MIO_Debug('NeighSetRadii',1)
+#endif /* DEBUG */
 
 end subroutine NeighSetRadii
 
@@ -320,6 +345,10 @@ subroutine NeighWriteDataFiles()
    use atoms,                only : nAt, Species, Rat
 
    integer :: i, j
+
+#ifdef DEBUG
+   call MIO_Debug('NeighWriteDataFiles',0)
+#endif /* DEBUG */
 
    open(1,FILE='v')
    open(2,FILE='dx')
@@ -354,6 +383,10 @@ subroutine NeighWriteDataFiles()
    close(21)
    close(22)
 
+#ifdef DEBUG
+   call MIO_Debug('NeighWriteDataFiles',1)
+#endif /* DEBUG */
+
 end subroutine NeighWriteDataFiles
 
 !> @brief Read the neighbour list from the file v instead of searching
@@ -366,11 +399,15 @@ subroutine NeighReadDataFiles()
 
    use atoms,                only : inode1, inode2, nAt, Rat
    use cell,                 only : aG, ucell
-   use math
+   use math,                 only : norm
 
    logical :: readNeighborDetails
    integer :: i, j, jj, ix, iy, ncell(3)
    real(dp) :: v(3), d
+
+#ifdef DEBUG
+   call MIO_Debug('NeighReadDataFiles',0)
+#endif /* DEBUG */
 
    call MIO_Print('Reading the neighbours from the file v instead of searching for them','neigh')
    call MIO_Allocate(Nneigh,[inode1],[inode2],'Nneigh','neigh')
@@ -390,7 +427,7 @@ subroutine NeighReadDataFiles()
    end do
    close(1)
 
-   call MIO_InputParameter('readNeighborDetails',readNeighborDetails,.false.)
+   call MIO_InputParameter('Neigh.ReadDetails',readNeighborDetails,.false.)
    if (readNeighborDetails) then
       open(21,FILE='neighCell.dat',STATUS='old')
       open(22,FILE='neighD.dat',STATUS='old')
@@ -423,8 +460,11 @@ subroutine NeighReadDataFiles()
    call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    NList2 = NList
 
-end subroutine NeighReadDataFiles
+#ifdef DEBUG
+   call MIO_Debug('NeighReadDataFiles',1)
+#endif /* DEBUG */
 
+end subroutine NeighReadDataFiles
 
 subroutine NeighList()
 
@@ -434,12 +474,13 @@ subroutine NeighList()
    use cell,                 only : ucell, aG, aBN
    use constants,            only : pi
    use tbpar,                only : tbnn
-   use math
+   use math,                 only : norm
 
    integer, parameter :: cellneigh(2,9) = reshape([-1,0, 1,0, 0,-1, 0,1, -1,-1, 1,-1, &
                                                   -1,1, 1,1, 0,0],[2,9])
    integer, parameter :: numN(8) = [3,6,3,6,6,6,6,3]
-   real(dp), parameter :: rad(8) = [1.0_dp/sqrt(3.0_dp),1.0_dp,2.0_dp/sqrt(3.0_dp),3.0_dp/sqrt(3.0_dp),3.0_dp/sqrt(3.0_dp),2.0_dp,4.0_dp/sqrt(3.0_dp),4.0_dp/sqrt(3.0_dp)]
+   real(dp), parameter :: rad(8) = [1.0_dp/sqrt(3.0_dp),1.0_dp,2.0_dp/sqrt(3.0_dp),3.0_dp/sqrt(3.0_dp), &
+         3.0_dp/sqrt(3.0_dp),2.0_dp,4.0_dp/sqrt(3.0_dp),4.0_dp/sqrt(3.0_dp)]
 
    real(dp) :: distFact
 
@@ -469,36 +510,36 @@ subroutine NeighList()
    call MIO_TimerCount('neigh::p1')
 #endif /* TIMER */
 
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    inplaneNeigh=sum(numN(1:tbnn))
-   !print*, "inplane", inplaneNeigh
    if (MIO_StringComp(str,'Graphene_Over_BN')) then
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    else if (MIO_StringComp(str,'BilayerGraphene_Over_BN')) then ! optimize this
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh*2.0_dp
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    else if (MIO_StringComp(str,'TrilayerBasedOnMoireCell')) then ! optimize this
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh*2.0_dp
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
-   else if (MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell') .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+   else if (MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell') &
+         .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    else if (MIO_StringComp(str,'ReadXYZ')) then
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    else if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer')) then
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,1)
       maxNeigh = inplaneNeigh + outplaneNeigh
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
@@ -507,7 +548,6 @@ subroutine NeighList()
       outplaneNeigh = 0
       call MIO_Allocate(Nradii,[tbnn,2],'Nradii','neigh')
    end if
-   !print*, maxNeigh
    do i=1,tbnn
       Nradii(i,1) = rad(i)*aG*1.1_dp
    end do
@@ -524,7 +564,13 @@ subroutine NeighList()
    end if
    rmax = maxval(Nradii)
    call MIO_InputParameter('Neigh.CompareAll',small,.false.)
-   call MIO_InputParameter('Neigh.CompareAll.UltraSmall',ultrasmall,.false.) ! Use this if less than 36 atoms in the system 2*3*3*2 (BL)
+   ! Use this if less than 36 atoms in the system 2*3*3*2 (BL)
+   call MIO_InputParameter('Neigh.CompareAll.UltraSmall',ultrasmall,.false.)
+   if (.not. (small .or. ultrasmall)) then
+      call MIO_Print('WARNING: the neighbour search NeighList (Neigh.fastNNnotsquare .false.) without '// &
+        'Neigh.CompareAll .true. gave bands that differ by several eV from the default search for every '// &
+        'graphene cell tested (72 to 3200 atoms). Use the default search, or set Neigh.CompareAll .true.','neigh')
+   end if
    call MIO_InputParameter('Neigh.BLInPlaneInteractionRadius',BLInPlaneInteractionRadius,.false.)
    call MIO_Allocate(NList,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    call MIO_Allocate(Nneigh,[inode1],[inode2],'Nneigh','neigh')
@@ -534,53 +580,35 @@ subroutine NeighList()
    call MIO_Print('')
    call MIO_Print('Generating neighbor list','neigh')
    if (ultrasmall) then
-      !print*, "gege", r0, distFact
-      !do i=1,nAt
-      !!$OMP PARALLEL DO PRIVATE (v,d,ncell,i,j,ix,iy,vTemp,rmaxTemp,r0)
       do i=1,nAt
       r0 = Nradii(tbnn,(Species(i)-1)/2 + 1) ! The cut radius. Taken as the maximum distance that the
-      !do i=in1,in2
          do j=1,nAt
             do ix=-3,3; do iy=-3,3
                if (i==j .and. ix==0 .and. iy==0) cycle
-            !do ix=0; do iy=0
-               !ix=0
-               !iy=0
-               !if (i==j) cycle
                ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
                                                                   ! Only if it is same unit cell (ix = 0, iy = 0) or neighor cell (e.g. 0 and 1), it might be satisfied (unless the bins are very small)
                if (BLInPlaneInteractionRadius) then
-                  v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+                  ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+                  v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1))
                   vTemp = v
                   vTemp(3) = 0.0_dp
                   rmaxTemp = aG/sqrt(3.0_dp)*1.1_dp*distFact
                else
-                  !v = Rat(:,k) + matmul(ucell,ncell(:,ic)) - Rat(:,i)
-                  v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+                  ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+                  v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1))
                   vTemp = v
                   rmaxTemp = rmax
                end if
                d = norm(vTemp)
                if (d<r0 .and. d.gt.0.01_dp .and. abs(Rat(3,i)-Rat(3,j))<0.01_dp) then
-                  !print*, r0, d, i, j
                   Nneigh(i) = Nneigh(i) + 1
-                  !if (Nneigh(i)>maxNeigh)  then
                   !   !print*, "Number of neighbors: ", i, Nneigh(i)
-                  !   call MIO_Kill('More neighbors than expected found',&
-                  !     'neigh','NeighList')
-                  !end if
                   NList(Nneigh(i),i) = j
                   NeighD(:,Nneigh(i),i) = -v
                   neighCell(:,Nneigh(i),i) = ncell(:,1)
-               !else if (d<rmaxTemp .and. d.gt.0.0001_dp .and. abs(Rat(3,i)-Rat(3,j))>0.01_dp) then
                else if (d<rmaxTemp .and. abs(Rat(3,i)-Rat(3,j))>0.01_dp) then
-                  !print*, rmax, d, i, j
                   Nneigh(i) = Nneigh(i) + 1
-                  !if (Nneigh(i)>maxNeigh)  then
                   !   !print*, "Number of neighbors: ", i, Nneigh(i)
-                  !   call MIO_Kill('More neighbors than expected found',&
-                  !     'neigh','NeighList')
-                  !end if
                   NList(Nneigh(i),i) = j
                   NeighD(:,Nneigh(i),i) = -v
                   neighCell(:,Nneigh(i),i) = ncell(:,1)
@@ -589,7 +617,6 @@ subroutine NeighList()
          end do
 
       end do
-      !!$OMP END PARALLEL DO
       call MIO_Print('Finished ultrasmall routine','neigh')
 
       num0 = 0
@@ -654,16 +681,13 @@ subroutine NeighList()
             do ix=-1,1; do iy=-1,1
                if (i==j .and. ix==0 .and. iy==0) cycle
                ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
-               v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+               ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+               v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1))
                                                                   ! Only if it is same unit cell (ix = 0, iy = 0) or neighor cell (e.g. 0 and 1), it might be satisfied (unless the bins are very small)
                d = norm(v)
                if (d<rmax) then
                   Nneigh(i) = Nneigh(i) + 1
-                  !if (Nneigh(i)>maxNeigh)  then
                   !   !print*, "Number of neighbors: ", i, Nneigh(i)
-                  !   call MIO_Kill('More neighbors than expected found',&
-                  !     'neigh','NeighList')
-                  !end if
                   NList(Nneigh(i),i) = j
                   NeighD(:,Nneigh(i),i) = -v
                   neighCell(:,Nneigh(i),i) = ncell(:,1)
@@ -677,8 +701,6 @@ subroutine NeighList()
       isec = 0
       ! Cycle over all the atoms present in this thread (and node)
       do i=in1,in2
-         !call MIO_Print(trim(num2str(i))//'    '//trim(num2str(rmax)),'neigh')
-         !iopl = 0  ! Number of neighbots out of plane (used for bilayers)
          iopl = 0  ! Number of neighbots out of plane (used for bilayers)
          r0 = Nradii(tbnn,(Species(i)-1)/2 + 1) ! The cut radius. Taken as the maximum distance that the
                                                 !  last shell of neighbors can have
@@ -706,7 +728,6 @@ subroutine NeighList()
                   v = Rat(:,k) + matmul(ucell,ncell(:,ic)) - Rat(:,i)
                   vTemp = v
                   vTemp(3) = 0.0_dp
-                  !rmaxTemp = r0*distFact
                   rmaxTemp = aG/sqrt(3.0_dp)*1.1_dp*distFact
                else
                   v = Rat(:,k) + matmul(ucell,ncell(:,ic)) - Rat(:,i)
@@ -714,13 +735,11 @@ subroutine NeighList()
                   rmaxTemp = rmax
                end if
                d = norm(vTemp)
-               !print*, d, rmax, r0
                if (d<(rmax)) then
                   if (abs(v(3))<0.01_dp) then
                      if (d<(r0+0.1_dp)) then
                         Nneigh(i) = Nneigh(i) + 1
                         if (Nneigh(i)>maxNeigh)  then
-                           !print*, "Number of neighbors: ", i, Nneigh(i)
                            call MIO_Kill('More neighbors than expected found',&
                              'neigh','NeighList')
                         end if
@@ -768,10 +787,8 @@ subroutine NeighList()
       end do
       !$OMP END PARALLEL
    end if
-   !print*, "Hi I'm here again"
-   call MIO_InputParameter('neighborSafetyCheck',l,.false.)
-   call MIO_InputParameter('neighborExpectedNumber',expectedNumber,3)
-   !print*, "Hi I'm here again3"
+   call MIO_InputParameter('Neigh.SafetyCheck',l,.false.)
+   call MIO_InputParameter('Neigh.ExpectedNumber',expectedNumber,3)
    if (l) then
       call MIO_Print('Performing some safetycheck','neigh')
       if (frac) call AtomsSetCart()
@@ -787,24 +804,18 @@ subroutine NeighList()
                    v = Rat(:,i) - Rat(:,j) - matmul(ucell,ncell(:,1))
                    d = norm(v)
                    if (d<(aG/sqrt(3.0_dp))+0.1) then
-                      !print*, "dist = ", d
                       tester = .true.
                       do ii=1,Nneigh(i)
-                        !print*, NList(ii,i), j
                         if (NList(ii,i) .eq. j) then
-                           !print*, "already there: ", j
                            tester = .false.
                         end if
                       end do
                       if (tester) then
-                        !print*, "We add atom ", j, " as neighbor to ", i
                         Nneigh(i) = Nneigh(i) + 1
                         if (Nneigh(i)>maxNeigh)  then
-                           !print*, "Number of neighbors: ", i, Nneigh(i)
                            call MIO_Kill('More neighbors than expected found',&
                              'neigh','NeighList')
                         end if
-                        !print*, "Number of neighbors: ", i, Nneigh(i)
                         NList(Nneigh(i),i) = j
                         NeighD(:,Nneigh(i),i) = -v
                         neighCell(:,Nneigh(i),i) = ncell(:,1)
@@ -819,12 +830,9 @@ subroutine NeighList()
       !$OMP END PARALLEL
    end if
 
-
-   !print*, "Hi I'm here again2"
 #ifdef TIMER
    call MIO_TimerStop('neigh::p1')
 #endif /* TIMER */
-   !print*, "hi I'm here"
 
    call MIO_InputParameter('Neigh.Print',prnt,.false.)
    if (prnt) then
@@ -927,7 +935,7 @@ subroutine NeighList()
 #ifdef TIMER
    call MIO_TimerStop('neigh::p2')
 #endif /* TIMER */
-   call MIO_InputParameter('WriteDataFiles',prnt,.false.)
+   call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
    if (prnt) then
       open(1,FILE='v')
       open(2,FILE='dx')
@@ -940,9 +948,6 @@ subroutine NeighList()
          write(2,'(500(F10.5,1X))') (NeighD(1,j,i),j=1,Nneigh(i))
          write(3,'(500(F10.5,1X))') (NeighD(2,j,i),j=1,Nneigh(i))
          write(33,'(500(F10.5,1X))') (NeighD(3,j,i),j=1,Nneigh(i))
-         !write(2,*) (NeighD(1,j,i),j=1,Nneigh(i))
-         !write(3,*) (NeighD(2,j,i),j=1,Nneigh(i))
-         !write(33,*) (NeighD(3,j,i),j=1,Nneigh(i))
          if (Species(i)==3) then
             write(4,*) "B    ", Rat(1,i),Rat(2,i),Rat(3,i)
          else if (Species(i)==4) then
@@ -973,7 +978,7 @@ subroutine NeighListOld()
    use atoms,                only : AtomsSetCart, indxDiv, indxNode
    use parallel,             only : xDiv, yDiv, procID
    use cell,                 only : ucell
-   use math
+   use math,                 only : CrossProd, norm
 
    integer, pointer :: pos(:)
    real(dp) :: alatt, r0, normal(3,4), x0(3,4), d, v(3)
@@ -988,7 +993,7 @@ subroutine NeighListOld()
    call MIO_Debug('NeighListOld',0)
 #endif /* DEBUG */
 
-   call MIO_InputParameter('LatticeParameter',alatt,2.46_dp)
+   call MIO_InputParameter('Structure.LatticeParameter',alatt,2.46_dp)
    r0 = alatt/sqrt(3.0_dp)
    call MIO_InputParameter('Neigh.Distance',r0,alatt/sqrt(3.0_dp))
    r0 = r0*1.1_dp
@@ -1385,13 +1390,21 @@ subroutine fastNNnotsquare(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2)
 
    logical :: readDataFiles
 
-   call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquare',0)
+#endif /* DEBUG */
+
+   call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call NeighReadDataFiles()
    else
       call NeighSearchLayered(natoms,x,y,z,A1,A2,cutoff2,cutoff2bis,.false.,0.0_dp,.false.)
       call NeighFinishSearch()
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquare',1)
+#endif /* DEBUG */
 
 end subroutine fastNNnotsquare
 
@@ -1401,7 +1414,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
    use tbpar,                only : tbnn
    use cell,                 only : aG, aBN,ucell
    use atoms,                only : AtomsSetCart, frac
-   use math
+   use math,                 only : norm
    implicit none
    integer, intent(in) :: natoms,maxnn
    real(dp), intent(in) :: x(natoms),y(natoms),z(natoms)
@@ -1410,16 +1423,12 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
    integer :: num0,num1,num2,num3,num4,num5,num6,num7,num8,num9,num10,num11,num12,num13,num14
    integer :: i,j,k,l,m,n
    real(dp) :: dx(natoms,maxnn),dy(natoms,maxnn),dz(natoms,maxnn)
-   !real(dp), intent(out) :: dr(natoms,maxnn)
 
    real(dp) :: dx_t,dy_t,dz_t,d2_t, d2_t2
    real(dp) :: xmin,xmax,ymin,ymax,xcell,ycell,rho
 
-   !real(dp) :: xnew(9*natoms),ynew(9*natoms),znew(9*natoms)
-   !integer :: ixs(9*natoms),iys(9*natoms),vecino
    real(dp) :: xnew(11*11*natoms*3),ynew(11*11*natoms*3),znew(11*11*natoms*3)
    integer :: ixs(11*11*natoms*3),iys(11*11*natoms*3),vecino
-   !integer :: izs(11*11*natoms*3)
    integer :: nInteger(11*11*natoms*3)
    integer :: mInteger(11*11*natoms*3)
 
@@ -1427,7 +1436,6 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
    integer, allocatable :: cells(:,:,:)
    integer :: NNcount,addx,addy
 
-   !real(dp), parameter :: rad(3) = [1.0_dp/sqrt(3.0_dp),1.0_dp,2.0_dp/sqrt(3.0_dp)]
    real(dp), parameter :: rad(5) = [1.0_dp/sqrt(3.0_dp),1.0_dp,2.0_dp/sqrt(3.0_dp),3.0_dp/sqrt(3.0_dp),3.0_dp/sqrt(3.0_dp)]
    character(len=50) :: str
 
@@ -1450,11 +1458,12 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
 
    integer :: uX, uY, uZ, nmax, unitsX, unitsY
 
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareSmall',0)
+#endif /* DEBUG */
 
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
-   call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
-   !if (frac) call AtomsSetCart()
-   !call AtomsSetFrac()
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
 
@@ -1472,26 +1481,16 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
 
       maxNeigh = maxnn
 
-      !print*, "allocating NList with maxNeigh= ", maxNeigh
       call MIO_Allocate(NList,[1,inode1],[maxNeigh,inode2],'NList','neigh')
-      !call MIO_Allocate(NList,[1,inode1],[maxnn,inode2],'NList','neigh')
       call MIO_Allocate(Nneigh,[inode1],[inode2],'Nneigh','neigh')
       call MIO_Allocate(NeighD,[1,1,inode1],[3,maxnn,inode2],'NeighD','neigh')
-      !call MIO_Allocate(neighCell,(/1,1,inode1/),(/3,3,inode2/),'neighCell','neigh')
       call MIO_Allocate(neighCell,(/1,1,inode1/),(/3,maxnn,inode2/),'neighCell','neigh')
       open(1,FILE='v')
       open(2,FILE='dx')
       open(3,FILE='dy')
-      !open(4,FILE='pos')
-      !print*, "nAt =", nAt
       do i=1,nAt
          read(1,*) Nneigh(i)
          read(1,*) (NList(j,i),j=1,Nneigh(i))
-         !read(2,*) (NeighD(1,j,i),j=1,Nneigh(i))
-         !read(3,*) (NeighD(2,j,i),j=1,Nneigh(i))
-         !read(4,*) Species(i), Rat(1,i),Rat(2,i),Rat(3,i)
-         !read(4,*) Species(i), Rat(1,i),Rat(2,i),Rat(3,i)
-         !read(4,*) Species(i), Rat(1,i),Rat(2,i),Rat(3,i)
       end do
       close(1)
       close(2)
@@ -1505,109 +1504,52 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
 !`idx_1` and `idx_2` are both in `[-1,0,1] and `direction_1` and `direction_2`
 !are the real space directions of the translational symmetry.`
 
-      call MIO_InputParameter('SuperCell',sCell,1)
-      call MIO_InputParameter('only000Cell',only000Cell,.false.)
-      !print*, "ucell", ucell
-      !print*, Rat
-      !print*, "jjhhh"
-      !print*, Rat(:,1)
-      !print*, Rat(:,NList(1,1))
-      !print*, "mmmm"
-      !if (sCell==1) then
-         !!$OMP PARALLEL PRIVATE (v, d,ncell,i,j,ix,iy,dist)
-         !do i=inode1,inode2
+      call MIO_InputParameter('Structure.SuperCell',sCell,1)
+      call MIO_InputParameter('Neigh.Only000Cell',only000Cell,.false.)
          do i=1,nAt
-            !r0 = Nradii(tbnn,(Species(i)-1)/2 + 1) ! The cut radius. Taken as the maximum distance that the
             do j=1,Nneigh(i) ! different from ultraSmall because here we already know the neighbors
                if (only000Cell) then
                   !do ix=-1,1; do iy=-1,1
                   ix = 0
                   iy = 0
-                  !print*, "ixiy", ix, iy
                   if (i==NList(j,i) .and. ix==0 .and. iy==0) cycle
                   ncell(:,1) = [ix,iy,0]
-                  !print*, "matmul: " , matmul(ucell,ncell(:,1))
                   v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1))
                   d = norm(v)
-                  !print*, "d: ", d
                   if (d < aG/sqrt(3.0_dp)*1.1_dp) then
                      neighCell(:,j,i) = ncell(:,1)
                      NeighD(:,j,i) = -v
                   end if
-                  !dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp +NeighD(3,j,i)**2.0_dp)
-                  !dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp +NeighD(3,j,i)**2.0_dp)
-                  !if (abs(d-dist).lt.0.1_dp) then
                   !   !print*, "muak"
-                  !   neighCell(:,j,i) = ncell(:,1)
-                  !end if
 
-                  !v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
                                                                     ! Only if it is same unit cell (ix = 0, iy = 0) or neighor cell (e.g. 0 and 1), it might be satisfied (unless the bins are very small)
-                  !d = norm(v)
-                  !if (d**2.0_dp .lt. cutoff2*1.1_dp) then
-                     !Nneigh(i) = Nneigh(i) + 1
-                     !if (Nneigh(i)>maxNeigh)  then
                      !   !print*, "Number of neighbors: ", i, Nneigh(i)
-                     !   call MIO_Kill('More neighbors than expected found',&
-                     !     'neigh','NeighList')
-                     !end if
-                     !NList(Nneigh(i),i) = j
-                     !NeighD(:,Nneigh(i),i) = -v
-                     !neighCell(:,j,i) = ncell(:,1)
-                  !else
-                  !    print*, "Are you sure this was a neighbor?", i, NList(j,i)
-                  !end if
                else
                   do ix=-1,1; do iy=-1,1
-                     !print*, "ixiy", ix, iy
                      if (i==NList(j,i) .and. ix==0 .and. iy==0) cycle
                      ncell(:,1) = [ix,iy,0]
-                     !print*, "matmul: " , matmul(ucell,ncell(:,1))
                      v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1))
                      d = norm(v)
-                     !print*, "d: ", d
                      if (d < aG/sqrt(3.0_dp)*1.1_dp) then
                         neighCell(:,j,i) = ncell(:,1)
                         NeighD(:,j,i) = -v
                      end if
-                     !dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp +NeighD(3,j,i)**2.0_dp)
-                     !dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp +NeighD(3,j,i)**2.0_dp)
-                     !if (abs(d-dist).lt.0.1_dp) then
                      !   !print*, "muak"
-                     !   neighCell(:,j,i) = ncell(:,1)
-                     !end if
 
-                     !v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
                                                                        ! Only if it is same unit cell (ix = 0, iy = 0) or neighor cell (e.g. 0 and 1), it might be satisfied (unless the bins are very small)
-                     !d = norm(v)
-                     !if (d**2.0_dp .lt. cutoff2*1.1_dp) then
-                        !Nneigh(i) = Nneigh(i) + 1
-                        !if (Nneigh(i)>maxNeigh)  then
                         !   !print*, "Number of neighbors: ", i, Nneigh(i)
-                        !   call MIO_Kill('More neighbors than expected found',&
-                        !     'neigh','NeighList')
-                        !end if
-                        !NList(Nneigh(i),i) = j
-                        !NeighD(:,Nneigh(i),i) = -v
-                        !neighCell(:,j,i) = ncell(:,1)
-                     !else
-                     !    print*, "Are you sure this was a neighbor?", i, NList(j,i)
-                     !end if
                   end do; end do
                end if
             end do
          end do
-         !!$OMP END PARALLEL
-      !end if
    else
 
        call MIO_InputParameter('Neigh.LayerDistFactor',distFact,1.0_dp) ! to increase the cutoff for outerlayer neighbors
 
-
        dx=0.0_dp;dy=0.0_dp;dz=0.0_dp !;dr=0.0_dp
 
        PRINT*,''
-       PRINT*,'Building nearest neighbor data...'
+       call MIO_Print('Building nearest neighbor data...','neigh')
        num0 = 0
        num1 = 0
        num2 = 0
@@ -1625,22 +1567,9 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
        num14= 0
 
        ! Divide geometry into rectangular cells of size xcell times ycell (units of Angstroms)
-       ! A_celdaunitaria=3.0*dsqrt(3.0)*aCC*aCC/2.0=2.6*aCC*aCC=5.24Ang => rho=2/A_celdaunitaria
-       !if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer')) then
-       !   rho   = 8.0_dp / (3.0_dp*DSQRT(3.0_dp)*aCC*aCC)
-       !else
-       !end if
        xcell = 3.0_dp
        ycell = 3.0_dp
-       !PRINT*,'Size of binning cell', xcell, 'X', ycell
        !============================================================
-       !call MIO_Allocate(Species,nAt,'Species','atoms')
-       !call MIO_Allocate(NeighD,[1,1,inode1],[3,maxNeigh,inode2],'NeighD','neigh')
-       !call MIO_Allocate(xnew,[1],[natoms*9],'xnew','neigh')
-       !call MIO_Allocate(ynew,[1],[natoms*9],'ynew','neigh')
-       !call MIO_Allocate(znew,[1],[natoms*9],'znew','neigh')
-       !allocate(xnew(9*natoms),ynew(9*natoms),znew(9*natoms))
-       !print*, "numberOfAtoms: ", natoms, nAt
        unitsX = 10
        unitsY = 10
        n = 0
@@ -1648,10 +1577,8 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
          n=n+1
          uX = 0
          uY = 0
-         !uZ = 0
          xnew(n)=x(i)+uX*A1(1)+uY*A2(1)
          ynew(n)=y(i)+uX*A1(2)+uY*A2(2)
-         !znew(n)=z(i)+uZ*A3
          nInteger(n) = uX
          mInteger(n) = uY
        end do
@@ -1663,7 +1590,6 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
                   n=n+1
                   xnew(n)=x(i)+uX*A1(1)+uY*A2(1)
                   ynew(n)=y(i)+uX*A1(2)+uY*A2(2)
-                  !znew(n)=z(i)+uZ*A3
                   nInteger(n) = uX
                   mInteger(n) = uY
                 end do
@@ -1671,7 +1597,6 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
           end do
        end do
        nmax = n
-       !print*, "nmax", nmax
        !============================================================
        xmin = minval(xnew); xmax = maxval(xnew)
        ymin = minval(ynew); ymax = maxval(ynew)
@@ -1679,17 +1604,9 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
        Nx = CEILING((xmax-xmin)/xcell)
        Ny = CEILING((ymax-ymin)/ycell)
 
-       !write(*,*) xmin,xmax,Nx
-       !write(*,*) ymin,ymax,Ny
        rho   = 4.0_dp / (3.0_dp*DSQRT(3.0_dp)*aCC*aCC)
        ALLOCATE(cells(Nx, Ny, 4*CEILING(xcell*ycell*rho*unitsX*unitsY))) ! 2 instead of 4 if not bilayer
-       !write(*,*) 'Inicia llenado de cajas'
-       !write(*,*) 'First dimension of cells is equal to ', Nx
-       !write(*,*) 'Second dimension of cells is equal to ', Ny
-       !write(*,*) 'Third dimension of cells is equal to ', 2*CEILING(xcell*ycell*rho)
         cells = 0
-       !print*, cells
-       !!$OMP PARALLEL DO PRIVATE(ix, iy, i) (make sure about the i incrementation first)
        do n = 1,nmax
 
          ix     = INT(1+(xnew(n)-xmin)/xcell)
@@ -1698,18 +1615,12 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
          iys(n) = iy
 
          i = 1
-         !print*, ix, iy, i
          do while (cells(ix,iy,i) .ne. 0)
-           !print*, i, cells(ix,iy,i)
            i = i+1
          end do
          cells(ix,iy,i) = n
          ! HERE
-         !ncell(:,1) = [ix,iy,0]
-         !neighCell(:,Nneigh(i),i) = ncell(:,1)
        end do
-       !!$OMP END PARALLEL DO
-
 
        call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
 
@@ -1726,21 +1637,14 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
        rmax = maxval(Nradii)
 
        maxNeigh = maxnn
-       !print*, "inode1, inode2, in1, in2, maxnn", inode1, inode2, 1, natoms, in1, in2, maxnn
        call MIO_Allocate(NList,[1,inode1],[maxNeigh,inode2],'NList','neigh')
-       !call MIO_Allocate(NList,[1,inode1],[maxnn,inode2],'NList','neigh')
        call MIO_Allocate(Nneigh,[inode1],[inode2],'Nneigh','neigh')
        call MIO_Allocate(NeighD,[1,1,inode1],[3,maxnn,inode2],'NeighD','neigh')
-       !call MIO_Allocate(neighCell,(/1,1,inode1/),(/3,3,inode2/),'neighCell','neigh')
        call MIO_Allocate(neighCell,(/1,1,inode1/),(/3,maxnn,inode2/),'neighCell','neigh')
-       !ALLOCATE(cells(Nx, Ny, 2*CEILING(xcell*ycell*rho)))
-       !call MIO_Allocate(2*CEILING(xcell*ycell*rho),
        ! HERE
 
-       write(*,*) 'Inicia busqueda'
        ! Find NNs of each atom by only searching nearby cells
        safetycounter = 0
-       !!$OMP PARALLEL DO REDUCTION(+:num0, num1, num2, num3, num4, num5, num6, num7, num8, num9, num10, num11, num12, num13, num14) PRIVATE(ix, iy, NNcount, addx, addy, i, dx_t, dy_t, dz_t, m, d2_t, d2_t2, vecino)
        DO n = 1,natoms
          NNcount = 0
 
@@ -1759,15 +1663,10 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
            DO WHILE(cells(ix, iy, i) .ne. 0)
              m = cells(ix, iy, i)
              IF (m .ne. n) THEN
-               !write(*,*) 'hi2'
                dx_t = xnew(n) - xnew(m)
                dy_t = ynew(n) - ynew(m)
                dz_t = znew(n) - znew(m)
                ! Periodic boundary conditions here as well
-               ! IF(dx_t .gt.  A1(1)-1.2_dp*aCC) dx_t = dx_t - A1(1)
-               ! IF(dx_t .lt. -A1(1)+1.2_dp*aCC) dx_t = dx_t + A1(1)
-               ! IF(dy_t .gt.  A2(2)-1.2_dp*aCC) dy_t = dy_t - A2(2)
-               ! IF(dy_t .lt. -A2(2)+1.2_dp*aCC) dy_t = dy_t + A2(2)
                d2_t = dx_t**2.0_dp + dy_t**2.0_dp + dz_t**2.0_dp
                d2_t2 = dx_t**2.0_dp + dy_t**2.0_dp
                  !IF (n==1) print*, "distances from n=1 ", d2_t
@@ -1780,9 +1679,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
-                   !NList(Nneigh(i),i) = j
                    dx(n,NNcount)=dx_t; dy(n,NNcount)=dy_t; dz(n,NNcount)=dz_t
-                   !dr(n,NNcount)=dsqrt(d2_t)
                    NList(NNcount,n) = vecino
                    NeighD(1,NNcount,n) = -dx(n,NNcount)
                    NeighD(2,NNcount,n) = -dy(n,NNcount)
@@ -1791,9 +1688,6 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
                    neighCell(1,NNcount,n) = ixs(m) - ixs(n) ! check if it's not n-m
                    neighCell(2,NNcount,n) = iys(m) - iys(n)
                    neighCell(3,NNcount,n) = 0
-                   !neighCell(1,NNcount,n) = nInteger(m) - nInteger(n)
-                   !neighCell(2,NNcount,n) = mInteger(m) - mInteger(n)
-                   !neighCell(3,NNcount,n) = izs(m) - izs(n)
        !             if(n==4800) write(*,*) m,NNcount,vecino
                  ENDIf
                ELSE IF (abs(dz_t)>1.50_dp .and. abs(dz_t)<4.50_dp) THEN
@@ -1803,9 +1697,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
                    vecino=mod(m,natoms)
                    if (vecino==0) vecino=natoms
                    nn(n,NNcount) = vecino
-                   !NList(Nneigh(i),i) = j
                    dx(n,NNcount)=dx_t; dy(n,NNcount)=dy_t; dz(n,NNcount)=dz_t
-                   !dr(n,NNcount)=dsqrt(d2_t)
                    NList(NNcount,n) = vecino
                    NeighD(1,NNcount,n) = -dx(n,NNcount)
                    NeighD(2,NNcount,n) = -dy(n,NNcount)
@@ -1814,9 +1706,6 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
                    neighCell(1,NNcount,n) = ixs(m) - ixs(n) ! check if it's not n-m
                    neighCell(2,NNcount,n) = iys(m) - iys(n)
                    neighCell(3,NNcount,n) = 0
-                   !neighCell(1,NNcount,n) = nInteger(m) - nInteger(n)
-                   !neighCell(2,NNcount,n) = mInteger(m) - mInteger(n)
-                   !neighCell(3,NNcount,n) = izs(m) - izs(n)
        !             if(n==4800) write(*,*) m,NNcount,vecino
                  ENDIf
                ENDIF
@@ -1827,34 +1716,12 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
          ENDDO
          ENDDO
 
-         !IF(NNcount .lt. 3) THEN
-         !  print*, "Are you sure you wanted to enter this safety routine?"
-         !  NNcount = 0
-         !  DO m = 1,natoms
-         !    IF (n.ne.m) THEN
-         !      dx_t = x(n) - x(m)
-         !      dy_t = y(n) - y(m)
-         !      dz_t = z(n) - z(m)
          !       !Periodic boundary conditions here as well
-         !       IF(dx_t .gt.  A1(1)-1.2_dp*aCC) dx_t = dx_t - A1(1)
-         !       IF(dx_t .lt. -A1(1)+1.2_dp*aCC) dx_t = dx_t + A1(1)
-         !       IF(dy_t .gt.  A2(2)-1.2_dp*aCC) dy_t = dy_t - A2(2)
-         !       IF(dy_t .lt. -A2(2)+1.2_dp*aCC) dy_t = dy_t + A2(2)
-         !       d2_t = dx_t**2.0_dp + dy_t**2.0_dp + dz_t**2.0_dp
-         !       IF (abs(dz_t)<0.01_dp) THEN
-         !          IF (d2_t .lt. cutoff2*1.1_dp) THEN
-         !               NNcount = NNcount + 1
          !               !vecino=mod(m,natoms)
          !               !if (vecino==0) vecino=natoms
          !               !nn(n,NNcount) = vecino
          !               !NList(Nneigh(i),i) = j
-         !               dx(n,NNcount)=dx_t; dy(n,NNcount)=dy_t; dz(n,NNcount)=dz_t
          !               !dr(n,NNcount)=dsqrt(d2_t)
-         !               NList(NNcount,n) = m
-         !               NeighD(1,NNcount,n) = dx(n,NNcount)
-         !               NeighD(2,NNcount,n) = dy(n,NNcount)
-         !               NeighD(3,NNcount,n) = dz(n,NNcount)
-         !               Nneigh(n) = NNcount
          !
 
          !               !ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
@@ -1865,15 +1732,8 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
          !               !neighCell(2,NNcount,n) = iys(m) - iys(n)
          !               !neighCell(3,NNcount,n) = 0
        ! !               if(n==4800) write(*,*) m,NNcount,vecino
-         !          ENDIf
-         !       END IF
-         !     END IF
-         !  END DO
-         !  safetycounter = safetycounter + 1
          !  if (safetycounter.gt.100) print*, "Carefull, you are probably going too many times through this safety loop. &
          ! I originally implemented this because the fastNNnotsquared routine was missing neighbors for 4 atoms only..."
-         !ENDIF
-
 
        ! Count the number of atoms with 1, 2, 3, 4, 5 nearest neighbors
          IF(NNcount .eq. 0) num0 = num0 + 1
@@ -1894,33 +1754,23 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
          IF(NNcount .eq. 13) num13 = num13 + 1
          IF(NNcount .eq. 14) num14 = num14 + 1
 
-
-
        ENDDO
-       !!$OMP END PARALLEL DO
 
-       call MIO_InputParameter('SuperCell',sCell,1)
-       !if (sCell==1) then
-          !!$OMP PARALLEL PRIVATE (v, d,ncell,i,j,ix,iy,dist)
-          !do i=inode1,inode2
+       call MIO_InputParameter('Structure.SuperCell',sCell,1)
           !$OMP PARALLEL DO PRIVATE(v, d, ncell, i,j, dist, ix, iy)
           do i=1,nAt
-             !r0 = Nradii(tbnn,(Species(i)-1)/2 + 1) ! The cut radius. Taken as the maximum distance that the
              do j=1,Nneigh(i) ! different from ultraSmall because here we already know the neighbors
                 do ix=-5,5; do iy=-5,5
                    if (i==NList(j,i) .and. ix==0 .and. iy==0) cycle
-                   ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
+                   ! We only use one of the nine columns if small, the other columns are used for the other case
+                   ncell(:,1) = [ix,iy,0]
                    v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1))
                    d = norm(v)
                    dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp +NeighD(3,j,i)**2.0_dp)
                    if (abs(d-dist).lt.0.1_dp) then
-                      !print*, "muak"
                       neighCell(:,j,i) = ncell(:,1)
                    end if
-                   !v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
                                                                       ! Only if it is same unit cell (ix = 0, iy = 0) or neighor cell (e.g. 0 and 1), it might be satisfied (unless the bins are very small)
-                   !d = norm(v)
-                   !if (d**2.0_dp .lt. cutoff2*1.1_dp) then
                    !   !Nneigh(i) = Nneigh(i) + 1
                    !   !if (Nneigh(i)>maxNeigh)  then
                    !   !   !print*, "Number of neighbors: ", i, Nneigh(i)
@@ -1929,26 +1779,12 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
                    !   !end if
                    !   !NList(Nneigh(i),i) = j
                    !   !NeighD(:,Nneigh(i),i) = -v
-                   !   neighCell(:,j,i) = ncell(:,1)
                    !!else
-                   !!    print*, "Are you sure this was a neighbor?", i, NList(j,i)
-                   !end if
                 end do; end do
              end do
           end do
-          !!$OMP END PARALLEL
-       !end if
 
-       !write(*,*) 'hi4'
-       !neighCell = cells
        DEALLOCATE(cells)
-       !write(*,*) 'hi6'
-       !call MIO_Deallocate(xnew,'xnew','neigh')
-       !call MIO_Deallocate(ynew,'ynew','neigh')
-       !call MIO_Deallocate(znew,'znew','neigh')
-       !deallocate(xnew,ynew,znew)
-       !write(*,*) 'hi5'
-
 
        PRINT*,' 0 neighbors: ',num0
        PRINT*,' 1 neighbors: ',num1
@@ -1968,88 +1804,20 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
        PRINT*,'>10 neighbors: ',natoms-(num0+num1+num2+num3+num4+num5+num6+num7+num8+num9+num10+num11+num12+num13+num14)
 
        PRINT*,''
-       PRINT*,'...done'
+       call MIO_Print('...done','neigh')
        PRINT*,''
 
        call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
        NList2 = NList
 #ifdef MPI
-       !print*, "nProc =", nProc
-       !if (nProc>1) then
-       !   call MIO_Allocate(countN,[nProc,numThreads],'countN','neigh')
-       !   countN = 0
        !   !do i=1,natoms
        !   !$OMP PARALLEL
-       !   do i=in1,in2
-       !      do j=1,maxNeigh
-       !         if (NList2(j,i)<inode1 .or. NList2(j,i)>inode2) then
-       !            do k=nProc,1,-1
-       !               if(NList2(j,i)>=indxNode(k)) then
-       !                  countN(k,nThread+1) = countN(k,nThread+1)+1
-       !                  exit
-       !               end if
-       !            end do
-       !         end if
-       !      end do
-       !   end do
        !   !$OMP END PARALLEL
-       !   rcvSz = sum(countN)
-       !   call MIO_Allocate(rcvIndx,[2,nProc],'rcvIndx','neigh')
-       !   call MIO_Allocate(rcvList,rcvSz,'rcvList','neigh')
-       !   np = 1
-       !   do i=1,nProc
-       !      rcvIndx(1,i) = np
-       !      np = np + sum(countN(i,:))
-       !      rcvIndx(2,i) = np - 1
-       !   end do
-       !   call MIO_Allocate(cnt,[nProc,numThreads],'cnt','neigh')
        !   !do i=1,natoms
        !   !$OMP PARALLEL PRIVATE(np)
-       !   do i=in1,in2
-       !      do j=1,maxNeigh
-       !         if (NList2(j,i)<inode1 .or. NList2(j,i)>inode2) then
-       !            do k=nProc,1,-1
-       !               if(NList2(j,i)>=indxNode(k)) then
-       !                  np = rcvIndx(1,k) + sum(countN(k,1:nThread)) + cnt(k,nThread+1)
-       !                  cnt(k,nThread+1) = cnt(k,nThread+1) + 1
-       !                  exit
-       !               end if
-       !            end do
-       !            rcvList(np) = NList2(j,i)
-       !            NList2(j,i) = np + inode2
-       !         end if
-       !      end do
-       !   end do
        !   !$OMP END PARALLEL
-       !   call MIO_Allocate(nodeSndRcv,[nProc,nProc],'nodeSndRcv','neigh')
-       !   do i=1,nProc
-       !      nodeSndRcv(i,Node+1) = rcvIndx(2,i)-rcvIndx(1,i) + 1
-       !   end do
-       !   call MPIAllGather(MPI_IN_PLACE,0,nodeSndRcv,nProc,MPI_INTEGER)
-       !   sndSz = sum(nodeSndRcv(Node+1,:))
-       !   call MIO_Allocate(sndList,sndSz,'sndList','neigh')
-       !   call MIO_Allocate(sndIndx,(/2,nProc/),'sndIndx','neigh')
-       !   np = 1
-       !   do i=1,nProc
-       !      sndIndx(1,i) = np
-       !      np = np + nodeSndRcv(Node+1,i)
-       !      sndIndx(2,i) = np - 1
-       !   end do
-       !   do i=1,nProc-1
-       !      j = mod(Node + i,nProc)
-       !      k = mod(nProc + Node - i,nProc)
-       !      call MPISendRecv(rcvList(rcvIndx(1,j+1):rcvIndx(2,j+1)),nodeSndRcv(j+1,Node+1),j,50, &
-       !        sndList(sndIndx(1,k+1):sndIndx(2,k+1)),nodeSndRcv(Node+1,k+1),k,50,MPI_INTEGER)
-       !      call MPISendRecv(rcvList(rcvIndx(1,k+1):rcvIndx(2,k+1)),nodeSndRcv(k+1,Node+1),k,51, &
-       !        sndList(sndIndx(1,j+1):sndIndx(2,j+1)),nodeSndRcv(Node+1,j+1),j,51,MPI_INTEGER)
-       !      call MPIBarrier()
-       !   end do
-       !   call MIO_Deallocate(cnt,'cnt','neigh')
-       !   call MIO_Deallocate(countN,'countN','neigh')
-       !end if
 #endif /* MPI */
-       call MIO_InputParameter('WriteDataFiles',prnt,.false.)
-       !call AtomsSetFrac()
+       call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
        if (prnt) then
           open(1,FILE='v')
           open(2,FILE='dx')
@@ -2078,6 +1846,9 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
        end if
    end if
 
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareSmall',1)
+#endif /* DEBUG */
 
 end subroutine fastNNnotsquareSmall
 
@@ -2091,13 +1862,21 @@ subroutine fastNNnotsquareBulk(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2,A3)
 
    logical :: readDataFiles
 
-   call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareBulk',0)
+#endif /* DEBUG */
+
+   call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call NeighReadDataFiles()
    else
       call NeighSearchLayered(natoms,x,y,z,A1,A2,cutoff2,cutoff2bis,.true.,A3,.false.)
       call NeighFinishSearch()
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareBulk',1)
+#endif /* DEBUG */
 
 end subroutine fastNNnotsquareBulk
 
@@ -2113,14 +1892,22 @@ subroutine fastNNnotsquareBulkSmall(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2,A3)
 
    logical :: readDataFiles, addSecondLayerInteractions
 
-   call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareBulkSmall',0)
+#endif /* DEBUG */
+
+   call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call NeighReadDataFiles()
    else
-      call MIO_InputParameter('addSecondLayerInteractions',addSecondLayerInteractions,.false.)
+      call MIO_InputParameter('Interlayer.AddSecondLayerInteractions',addSecondLayerInteractions,.false.)
       call NeighSearchLayered(natoms,x,y,z,A1,A2,cutoff2,cutoff2bis,.true.,A3,addSecondLayerInteractions)
       call NeighFinishSearch()
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareBulkSmall',1)
+#endif /* DEBUG */
 
 end subroutine fastNNnotsquareBulkSmall
 
@@ -2130,7 +1917,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    use atoms,                only : frac, AtomsSetCart
    use tbpar,                only : tbnn
    use cell,                 only : aG, aBN,ucell
-   use math
+   use math,                 only : norm
    implicit none
    integer, intent(in) :: natoms,maxnn
    real(dp), intent(in) :: x(natoms),y(natoms),z(natoms)
@@ -2139,7 +1926,6 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    integer :: num0,num1,num2,num3,num4,num5,num6,num7,num8,num9,num10
    integer :: i,j,k,l,m,n
    real(dp) :: dx(natoms,maxnn),dy(natoms,maxnn),dz(natoms,maxnn)
-   !real(dp), intent(out) :: dr(natoms,maxnn)
 
    real(dp) :: dx_t,dy_t,dz_t,d2_t, d2_t2
    real(dp) :: xmin,xmax,ymin,ymax,xcell,ycell,rho
@@ -2166,11 +1952,14 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
 
    real(dp) :: fracFactor, fracFactor2
 
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareNotRectangle',0)
+#endif /* DEBUG */
 
    dx=0.0_dp;dy=0.0_dp;dz=0.0_dp !;dr=0.0_dp
 
    PRINT*,''
-   PRINT*,'Building nearest neighbor data...'
+   call MIO_Print('Building nearest neighbor data...','neigh')
    num0 = 0
    num1 = 0
    num2 = 0
@@ -2184,32 +1973,15 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    num10= 0
 
    ! Divide geometry into rectangular cells of size xcell times ycell (units of Angstroms)
-   ! A_celdaunitaria=3.0*dsqrt(3.0)*aCC*aCC/2.0=2.6*aCC*aCC=5.24Ang => rho=2/A_celdaunitaria
-   !if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer')) then
-   !   rho   = 8.0_dp / (3.0_dp*DSQRT(3.0_dp)*aCC*aCC)
-   !else
-   !rho   = 4.0_dp / (3.0_dp*DSQRT(3.0_dp)*aCC*aCC)
    !!end if
-   !xcell = 5.0_dp
-   !ycell = 5.0_dp
-   !PRINT*,'Size of binning cell', xcell, 'X', ycell
    fracFactor = 3.0*aG
    fracFactor2 = fracFactor**2.0
    cutoff2 = cutoff2/fracFactor2
    cutoff2bis = cutoff2bis/fracFactor2
    rho   = 4.0_dp / (3.0_dp*DSQRT(3.0_dp)*aCC/fracFactor*aCC/fracFactor)
-   !end if
    xcell = 3.0_dp/fracFactor
    ycell = 3.0_dp/fracFactor
-   !PRINT*,'Size of binning cell', xcell, 'X', ycell
    !============================================================
-   !call MIO_Allocate(Species,nAt,'Species','atoms')
-   !call MIO_Allocate(NeighD,[1,1,inode1],[3,maxNeigh,inode2],'NeighD','neigh')
-   !call MIO_Allocate(xnew,[1],[natoms*9],'xnew','neigh')
-   !call MIO_Allocate(ynew,[1],[natoms*9],'ynew','neigh')
-   !call MIO_Allocate(znew,[1],[natoms*9],'znew','neigh')
-   !allocate(xnew(9*natoms),ynew(9*natoms),znew(9*natoms))
-   !print*, "numberOfAtoms: ", natoms, nAt
    do i=1,natoms
      xnew(i)=x(i); ynew(i)=y(i); znew(i)=z(i)
    end do
@@ -2268,15 +2040,8 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    Nx = CEILING((xmax-xmin)/xcell)
    Ny = CEILING((ymax-ymin)/ycell)
 
-   !write(*,*) xmin,xmax,Nx
-   !write(*,*) ymin,ymax,Ny
    ALLOCATE(cells(Nx, Ny, 4*CEILING(xcell*ycell*rho))) ! 2 instead of 4 if not bilayer
-   !write(*,*) 'Inicia llenado de cajas'
-   !write(*,*) 'First dimension of cells is equal to ', Nx
-   !write(*,*) 'Second dimension of cells is equal to ', Ny
-   !write(*,*) 'Third dimension of cells is equal to ', 4*CEILING(xcell*ycell*rho)
     cells = 0
-   !print*, cells
    do n = 1,9*natoms
 
      ix     = INT(1+(xnew(n)-xmin)/xcell)
@@ -2285,32 +2050,20 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
      iys(n) = iy
 
      i = 1
-     !print*, ix, iy, i
      do while (cells(ix,iy,i) .ne. 0)
-       !print*, i, cells(ix,iy,i)
        i = i+1
      end do
      cells(ix,iy,i) = n
      ! HERE
-     !ncell(:,1) = [ix,iy,0]
-     !neighCell(:,Nneigh(i),i) = ncell(:,1)
    end do
-   !print*, "got out"
-
-
 
    maxNeigh = maxnn
    call MIO_Allocate(NList,[1,inode1],[maxNeigh,inode2],'NList','neigh')
-   !call MIO_Allocate(NList,[1,inode1],[maxnn,inode2],'NList','neigh')
    call MIO_Allocate(Nneigh,[inode1],[inode2],'Nneigh','neigh')
    call MIO_Allocate(NeighD,[1,1,inode1],[3,maxnn,inode2],'NeighD','neigh')
-   !call MIO_Allocate(neighCell,(/1,1,inode1/),(/3,3,inode2/),'neighCell','neigh')
    call MIO_Allocate(neighCell,(/1,1,inode1/),(/3,maxnn,inode2/),'neighCell','neigh')
-   !ALLOCATE(cells(Nx, Ny, 2*CEILING(xcell*ycell*rho)))
-   !call MIO_Allocate(2*CEILING(xcell*ycell*rho),
    ! HERE
 
-   write(*,*) 'Inicia busqueda'
    ! Find NNs of each atom by only searching nearby cells
    safetycounter = 0
    DO n = 1,natoms
@@ -2331,30 +2084,22 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
        DO WHILE(cells(ix, iy, i) .ne. 0)
          m = cells(ix, iy, i)
          IF (m .ne. n) THEN
-           !write(*,*) 'hi2'
            dx_t = xnew(n) - xnew(m)
            dy_t = ynew(n) - ynew(m)
            dz_t = znew(n) - znew(m)
            ! Periodic boundary conditions here as well
-           ! IF(dx_t .gt.  A1(1)-1.2_dp*aCC) dx_t = dx_t - A1(1)
-           ! IF(dx_t .lt. -A1(1)+1.2_dp*aCC) dx_t = dx_t + A1(1)
-           ! IF(dy_t .gt.  A2(2)-1.2_dp*aCC) dy_t = dy_t - A2(2)
-           ! IF(dy_t .lt. -A2(2)+1.2_dp*aCC) dy_t = dy_t + A2(2)
            d2_t = dx_t**2.0_dp + dy_t**2.0_dp + dz_t**2.0_dp
            d2_t2 = dx_t**2.0_dp + dy_t**2.0_dp
              !IF (n==1) print*, "distances from n=1 ", d2_t
              !IF (n==3) print*, "distances from n=1 ", d2_t
            IF (abs(dz_t)<0.001_dp) THEN
-             !print*, cutoff2
              IF (d2_t .lt. cutoff2*1.1_dp) THEN
                NNcount = NNcount + 1
                call NeighCheckCount(NNcount,maxnn)
                vecino=mod(m,natoms)
                if (vecino==0) vecino=natoms
                nn(n,NNcount) = vecino
-               !NList(Nneigh(i),i) = j
                dx(n,NNcount)=dx_t; dy(n,NNcount)=dy_t; dz(n,NNcount)=dz_t
-               !dr(n,NNcount)=dsqrt(d2_t)
                NList(NNcount,n) = vecino
                NeighD(1,NNcount,n) = dx(n,NNcount)
                NeighD(2,NNcount,n) = dy(n,NNcount)
@@ -2366,17 +2111,13 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    !             if(n==4800) write(*,*) m,NNcount,vecino
              ENDIf
            ELSE
-             !print*, "cutoffffff", cutoff2bis
-             !print*, "dt_t2", d2_t2
              IF (d2_t2 .lt. cutoff2bis) THEN
                NNcount = NNcount + 1
                call NeighCheckCount(NNcount,maxnn)
                vecino=mod(m,natoms)
                if (vecino==0) vecino=natoms
                nn(n,NNcount) = vecino
-               !NList(Nneigh(i),i) = j
                dx(n,NNcount)=dx_t; dy(n,NNcount)=dy_t; dz(n,NNcount)=dz_t
-               !dr(n,NNcount)=dsqrt(d2_t)
                NList(NNcount,n) = vecino
                NeighD(1,NNcount,n) = dx(n,NNcount)
                NeighD(2,NNcount,n) = dy(n,NNcount)
@@ -2396,7 +2137,6 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
      ENDDO
 
      IF(NNcount .lt. 3) THEN
-       !print*, "Are you sure you wanted to enter this safety routine?"
        NNcount = 0
        DO m = 1,natoms
          IF (n.ne.m) THEN
@@ -2413,36 +2153,22 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
                IF (d2_t .lt. cutoff2*1.1_dp) THEN
                     NNcount = NNcount + 1
                     call NeighCheckCount(NNcount,maxnn)
-                    !vecino=mod(m,natoms)
-                    !if (vecino==0) vecino=natoms
-                    !nn(n,NNcount) = vecino
-                    !NList(Nneigh(i),i) = j
                     dx(n,NNcount)=dx_t; dy(n,NNcount)=dy_t; dz(n,NNcount)=dz_t
-                    !dr(n,NNcount)=dsqrt(d2_t)
                     NList(NNcount,n) = m
                     NeighD(1,NNcount,n) = dx(n,NNcount)
                     NeighD(2,NNcount,n) = dy(n,NNcount)
                     NeighD(3,NNcount,n) = dz(n,NNcount)
                     Nneigh(n) = NNcount
 
-
-                    !ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
-                    !neighCell(:,Nneigh(i),i) = ncell(:,1)
-
-
-                    !neighCell(1,NNcount,n) = ixs(m) - ixs(n) ! check if it's not n-m
-                    !neighCell(2,NNcount,n) = iys(m) - iys(n)
-                    !neighCell(3,NNcount,n) = 0
    !                if(n==4800) write(*,*) m,NNcount,vecino
                ENDIf
             END IF
           END IF
        END DO
        safetycounter = safetycounter + 1
-       if (safetycounter.gt.100) print*, "Carefull, you are probably going too many times through this safety loop. &
-      I originally implemented this because the fastNNnotsquared routine was missing neighbors for 4 atoms only..."
+       if (safetycounter == 101) call MIO_Print('WARNING: the neighbor search repeated its completion loop more '// &
+         'than 100 times; check the neighbor lists','neigh')
      ENDIF
-
 
    ! Count the number of atoms with 1, 2, 3, 4, 5 nearest neighbors
      IF(NNcount .eq. 0) num0 = num0 + 1
@@ -2459,8 +2185,6 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
      IF(NNcount .eq. 9) num9 = num9 + 1
      IF(NNcount .eq. 10) num10 = num10 + 1
 
-
-
    ENDDO
 
    if (frac) call AtomsSetCart()
@@ -2470,7 +2194,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    do i=1,tbnn
       Nradii(i,1) = rad(i)*aG*1.1_dp
    end do
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (MIO_StringComp(str,'BoronNitride')) then
       Nradii(:,2) = Nradii(:,1)
    else
@@ -2486,37 +2210,20 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
          do ix=-1,1; do iy=-1,1
             if (i==NList(j,i) .and. ix==0 .and. iy==0) cycle
             ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
-            v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+            ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
+            v = Rat(:,i) - Rat(:,NList(j,i)) - matmul(ucell,ncell(:,1))
                                                                ! Only if it is same unit cell (ix = 0, iy = 0) or neighor cell (e.g. 0 and 1), it might be satisfied (unless the bins are very small)
             d = norm(v)
             if (d<rmax) then
-               !Nneigh(i) = Nneigh(i) + 1
-               !if (Nneigh(i)>maxNeigh)  then
                !   !print*, "Number of neighbors: ", i, Nneigh(i)
-               !   call MIO_Kill('More neighbors than expected found',&
-               !     'neigh','NeighList')
-               !end if
-               !NList(Nneigh(i),i) = j
-               !NeighD(:,Nneigh(i),i) = -v
                neighCell(:,j,i) = ncell(:,1)
-            !else
-            !    print*, "Are you sure this was a neighbor?", i, NList(j,i)
             end if
          end do; end do
       end do
    end do
    !$OMP END PARALLEL
 
-   !write(*,*) 'hi4'
-   !neighCell = cells
    DEALLOCATE(cells)
-   !write(*,*) 'hi6'
-   !call MIO_Deallocate(xnew,'xnew','neigh')
-   !call MIO_Deallocate(ynew,'ynew','neigh')
-   !call MIO_Deallocate(znew,'znew','neigh')
-   !deallocate(xnew,ynew,znew)
-   !write(*,*) 'hi5'
-
 
    PRINT*,' 0 neighbors: ',num0
    PRINT*,' 1 neighbors: ',num1
@@ -2532,7 +2239,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    PRINT*,'>10 neighbors: ',natoms-(num0+num1+num2+num3+num4+num5+num6+num7+num8+num9+num10)
 
    PRINT*,''
-   PRINT*,'...done'
+   call MIO_Print('...done','neigh')
    PRINT*,''
 
    call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
@@ -2609,8 +2316,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
       call MIO_Deallocate(countN,'countN','neigh')
    end if
 #endif /* MPI */
-   call MIO_InputParameter('WriteDataFiles',prnt,.false.)
-   !call AtomsSetFrac()
+   call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
    if (prnt) then
       open(1,FILE='v')
       open(2,FILE='dx')
@@ -2619,10 +2325,6 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
       open(4,FILE='pos')
       do i=1,nAt
          write(1,*) Nneigh(i)
-         !write(1,'(300(I8,1X))') (NList(j,i),j=1,Nneigh(i))
-         !write(2,*) (NeighD(1,j,i),j=1,Nneigh(i))
-         !write(3,*) (NeighD(2,j,i),j=1,Nneigh(i))
-         !write(33,*) (NeighD(3,j,i),j=1,Nneigh(i))
          write(1,'(500(I8,1X))') (NList(j,i),j=1,Nneigh(i))
          write(2,'(500(F10.5,1X))') (NeighD(1,j,i),j=1,Nneigh(i))
          write(3,'(500(F10.5,1X))') (NeighD(2,j,i),j=1,Nneigh(i))
@@ -2642,7 +2344,9 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
       close(4)
    end if
 
-
+#ifdef DEBUG
+   call MIO_Debug('fastNNnotsquareNotRectangle',1)
+#endif /* DEBUG */
 
 end subroutine fastNNnotsquareNotRectangle
 
@@ -2687,15 +2391,18 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
    character(len=50) :: str
    logical :: prnt
 
-
    real(dp) :: distFact
+
+#ifdef DEBUG
+   call MIO_Debug('fastNN',0)
+#endif /* DEBUG */
 
    call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
 
    do i=1,tbnn
       Nradii(i,1) = rad(i)*aG*1.1_dp
    end do
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (MIO_StringComp(str,'BoronNitride')) then
       Nradii(:,2) = Nradii(:,1)
    else
@@ -2704,14 +2411,10 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
       end do
    end if
 
-
-
    maxNeigh = maxnn
    call MIO_Allocate(NList,[1,inode1],[maxNeigh,inode2],'NList','neigh')
-   !call MIO_Allocate(NList,[1,inode1],[maxnn,inode2],'NList','neigh')
    call MIO_Allocate(Nneigh,[inode1],[inode2],'Nneigh','neigh')
    call MIO_Allocate(NeighD,[1,1,inode1],[3,maxnn,inode2],'NeighD','neigh')
-   !call MIO_Allocate(neighCell,(/1,1,inode1/),(/3,3,inode2/),'neighCell','neigh')
    call MIO_Allocate(neighCell,(/1,1,inode1/),(/3,maxnn,inode2/),'neighCell','neigh')
 
    ! Initialize maxnn, set cutoff to cutoff² to avoid using sqrt()
@@ -2724,10 +2427,10 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
    maxnn   = 0
    cutoff2 = cutoff*cutoff*aCC*aCC
 
-
    ! Divide geometry into rectangular cells of size xcell times ycell (units of Angstroms)
    if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer') &
-           .or. MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell') .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
+           .or. MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell') &
+                 .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
       rho   = 4.0_dp / (3.0_dp*DSQRT(3.0_dp)*aCC*aCC)
    else
       rho   = 4.0_dp / (3.0_dp*DSQRT(3.0_dp)*aCC*aCC)
@@ -2739,7 +2442,6 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
    xmax = MAXVAL(x)
    ymin = MINVAL(y)
    ymax = MAXVAL(y)
-
 
    Nx = CEILING((xmax-xmin)/xcell)
    Ny = CEILING((ymax-ymin)/ycell)
@@ -2762,7 +2464,6 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
    ENDDO
 
    call MIO_InputParameter('Neigh.LayerDistFactor',distFact,1.0_dp) ! to increase the cutoff for outerlayer neighbors
-
 
    ! Find nearest neighbors by searching atoms in current and adjacent cells
    DO n = 1,natoms
@@ -2794,7 +2495,6 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
            IF(dy .lt. -A2(2)/2.0_dp) dy = dy + A2(2) + A1(2)
 
            dist2 = dx**2.0_dp + dy**2.0_dp + dz**2.0_dp
-           !cutoff2 = aG/sqrt(3.0_dp)*1.1_dp*distFact
            IF (dist2 .lt. cutoff2*2.5) THEN
              NNcount = NNcount + 1
              call NeighCheckCount(NNcount,maxnn)
@@ -2818,7 +2518,6 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
      near(n) = NNcount
      IF(NNcount .gt. maxnn) maxnn = NNcount
 
-
    ! Count the number of atoms with 1, 2, 3, 4, 5 nearest neighbors
      IF(NNcount .eq. 0) num0 = num0 + 1
      IF(NNcount .eq. 1) num1 = num1 + 1
@@ -2827,11 +2526,8 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
      IF(NNcount .eq. 4) num4 = num4 + 1
      IF(NNcount .eq. 5) num5 = num5 + 1
 
-
-
    ENDDO
    DEALLOCATE(cells)
-
 
    PRINT*,'  0 neighbors: ',num0
    PRINT*,'  1 neighbors: ',num1
@@ -2840,7 +2536,6 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
    PRINT*,'  4 neighbors: ',num4
    PRINT*,'  5 neighbors: ',num5
    PRINT*,' >5 neighbors: ',natoms-(num0+num1+num2+num3+num4+num5)
-
 
    call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    NList2 = NList
@@ -2916,8 +2611,7 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
       call MIO_Deallocate(countN,'countN','neigh')
    end if
 #endif /* MPI */
-   call MIO_InputParameter('WriteDataFiles',prnt,.false.)
-   !call AtomsSetFrac()
+   call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
    if (prnt) then
       open(1,FILE='v')
       open(2,FILE='dx')
@@ -2926,10 +2620,6 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
       open(4,FILE='pos')
       do i=1,nAt
          write(1,*) Nneigh(i)
-         !write(1,'(300(I8,1X))') (NList(j,i),j=1,Nneigh(i))
-         !write(2,*) (NeighD(1,j,i),j=1,Nneigh(i))
-         !write(3,*) (NeighD(2,j,i),j=1,Nneigh(i))
-         !write(33,*) (NeighD(3,j,i),j=1,Nneigh(i))
          write(1,'(500(I8,1X))') (NList(j,i),j=1,Nneigh(i))
          write(2,'(500(F10.5,1X))') (NeighD(1,j,i),j=1,Nneigh(i))
          write(3,'(500(F10.5,1X))') (NeighD(2,j,i),j=1,Nneigh(i))
@@ -2949,9 +2639,15 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
       close(4)
    end if
 
-
+#ifdef DEBUG
+   call MIO_Debug('fastNN',1)
+#endif /* DEBUG */
    RETURN
-END SUBROUTINE fastNN
 
+#ifdef DEBUG
+   call MIO_Debug('fastNN',1)
+#endif /* DEBUG */
+
+END SUBROUTINE fastNN
 
 end module neigh

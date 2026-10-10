@@ -1,27 +1,27 @@
-Description Graphene Kubo (Lanczos recursion) density of states
-Prefix generate
+Run.Description Graphene Kubo (Lanczos recursion) density of states
+Run.Prefix generate
 
-TypeOfSystem Graphene
+Run.TypeOfSystem Graphene
 TB.Hopping 3.1
 
-CellSize 1
-SuperCell 300
+Structure.CellSize 1
+Structure.SuperCell 300
 
 Kubo.Calc .true.
 Diag.Calc .false.
 Calculate.OnlyDOS .true.
 
-RecursionNumber 200
-NumberofEnergyPoints 201
-Epsilon 0.05
-EnergyMin 0-9.0
-EnergyMax 9.0
+Kubo.RecursionNumber 200
+Kubo.NumberofEnergyPoints 201
+Kubo.Epsilon 0.05
+Kubo.EnergyMin 0-9.0
+Kubo.EnergyMax 9.0
 
 # Reproducible random-phase state (the default seed is taken from the clock)
-setSeed .true.
-seedValue 123456
+Kubo.SetSeed .true.
+Kubo.SeedValue 123456
 
 TB.NeighLevels 1
 
-WriteDataFiles .false.
+Output.WriteDataFiles .false.
 WritePos .false.

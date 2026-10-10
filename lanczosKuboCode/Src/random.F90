@@ -10,6 +10,7 @@ module random
    !public :: RandSeed
    !public :: RandNum
    public :: RandTest
+   public :: RandSeedFromInput
 
    public :: rand_t
 
@@ -23,29 +24,30 @@ module random
 
 contains
 
-subroutine RandSeed(self,thread)
+!> @brief Seed the intrinsic random-number generator for the disorder models.
+!! @details With setSeed .true. the seed is seedValue, so that a disordered
+!!          Hamiltonian can be reproduced; otherwise it comes from the system
+!!          clock, as before.
+subroutine RandSeedFromInput()
 
-   type(rand_t), intent(inout) :: self
-   integer, intent(in) :: thread
+   integer :: n, clock, i, seedValue
+   integer, allocatable :: seed(:)
+   logical :: setSeed
 
-   integer :: clock, seed
-
-   logical :: randomSeed
-
-   call MIO_InputParameter('randomSeed',randomSeed,.true.)
-   !call system_clock(clock)
-   if (randomSeed) then
-      seed = 932117 + thread
+   call random_seed(size = n)
+   allocate(seed(n))
+   call MIO_InputParameter('Kubo.SetSeed',setSeed,.false.)
+   call MIO_InputParameter('Kubo.SeedValue',seedValue,123456)
+   if (setSeed) then
+      seed = seedValue
    else
-      seed = 932117
+      call system_clock(COUNT=clock)
+      seed = clock + 37 * (/ (i - 1, i = 1, n) /)
    end if
-   !seed = 99991 + clock + thread
-   !seed = prime(mod(thread,8)+1) + clock + thread
-   self%state(1) = seed
-   self%state(2:ns) = default_seed(2:ns)
+   call random_seed(PUT = seed)
+   deallocate(seed)
 
-end subroutine RandSeed
-
+end subroutine RandSeedFromInput
 
 function RandNum(self) result(rand)
 
@@ -79,8 +81,10 @@ subroutine RandTest(rng,n)
    real(dp) :: s, r
    type(cl_file) :: file
 
-   !call MIO_InputParameter('RandomTest',test,.false.)
-   !call MIO_InputParameter('RandomTestNumber',ntest,100)
+#ifdef DEBUG
+   call MIO_Debug('RandTest',0)
+#endif /* DEBUG */
+
    filename = trim(prefix)//'.'//trim(num2str(nThread))//'.RNDM'
    u = 200+nThread
    open(u,FILE=filename,STATUS='replace')
@@ -96,6 +100,10 @@ subroutine RandTest(rng,n)
    call MIO_Print('Average: '//trim(num2str(s,12)),'random')
    call MIO_Print('')
    close(u)
+
+#ifdef DEBUG
+   call MIO_Debug('RandTest',1)
+#endif /* DEBUG */
 
 end subroutine RandTest
 

@@ -110,7 +110,9 @@ module diag
    public :: DiagSpectralFunctionKGridInequivalentEnergyCut
    public :: DiagSpectralFunctionKGridInequivalentEnergyCut_v2
    public :: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale
-   public :: moireAngle, gGridRotationAngle, skipGRotation, tapwNG, M_tapw, calculateChern, nk_chern_x, nk_chern_y, fermi_energy, useTriangularTruncation, checkTAPWUnitary, physicalTwistAngle, useKprimeValley, tapwDebug, useRigidPositions, tapwLowdin, tapwBothValleys, tapwValleyDecouple, socDebug, forceBlockTAPW
+   public :: moireAngle, gGridRotationAngle, skipGRotation, tapwNG, M_tapw, calculateChern, nk_chern_x, nk_chern_y, &
+         fermi_energy, useTriangularTruncation, checkTAPWUnitary, physicalTwistAngle, useKprimeValley, tapwDebug, &
+         useRigidPositions, tapwLowdin, tapwBothValleys, tapwValleyDecouple, socDebug, forceBlockTAPW
    public :: calculate3DTAPWBands, nk_3D_x, nk_3D_y, gammaCentred3D
 #ifdef SEMICL
    public :: berryFluxTAPW, berryBandMin, berryBandMax
@@ -126,6 +128,9 @@ module diag
 #ifdef SEMICL
    public :: berryLinksTAPW
 #endif
+
+   ! DiagH0TAPW: the description of the basis has been printed (it is the same at every k-point)
+   logical, save :: tapwSetupSaid = .false.
 
 contains
 
@@ -152,8 +157,6 @@ subroutine DiagInit(N)
    call ZHEEV('N','L',N,A,N,W,OPT,-1,W2,INFO)
    if (INFO /= 0) call MIO_Kill('Error in workspace query for diagonalization','diag','DiagInit')
    lwork = int(OPT(1))
-   !allocate(ZWork(lwork))
-   !allocate(DWork(3*N-2))
    call MIO_Allocate(ZWork,lwork,'ZWork','diag')
    call MIO_Allocate(DWork,3*N-2,'DWork','diag')
 
@@ -175,7 +178,7 @@ subroutine DiagDOS()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : twopi
-   use math
+   use math,                 only : TrapezoidalInt
 
    integer, parameter :: intorder=5
 
@@ -191,7 +194,6 @@ subroutine DiagDOS()
    real(dp) :: ELoc(nAt)
    complex(dp) :: HLoc(nAt, nAt)
 
-
 #ifdef DEBUG
    call MIO_Debug('DiagDOS',0)
 #endif /* DEBUG */
@@ -200,9 +202,9 @@ subroutine DiagDOS()
 #endif /* TIMER */
 
    call MIO_Print('Calculating DOS by diagonalization','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
-   call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
    call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
    call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
    call MIO_Allocate(DOS,[Epts,nspin],'DOS','diag')
@@ -229,7 +231,8 @@ subroutine DiagDOS()
    end do
    do is=1,nspin
       if (nspin > 1) then
-         call MIO_Print('Diagonalizing spin '//trim(num2str(is))//' of '//trim(num2str(nspin))//': Processing '//trim(num2str(ptot))//' k-points','diag')
+         call MIO_Print('Diagonalizing spin '//trim(num2str(is))//' of '//trim(num2str(nspin))//': Processing ' &
+               //trim(num2str(ptot))//' k-points','diag')
       else
          call MIO_Print('Diagonalizing: Processing '//trim(num2str(ptot))//' k-points','diag')
       end if
@@ -240,7 +243,8 @@ subroutine DiagDOS()
          if (ptot > 1) then
             if (ik == ptot .or. (ik > 0 .and. int(10.0_dp*(ik-1)/ptot) < int(10.0_dp*ik/ptot))) then
                !$OMP CRITICAL
-               call MIO_Print('  k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot))//' ('//trim(num2str(int(100.0_dp*ik/ptot)))//'%)','diag')
+               call MIO_Print('  k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot))//' (' &
+                     //trim(num2str(int(100.0_dp*ik/ptot)))//'%)','diag')
                !$OMP END CRITICAL
             end if
          end if
@@ -248,26 +252,13 @@ subroutine DiagDOS()
          ELoc = 0.0_dp
          HLoc = 0.0_dp
          !if (modulo(ik,int(ptot/10)).eq.0) print*, "progress is: ", ik/int(ptot/10)*10, "percent"
-         !write(*,*) 'k-pt', ik, ptot
-         !call DiagHam(nAt,nspin,is,H(:,:,is),Eig(:,is),Kgrid(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
          call DiagHam(nAt,nspin,is,HLoc,ELoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
          !Eig(:,is) = Eig(:,is)*g0
          ELoc = ELoc*g0
-         !Emin = min(Emin,Eig(1,is))
-         !Emax = max(Emax,Eig(nAt,is))
-         !do i1=1,nAt
-         !   do i2=1,Epts
-         !      E(i2) = E1 + (E2-E1)*(i2-1)/(Epts-1)
          !      DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
-         !   end do
-         !end do
          Emin = min(Emin,ELoc(1))
          Emax = max(Emax,ELoc(nAt))
-         !do i1=1,nAt
-         !   do i2=1,Epts
          !      DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-ELoc(i1))**2/(2.0_dp*eps**2))
-         !   end do
-         !end do
          do i1=1,nAt
             EStore(ik,i1) = ELoc(i1)
          end do
@@ -284,7 +275,8 @@ subroutine DiagDOS()
          ! Progress reporting every 10% completion
          if (ptot > 1) then
             if (ik == ptot .or. (ik > 0 .and. int(10.0_dp*(ik-1)/ptot) < int(10.0_dp*ik/ptot))) then
-               call MIO_Print('    Accumulating k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot))//' ('//trim(num2str(int(100.0_dp*ik/ptot)))//'%)','diag')
+               call MIO_Print('    Accumulating k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot))//' (' &
+                     //trim(num2str(int(100.0_dp*ik/ptot)))//'%)','diag')
             end if
          end if
          do i1=1,nAt
@@ -347,7 +339,7 @@ subroutine DiagPDOS()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : twopi
-   use math
+   use math,                 only : TrapezoidalInt
 
    integer, parameter :: intorder=5
 
@@ -370,7 +362,6 @@ subroutine DiagPDOS()
 
    integer :: omp_get_thread_num, omp_get_max_threads, index_ii
 
-
 #ifdef DEBUG
    call MIO_Debug('DiagPDOS',0)
 #endif /* DEBUG */
@@ -379,9 +370,9 @@ subroutine DiagPDOS()
 #endif /* TIMER */
 
    call MIO_Print('Calculating PDOS by diagonalization','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
-   call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
    call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
    call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
    call MIO_Allocate(E,Epts,'E','diag')
@@ -410,26 +401,13 @@ subroutine DiagPDOS()
          ELoc = 0.0_dp
          HLoc = 0.0_dp
          !if (modulo(ik,int(ptot/10)).eq.0) print*, "progress is: ", ik/int(ptot/10)*10, "percent"
-         !write(*,*) 'k-pt', ik, ptot
-         !call DiagHam(nAt,nspin,is,H(:,:,is),Eig(:,is),Kgrid(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
          call DiagHamPDOS(nAt,nspin,is,HLoc,ELoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
          !Eig(:,is) = Eig(:,is)*g0
          ELoc = ELoc*g0
-         !Emin = min(Emin,Eig(1,is))
-         !Emax = max(Emax,Eig(nAt,is))
-         !do i1=1,nAt
-         !   do i2=1,Epts
-         !      E(i2) = E1 + (E2-E1)*(i2-1)/(Epts-1)
          !      DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
-         !   end do
-         !end do
          Emin = min(Emin,ELoc(1))
          Emax = max(Emax,ELoc(nAt))
-         !do i1=1,nAt
-         !   do i2=1,Epts
          !      DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-ELoc(i1))**2/(2.0_dp*eps**2))
-         !   end do
-         !end do
          do i1=1,nAt
             EStore(ik,i1) = ELoc(i1)
             do i1bis=1,nAt
@@ -439,10 +417,8 @@ subroutine DiagPDOS()
       end do
       !$OMP END PARALLEL DO
    end do
-   call MIO_InputParameter('numberOfLayers',numberOfLayers,2)
+   call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
    do PDOSLayerIndex=1,numberOfLayers
-      !fmt = '(I2.2)' ! an integer of width 5 with zeros at the left
-      !write (x1,fmt) PDOSLayerIndex
       flnm = trim(prefix)//'.diag.DOS.Layer'//trim(num2str(PDOSLayerIndex))
       call file%Open(name=flnm,serial=.true.)
       u = file%GetUnit()
@@ -457,7 +433,6 @@ subroutine DiagPDOS()
                   do i2=1,Epts
                      DOS(i2,is) = 0.0_dp
                      do ivec=1,nAt ! add this for the vector multiplication projection operator
-                         !!$OMP PARALLEL DO PRIVATE(vectormultip, pipj), REDUCTION(+:DOS_thread), &
                          !$OMP PARALLEL DO PRIVATE(vectormultip, pipj), &
                          !$OMP& SHARED(E, EStore, eps, DOS_thread)
                          do ivec2=1,nAt ! add this for the vector multiplication projection operator
@@ -466,7 +441,8 @@ subroutine DiagPDOS()
                      ! eigenenergies
                            vectormultip=conjg(HStore(ik,ivec,i1))*HStore(ik,ivec2,i1) !
                            pipj=EStore(ik,i1)*vectormultip
-                           DOS_thread(i2,is,omp_get_thread_num()+1) = DOS_thread(i2,is,omp_get_thread_num()+1) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2)) * pipj
+                           DOS_thread(i2,is,omp_get_thread_num()+1) = DOS_thread(i2,is,omp_get_thread_num()+1) &
+                                 + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2)) * pipj
                            !DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2)) * pipj
                          end do
                          !$OMP END PARALLEL DO
@@ -539,7 +515,6 @@ subroutine Diag3DBands()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : twopi
-   use math
 
    integer, parameter :: intorder=5
 
@@ -558,9 +533,9 @@ subroutine Diag3DBands()
 #endif /* TIMER */
 
    call MIO_Print('Calculating 3D Bands by diagonalization','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
-   call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
    call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
    call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
    call MIO_Allocate(DOS,[Epts,nspin],'DOS','diag')
@@ -575,75 +550,30 @@ subroutine Diag3DBands()
    end do; end do; end do
    call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
    call MIO_Allocate(Eig,[nAt,nspin],'Eig','diag')
-   !flnm = trim(prefix)//'.diag.DOS'
    !call file%Open(name=flnm,serial=.true.)
-   !u = file%GetUnit()
-   !Emax = -huge(1.0_dp)
-   !Emin = huge(1.0_dp)
-
 
    flnm2 = trim(prefix)//'.3Dbands'
    uu=98
    open(uu,FILE=flnm2,STATUS='replace')
-   !write(uu,'(f16.8)') Efermi
-   !write(uu,'(2f16.8)') 0.0_dp, d
-   !write(uu,'(2f16.8)') Emin-2.0_dp, Emax+2.0_dp
    write(uu,'(3i8)') nAt, nspin, ptot
    do is=1,nspin
       do ik=1,ptot
-         if (modulo(ik,int(ptot/10)).eq.0) call MIO_Print('progress is: '//trim(num2str((ik/ptot/10.0_dp*10.0_dp),4))//' percent','diag')
-         !write(*,*) 'k-pt', ik, ptot
+         if (modulo(ik,int(ptot/10)).eq.0) call MIO_Print('progress is: '//trim(num2str((ik/ptot/10.0_dp*10.0_dp),4)) &
+               //' percent','diag')
          call DiagHam(nAt,nspin,is,H(:,:,is),Eig(:,is),Kgrid(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
          !hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0))
          !lc = min(lc,minval(E(:,is),mask=E(:,is)>Efermi/g0))
-         !v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-         !d = d + sqrt(dot_product(v,v))
          write(uu,'(f12.6,10f14.6,/,(10x,10f14.6))') Kgrid(:,ik),(Eig(i,is)*g0, i=1,nAt)
-         !write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
 
          Eig(:,is) = Eig(:,is)*g0
          Emin = min(Emin,Eig(1,is))
          Emax = max(Emax,Eig(nAt,is))
-         !do i1=1,nAt
-         !   do i2=1,Epts
-         !      E(i2) = E1 + (E2-E1)*(i2-1)/(Epts-1)
          !      DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
-         !   end do
-         !end do
       end do
    end do
-   !if (nspin==1) then
-   !   DOS = 2.0_dp*DOS/(eps*sqrt(twopi)*ptot)
-   !else
-   !   DOS = DOS/(eps*sqrt(twopi)*ptot)
-   !end if
-   !do i1=1,Epts
-   !   write(u,*) E(i1), (DOS(i1,is),is=1,nspin)
-   !end do
    !call file%Close()
    call MIO_Deallocate(Eig,'Eig','diag')
    call MIO_Deallocate(H,'H','diag')
-   !call MIO_Print('Emin: '//trim(num2str(Emin,4))//', Emax: '//trim(num2str(Emax,4)),'diag')
-   !eps = (E2-E1)/(Epts-1)
-   !sp = 0.0_dp
-   !Ep = Emin
-   !do ik=1,Epts-2*intorder
-   !   s = 0.0_dp
-   !   do is=1,nspin
-   !      s = s + TrapezoidalInt(DOS(:intorder*2+ik,is),intorder*2+ik,eps,intorder)
-   !   end do
-   !   if (s>=nEl) then
-   !      Efermi = (E(intorder*2+ik)+Ep)/2.0_dp
-   !      exit
-   !   else
-   !      if (s/=sp) then
-   !         Ep = E(intorder*2+ik)
-   !         sp = s
-   !      end if
-   !   end if
-   !end do
-   !call MIO_Print('Efermi: '//trim(num2str(Efermi,5)),'diag')
-   !call MIO_Print('')
 
 #ifdef TIMER
    call MIO_TimerStop('diag')
@@ -659,12 +589,11 @@ subroutine DiagBands()
 
    use cell,                 only : rcell, ucell, aG
    use atoms,                only : nAt
-   use ham,                  only : H0, hopp, nspin, RashbaSOCterm
+   use ham,                  only : H0, hopp, nspin, RashbaSOCterm, IsingSOCterm
    use neigh,                only : NList, Nneigh, neighCell,maxNeigh
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, uu, uuu, uuuu, neig, i_eig
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:,:)=>NULL()
@@ -699,35 +628,40 @@ subroutine DiagBands()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Bands.NumPoints',nPts0,100)
    call MIO_InputParameter('Bands.SparseNeig',neig,100)
    call MIO_InputParameter('Bands.UseDifferentLatticeVectors',useDifferentLatticeVectors,.false.)
    call MIO_InputParameter('Bands.UseSameNumberOfPoints',useSameNumberOfPoints,.false.)
-   call MIO_InputParameter('keepWaveFunction',keepWaveFunction,.false.)
-    call MIO_InputParameter('sparseDiagSolver',sparseDiagSolver,.false.)
-    call MIO_InputParameter('useTAPW',useTAPW,.false.)
-    call MIO_InputParameter('useDenseMatrixTAPW',useDenseMatrixTAPW,.false.)
+   call MIO_InputParameter('Output.KeepWaveFunction',keepWaveFunction,.false.)
+    call MIO_InputParameter('Diag.SparseSolver',sparseDiagSolver,.false.)
+    call MIO_InputParameter('TAPW.Use',useTAPW,.false.)
+    call MIO_InputParameter('TAPW.UseDenseMatrix',useDenseMatrixTAPW,.false.)
+    ! The Zeeman, Ising and Rashba terms are implemented in the TAPW path only.
+    if (.not. useTAPW) then
+       block
+          logical :: zeeman, pzeeman
+          call MIO_InputParameter('Zeeman.Term',zeeman,.false.)
+          call MIO_InputParameter('Zeeman.PseudoTerm',pzeeman,.false.)
+          if (zeeman .or. pzeeman .or. IsingSOCterm) then
+             call MIO_Print('WARNING: ZeemanTerm, PseudoZeemanTerm and IsingSOCterm are implemented for TAPW '// &
+               'calculations only (useTAPW .true.); they have NO effect on this calculation.','diag')
+          end if
+          if (RashbaSOCterm .and. nspin == 1) then
+             call MIO_Kill('RashbaSOCterm is implemented for TAPW calculations only (useTAPW .true.).', &
+               'diag','DiagBands')
+          end if
+       end block
+    end if
 
    if (useDifferentLatticeVectors) then
        ucell(1,2) = 0.0_dp
        rcell(2,1) = 0.0_dp
    end if
-   !print*, "ucell at beginning of diagBands"
-   !print*, ucell(:,1)
-   !print*, ucell(:,2)
-   !print*, ucell(:,3)
-   !print*, "rcell at beginning of diagBands"
-   !print*, rcell(:,1)
-   !print*, rcell(:,2)
-   !print*, rcell(:,3)
-
 
    if (MIO_InputFindBlock('Bands.Path',nPath)) then
       call MIO_Print('Band calculation','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_InputBlock('Bands.Path',path)
-
 
       ! Store fractional coordinates for debugging
       open(unit=98, file='kpath_debug_fractional', status='replace')
@@ -738,10 +672,8 @@ subroutine DiagBands()
       close(98)
 
       do ip=1,nPath
-         !print*, "0: ", path(:,ip)
          ! Convert fractional coordinates to absolute k-space coordinates
          path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
-         !print*, "1: ", path(:,ip)
       end do
 
       ! Store absolute coordinates for debugging
@@ -752,19 +684,13 @@ subroutine DiagBands()
       end do
       close(98)
 
-      print *, "K-path debug data written to kpath_debug_* files"
-         !if (MoireBS) then
+      call MIO_Print('k-path written to kpath_debug_absolute and kpath_debug_fractional','diag')
          !   !print*, "theta=", theta
-         !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
-         !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
-         !end if
-         !print*, "2: ", path(:,ip)
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
          nPts(1) = 1
          ptsTot = 1
       else
-         !call MIO_Allocate(nPts,nPath-1,'nPts','diag')
          call MIO_Allocate(nPts,nPath,'nPts','diag')
          nPts(1) = nPts0
          ptsTot = nPts0
@@ -781,31 +707,22 @@ subroutine DiagBands()
                   nPts(ip) = nint(real(d*nPts0)/real(d0))
                   ptsTot = ptsTot + nPts(ip)
                end if
-               !ptsTot = ptsTot + nPts(ip)
             end do
             nPts(ip) = nPts(ip) + 1 ! Add the missing point at the end of last segment
          end if
       end if
-      !call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
       call MIO_Allocate(Kpts,[3,ptsTot+1],'Kpts','diag') ! add missing point
-      !print*, "ptsTot, nPath", ptsTot, nPath, nPts(1)
       Kpts(:,1) = path(:,1)
-      !ip = 0
       ip = 1
       d = 0.0_dp
       do i=1,nPath-1
-      !do i=2,nPath
          do j=1,nPts(i)
             ip = ip + 1
-            !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
             Kpts(:,ip) = path(:,i) + (j)*(path(:,i+1)-path(:,i))/nPts(i)
             v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
             d = d + sqrt(dot_product(v,v))
          end do
       end do
-      !print*, "initial Gamma: ", Kpts(:,1)
-      !print*, "final Gamma: ", Kpts(:,ip), ip
-      !call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
       ! For TAPW: allocate larger E array to accommodate projected space M = NG × Nlabel
       if (useTAPW) then
          call MIO_Allocate(E,[max(nAt, 15000),nspin,ptsTot+1],'E','diag')
@@ -827,7 +744,6 @@ subroutine DiagBands()
       write(u,'(f16.8)') Efermi
       write(u,'(2f16.8)') 0.0_dp, d
       write(u,'(2f16.8)') Emin-2.0_dp, Emax+2.0_dp
-
 
       ! Override k-path with k-grid for Chern calculation or 3D TAPW bands calculation
       if ((calculateChern .and. useTAPW) .or. calculate3DTAPWBands) then
@@ -875,9 +791,12 @@ subroutine DiagBands()
                call MIO_Print('Using high-symmetry k-grid definition: k = (i/Nk)*b1 + (j/Nk)*b2','diag')
                call MIO_Print('  This ensures proper sampling of Gamma (0,0), K, and M points','diag')
                if (tapwDebug) call MIO_Print('DEBUG: rcell matrix:','diag')
-               call MIO_Print('  b1 = ['//trim(num2str(rcell(1,1),6))//','//trim(num2str(rcell(2,1),6))//','//trim(num2str(rcell(3,1),6))//']','diag')
-               call MIO_Print('  b2 = ['//trim(num2str(rcell(1,2),6))//','//trim(num2str(rcell(2,2),6))//','//trim(num2str(rcell(3,2),6))//']','diag')
-               call MIO_Print('  b3 = ['//trim(num2str(rcell(1,3),6))//','//trim(num2str(rcell(2,3),6))//','//trim(num2str(rcell(3,3),6))//']','diag')
+               call MIO_Print('  b1 = ['//trim(num2str(rcell(1,1),6))//','//trim(num2str(rcell(2,1),6))//',' &
+                     //trim(num2str(rcell(3,1),6))//']','diag')
+               call MIO_Print('  b2 = ['//trim(num2str(rcell(1,2),6))//','//trim(num2str(rcell(2,2),6))//',' &
+                     //trim(num2str(rcell(3,2),6))//']','diag')
+               call MIO_Print('  b3 = ['//trim(num2str(rcell(1,3),6))//','//trim(num2str(rcell(2,3),6))//',' &
+                     //trim(num2str(rcell(3,3),6))//']','diag')
 
                ! First pass: regular grid
                do j = 0, nk_chern_y-1
@@ -961,12 +880,12 @@ subroutine DiagBands()
       if (calculateChern) then
          call MIO_Print('Pre-allocating TAPW arrays for high-performance Chern calculation...', 'diag')
          ! Estimate M based on typical values (will be updated in first call)
-         ! M_estimate = 200  ! Conservative estimate, will be resized if needed
 
          ! Pre-allocate all arrays that are currently allocated per k-point
          if (.not. allocated(tapw_H_dense)) then
             allocate(tapw_H_dense(nAt, nAt))
-            call MIO_Print('Pre-allocated H_dense: '//trim(num2str(nAt))//'x'//trim(num2str(nAt))//' = '//trim(num2str(nAt*nAt*8/1024/1024))//' MB', 'diag')
+            call MIO_Print('Pre-allocated H_dense: '//trim(num2str(nAt))//'x'//trim(num2str(nAt))//' = ' &
+                  //trim(num2str(nAt*nAt*8/1024/1024))//' MB', 'diag')
          end if
 
          if (.not. allocated(tapw_Hproj)) then
@@ -998,9 +917,6 @@ subroutine DiagBands()
       end if
 
       if (keepWaveFunction .or. .not. (sparseDiagSolver .or. useTAPW)) allocate(HLoc(nAt,nAt))
-      !if (useTAPW) then
-      !   allocate(eigvecs(M, M_band, nkx * nky))
-      !end if
       d = 0.0_dp
       hv = -huge(0.0_dp)
       lc = huge(0.0_dp)
@@ -1009,37 +925,11 @@ subroutine DiagBands()
       call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
-      !!$OMP PARALLEL DO PRIVATE(ELoc, KptsLoc, is, ip, HLoc), &
-      !!$OMP& SHARED(E, nAt, nspin, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, Kpts)
-      !do ip=1,ptsTot + 1
-      !   do is=1,nspin
       !      !if (modulo(ip,int(ptsTot/10)).eq.0) print*, "progress is: ", ip/int(ptsTot/10)*10, "percent"
-      !      ELoc = 0.0_dp
-      !      HLoc = 0.0_dp
-      !      KptsLoc = Kpts(:,ip)
-      !      if (keepWaveFunction) then
-      !         call DiagHamWF(nAt,nspin,is,HLoc,ELoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-      !         do i=1,nAt
       !             !write(uu,*) (HLoc(j,i),j=1,nAt)
-      !             if (ip.eq.1) then ! for now, let's only print the firt k-point (cfr ptsTot+1)
-      !                 write(uu,'(20000(F10.5,1X))') (real(HLoc(j,i)),j=1,nAt)
-      !                 write(uuuu,'(20000(F10.5,1X))') (real(conjg(HLoc(j,i))*HLoc(j,i)),j=1,nAt)
-      !                 write(uuu,*) ELoc(i)
-      !             end if
-      !         end do
-      !      else if (sparseDiagSolver) then
       !         !call DiagHamSparse(nAt,nspin,is,HLoc,ELoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-      !         call DiagHamSparse(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell)
       !         !call DiagHamSparse2(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell)
 
-
-      !      else
-      !         call DiagHam(nAt,nspin,is,HLoc,ELoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-      !      end if
-      !      E(:,is,ip) = ELoc
-      !   end do
-      !end do
-      !!$OMP END PARALLEL DO
       ! Print initial TAPW information
       if (useTAPW) then
          call MIO_Print('Starting TAPW calculations for '//trim(num2str(ptsTot))//' k-points...', 'diag')
@@ -1077,12 +967,11 @@ subroutine DiagBands()
                   !$OMP CRITICAL
                   if (.not. allocated(HBlock)) allocate(HBlock(2*nAt, 2*nAt))
                   call BuildBlockHamiltonianOnly(nAt, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, HBlock)
-                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, Nneigh, neighCell, neig, ip)
+                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, &
+                        Nneigh, neighCell, neig, ip)
                   !$OMP END CRITICAL
                else if (useTAPW) then
-                  !call DiagH0TAPW(nAt, nspin, is, ELoc, eigvec, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell,neig)
                   call DiagH0TAPW(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell,neig, ip)
-                  !eigvecs(:, :, ik) = ZWorkLoc(:, 1:M_band)
                else if (RashbaSOCterm .and. is == 1) then
                   ! Use block Hamiltonian for Rashba (only call once, gives 2N eigenvalues)
                   !$OMP CRITICAL
@@ -1126,7 +1015,6 @@ subroutine DiagBands()
                end if
             end if
             v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-            !v = Kpts(:,ip+1) - Kpts(:,max(ip,1))
             d = d + sqrt(dot_product(v,v))
             if (useTAPW) then
                ! For TAPW: only output the meaningful eigenvalues (M = NG * Nlabel)
@@ -1136,7 +1024,6 @@ subroutine DiagBands()
                ! For other methods: output all nAt eigenvalues
                write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
             end if
-            !write(u,*) d,((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
             if (sum(nPts(:nPath))==ip-1) then
                nPath = nPath+1
                call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ip))// &
@@ -1176,10 +1063,10 @@ subroutine DiagBands()
                   !$OMP CRITICAL
                   if (.not. allocated(HBlock)) allocate(HBlock(2*nAt, 2*nAt))
                   call BuildBlockHamiltonianOnly(nAt, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, HBlock)
-                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, Nneigh, neighCell, neig, ip)
+                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, &
+                        Nneigh, neighCell, neig, ip)
                   !$OMP END CRITICAL
                else if (useTAPW) then
-                  !call DiagH0TAPW(nAt, nspin, is, ELoc, eigvec, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell,neig)
                   call MIO_Print('calling TAPW routine for '//trim(num2str(ip)),'diag')
                   call DiagH0TAPW(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell,neig, ip)
                else if (RashbaSOCterm .and. is == 1) then
@@ -1229,9 +1116,11 @@ subroutine DiagBands()
             do ip=1,ptsTot
                ! For 3D TAPW bands: write kx, ky coordinates instead of cumulative distance
                if (useTAPW) then
-                  write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), ((E(i,is,ip)*g0, i=1,M_tapw),is=1,nspin)
+                  write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), &
+                        ((E(i,is,ip)*g0, i=1,M_tapw),is=1,nspin)
                else
-                  write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), ((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
+                  write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), &
+                        ((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
                end if
             end do
          else
@@ -1245,7 +1134,6 @@ subroutine DiagBands()
             do ip=1,ptsTot+1
                ! For regular band structure: use cumulative distance
                v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-               !v = Kpts(:,ip+1) - Kpts(:,max(ip,1))
                d = d + sqrt(dot_product(v,v))
                if (useTAPW) then
                   ! For TAPW: only output the meaningful eigenvalues (M = NG * Nlabel)
@@ -1254,7 +1142,6 @@ subroutine DiagBands()
                   ! For other methods: output all nAt eigenvalues
                   write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
                end if
-               !write(u,*) d,((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
                if (.not. calculate3DTAPWBands .and. sum(nPts(:nPath))==ip-1) then
                   nPath = nPath+1
                   call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ip))// &
@@ -1264,10 +1151,22 @@ subroutine DiagBands()
          end if
       else
          ! General case: more than one k-point, use OpenMP
+#ifdef _OPENMP
+         ! TAPW must run with one OpenMP thread: the k-loop below is an OpenMP
+         ! loop, and the TAPW routines called from it read input parameters and
+         ! call threaded LAPACK, neither of which is safe inside it. The threads
+         ! of the linear-algebra library do the parallel work instead.
          if (useTAPW) then
-            call MIO_Print('WARNING: TAPW is being used with OpenMP parallelization. This may cause conflicts between MKL and OpenMP threading.', 'diag')
-            call MIO_Print('Consider setting OMP_NUM_THREADS=1 and MKL_NUM_THREADS=48 for TAPW calculations.', 'diag')
+            block
+               integer, external :: omp_get_max_threads
+               if (omp_get_max_threads() > 1) then
+                  call MIO_Kill('TAPW calculations must be run with one OpenMP thread. Set OMP_NUM_THREADS=1 '// &
+                    'and give the cores to the linear-algebra library instead (MKL_NUM_THREADS or '// &
+                    'OPENBLAS_NUM_THREADS = number of cores), then run again.','diag','DiagBands')
+               end if
+            end block
          end if
+#endif
 
          ! Cache TAPW-related inputs once outside the OpenMP region to avoid nested timer/input
          if (useTAPW .and. .not. tapw_cfg_initialized) then
@@ -1328,7 +1227,9 @@ subroutine DiagBands()
                      else
                         forceBlockTAPW_str = 'false'
                      end if
-                     call MIO_Print('DEBUG: forceBlockTAPW flag check - useTAPW='//trim(useTAPW_str)//', forceBlockTAPW='//trim(forceBlockTAPW_str)//', is='//trim(num2str(is))//', ip='//trim(num2str(ip)), 'diag')
+                     call MIO_Print('DEBUG: forceBlockTAPW flag check - useTAPW='//trim(useTAPW_str) &
+                           //', forceBlockTAPW='//trim(forceBlockTAPW_str)//', is='//trim(num2str(is))//', ip=' &
+                           //trim(num2str(ip)), 'diag')
                   end if
                   ! TAPW + Rashba SOC (or forced block path for testing): Build block Hamiltonian once, then use TAPW diagonalization
                   ! Only Rashba requires block Hamiltonian due to spin-flip terms, but forceBlockTAPW allows testing without SOC
@@ -1346,7 +1247,8 @@ subroutine DiagBands()
                   else if (socDebug) then
                      call MIO_Print('BuildBlockHamiltonianOnly completed, calling DiagH0TAPW_withBlockH', 'diag')
                   end if
-                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, Nneigh, neighCell, neig, ip)
+                  call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, &
+                        Nneigh, neighCell, neig, ip)
                   if (forceBlockTAPW) then
                      call MIO_Print('DiagH0TAPW_withBlockH completed', 'diag')
                   else if (socDebug) then
@@ -1399,7 +1301,6 @@ subroutine DiagBands()
                   ! Skip spin-down iteration for TAPW+Rashba (or forced block path) since block Hamiltonian already handled both spins
                   cycle
                else if (useTAPW) then
-                  !call DiagH0TAPW(nAt, nspin, is, ELoc, eigvec, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell,neig)
 #ifdef SEMICL
                   if (allocated(bf_evec) .and. is == 1 .and. ip <= ptsTot) then
                      call DiagH0TAPW(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell,neig, ip, &
@@ -1476,9 +1377,11 @@ subroutine DiagBands()
 
                   ! For 3D TAPW bands: write kx, ky coordinates instead of cumulative distance
                   if (useTAPW) then
-                     write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), ((E(i,is,ip)*g0, i=1,M_tapw),is=1,nspin)
+                     write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), &
+                           ((E(i,is,ip)*g0, i=1,M_tapw),is=1,nspin)
                   else
-                     write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), ((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
+                     write(u,'(3f12.6,10f14.6,/,(10x,10f14.6))') Kpts(1,ip), Kpts(2,ip), Kpts(3,ip), &
+                           ((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
                   end if
                end do
             else
@@ -1493,14 +1396,12 @@ subroutine DiagBands()
 
                   ! For regular band structure: use cumulative distance
                   v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-                  !v = Kpts(:,ip+1) - Kpts(:,max(ip,1))
                   d = d + sqrt(dot_product(v,v))
                   if (useTAPW) then
                      write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is,ip)*g0, i=1,M_tapw),is=1,nspin)
                   else
                      write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
                   end if
-                  !write(u,*) d,((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
                   if (.not. calculate3DTAPWBands .and. sum(nPts(:nPath))==ip-1) then
                      nPath = nPath+1
                      call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ip))// &
@@ -1522,9 +1423,6 @@ subroutine DiagBands()
       call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
-      !call MIO_Deallocate(H,'H','diag')
-      !call MIO_Deallocate(Kpts,'Htsp','diag')
-      !call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
       call MIO_Print('')
       close(u)
    end if
@@ -1533,7 +1431,6 @@ subroutine DiagBands()
    if (allocated(ELoc)) then
       deallocate(ELoc)
    end if
-
 
    ! Always ensure timer is stopped, regardless of exit path
 #ifdef TIMER
@@ -1554,7 +1451,7 @@ subroutine DiagChern()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, uu, uuu, uuuu
    real(dp), pointer :: path(:,:)=>NULL(), Kgrid(:,:)=>NULL(), Chern(:,:,:)=>NULL()
@@ -1582,7 +1479,6 @@ subroutine DiagChern()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Bands.NumPoints',nPts0,100)
    call MIO_InputParameter('Bands.UseDifferentLatticeVectors',useDifferentLatticeVectors,.false.)
    call MIO_InputParameter('Bands.UseSameNumberOfPoints',useSameNumberOfPoints,.false.)
@@ -1590,76 +1486,21 @@ subroutine DiagChern()
        ucell(1,2) = 0.0_dp
        rcell(2,1) = 0.0_dp
    end if
-   !print*, "ucell at beginning of diagBands"
-   !print*, ucell(:,1)
-   !print*, ucell(:,2)
-   !print*, ucell(:,3)
-   !print*, "rcell at beginning of diagBands"
-   !print*, rcell(:,1)
-   !print*, rcell(:,2)
-   !print*, rcell(:,3)
-   !if (MIO_InputFindBlock('Bands.Path',nPath)) then
-      !call MIO_Print('Band calculation','diag')
-      !call MIO_Allocate(path,[3,nPath],'path','diag')
-      !call MIO_InputBlock('Bands.Path',path)
-      !do ip=1,nPath
       !   !print*, "0: ", path(:,ip)
-      !   path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
       !   !print*, "1: ", path(:,ip)
       !   !if (MoireBS) then
       !   !   !print*, "theta=", theta
-      !   !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
+      !   !   call MIO_InputParameter('Structure.TwistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
       !   !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
       !   !end if
       !   !print*, "2: ", path(:,ip)
-      !end do
-      !if (nPath==1) then
-      !   call MIO_Allocate(nPts,1,'nPts','diag')
-      !   nPts(1) = 1
-      !   ptsTot = 1
-      !else
       !   !call MIO_Allocate(nPts,nPath-1,'nPts','diag')
-      !   call MIO_Allocate(nPts,nPath,'nPts','diag')
-      !   nPts(1) = nPts0
-      !   ptsTot = nPts0
-      !   if (nPath > 2) then
-      !      v = path(:,2) - path(:,1)
-      !      d0 = sqrt(dot_product(v,v))
-      !      do ip=2,nPath-1 ! coz 4 points, 3 segments
-      !         v = path(:,ip+1) - path(:,ip)
-      !         d = sqrt(dot_product(v,v))
-      !         if (useSameNumberOfPoints) then
-      !            nPts(ip) = nPts0
-      !            ptsTot = ptsTot + nPts0
-      !         else
-      !            nPts(ip) = nint(real(d*nPts0)/real(d0))
-      !            ptsTot = ptsTot + nPts(ip)
-      !         end if
       !         !ptsTot = ptsTot + nPts(ip)
-      !      end do
-      !      nPts(ip) = nPts(ip) + 1 ! Add the missing point at the end of last segment
-      !   end if
-      !end if
-      !!call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
-      !call MIO_Allocate(Kpts,[3,ptsTot+1],'Kpts','diag') ! add missing point
-      !!print*, "ptsTot, nPath", ptsTot, nPath, nPts(1)
-      !Kpts(:,1) = path(:,1)
       !!ip = 0
-      !ip = 1
-      !d = 0.0_dp
-      !do i=1,nPath-1
-      !!do i=2,nPath
-      !   do j=1,nPts(i)
-      !      ip = ip + 1
       !      !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
-      !      Kpts(:,ip) = path(:,i) + (j)*(path(:,i+1)-path(:,i))/nPts(i)
-      !      v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-      !      d = d + sqrt(dot_product(v,v))
-      !   end do
-      !end do
 
       call MIO_Print('Calculating Chern number by diagonalization','diag')
-      call MIO_InputParameter('KGrid',nk,[1,1,1])
+      call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
       ptsTot = nk(1)*nk(2)*nk(3)
       call MIO_Allocate(Kgrid,[3,ptsTot],'Kgrid','diag')
       ik = 0
@@ -1669,19 +1510,8 @@ subroutine DiagChern()
            rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
       end do; end do; end do
 
-      !print*, "initial Gamma: ", Kpts(:,1)
-      !print*, "final Gamma: ", Kpts(:,ip), ip
       call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
       call MIO_Allocate(Chern,[nAt,nspin,ptsTot+1],'Chern','diag')
-      !flnm = trim(prefix)//'.ham'
-      !uu=101
-      !open(uu,FILE=flnm,STATUS='replace')
-      !flnm = trim(prefix)//'.prob'
-      !uuuu=103
-      !open(uuuu,FILE=flnm,STATUS='replace')
-      !flnm = trim(prefix)//'.eig'
-      !uuu=102
-      !open(uuu,FILE=flnm,STATUS='replace')
       flnm = trim(prefix)//'.chern'
       u=99
       open(u,FILE=flnm,STATUS='replace')
@@ -1689,7 +1519,7 @@ subroutine DiagChern()
       write(u,'(2f16.8)') 0.0_dp, d
       write(u,'(2f16.8)') Emin-2.0_dp, Emax+2.0_dp
       write(u,'(3i8)') nAt, nspin, ptsTot
-      call MIO_InputParameter('keepWaveFunction',keepWaveFunction,.false.)
+      call MIO_InputParameter('Output.KeepWaveFunction',keepWaveFunction,.false.)
       d = 0.0_dp
       hv = -huge(0.0_dp)
       lc = huge(0.0_dp)
@@ -1704,42 +1534,21 @@ subroutine DiagChern()
          do is=1,nspin
             !if (modulo(ip,int(ptsTot/10)).eq.0) print*, "progress is: ", ip/int(ptsTot/10)*10, "percent"
             ChernLoc = 0.0_dp
-            !HLoc = 0.0_dp
             KptsLoc = Kgrid(:,ip)
-            !if (keepWaveFunction) then
-            !   call DiagHamWF(nAt,nspin,is,HLoc,ChernLoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            !   do i=1,nAt
             !       !write(uu,*) (HLoc(j,i),j=1,nAt)
-            !       if (ip.eq.1) then ! for now, let's only print the firt k-point (cfr ptsTot+1)
-            !           write(uu,'(20000(F10.5,1X))') (real(HLoc(j,i)),j=1,nAt)
-            !           write(uuuu,'(20000(F10.5,1X))') (real(conjg(HLoc(j,i))*HLoc(j,i)),j=1,nAt)
-            !           write(uuu,*) ELoc(i)
-            !       end if
-            !   end do
-            !else
                call DiagHamChern(nAt,nspin,is,HLoc,ChernLoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            !end if
             Chern(:,is,ip) = ChernLoc
          end do
       end do
       !$OMP END PARALLEL DO
       do ip=1,ptsTot
-         !v = Kgrid(:,ip) - Kgrid(:,max(ip-1,1))
          !!!v = Kpts(:,ip+1) - Kpts(:,max(ip,1))
-         !d = d + sqrt(dot_product(v,v))
          write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') Kgrid(:,ip),((Chern(i,is,ip), i=1,nAt),is=1,nspin)
-         !write(u,*) d,((E(i,is,ip)*g0, i=1,nAt),is=1,nspin)
-         !if (sum(nPts(:nPath))==ip-1) then
-         !   nPath = nPath+1
-         !   call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ip))// &
-         !     '   '//trim(num2str(d,6)),'diag')
-         !end if
       end do
       dArea = norm(CrossProd(rcell(:,1),rcell(:,2)))/(nk(1)*nk(2))
       do i=1,nAt
          totalChern = 0.0_dp
          do ip=1,ptsTot
-            !dArea = abs(rcell(1,1)*rcell(2,2) - rcell(2,1)*rcell(1,2))/(nk(1)*nk(2))
             totalChern = totalChern+Chern(i,1,ip)*dArea
          end do
          call MIO_Print('Chern number for band '//trim(num2str(i))//' equals '//trim(num2str(totalChern,6)),'diag')
@@ -1748,11 +1557,8 @@ subroutine DiagChern()
       !call file%Close()
       call MIO_Deallocate(Chern,'Chern','diag')
       call MIO_Deallocate(H,'H','diag')
-      !call MIO_Deallocate(Kpts,'Htsp','diag')
-      !call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
       call MIO_Print('')
       close(u)
-   !end if
 
 #ifdef TIMER
    call MIO_TimerStop('diag')
@@ -1772,7 +1578,6 @@ subroutine DiagBandsRashba()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:,:)=>NULL()
@@ -1797,45 +1602,27 @@ subroutine DiagBandsRashba()
    call MIO_Debug('DiagBandsRashba',0)
 #endif /* DEBUG */
 #ifdef TIMER
-   !call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Bands.NumPoints',nPts0,100)
    call MIO_InputParameter('Bands.UseDifferentLatticeVectors',useDifferentLatticeVectors,.false.)
    if (useDifferentLatticeVectors) then
        ucell(1,2) = 0.0_dp
        rcell(2,1) = 0.0_dp
    end if
-   !print*, "ucell at beginning of diagBands"
-   !print*, ucell(:,1)
-   !print*, ucell(:,2)
-   !print*, ucell(:,3)
-   !print*, "rcell at beginning of diagBands"
-   !print*, rcell(:,1)
-   !print*, rcell(:,2)
-   !print*, rcell(:,3)
    if (MIO_InputFindBlock('Bands.Path',nPath)) then
       call MIO_Print('Band calculation','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_InputBlock('Bands.Path',path)
       do ip=1,nPath
-         !print*, "0: ", path(:,ip)
          path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
-         !print*, "1: ", path(:,ip)
-         !if (MoireBS) then
          !   !print*, "theta=", theta
-         !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
-         !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
-         !end if
-         !print*, "2: ", path(:,ip)
       end do
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
          nPts(1) = 1
          ptsTot = 1
       else
-         !call MIO_Allocate(nPts,nPath-1,'nPts','diag')
          call MIO_Allocate(nPts,nPath,'nPts','diag')
          nPts(1) = nPts0
          ptsTot = nPts0
@@ -1851,25 +1638,18 @@ subroutine DiagBandsRashba()
             nPts(ip) = nPts(ip) + 1 ! Add the missing point at the end of last segment
          end if
       end if
-      !call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
       call MIO_Allocate(Kpts,[3,ptsTot+1],'Kpts','diag') ! add missing point
-      !print*, "ptsTot, nPath", ptsTot, nPath, nPts(1)
       Kpts(:,1) = path(:,1)
-      !ip = 0
       ip = 1
       d = 0.0_dp
       do i=1,nPath-1
-      !do i=2,nPath
          do j=1,nPts(i)
             ip = ip + 1
-            !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
             Kpts(:,ip) = path(:,i) + (j)*(path(:,i+1)-path(:,i))/nPts(i)
             v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
             d = d + sqrt(dot_product(v,v))
          end do
       end do
-      !print*, "initial Gamma: ", Kpts(:,1)
-      !print*, "final Gamma: ", Kpts(:,ip), ip
       call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
       call MIO_Allocate(E,[nAt*2,nspin,ptsTot+1],'E','diag')
       flnm = trim(prefix)//'.bands'
@@ -1903,7 +1683,6 @@ subroutine DiagBandsRashba()
       !$OMP END PARALLEL DO
       do ip=1,ptsTot + 1
          v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-         !v = Kpts(:,ip+1) - Kpts(:,max(ip,1))
          d = d + sqrt(dot_product(v,v))
          write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is,ip)*g0, i=1,nAt*2),is=1,nspin)
          if (sum(nPts(:nPath))==ip-1) then
@@ -1916,14 +1695,11 @@ subroutine DiagBandsRashba()
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(H,'H','diag')
-      !call MIO_Deallocate(Kpts,'Htsp','diag')
-      !call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
       call MIO_Print('')
       close(u)
    end if
 
 #ifdef TIMER
-   !call MIO_TimerStop('diag')
 #endif /* TIMER */
 #ifdef DEBUG
    call MIO_Debug('DiagBandsRashba',1)
@@ -1940,7 +1716,7 @@ subroutine DiagBandsAroundK()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:)=>NULL()
@@ -1962,11 +1738,6 @@ subroutine DiagBandsAroundK()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !print*, [aG,0.0_dp,0.0_dp]
-   !print*, (/aG,0.0_dp,0.0_dp/)
-   !gcell(:,1) = [aG,0.0_dp,0.0_dp]
-   !gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
-   !gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
    gcell(:,1) = (/aG,0.0_dp,0.0_dp/)
    gcell(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp/)
    gcell(:,3) = (/0.0_dp,0.0_dp,40.0_dp/)
@@ -1978,39 +1749,22 @@ subroutine DiagBandsAroundK()
    grcell(:,2) = twopi*CrossProd(gcell(:,3),gcell(:,1))/volume
    grcell(:,3) = twopi*CrossProd(gcell(:,1),gcell(:,2))/volume
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Bands.NumPoints',nPts0,100)
-   !print*, "rcell"
-   !print*, rcell(:,1)
-   !print*, rcell(:,2)
-   !print*, rcell(:,3)
-   !print*, "grcell"
-   !print*, grcell(:,1)
-   !print*, grcell(:,2)
-   !print*, grcell(:,3)
    if (MIO_InputFindBlock('Bands.Path',nPath)) then
       call MIO_Print('Band calculation','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_InputBlock('Bands.Path',path)
       do ip=1,nPath
-         !print*, "0: ", path(:,ip)
          path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
          grapheneK = 2.0/3.0*grcell(:,1) + 1.0/3.0*grcell(:,2) + 0.0*grcell(:,3)
          path(:,ip) = path(:,ip) + grapheneK
-         !print*, "1: ", path(:,ip)
-         !if (MoireBS) then
          !   !print*, "theta=", theta
-         !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
-         !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
-         !end if
-         !print*, "2: ", path(:,ip)
       end do
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
          nPts(1) = 1
          ptsTot = 1
       else
-         !call MIO_Allocate(nPts,nPath-1,'nPts','diag')
          call MIO_Allocate(nPts,nPath,'nPts','diag')
          nPts(1) = nPts0
          ptsTot = nPts0
@@ -2026,25 +1780,18 @@ subroutine DiagBandsAroundK()
             nPts(ip) = nPts(ip) + 1 ! Add the missing point at the end of last segment
          end if
       end if
-      !call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
       call MIO_Allocate(Kpts,[3,ptsTot+1],'Kpts','diag') ! add missing point
-      !print*, "ptsTot, nPath", ptsTot, nPath, nPts(1)
       Kpts(:,1) = path(:,1)
-      !ip = 0
       ip = 1
       d = 0.0_dp
       do i=1,nPath-1
-      !do i=2,nPath
          do j=1,nPts(i)
             ip = ip + 1
-            !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
             Kpts(:,ip) = path(:,i) + (j)*(path(:,i+1)-path(:,i))/nPts(i)
             v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
             d = d + sqrt(dot_product(v,v))
          end do
       end do
-      !print*, "initial Gamma: ", Kpts(:,1)
-      !print*, "final Gamma: ", Kpts(:,ip), ip
       call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
       call MIO_Allocate(E,[nAt,nspin],'E','diag')
       flnm = trim(prefix)//'.bands'
@@ -2064,15 +1811,11 @@ subroutine DiagBandsAroundK()
       do ip=1,ptsTot + 1
          do is=1,nspin
             call DiagHam(nAt,nspin,is,H(:,:,is),E(:,is),Kpts(:,ip),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            !do i=1,nAt
-            !!   if (E(i,is)<=Efermi) hv = max(hv,E(i,is))
-            !!   if (E(i,is)>Efermi) lc = min(lc,E(i,is))
             !!end do
             hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0))
             lc = min(lc,minval(E(:,is),mask=E(:,is)>Efermi/g0))
          end do
          v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-         !v = Kpts(:,ip+1) - Kpts(:,max(ip,1))
          d = d + sqrt(dot_product(v,v))
          write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
          if (sum(nPts(:nPath))==ip-1) then
@@ -2085,7 +1828,6 @@ subroutine DiagBandsAroundK()
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(H,'H','diag')
-      !call MIO_Deallocate(Kpts,'Htsp','diag')
       call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
       call MIO_Print('')
       close(u)
@@ -2109,7 +1851,7 @@ subroutine DiagBandsG()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:)=>NULL()
@@ -2131,7 +1873,6 @@ subroutine DiagBandsG()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
    gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -2143,34 +1884,20 @@ subroutine DiagBandsG()
    grcell(:,2) = twopi*CrossProd(gcell(:,3),gcell(:,1))/volume
    grcell(:,3) = twopi*CrossProd(gcell(:,1),gcell(:,2))/volume
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Bands.NumPoints',nPts0,100)
-   !print*, "graphene cell: "
-   !print*, grcell(:,1)
-   !print*, grcell(:,2)
-   !print*, grcell(:,3)
    if (MIO_InputFindBlock('Bands.Path',nPath)) then
       call MIO_Print('Band calculation','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_InputBlock('Bands.Path',path)
       do ip=1,nPath
-         !print*, "0: ", path(:,ip)
-         !path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
          path(:,ip) = path(1,ip)*grcell(:,1) + path(2,ip)*grcell(:,2) + path(3,ip)*grcell(:,3)
-         !print*, "1: ", path(:,ip)
-         !if (MoireBS) then
          !   !print*, "theta=", theta
-         !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
-         !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
-         !end if
-         !print*, "2: ", path(:,ip)
       end do
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
          nPts(1) = 1
          ptsTot = 1
       else
-         !call MIO_Allocate(nPts,nPath-1,'nPts','diag')
          call MIO_Allocate(nPts,nPath,'nPts','diag')
          nPts(1) = nPts0
          ptsTot = nPts0
@@ -2186,25 +1913,18 @@ subroutine DiagBandsG()
             nPts(ip) = nPts(ip) + 1 ! Add the missing point at the end of last segment
          end if
       end if
-      !call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
       call MIO_Allocate(Kpts,[3,ptsTot+1],'Kpts','diag') ! add missing point
-      !print*, "ptsTot, nPath", ptsTot, nPath, nPts(1)
       Kpts(:,1) = path(:,1)
-      !ip = 0
       ip = 1
       d = 0.0_dp
       do i=1,nPath-1
-      !do i=2,nPath
          do j=1,nPts(i)
             ip = ip + 1
-            !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
             Kpts(:,ip) = path(:,i) + (j)*(path(:,i+1)-path(:,i))/nPts(i)
             v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
             d = d + sqrt(dot_product(v,v))
          end do
       end do
-      !print*, "initial Gamma: ", Kpts(:,1)
-      !print*, "final Gamma: ", Kpts(:,ip), ip
       call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
       call MIO_Allocate(E,[nAt,nspin],'E','diag')
       flnm = trim(prefix)//'.bands'
@@ -2224,15 +1944,11 @@ subroutine DiagBandsG()
       do ip=1,ptsTot + 1
          do is=1,nspin
             call DiagHam(nAt,nspin,is,H(:,:,is),E(:,is),Kpts(:,ip),gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            !do i=1,nAt
-            !!   if (E(i,is)<=Efermi) hv = max(hv,E(i,is))
-            !!   if (E(i,is)>Efermi) lc = min(lc,E(i,is))
             !!end do
             hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0))
             lc = min(lc,minval(E(:,is),mask=E(:,is)>Efermi/g0))
          end do
          v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-         !v = Kpts(:,ip+1) - Kpts(:,max(ip,1))
          d = d + sqrt(dot_product(v,v))
          write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
          if (sum(nPts(:nPath))==ip-1) then
@@ -2245,7 +1961,6 @@ subroutine DiagBandsG()
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(H,'H','diag')
-      !call MIO_Deallocate(Kpts,'Htsp','diag')
       call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
       call MIO_Print('')
       close(u)
@@ -2269,12 +1984,10 @@ subroutine DiagSpectralFunction()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   !use math
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is
    integer :: ik, iee, ie
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:)=>NULL()
-   !real(dp), pointer :: pathG(:,:)=>NULL()
    real(dp), pointer :: KptsG(:,:)=>NULL()
    integer, pointer :: nPts(:)=>NULL()
    real(dp) :: d0, v(3), d, hv, lc
@@ -2300,14 +2013,6 @@ subroutine DiagSpectralFunction()
    real(dp) :: eps, factor
    integer :: i1, i2
 
-   !real(dp) :: randu
-   !integer :: randi, randj
-
-   !real(dp) :: area, volume, grcell(3,3), aG
-   !real(dp) :: gcell(3,3), vn(3)
-
-   !integer :: cellSize
-
 #ifdef DEBUG
    call MIO_Debug('DiagSpectralFunction',0)
 #endif /* DEBUG */
@@ -2315,46 +2020,16 @@ subroutine DiagSpectralFunction()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
-   !print*, rcell(:,1)
-   !print*, rcell(:,2)
-   !print*, rcell(:,3)
-
-   !call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
-   !gcell(:,1) = [aG,0.0_dp,0.0_dp]
-   !gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
-   !gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
-
-   !vn = CrossProd(gcell(:,1),gcell(:,2))
-   !volume = dot_product(gcell(:,3),vn)
-   !area = norm(vn)
-   !grcell(:,1) = twopi*CrossProd(gcell(:,2),gcell(:,3))/volume
-   !grcell(:,2) = twopi*CrossProd(gcell(:,3),gcell(:,1))/volume
-   !grcell(:,3) = twopi*CrossProd(gcell(:,1),gcell(:,2))/volume
-
-   !print*, grcell(:,1)
-   !print*, grcell(:,2)
-   !print*, grcell(:,3)
 
    if (MIO_InputFindBlock('Spectral.Path',nPath)) then
       call MIO_Print('Spectral function calculation','diag')
       call MIO_Print('Based on PRB 95, 085420 (2017)','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
-      !call MIO_Allocate(pathG,[3,nPath],'path','diag')
       call MIO_InputBlock('Spectral.Path',path)
-      !call MIO_InputBlock('Spectral.Path',pathG)
       do ip=1,nPath
-         !print*, "0: ", path(:,ip)
          path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
-         !pathG(:,ip) = pathG(1,ip)*grcell(:,1) + pathG(2,ip)*grcell(:,2) + pathG(3,ip)*grcell(:,3)
-         !print*, "1: ", path(:,ip)
-         !if (MoireBS) then
          !   !print*, "theta=", theta
-         !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
-         !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
-         !end if
-         !print*, "2: ", path(:,ip)
       end do
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
@@ -2382,39 +2057,12 @@ subroutine DiagSpectralFunction()
       d = 0.0_dp
       GVec = matmul(rcell,[1,0,0]) ! we only want to translate them by one reciprocal lattice vector
       KptsG(:,1) = Kpts(:,1) + GVec
-      !print*, "yup"
-      !print*, Kpts(:,1), KptsG(:,1), GVec
 
-      !print*, matmul(rcell,[1,1,0]), matmul(rcell,[1,0,0]), matmul(rcell,[0,1,0])
-      !G1 = matmul(rcell,[1,1,0])
-      !G2 = matmul(rcell,[1,1,0])
-      !call MIO_InputParameter('CellSize', cellSize, 1)
       do i=1,nPath-1
          do j=1,nPts(i)
             ip = ip + 1
-            !KptsG(:,ip) = pathG(:,i) + (j-1)*(pathG(:,i+1)-pathG(:,i))/nPts(i)
             Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
-            !call random_number(randu)
-            !randi = FLOOR(22*randu)
-            !call random_number(randu)
-            !randj = FLOOR(22*randu)
-            !GVec = matmul(rcell,[randi,randj,0]) ! we only want to translate them by one reciprocal lattice vector
             KptsG(:,ip) = Kpts(:,ip) + GVec ! Kpts is in SC, Kpts is for Graphene (PC)
-            !print*, "yup"
-            !print*, Kpts(:,ip), KptsG(:,ip), GVec
-            !print*, KptsG(2,ip) - FLOOR(KptsG(2,ip)/G2) * G2
-            !print*, mod(KptsG(2,ip),G2)
-            !Kpts(1,ip) = KptsG(1,ip) - FLOOR(KptsG(1,ip)/G1) * G1
-            !Kpts(2,ip) = KptsG(2,ip) - FLOOR(KptsG(2,ip)/G2) * G2
-            !Kpts(3,ip) = KptsG(3,ip)
-            !Kpts(1,ip) = mod(KptsG(1,ip),G1(1))
-            !Kpts(2,ip) = mod(KptsG(2,ip),G2(2))
-            !Kpts(3,ip) = KptsG(3,ip)
-            !Kpts(1,ip) = KptsG(1,ip)/cellSize
-            !Kpts(2,ip) = KptsG(2,ip)/cellSize
-            !Kpts(3,ip) = KptsG(3,ip)
-            !v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-            !d = d + sqrt(dot_product(v,v))
          end do
       end do
       call MIO_Allocate(E,[nAt,nspin],'E','diag')
@@ -2432,18 +2080,14 @@ subroutine DiagSpectralFunction()
       call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
-      !call MIO_Allocate(Pkc,[1,1],[ptsTot,nAt],'Pkc','diag')
       call MIO_Allocate(Pkc,[1,1],[ptsTot,2],'Pkc','diag')
-      !call MIO_Allocate(Pkc,nAt,'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
-      !print*, "factor = ", factor
       Epts2 = CEILING(Epts/factor)
-      !print*, Epts2
       if (mod(Epts2,2).ne.0) then
          Epts2 = Epts2+1
       end if
@@ -2455,71 +2099,32 @@ subroutine DiagSpectralFunction()
       call MIO_Allocate(AkeGaussian,[ptsTot,Epts],'Ake','diag')
       Ake = 0.0_dp
       AkeGaussian = 0.0_dp
-      !print*, "nspin ", nspin
       is = 1
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
       do iee=1,Epts2
           gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
       end do
-      !print*, gaussian
       Pkc = 0.0_dp ! spectral weight PkscI(k)
       !$OMP PARALLEL DO PRIVATE (is, ik, nPath, iee, ie)
       do ik=1,ptsTot ! k loop
-         !do ip=1,ptsTot ! kc loop
-            !call DiagHam(nAt,nspin,is,H(:,:,is),E(:,is),Kpts(:,ip),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            !call DiagSpectralWeight(nAt,nspin,is,Pkc(ik,:),E(:,is),Kpts(:,ip),KptsG(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            !call DiagSpectralWeightNishi(nAt,nspin,is,Pkc(ik,:),E(:,is),Kpts(:,ik),KptsG(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            call DiagSpectralWeightWeiKu(nAt,nspin,is,Pkc(ik,:),E(:,is),Kpts(:,ik),KptsG(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            !do i=1,nAt
-            !!   if (E(i,is)<=Efermi) hv = max(hv,E(i,is))
-            !!   if (E(i,is)>Efermi) lc = min(lc,E(i,is))
+            call DiagSpectralWeightWeiKu(nAt,nspin,is,Pkc(ik,:),E(:,is),Kpts(:,ik),KptsG(:,ik),ucell,H0,maxNeigh,hopp, &
+                  NList,Nneigh,neighCell)
             !!end do
             !hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0)) ! mask restrict search for E smaller than Efermi
             !lc = min(lc,minval(E(:,is),mask=E(:,is)>Efermi/g0))
-            !v = KptsG(:,ik) - KptsG(:,max(ik-1,1))
-            !d = d + sqrt(dot_product(v,v))
-            !write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                    is = 1
-                   !if (useGaussianBroadening) then
                    !   !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                   !   Ake(ik,iee) = Ake(ik,iee) + exp(-(E(ie,is) - Energy(iee))**2.0/(2.0_dp*eps**2))
-                   !else
                    if(abs(E(ie,is) - Energy(iee)).lt.(0.005/g0)) then
                         Ake(ik,iee) = Ake(ik,iee) + abs(Pkc(ik,ie))**2
                    end if
-                   !end if
                 end do
             end do
-            !do ie=1,nAt   ! epsilonIksc
-            !   is = 1
             !   !if(abs(E(ie,is) - Energy(iee)).lt.(0.1/g0)) then
-            !   iee = floor(E(ie,is)/(E2-E1)*Epts)+Epts/2
-            !   if(iee.lt.1 .or. iee.gt.Epts) then
-            !       cycle
-            !   else
-            !       Ake(ik,iee) = Ake(ik,iee) + Pkc(ik,ie)
-            !   end if
-            !end do
-            !do ie=1,nAt   ! epsilonIksc
-            !end do
-            !print*, SIZE(real(Ake(ik,:))), SIZE(gaussian)
             AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
-            !AkeGaussian(ik,:) = convolve(gaussian(:),real(Ake(ik,:)),Epts)
-            !do i1=1,nAt
-            !   do i2=1,Epts
-            !      Energy(i2) = E1 + (E2-E1)*(i2-1)/(Epts-1)
             !      !DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
-            !      Ake(ik,i2) = Ake(ik,i2) + Pkc(ik,i1)*exp(-(Energy(i2)-E(i1,is))**2/(2.0_dp*eps**2))
             !      !Ake(ik,i2) = Ake(ik,i2) + Pkc(ik,i1)
-            !   end do
-            !end do
-         !end do ! this loop has to be finished first as we are still adding Pkcs to Ake
-         !do ip=1,ptsTot ! kc loop
-         !   v = KptsG(:,ik) - KptsG(:,max(ik-1,1))
-         !   d = d + sqrt(dot_product(v,v))
-         !   do iee=1,Epts  ! epsilon
          !       ! write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
          !       ! float of lenght 12 with 6 after the comma
          !       ! repeat float of lengt 14 with 6 after the commq 10 times
@@ -2527,9 +2132,6 @@ subroutine DiagSpectralFunction()
          !       ! 10 empty spaces
          !       ! repeat float of lengt 14 with 6 after the commq 10 times, as many times as needed because of ()
          !       ! Ill make it simpler, but maybe bigger file
-         !       write(u,'(f12.6,f12.6,f12.6)') d, Energy(iee), REAL(Ake(ik,iee))
-         !   end do
-         !end do
       end do
       !$OMP END PARALLEL DO
       do ik=1,ptsTot ! k loop
@@ -2550,7 +2152,6 @@ subroutine DiagSpectralFunction()
             end do
          end if
       end do
-
 
       call MIO_Print('')
       !call file%Close()
@@ -2581,7 +2182,7 @@ subroutine DiagSpectralFunctionKGrid()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is
    integer :: ik, iee, ie
@@ -2616,9 +2217,6 @@ subroutine DiagSpectralFunctionKGrid()
    real(dp) :: eps, factor
    integer :: i1, i2
 
-   !real(dp) :: randu
-   !integer :: randi, randj
-
    real(dp) :: area, volume, grcell(3,3), aG
    real(dp) :: gcell(3,3), vn(3)
 
@@ -2631,13 +2229,9 @@ subroutine DiagSpectralFunctionKGrid()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
-   !print*, rcell(:,1)
-   !print*, rcell(:,2)
-   !print*, rcell(:,3)
 
-   call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
    gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -2649,10 +2243,6 @@ subroutine DiagSpectralFunctionKGrid()
    grcell(:,2) = twopi*CrossProd(gcell(:,3),gcell(:,1))/volume
    grcell(:,3) = twopi*CrossProd(gcell(:,1),gcell(:,2))/volume
 
-   !print*, grcell(:,1)
-   !print*, grcell(:,2)
-   !print*, grcell(:,3)
-
    if (MIO_InputFindBlock('Spectral.Path',nPath)) then
       call MIO_Print('Spectral function calculation','diag')
       call MIO_Print('Based on PRB 95, 085420 (2017)','diag')
@@ -2661,16 +2251,9 @@ subroutine DiagSpectralFunctionKGrid()
       call MIO_InputBlock('Spectral.Path',path)
       call MIO_InputBlock('Spectral.Path',pathG)
       do ip=1,nPath
-         !print*, "0: ", path(:,ip)
          path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
          pathG(:,ip) = pathG(1,ip)*grcell(:,1) + pathG(2,ip)*grcell(:,2) + pathG(3,ip)*grcell(:,3)
-         !print*, "1: ", path(:,ip)
-         !if (MoireBS) then
          !   !print*, "theta=", theta
-         !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
-         !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
-         !end if
-         !print*, "2: ", path(:,ip)
       end do
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
@@ -2693,52 +2276,25 @@ subroutine DiagSpectralFunctionKGrid()
       end if
       call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
       call MIO_Allocate(KptsG,[3,ptsTot],'KptsG','diag')
-      !Kpts(:,1) = path(:,1)
       KptsG(:,1) = path(:,1)
       ip = 0
       d = 0.0_dp
       GVec = matmul(rcell,[1,0,0]) ! we only want to translate them by one reciprocal lattice vector
-      !KptsG(:,1) = Kpts(:,1) + GVec
-      !Kpts(:,1) = KptsG(:,1) - GVec
-      call MIO_InputParameter('CellSize', cellSize, 1)
-      !print*, "cell size =", cellSize
+      call MIO_InputParameter('Structure.CellSize', cellSize, 1)
       Kpts(1,1) = KptsG(1,1)/cellSize
       Kpts(2,1) = KptsG(2,1)/cellSize
       Kpts(3,1) = KptsG(3,1)
-      !print*, "yup"
-      !print*, Kpts(:,1), KptsG(:,1), GVec
 
-      !print*, matmul(rcell,[1,1,0]), matmul(rcell,[1,0,0]), matmul(rcell,[0,1,0])
       G1 = matmul(rcell,[1,1,0])
       G2 = matmul(rcell,[1,1,0])
       do i=1,nPath-1
          do j=1,nPts(i)
             ip = ip + 1
             KptsG(:,ip) = pathG(:,i) + (j-1)*(pathG(:,i+1)-pathG(:,i))/nPts(i)
-            !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
-            !call random_number(randu)
-            !randi = FLOOR(22*randu)
-            !call random_number(randu)
-            !randj = FLOOR(22*randu)
-            !GVec = matmul(rcell,[randi,randj,0]) ! we only want to translate them by one reciprocal lattice vector
-            !KptsG(:,ip) = Kpts(:,ip) + GVec ! Kpts is in SC, Kpts is for Graphene (PC)
-            !print*, "yup"
-            !print*, Kpts(:,ip), KptsG(:,ip), GVec
-            !print*, KptsG(2,ip) - FLOOR(KptsG(2,ip)/G2) * G2
-            !print*, mod(KptsG(2,ip),G2)
 
-            !Kpts(:,ip) = KptsG(:,ip) - GVec ! this one gives the same as when starting from Kpts
-            !Kpts(1,ip) = KptsG(1,ip) - FLOOR(KptsG(1,ip)/G1) * G1
-            !Kpts(2,ip) = KptsG(2,ip) - FLOOR(KptsG(2,ip)/G2) * G2
-            !Kpts(3,ip) = KptsG(3,ip)
-            !Kpts(1,ip) = mod(KptsG(1,ip),G1(1))
-            !Kpts(2,ip) = mod(KptsG(2,ip),G2(2))
-            !Kpts(3,ip) = KptsG(3,ip)
             Kpts(1,ip) = KptsG(1,ip)/cellSize
             Kpts(2,ip) = KptsG(2,ip)/cellSize
             Kpts(3,ip) = KptsG(3,ip)
-            !v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-            !d = d + sqrt(dot_product(v,v))
          end do
       end do
       call MIO_Allocate(E,[nAt,nspin],'E','diag')
@@ -2756,18 +2312,14 @@ subroutine DiagSpectralFunctionKGrid()
       call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
-      !call MIO_Allocate(Pkc,[1,1],[ptsTot,nAt],'Pkc','diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptsTot,nAt,2],'Pkc','diag')
-      !call MIO_Allocate(Pkc,nAt,'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
-      !print*, "factor = ", factor
       Epts2 = CEILING(Epts/factor)
-      !print*, Epts2
       if (mod(Epts2,2).ne.0) then
          Epts2 = Epts2+1
       end if
@@ -2787,81 +2339,34 @@ subroutine DiagSpectralFunctionKGrid()
       AkeGaussian1 = 0.0_dp
       Ake2 = 0.0_dp
       AkeGaussian2 = 0.0_dp
-      !print*, "nspin ", nspin
       is = 1
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
       do iee=1,Epts2
           gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
       end do
-      !print*, gaussian
       Pkc = 0.0_dp ! spectral weight PkscI(k)
       do ik=1,ptsTot ! k loop
-         !do ip=1,ptsTot ! kc loop
-            !call DiagHam(nAt,nspin,is,H(:,:,is),E(:,is),Kpts(:,ip),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            !call DiagSpectralWeight(nAt,nspin,is,Pkc(ik,:),E(:,is),Kpts(:,ip),KptsG(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            !call DiagSpectralWeightNishi(nAt,nspin,is,Pkc(ik,:),E(:,is),Kpts(:,ik),KptsG(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            call DiagSpectralWeightWeiKu(nAt,nspin,is,Pkc(ik,:,:),E(:,is),Kpts(:,ik),KptsG(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-            !print*, "1 :", ik, Pkc(ik,nAt,1)
-            !print*, "2 :", ik, Pkc(ik,nAt,2)
-            !do i=1,nAt
-            !!   if (E(i,is)<=Efermi) hv = max(hv,E(i,is))
-            !!   if (E(i,is)>Efermi) lc = min(lc,E(i,is))
+            call DiagSpectralWeightWeiKu(nAt,nspin,is,Pkc(ik,:,:),E(:,is),Kpts(:,ik),KptsG(:,ik),ucell,H0,maxNeigh,hopp, &
+                  NList,Nneigh,neighCell)
             !!end do
             !hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0)) ! mask restrict search for E smaller than Efermi
             !lc = min(lc,minval(E(:,is),mask=E(:,is)>Efermi/g0))
-            !v = KptsG(:,ik) - KptsG(:,max(ik-1,1))
-            !d = d + sqrt(dot_product(v,v))
-            !write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
-            !do iee=1,Epts  ! epsilon
-            !    do ie=1,nAt   ! epsilonIksc
-            !       is = 1
             !       !if (ie.eq.1) then
-            !           if(abs(E(ie,is) - Energy(iee)).lt.(0.005/g0)) then
-            !                Ake(ik,iee) = Ake(ik,iee) + abs(Pkc(ik,ie))**2
-            !           end if
             !       !end if
-            !    end do
-            !end do
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                    is = 1
-                   !if (ie.eq.1) then
                        if(abs(E(ie,is) - Energy(iee)).lt.(0.005/g0)) then
                             Ake1(ik,iee) = Ake1(ik,iee) + abs(Pkc(ik,ie,1))**2
                             Ake2(ik,iee) = Ake2(ik,iee) + abs(Pkc(ik,ie,2))**2
                        end if
-                   !end if
                 end do
             end do
             Ake = Ake1 + Ake2
-            !do ie=1,nAt   ! epsilonIksc
-            !   is = 1
             !   !if(abs(E(ie,is) - Energy(iee)).lt.(0.1/g0)) then
-            !   iee = floor(E(ie,is)/(E2-E1)*Epts)+Epts/2
-            !   if(iee.lt.1 .or. iee.gt.Epts) then
-            !       cycle
-            !   else
-            !       Ake(ik,iee) = Ake(ik,iee) + Pkc(ik,ie)
-            !   end if
-            !end do
-            !do ie=1,nAt   ! epsilonIksc
-            !end do
-            !print*, SIZE(real(Ake(ik,:))), SIZE(gaussian)
             AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
-            !AkeGaussian(ik,:) = convolve(gaussian(:),real(Ake(ik,:)),Epts)
-            !do i1=1,nAt
-            !   do i2=1,Epts
-            !      Energy(i2) = E1 + (E2-E1)*(i2-1)/(Epts-1)
             !      !DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
-            !      Ake(ik,i2) = Ake(ik,i2) + Pkc(ik,i1)*exp(-(Energy(i2)-E(i1,is))**2/(2.0_dp*eps**2))
             !      !Ake(ik,i2) = Ake(ik,i2) + Pkc(ik,i1)
-            !   end do
-            !end do
-         !end do ! this loop has to be finished first as we are still adding Pkcs to Ake
-         !do ip=1,ptsTot ! kc loop
-         !   v = KptsG(:,ik) - KptsG(:,max(ik-1,1))
-         !   d = d + sqrt(dot_product(v,v))
-         !   do iee=1,Epts  ! epsilon
          !       ! write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
          !       ! float of lenght 12 with 6 after the comma
          !       ! repeat float of lengt 14 with 6 after the commq 10 times
@@ -2869,9 +2374,6 @@ subroutine DiagSpectralFunctionKGrid()
          !       ! 10 empty spaces
          !       ! repeat float of lengt 14 with 6 after the commq 10 times, as many times as needed because of ()
          !       ! Ill make it simpler, but maybe bigger file
-         !       write(u,'(f12.6,f12.6,f12.6)') d, Energy(iee), REAL(Ake(ik,iee))
-         !   end do
-         !end do
          v = KptsG(:,ik) - KptsG(:,max(ik-1,1))
          d = d + sqrt(dot_product(v,v))
          if (sum(nPts(:nPath))==ik) then
@@ -2889,7 +2391,6 @@ subroutine DiagSpectralFunctionKGrid()
             end do
          end if
       end do
-
 
       call MIO_Print('')
       !call file%Close()
@@ -2920,7 +2421,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, u1, u2, u3, u4, uu1,uu2,uu3,uu4,uuu2,uuuu2,uuuuu2,uuuuuu2,uuuuuuu2,uuuuuuuu2
    integer :: ik, iee, ie
@@ -2946,7 +2447,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
    real(dp), pointer :: gaussian(:)=>NULL()
 
    complex(dp), pointer :: Pkc(:,:,:)=>NULL()
-   !complex(dp), pointer :: PkcLoc(:,:)=>NULL()
    complex(dp), pointer :: Ake(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian1(:,:)=>NULL()
@@ -2982,9 +2482,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
    real(dp) :: eps, factor, energyGridResolution
    integer :: i1, i2
 
-   !real(dp) :: randu
-   !integer :: randi, randj
-
    real(dp) :: area, volume, grcell(3,3), aG
    real(dp) :: gcell(3,3), vn(3)
    real(dp) :: gcell1(3,3), gcell2(3,3)
@@ -3010,7 +2507,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
    real(dp) :: topBottomRatio
    logical :: WeiKu, Nishi, Lee, WeiKuOld, useGaussianBroadening
 
-
 #ifdef DEBUG
    call MIO_Debug('DiagSpectralFunctionKGridInequivalent',0)
 #endif /* DEBUG */
@@ -3018,27 +2514,20 @@ subroutine DiagSpectralFunctionKGridInequivalent()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
-   !print*, rcell(:,1)
-   !print*, rcell(:,2)
-   !print*, rcell(:,3)
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
    call MIO_InputParameter('Spectral.UseCoordinates',useCoordinates,.false.)
-   if (MIO_InputSearchLabel('MoireCellParameters',line,id)) then
-       call MIO_InputParameter('MoireCellParameters',mmm,[0,0,0,0])
-       !gcell(1,:) = ucell(1,:)/mmm(1)/2.0
-       !gcell(2,:) = ucell(2,:)/mmm(2)/2.0
-       !gcell(3,:) = ucell(3,:)
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
+       call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -3050,15 +2539,13 @@ subroutine DiagSpectralFunctionKGridInequivalent()
            phi = acos((2.0_dp*mmm(1)*mmm(3)+2.0_dp*mmm(2)*mmm(4) + mmm(1)*mmm(4) + mmm(2)*mmm(3))/(2.0_dp*delta*gg))
            phi = -phi*180.0_dp/pi
            aa = phi*pi/180.0_dp
-           !print*, "Angle= ", aa, phi
            rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
-           !rcell(:,2) = [cos(aa+pi/3.0_dp),sin(aa+pi/3.0_dp),0.0_dp]
            rot(:,2) = [sin(aa),cos(aa),0.0_dp]
            rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
            gcell = matmul(rot,gcell)
        end if
    else
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -3068,14 +2555,11 @@ subroutine DiagSpectralFunctionKGridInequivalent()
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
-       !print*, "Angle= ", aa, phi
        rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
-       !rcell(:,2) = [cos(aa+pi/3.0_dp),sin(aa+pi/3.0_dp),0.0_dp]
        rot(:,2) = [sin(aa),cos(aa),0.0_dp]
        rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
        gcell = matmul(rot,gcell)
    end if
-
 
    vn = CrossProd(gcell(:,1),gcell(:,2))
    volume = dot_product(gcell(:,3),vn)
@@ -3097,7 +2581,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       call MIO_InputBlock('Spectral.Path',path)
       call MIO_InputBlock('Spectral.Path',pathG)
       do ip=1,nPath
-         !print*, "0: ", path(:,ip)
          if (useCoordinates) then
             path(:,ip) = path(:,ip)
             pathG(:,ip) = pathG(:,ip)
@@ -3105,8 +2588,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
             path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
             pathG(:,ip) = pathG(1,ip)*grcell(:,1) + pathG(2,ip)*grcell(:,2) + pathG(3,ip)*grcell(:,3)
          end if
-         !print*, "1: ", path(:,ip)
-         !print*, "2: ", path(:,ip)
       end do
       print*, "The k-points for the reference system equal in cartesian coordinates:", pathG
       print*, "The k-points for the moire system equal in cartesian coordinates:", path
@@ -3132,12 +2613,10 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
       call MIO_Allocate(KptsG,[3,ptsTot],'KptsG','diag')
       call MIO_Allocate(KptsGFrac,[3,ptsTot],'KptsGFrac','diag')
-      !Kpts(:,1) = path(:,1)
       KptsG(:,1) = pathG(:,1)
       ip = 0
       d = 0.0_dp
       GVec = matmul(rcell,[1,0,0]) ! we only want to translate them by one reciprocal lattice vector
-      !print*, matmul(rcell,[1,1,0]), matmul(rcell,[1,0,0]), matmul(rcell,[0,1,0])
       G10 = matmul(rcell,[1,0,0]) ! Lattice vectors of moire cell
       G01 = matmul(rcell,[0,1,0])
       G11 = matmul(rcell,[1,1,0])
@@ -3154,7 +2633,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
           ll = ceiling(ll)
       end if
 
-      !print*, ll, kk
       if (foldByOne) then
          kpts(1,1) = KptsG(1,1) - G10(1) - G01(1)
          kpts(2,1) = KptsG(2,1) - G10(2) - G01(2)
@@ -3165,10 +2643,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
          kpts(1,1) = KptsG(1,1) - kk*G10(1) - ll*G01(1)
          kpts(2,1) = KptsG(2,1) - kk*G10(2) - ll*G01(2)
       end if
-
-      !print*, "yup"
-      !print*, Kpts(:,1), KptsG(:,1), GVec
-      !rcellInv = matinv3(rcell)
 
       do i=1,nPath-1
          do j=1,nPts(i)
@@ -3187,7 +2661,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
                 ll = ceiling(ll)
             end if
 
-            !print*, ll, kk
             if (foldByOne) then
                kpts(1,ip) = KptsG(1,ip) - G10(1) - G01(1)
                kpts(2,ip) = KptsG(2,ip) - G10(2) - G01(2)
@@ -3263,18 +2736,14 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
-      !call MIO_Allocate(Pkc,[1,1],[ptsTot,nAt],'Pkc','diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptsTot,nAt,2],'Pkc','diag')
-      !call MIO_Allocate(Pkc,nAt,'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
-      !print*, "factor = ", factor
       Epts2 = CEILING(Epts/factor)
-      !print*, Epts2
       if (mod(Epts2,2).ne.0) then
          Epts2 = Epts2+1
       end if
@@ -3290,7 +2759,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       AkeGaussian = 0.0_dp
       AkeGaussian1 = 0.0_dp
       AkeGaussian2 = 0.0_dp
-      !print*, "nspin ", nspin
       is = 1
       call MIO_InputParameter('Spectral.topBottomRatio',topBottomRatio,1.0_dp)
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
@@ -3298,10 +2766,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       do iee=1,Epts2
           gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
       end do
-      !call MIO_Allocate(Ake1Loc,Epts,'Ake1Loc','diag')
-      !call MIO_Allocate(Ake2Loc,Epts,'Ake2Loc','diag')
-      !Ake1Loc = 0.0_dp
-      !Ake2Loc = 0.0_dp
       call MIO_Allocate(Ake1,[ptsTot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake1B,[ptsTot,Epts],'Ake1B','diag')
       call MIO_Allocate(Ake2,[ptsTot,Epts],'Ake2','diag')
@@ -3330,9 +2794,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       Ake3B = 0.0_dp
       Ake4  = 0.0_dp
       Ake4B = 0.0_dp
-      !print*, gaussian
-      !Pkc = 0.0_dp ! spectral weight PkscI(k)
-      !print*, "0",  Pkc
 !HERE
       !$OMP PARALLEL DO PRIVATE(iee, ie, unfoldedK, ELoc, PkcLocA, PkcLocB, PkcLocC,PkcLocD,PkcLocE,PkcLocF,PkcLocG,PkcLocH, KptsLoc), &
       !$OMP& SHARED(KptsG, Kpts, AkeGaussian1, AkeGaussian2, AkeGaussian, nAt, nspin, is, ucell, gcell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, gaussian, Epts, Ake)
@@ -3351,28 +2812,35 @@ subroutine DiagSpectralFunctionKGridInequivalent()
          PkcLocG = 0.0_dp
          PkcLocH = 0.0_dp
          KptsLoc = Kpts(:,ik)
-         !KptsLoc = KptsG(:,ik)-G11
             if (WeiKu) then
                 if (WeiKuOld) then
-                    call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                    call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK, &
+                          ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 else
-                    call DiagSpectralWeightWeiKuInequivalentMoreOrbitals(nAt,nspin,is,PkcLocA,PkcLocB,PkcLocC,PkcLocD,PkcLocE,PkcLocF,PkcLocG,PkcLocH,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                    call DiagSpectralWeightWeiKuInequivalentMoreOrbitals(nAt,nspin,is,PkcLocA,PkcLocB,PkcLocC,PkcLocD, &
+                          PkcLocE,PkcLocF,PkcLocG,PkcLocH,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList, &
+                          Nneigh,neighCell,topBottomRatio)
                 end if
             else if (Lee) then
-                call DiagSpectralWeightWeiKuInequivalentLee(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                call DiagSpectralWeightWeiKuInequivalentLee(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                      gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
             else if (Nishi) then
-                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell,gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell, &
+                      gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
             end if
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
-                       !print*,"species and layer", Species(ie), layerIndex(ie)
                        if (WeiKu) then
                           if (useGaussianBroadening) then
                              !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
-                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
-                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
-                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
+                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
+                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
                           else
                              if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                                  ! A sublattice
@@ -3401,18 +2869,15 @@ subroutine DiagSpectralFunctionKGridInequivalent()
                              end if
                           end if
                        else if (Lee) then
-                          !if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                           if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + real(PkcLocA(ie,1))
                              Ake2(ik,iee) = Ake2(ik,iee) + real(PkcLocA(ie,2))
                              Ake3(ik,iee) = Ake3(ik,iee) + real(PkcLocA(ie,3))
                              Ake4(ik,iee) = Ake4(ik,iee) + real(PkcLocA(ie,4))
-                             !Ake1(ik,iee) = Ake1(ik,iee) + abs(PkcLocA(ie,1))**2
-                             !Ake2(ik,iee) = Ake2(ik,iee) + abs(PkcLocA(ie,2))**2
-                             !Ake3(ik,iee) = Ake3(ik,iee) + abs(PkcLocA(ie,3))**2
                           end if
                        else if (Nishi) then
-                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
+                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0) &
+                                .or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + PkcLocA(ie,1)
                              Ake2(ik,iee) = Ake2(ik,iee) + PkcLocA(ie,2)
                              Ake3(ik,iee) = Ake3(ik,iee) + PkcLocA(ie,3)
@@ -3421,7 +2886,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
                        end if
                 end do
             end do
-         !end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:) + Ake4(ik,:)
          AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
       end do
@@ -3440,13 +2904,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
             end do
          else
             do iee=1,Epts  ! epsilon
-                !if (Lee) then
-                !   write(u,'(f12.6,f12.6,f22.6)') d, Energy(iee), abs(Ake(ik,iee))**2
-                !   write(u1,'(f12.6,f12.6,f22.6)') d, Energy(iee), abs(Ake1(ik,iee))**2
-                !   write(u2,'(f12.6,f12.6,f22.6)') d, Energy(iee), abs(Ake2(ik,iee))**2
-                !   write(u3,'(f12.6,f12.6,f22.6)') d, Energy(iee), abs(Ake3(ik,iee))**2
-                !else
-                   !write(u,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake(ik,iee))
                    ! A sublattice
                    write(u1,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake1(ik,iee))
                    write(u2,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake2(ik,iee))
@@ -3469,11 +2926,9 @@ subroutine DiagSpectralFunctionKGridInequivalent()
                    write(uuuuuuu2,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake2G(ik,iee))
                    ! H sublattice
                    write(uuuuuuuu2,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake2H(ik,iee))
-                !endif
             end do
          end if
       end do
-
 
       call MIO_Print('')
       !call file%Close()
@@ -3504,7 +2959,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, u1, u2, u3, u4, uu1,uu2,uu3,uu4
    integer :: ik, iee, ie
@@ -3530,7 +2985,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
    real(dp), pointer :: gaussian(:)=>NULL()
 
    complex(dp), pointer :: Pkc(:,:,:)=>NULL()
-   !complex(dp), pointer :: PkcLoc(:,:)=>NULL()
    complex(dp), pointer :: Ake(:,:)=>NULL()
    complex(dp), pointer :: EAke(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian(:,:)=>NULL()
@@ -3554,9 +3008,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
 
    real(dp) :: eps, factor, energyGridResolution
    integer :: i1, i2
-
-   !real(dp) :: randu
-   !integer :: randi, randj
 
    real(dp) :: area, volume, grcell(3,3), aG
    real(dp) :: gcell(3,3), vn(3)
@@ -3583,7 +3034,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
    real(dp) :: topBottomRatio
    logical :: WeiKu, Nishi, Lee, WeiKuOld, useGaussianBroadening
 
-
 #ifdef DEBUG
    call MIO_Debug('DiagSpectralFunctionKGridInequivalent_v2',0)
 #endif /* DEBUG */
@@ -3591,7 +3041,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
    print*, rcell(:,1)
    print*, rcell(:,2)
@@ -3599,19 +3048,16 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
    call MIO_InputParameter('Spectral.UseCoordinates',useCoordinates,.false.)
-   if (MIO_InputSearchLabel('MoireCellParameters',line,id)) then
-       call MIO_InputParameter('MoireCellParameters',mmm,[0,0,0,0])
-       !gcell(1,:) = ucell(1,:)/mmm(1)/2.0
-       !gcell(2,:) = ucell(2,:)/mmm(2)/2.0
-       !gcell(3,:) = ucell(3,:)
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
+       call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -3623,15 +3069,13 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
            phi = acos((2.0_dp*mmm(1)*mmm(3)+2.0_dp*mmm(2)*mmm(4) + mmm(1)*mmm(4) + mmm(2)*mmm(3))/(2.0_dp*delta*gg))
            phi = -phi*180.0_dp/pi
            aa = phi*pi/180.0_dp
-           !print*, "Angle= ", aa, phi
            rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
-           !rcell(:,2) = [cos(aa+pi/3.0_dp),sin(aa+pi/3.0_dp),0.0_dp]
            rot(:,2) = [sin(aa),cos(aa),0.0_dp]
            rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
            gcell = matmul(rot,gcell)
        end if
    else
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -3641,14 +3085,11 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
-       !print*, "Angle= ", aa, phi
        rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
-       !rcell(:,2) = [cos(aa+pi/3.0_dp),sin(aa+pi/3.0_dp),0.0_dp]
        rot(:,2) = [sin(aa),cos(aa),0.0_dp]
        rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
        gcell = matmul(rot,gcell)
    end if
-
 
    vn = CrossProd(gcell(:,1),gcell(:,2))
    volume = dot_product(gcell(:,3),vn)
@@ -3703,7 +3144,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
       call MIO_Allocate(KptsG,[3,ptsTot],'KptsG','diag')
       call MIO_Allocate(KptsGFrac,[3,ptsTot],'KptsGFrac','diag')
-      !Kpts(:,1) = path(:,1)
       KptsG(:,1) = pathG(:,1)
       ip = 0
       d = 0.0_dp
@@ -3725,7 +3165,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
           ll = ceiling(ll)
       end if
 
-      !print*, ll, kk
       if (foldByOne) then
          kpts(1,1) = KptsG(1,1) - G10(1) - G01(1)
          kpts(2,1) = KptsG(2,1) - G10(2) - G01(2)
@@ -3736,10 +3175,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
          kpts(1,1) = KptsG(1,1) - kk*G10(1) - ll*G01(1)
          kpts(2,1) = KptsG(2,1) - kk*G10(2) - ll*G01(2)
       end if
-
-      !print*, "yup"
-      !print*, Kpts(:,1), KptsG(:,1), GVec
-      !rcellInv = matinv3(rcell)
 
       do i=1,nPath-1
          do j=1,nPts(i)
@@ -3758,7 +3193,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
                 ll = ceiling(ll)
             end if
 
-            !print*, ll, kk
             if (foldByOne) then
                kpts(1,ip) = KptsG(1,ip) - G10(1) - G01(1)
                kpts(2,ip) = KptsG(2,ip) - G10(2) - G01(2)
@@ -3816,18 +3250,14 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
-      !call MIO_Allocate(Pkc,[1,1],[ptsTot,nAt],'Pkc','diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptsTot,nAt,2],'Pkc','diag')
-      !call MIO_Allocate(Pkc,nAt,'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
-      !print*, "factor = ", factor
       Epts2 = CEILING(Epts/factor)
-      !print*, Epts2
       if (mod(Epts2,2).ne.0) then
          Epts2 = Epts2+1
       end if
@@ -3852,10 +3282,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       do iee=1,Epts2
           gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
       end do
-      !call MIO_Allocate(Ake1Loc,Epts,'Ake1Loc','diag')
-      !call MIO_Allocate(Ake2Loc,Epts,'Ake2Loc','diag')
-      !Ake1Loc = 0.0_dp
-      !Ake2Loc = 0.0_dp
       call MIO_Allocate(Ake1,[ptsTot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake1B,[ptsTot,Epts],'Ake1B','diag')
       call MIO_Allocate(Ake2,[ptsTot,Epts],'Ake2','diag')
@@ -3872,9 +3298,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       Ake3B = 0.0_dp
       Ake4  = 0.0_dp
       Ake4B = 0.0_dp
-      !print*, gaussian
-      !Pkc = 0.0_dp ! spectral weight PkscI(k)
-      !print*, "0",  Pkc
       if (DirectBand) then
         call MIO_Allocate(EAke,[ptsTot,Epts],'EAke','diag')
         EAke = 0.0_dp
@@ -3890,26 +3313,32 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
          PkcLocA = 0.0_dp
          PkcLocB = 0.0_dp
          KptsLoc = Kpts(:,ik)
-         !KptsLoc = KptsG(:,ik)-G11
             if (WeiKu) then
                 if (WeiKuOld) then
-                    call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                    call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK, &
+                          ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 else
-                    call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                    call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                          gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 end if
             else if (Lee) then
-                call DiagSpectralWeightWeiKuInequivalentLee(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                call DiagSpectralWeightWeiKuInequivalentLee(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                      gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
             else if (Nishi) then
-                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell,gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell, &
+                      gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
             end if
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                        if (WeiKu) then
                           if (useGaussianBroadening) then
                              !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
-                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
-                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
+                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
+                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
                           else if (DirectBand) then
                              if (iee == int(ie-(nAt/2-Epts/2))) then
                                  EAke(ik,iee) = ELoc(ie)
@@ -3942,17 +3371,14 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
                              end if
                           end if
                        else if (Lee) then
-                          !if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                           if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + real(PkcLocA(ie,1))
                              Ake2(ik,iee) = Ake2(ik,iee) + real(PkcLocA(ie,2))
                              Ake3(ik,iee) = Ake3(ik,iee) + real(PkcLocA(ie,3))
-                             !Ake1(ik,iee) = Ake1(ik,iee) + abs(PkcLocA(ie,1))**2
-                             !Ake2(ik,iee) = Ake2(ik,iee) + abs(PkcLocA(ie,2))**2
-                             !Ake3(ik,iee) = Ake3(ik,iee) + abs(PkcLocA(ie,3))**2
                           end if
                        else if (Nishi) then
-                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
+                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0) &
+                                .or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + PkcLocA(ie,1)
                              Ake2(ik,iee) = Ake2(ik,iee) + PkcLocA(ie,2)
                              Ake3(ik,iee) = Ake3(ik,iee) + PkcLocA(ie,3)
@@ -3960,7 +3386,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
                        end if
                 end do
             end do
-         !end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:)
          AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
       end do
@@ -3979,10 +3404,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
             end do
          else if (DirectBand) then
             do iee=1,Epts
-                !write(u,'(3f12.6,f12.6,10f12.6)') KptsG(:,ik), REAL(EAke(ik,iee)), REAL(Ake1(ik,iee)), REAL(Ake1B(ik,iee)),&
-                !                                                                 & REAL(Ake2(ik,iee)), REAL(Ake2B(ik,iee)),&
-                !                                                                 & REAL(Ake3(ik,iee)), REAL(Ake3B(ik,iee)),&
-                !                                                                 & REAL(Ake4(ik,iee)), REAL(Ake4B(ik,iee))
                 write(u,'(f12.6,f12.6,10f12.6)') d,  REAL(EAke(ik,iee)),           REAL(Ake1(ik,iee)), REAL(Ake1B(ik,iee)),&
                                                                                  & REAL(Ake2(ik,iee)), REAL(Ake2B(ik,iee)),&
                                                                                  & REAL(Ake3(ik,iee)), REAL(Ake3B(ik,iee)),&
@@ -3990,13 +3411,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
             end do
          else
             do iee=1,Epts  ! epsilon
-                !if (Lee) then
-                !   write(u,'(f12.6,f12.6,f22.6)') d, Energy(iee), abs(Ake(ik,iee))**2
-                !   write(u1,'(f12.6,f12.6,f22.6)') d, Energy(iee), abs(Ake1(ik,iee))**2
-                !   write(u2,'(f12.6,f12.6,f22.6)') d, Energy(iee), abs(Ake2(ik,iee))**2
-                !   write(u3,'(f12.6,f12.6,f22.6)') d, Energy(iee), abs(Ake3(ik,iee))**2
-                !else
-                   !write(u,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake(ik,iee))
                    ! A sublattice
                    write(u1,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake1(ik,iee))
                    write(u2,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake2(ik,iee))
@@ -4007,11 +3421,9 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
                    write(uu2,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake2B(ik,iee))
                    write(uu3,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake3B(ik,iee))
                    write(uu4,'(f12.6,f12.6,f22.6)') d, Energy(iee), REAL(Ake4B(ik,iee))
-                !endif
             end do
          end if
       end do
-
 
       call MIO_Print('')
       !call file%Close()
@@ -4042,7 +3454,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, u1, u2, u3, u4, uu1, uu2, uu3, uu4
    integer :: ik, iee, ie
@@ -4071,7 +3483,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    real(dp), pointer :: gaussian(:)=>NULL()
 
    complex(dp), pointer :: Pkc(:,:,:)=>NULL()
-   !complex(dp), pointer :: PkcLoc(:,:)=>NULL()
    complex(dp), pointer :: Ake(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian1(:,:)=>NULL()
@@ -4093,10 +3504,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    real(dp) :: GVec(3) , G01(3), G10(3), G11(3), unfoldedK(3)
 
    real(dp) :: eps, factor, energyGridResolution
-   !integer :: i1, i2
-
-   !real(dp) :: randu
-   !integer :: randi, randj
 
    real(dp) :: area, volume, grcell(3,3), aG
    real(dp) :: gcell(3,3), vn(3)
@@ -4142,29 +3549,19 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
-   !print*, rcell(:,1)
-   !print*, rcell(:,2)
-   !print*, rcell(:,3)
 
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
-   if (MIO_InputSearchLabel('MoireCellParameters',line,id)) then
-       call MIO_InputParameter('MoireCellParameters',mmm,[0,0,0,0])
-       !gcell(1,:) = ucell(1,:)/mmm(1)/2.0
-       !gcell(2,:) = ucell(2,:)/mmm(2)/2.0
-       !gcell(3,:) = ucell(3,:)
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
+       call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
        call MIO_InputParameter('Spectral.RotateReferenceSystem',rotateRefSystem,.false.)
        call MIO_InputParameter('Spectral.RotateOpposite',rotateOpposite,.false.)
        gcell1 = gcell
-       !print*,"gcell before rotation ", gcell(:,1)
-       !print*,"gcell before rotation ", gcell(:,2)
-       !print*,"gcell before rotation ", gcell(:,3)
        if (rotateRefSystem .eqv. .true.) then
            gg = mmm(1)**2 + mmm(2)**2 + mmm(1)*mmm(2)
            delta = sqrt(real(mmm(3)**2 + mmm(4)**2 + mmm(3)*mmm(4))/gg)
@@ -4175,17 +3572,13 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
                phi = -phi*180.0_dp/pi
            end if
            aa = phi*pi/180.0_dp
-           !print*, "phi =", phi
-           !print*, "Angle= ", aa, phi
            rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
            rot(:,2) = [sin(aa),cos(aa),0.0_dp]
-           !rot(:,1) = [cos(aa),sin(aa),0.0_dp]
-           !rot(:,2) = [cos(aa+pi/3.0_dp),sin(aa+pi/3.0_dp),0.0_dp]
            rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
            gcell = matmul(rot,gcell)
        end if
    else
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -4195,14 +3588,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
-       !print*, "Angle= ", aa, phi
        rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
-       !rcell(:,2) = [cos(aa+pi/3.0_dp),sin(aa+pi/3.0_dp),0.0_dp]
        rot(:,2) = [sin(aa),cos(aa),0.0_dp]
        rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
        gcell = matmul(rot,gcell)
    end if
-
 
    vn = CrossProd(gcell(:,1),gcell(:,2))
    volume = dot_product(gcell(:,3),vn)
@@ -4212,34 +3602,16 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    grcell(:,3) = twopi*CrossProd(gcell(:,1),gcell(:,2))/volume
 
    gcell2 = gcell
-   !print*,"gcell after rotation ", gcell(:,1)
-   !print*,"gcell after rotation ", gcell(:,2)
-   !print*,"gcell after rotation ", gcell(:,3)
-   !print*,"grcell ", grcell(:,1)
-   !print*,"grcell ", grcell(:,2)
-   !print*,"grcell ", grcell(:,3)
-   !print*,"ucell ", ucell(:,1)
-   !print*,"ucell ", ucell(:,2)
-   !print*,"ucell ", ucell(:,3)
-   !print*,"rcell ", rcell(:,1)
-   !print*,"rcell ", rcell(:,2)
-   !print*,"rcell ", rcell(:,3)
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
    call MIO_Print('Calculating Spectral function around K1 (2/3,1/3)','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('KGridCut',gridCut,0.1_dp)
-   !call MIO_InputParameter('Epsilon',eps,0.01_dp)
-   !call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
-   !call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
-   !call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
-   !call MIO_Allocate(DOS,[Epts,nspin],'DOS','diag')
-   !call MIO_Allocate(E,Epts,'E','diag')
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
    ptot = nk(1)*nk(2)*nk(3)
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
@@ -4265,78 +3637,26 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    deltaKz = (K1z2 - K1z1)/nk(3)
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
-      !Kgrid(:,ik) = grcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-      !              grcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + &
-      !              grcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
       Kgrid(1,ik) = (K1x1 + (i1 * deltaKx))
       Kgrid(2,ik) = (K1y1 + (i2 * deltaKy))
       Kgrid(3,ik) = (K1z1 + (i3 * deltaKz))
    end do; end do; end do
 
-   !if (MIO_InputFindBlock('Spectral.Path',nPath)) then
-      !call MIO_Print('Spectral function calculation','diag')
-      !call MIO_Print('Based on PRB 95, 085420 (2017)','diag')
-      !call MIO_Allocate(path,[3,nPath],'path','diag')
-      !call MIO_Allocate(pathG,[3,nPath],'path','diag')
-      !call MIO_InputBlock('Spectral.Path',path)
-      !call MIO_InputBlock('Spectral.Path',pathG)
-      !do ip=1,nPath
-      !   print*, "0: ", path(:,ip)
-      !   path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
-      !   pathG(:,ip) = pathG(1,ip)*grcell(:,1) + pathG(2,ip)*grcell(:,2) + pathG(3,ip)*grcell(:,3)
-      !   print*, "1: ", path(:,ip)
       !   !if (MoireBS) then
       !   !   !print*, "theta=", theta
-      !   !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
+      !   !   call MIO_InputParameter('Structure.TwistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
       !   !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
       !   !end if
-      !   print*, "2: ", path(:,ip)
-      !end do
-      !if (nPath==1) then
-      !   call MIO_Allocate(nPts,1,'nPts','diag')
-      !   nPts(1) = 1
-      !   ptsTot = 1
-      !else
-      !   call MIO_Allocate(nPts,nPath-1,'nPts','diag')
-      !   nPts(1) = nPts0
-      !   ptsTot = nPts0
-      !   if (nPath > 2) then
-      !      v = path(:,2) - path(:,1)
-      !      d0 = sqrt(dot_product(v,v))
-      !      do ip=2,nPath-1
-      !         v = path(:,ip+1) - path(:,ip)
-      !         d = sqrt(dot_product(v,v))
-      !         nPts(ip) = nint(real(d*nPts0)/real(d0))
-      !         ptsTot = ptsTot + nPts(ip)
-      !      end do
-      !   end if
-      !end if
-      !call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
-      !call MIO_Allocate(KptsG,[3,ptsTot],'KptsG','diag')
-      !call MIO_Allocate(KptsGFrac,[3,ptsTot],'KptsGFrac','diag')
       call MIO_Allocate(Kpts,[3,ptot],'Kpts','diag')
       call MIO_Allocate(KptsG,[3,ptot],'KptsG','diag')
       call MIO_Allocate(KptsGFrac,[3,ptot],'KptsGFrac','diag')
-      !Kpts(:,1) = path(:,1)
-      !KptsG(:,1) = pathG(:,1)
       KptsG(:,1) = Kgrid(:,1)
       ip = 0
       d = 0.0_dp
       GVec = matmul(rcell,[1,0,0]) ! we only want to translate them by one reciprocal lattice vector
-      !KptsG(:,1) = Kpts(:,1) + GVec
-      !Kpts(:,1) = KptsG(:,1) - GVec
-      !call MIO_InputParameter('CellSize', cellSize, 1)
-      !print*, "cell size =", cellSize
-      !print*, matmul(rcell,[1,1,0]), matmul(rcell,[1,0,0]), matmul(rcell,[0,1,0])
       G10 = matmul(rcell,[1,0,0])
       G01 = matmul(rcell,[0,1,0])
       G11 = matmul(rcell,[1,1,0])
-      !Kpts(1,1) = KptsG(1,1)/cellSize
-      !Kpts(2,1) = KptsG(2,1)/cellSize
-      !Kpts(3,1) = KptsG(3,1)
-      !kpts(1,1) = mod(KptsG(1,1),abs(G10(1)))
-      !kpts(2,1) = mod(KptsG(2,1),abs(G10(2)))
-      !kpts(3,1) = KptsG(3,1)
       ll = (KptsG(1,1)*G10(2)/G10(1) - KptsG(2,1)) / (G01(1)*G10(2)/G10(1) - G01(2))
       kk = (KptsG(1,1) - ll * G01(1)) / G10(1)
       if (kk.gt.0) then
@@ -4350,9 +3670,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
           ll = ceiling(ll)
       end if
 
-      !print*, ll, kk
-      !kpts(1,1) = KptsG(1,1) - kk*G10(1) - ll*G01(1)
-      !kpts(2,1) = KptsG(2,1) - kk*G10(2) - ll*G01(2)
       if (foldByOne) then
          kpts(1,1) = KptsG(1,1) - G10(1) - G01(1)
          kpts(2,1) = KptsG(2,1) - G10(2) - G01(2)
@@ -4364,27 +3681,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
          kpts(2,1) = KptsG(2,1) - kk*G10(2) - ll*G01(2)
       end if
 
-      !print*, "tup"
-      !print*, Kpts(:,1), KptsG(:,1), GVec
-      !rcellInv = matinv3(rcell)
-      !do i=1,nPath-1
-         !do j=1,nPts(i)
-         !do j=1,ptot
          do ip=1,ptot
-            !ip = ip + 1
-            !KptsG(:,ip) = pathG(:,i) + (j-1)*(pathG(:,i+1)-pathG(:,i))/nPts(i)
             KptsG(:,ip) = Kgrid(:,ip)
-            !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
-            !call random_number(randu)
-            !randi = FLOOR(22*randu)
-            !call random_number(randu)
-            !randj = FLOOR(22*randu)
-            !GVec = matmul(rcell,[randi,randj,0]) ! we only want to translate them by one reciprocal lattice vector
-            !KptsG(:,ip) = Kpts(:,ip) + GVec ! Kpts is in SC, Kpts is for Graphene (PC)
-            !print*, "yup"
-            !print*, Kpts(:,ip), KptsG(:,ip), GVec
-            !print*, KptsG(2,ip) - FLOOR(KptsG(2,ip)/G2) * G2
-            !print*, mod(KptsG(2,ip),G2)
             ! 2 equations, 2 unknowns. Bring point back to SC reciprocal cell
             ! using G10 and G01.
             ll = (KptsG(1,ip)*G10(2)/G10(1) - KptsG(2,ip)) / (G01(1)*G10(2)/G10(1) - G01(2))
@@ -4400,9 +3698,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
                 ll = ceiling(ll)
             end if
 
-            !print*, ll, kk
-            !kpts(1,ip) = KptsG(1,ip) - kk*G10(1) - ll*G01(1)
-            !kpts(2,ip) = KptsG(2,ip) - kk*G10(2) - ll*G01(2)
             if (foldByOne) then
                kpts(1,ip) = KptsG(1,ip) - G10(1) - G01(1)
                kpts(2,ip) = KptsG(2,ip) - G10(2) - G01(2)
@@ -4414,29 +3709,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
                kpts(2,ip) = KptsG(2,ip) - kk*G10(2) - ll*G01(2)
             end if
 
-            !KptsGFrac(2,ip) = grcell(1,1)*(KptsG(2,ip)-KptsG(1,ip)*grcell(2,1)/grcell(1,1))/(grcell(2,2)*grcell(1,1)-grcell(1,2)*grcell(2,1))
-            !KptsGFrac(1,ip) = (KptsG(1,ip)-KptsGFrac(2,ip)*grcell(1,2))/grcell(1,1)
-            !KptsGFrac(3,ip) = KptsG(3,ip)/grcell(3,3)
             !!!Rat(:,i) = Rat(1,i)*ucell(:,1) + Rat(2,i)*ucell(:,2) + Rat(3,i)*ucell(:,3)
-            !Kpts(:,ip) = KptsGFrac(1,ip)*rcell(:,1) + KptsGFrac(2,ip)*rcell(:,2) + KptsGFrac(3,ip)*rcell(:,3)
 
-            !Kpts(:,ip) = KptsG(:,ip) - GVec ! this one gives the same as when starting from Kpts
-            !Kpts(1,ip) = KptsG(1,ip) - FLOOR(KptsG(1,ip)/G1) * G1
-            !Kpts(2,ip) = KptsG(2,ip) - FLOOR(KptsG(2,ip)/G2) * G2
-            !Kpts(3,ip) = KptsG(3,ip)
-            !kpts(1,ip) = mod(kptsG(1,ip),abs(G10(1)))
-            !kpts(2,ip) = mod(kptsG(2,ip),abs(G10(2)))
-            !kpts(3,ip) = kptsG(3,ip)
-            !Kpts(1,ip) = matmul(rcellInv,KptsG(1,ip))
-            !Kpts(2,ip) = matmul(rcellInv,KptsG(2,ip))
-            !Kpts(3,ip) = matmul(rcellInv,KptsG(3,ip))
-            !Kpts(1,ip) = KptsG(1,ip)/cellSize
-            !Kpts(2,ip) = KptsG(2,ip)/cellSize
-            !Kpts(3,ip) = KptsG(3,ip)
-            !v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-            !d = d + sqrt(dot_product(v,v))
          end do
-      !end do
       call MIO_Allocate(E,[nAt,nspin],'E','diag')
       flnm = trim(prefix)//'.spectralA'
       u=99
@@ -4479,18 +3754,14 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
-      !call MIO_Allocate(Pkc,[1,1],[ptsTot,nAt],'Pkc','diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptot,nAt,2],'Pkc','diag')
-      !call MIO_Allocate(Pkc,nAt,'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
-      !print*, "factor = ", factor
       Epts2 = CEILING(Epts/factor)
-      !print*, Epts2
       if (mod(Epts2,2).ne.0) then
          Epts2 = Epts2+1
       end if
@@ -4506,7 +3777,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       AkeGaussian = 0.0_dp
       AkeGaussian1 = 0.0_dp
       AkeGaussian2 = 0.0_dp
-      !print*, "nspin ", nspin
       is = 1
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
       call MIO_InputParameter('Spectral.energyGridResolution',energyGridResolution,0.005_dp)
@@ -4514,10 +3784,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       do iee=1,Epts2
           gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
       end do
-      !call MIO_Allocate(Ake1Loc,Epts,'Ake1Loc','diag')
-      !call MIO_Allocate(Ake2Loc,Epts,'Ake2Loc','diag')
-      !Ake1Loc = 0.0_dp
-      !Ake2Loc = 0.0_dp
       call MIO_Allocate(Ake1,[ptot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake2,[ptot,Epts],'Ake2','diag')
       call MIO_Allocate(Ake3,[ptot,Epts],'Ake3','diag')
@@ -4534,13 +3800,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       Ake2B = 0.0_dp
       Ake3B = 0.0_dp
       Ake4B = 0.0_dp
-      !print*, gaussian
-      !Pkc = 0.0_dp ! spectral weight PkscI(k)
-      !print*, "0",  Pkc
 !HERE
       !$OMP PARALLEL DO PRIVATE(iee, ie, unfoldedK, ELoc, PkcLocA, PkcLocB, KptsLoc), &
       !$OMP& SHARED(KptsG, Kpts, AkeGaussian1, AkeGaussian2, AkeGaussian, nAt, nspin, is, ucell, gcell, gcell1, gcell2, H0, maxNeigh, hopp, NList, Nneigh, neighCell, gaussian, Epts, Ake)
-      !do ik=1,ptsTot ! K loop
       do ik=1,ptot ! K loop
          ELoc = 0.0_dp
          ELoc1 = 0.0_dp
@@ -4551,22 +3813,29 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
          KptsLoc = Kpts(:,ik)
             if (WeiKu) then
                 if (WeiKuOld) then
-                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK, &
+                         ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 else
-                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                         gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 end if
             else if (Nishi) then
-                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell,gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell, &
+                      gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
             end if
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                        if (WeiKu) then
                           if (useGaussianBroadening) then
                              !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
-                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
-                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
-                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
+                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
+                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
                           else
                              if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                                  ! A sublattice
@@ -4580,11 +3849,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
                                  Ake2B(ik,iee) = Ake2B(ik,iee) + abs(PkcLocB(ie,2))**2 !* topBottomRatio
                                  Ake3B(ik,iee) = Ake3B(ik,iee) + abs(PkcLocB(ie,3))**2 !* topBottomRatio
                                  Ake4B(ik,iee) = Ake4B(ik,iee) + abs(PkcLocB(ie,4))**2 !* topBottomRatio
-                                 !end if
                              end if
                           end if
                        else if (Nishi) then
-                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
+                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0) &
+                                .or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + PkcLocA(ie,1)
                              Ake2(ik,iee) = Ake2(ik,iee) + PkcLocA(ie,2)
                              Ake3(ik,iee) = Ake3(ik,iee) + PkcLocA(ie,3)
@@ -4593,12 +3862,10 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
                        end if
                 end do
             end do
-         !end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:) + Ake4(ik,:)
          AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
       end do
       !$OMP END PARALLEL DO
-      !print*, "lets write it all out"
       do ik=1,ptot ! K loop
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -4606,7 +3873,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
             end do
          else
             do iee=1,Epts  ! epsilon
-                !write(u,'(3f12.6,f12.6,f12.6)') KptsG(:,ik), Energy(iee), REAL(Ake(ik,iee))
                 write(u1,'(3f12.6,f12.6,f12.6)') KptsG(:,ik), Energy(iee), REAL(Ake1(ik,iee))
                 write(u2,'(3f12.6,f12.6,f12.6)') KptsG(:,ik), Energy(iee), REAL(Ake2(ik,iee))
                 write(u3,'(3f12.6,f12.6,f12.6)') KptsG(:,ik), Energy(iee), REAL(Ake3(ik,iee))
@@ -4618,8 +3884,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
             end do
          end if
       end do
-      !end do; end do; end do
-
 
       call MIO_Print('')
       !call file%Close()
@@ -4631,7 +3895,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
       call MIO_Print('')
       close(u)
-   !end if
 
 #ifdef TIMER
    call MIO_TimerStop('diag')
@@ -4651,7 +3914,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, u1, u2, u3, u4, uu1, uu2, uu3, uu4
    integer :: ik, iee, ie
@@ -4680,7 +3943,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    real(dp), pointer :: gaussian(:)=>NULL()
 
    complex(dp), pointer :: Pkc(:,:,:)=>NULL()
-   !complex(dp), pointer :: PkcLoc(:,:)=>NULL()
    complex(dp), pointer :: Ake(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian1(:,:)=>NULL()
@@ -4703,10 +3965,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    real(dp) :: GVec(3) , G01(3), G10(3), G11(3), unfoldedK(3)
 
    real(dp) :: eps, factor, energyGridResolution
-   !integer :: i1, i2
-
-   !real(dp) :: randu
-   !integer :: randi, randj
 
    real(dp) :: area, volume, grcell(3,3), aG
    real(dp) :: gcell(3,3), vn(3)
@@ -4752,7 +4010,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
    print*, rcell(:,1)
    print*, rcell(:,2)
@@ -4760,12 +4017,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
 
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
-   if (MIO_InputSearchLabel('MoireCellParameters',line,id)) then
-       call MIO_InputParameter('MoireCellParameters',mmm,[0,0,0,0])
-       !gcell(1,:) = ucell(1,:)/mmm(1)/2.0
-       !gcell(2,:) = ucell(2,:)/mmm(2)/2.0
-       !gcell(3,:) = ucell(3,:)
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
+       call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -4786,16 +4040,13 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
            end if
            aa = phi*pi/180.0_dp
            print*, "phi =", phi
-           !print*, "Angle= ", aa, phi
            rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
            rot(:,2) = [sin(aa),cos(aa),0.0_dp]
-           !rot(:,1) = [cos(aa),sin(aa),0.0_dp]
-           !rot(:,2) = [cos(aa+pi/3.0_dp),sin(aa+pi/3.0_dp),0.0_dp]
            rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
            gcell = matmul(rot,gcell)
        end if
    else
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -4805,14 +4056,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
-       !print*, "Angle= ", aa, phi
        rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
-       !rcell(:,2) = [cos(aa+pi/3.0_dp),sin(aa+pi/3.0_dp),0.0_dp]
        rot(:,2) = [sin(aa),cos(aa),0.0_dp]
        rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
        gcell = matmul(rot,gcell)
    end if
-
 
    vn = CrossProd(gcell(:,1),gcell(:,2))
    volume = dot_product(gcell(:,3),vn)
@@ -4837,19 +4085,13 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
    call MIO_Print('Calculating Spectral function around K1 (2/3,1/3)','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('KGridCut',gridCut,0.1_dp)
-   !call MIO_InputParameter('Epsilon',eps,0.01_dp)
-   !call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
-   !call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
-   !call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
-   !call MIO_Allocate(DOS,[Epts,nspin],'DOS','diag')
-   !call MIO_Allocate(E,Epts,'E','diag')
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
    ptot = nk(1)*nk(2)*nk(3)
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
@@ -4875,78 +4117,27 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    deltaKz = (K1z2 - K1z1)/nk(3)
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
-      !Kgrid(:,ik) = grcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-      !              grcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + &
-      !              grcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
       Kgrid(1,ik) = (K1x1 + (i1 * deltaKx))
       Kgrid(2,ik) = (K1y1 + (i2 * deltaKy))
       Kgrid(3,ik) = (K1z1 + (i3 * deltaKz))
    end do; end do; end do
 
-   !if (MIO_InputFindBlock('Spectral.Path',nPath)) then
-      !call MIO_Print('Spectral function calculation','diag')
-      !call MIO_Print('Based on PRB 95, 085420 (2017)','diag')
-      !call MIO_Allocate(path,[3,nPath],'path','diag')
-      !call MIO_Allocate(pathG,[3,nPath],'path','diag')
-      !call MIO_InputBlock('Spectral.Path',path)
-      !call MIO_InputBlock('Spectral.Path',pathG)
-      !do ip=1,nPath
-      !   print*, "0: ", path(:,ip)
-      !   path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
-      !   pathG(:,ip) = pathG(1,ip)*grcell(:,1) + pathG(2,ip)*grcell(:,2) + pathG(3,ip)*grcell(:,3)
-      !   print*, "1: ", path(:,ip)
       !   !if (MoireBS) then
       !   !   !print*, "theta=", theta
-      !   !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
+      !   !   call MIO_InputParameter('Structure.TwistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
       !   !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
       !   !end if
-      !   print*, "2: ", path(:,ip)
-      !end do
-      !if (nPath==1) then
-      !   call MIO_Allocate(nPts,1,'nPts','diag')
-      !   nPts(1) = 1
-      !   ptsTot = 1
-      !else
-      !   call MIO_Allocate(nPts,nPath-1,'nPts','diag')
-      !   nPts(1) = nPts0
-      !   ptsTot = nPts0
-      !   if (nPath > 2) then
-      !      v = path(:,2) - path(:,1)
-      !      d0 = sqrt(dot_product(v,v))
-      !      do ip=2,nPath-1
-      !         v = path(:,ip+1) - path(:,ip)
-      !         d = sqrt(dot_product(v,v))
-      !         nPts(ip) = nint(real(d*nPts0)/real(d0))
-      !         ptsTot = ptsTot + nPts(ip)
-      !      end do
-      !   end if
-      !end if
-      !call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
-      !call MIO_Allocate(KptsG,[3,ptsTot],'KptsG','diag')
-      !call MIO_Allocate(KptsGFrac,[3,ptsTot],'KptsGFrac','diag')
       call MIO_Allocate(Kpts,[3,ptot],'Kpts','diag')
       call MIO_Allocate(KptsG,[3,ptot],'KptsG','diag')
       call MIO_Allocate(KptsGFrac,[3,ptot],'KptsGFrac','diag')
-      !Kpts(:,1) = path(:,1)
-      !KptsG(:,1) = pathG(:,1)
       KptsG(:,1) = Kgrid(:,1)
       ip = 0
       d = 0.0_dp
       GVec = matmul(rcell,[1,0,0]) ! we only want to translate them by one reciprocal lattice vector
-      !KptsG(:,1) = Kpts(:,1) + GVec
-      !Kpts(:,1) = KptsG(:,1) - GVec
-      !call MIO_InputParameter('CellSize', cellSize, 1)
-      !print*, "cell size =", cellSize
       print*, matmul(rcell,[1,1,0]), matmul(rcell,[1,0,0]), matmul(rcell,[0,1,0])
       G10 = matmul(rcell,[1,0,0])
       G01 = matmul(rcell,[0,1,0])
       G11 = matmul(rcell,[1,1,0])
-      !Kpts(1,1) = KptsG(1,1)/cellSize
-      !Kpts(2,1) = KptsG(2,1)/cellSize
-      !Kpts(3,1) = KptsG(3,1)
-      !kpts(1,1) = mod(KptsG(1,1),abs(G10(1)))
-      !kpts(2,1) = mod(KptsG(2,1),abs(G10(2)))
-      !kpts(3,1) = KptsG(3,1)
       ll = (KptsG(1,1)*G10(2)/G10(1) - KptsG(2,1)) / (G01(1)*G10(2)/G10(1) - G01(2))
       kk = (KptsG(1,1) - ll * G01(1)) / G10(1)
       if (kk.gt.0) then
@@ -4960,9 +4151,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
           ll = ceiling(ll)
       end if
 
-      !print*, ll, kk
-      !kpts(1,1) = KptsG(1,1) - kk*G10(1) - ll*G01(1)
-      !kpts(2,1) = KptsG(2,1) - kk*G10(2) - ll*G01(2)
       if (foldByOne) then
          kpts(1,1) = KptsG(1,1) - G10(1) - G01(1)
          kpts(2,1) = KptsG(2,1) - G10(2) - G01(2)
@@ -4974,27 +4162,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
          kpts(2,1) = KptsG(2,1) - kk*G10(2) - ll*G01(2)
       end if
 
-      !print*, "tup"
-      !print*, Kpts(:,1), KptsG(:,1), GVec
-      !rcellInv = matinv3(rcell)
-      !do i=1,nPath-1
-         !do j=1,nPts(i)
-         !do j=1,ptot
          do ip=1,ptot
-            !ip = ip + 1
-            !KptsG(:,ip) = pathG(:,i) + (j-1)*(pathG(:,i+1)-pathG(:,i))/nPts(i)
             KptsG(:,ip) = Kgrid(:,ip)
-            !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
-            !call random_number(randu)
-            !randi = FLOOR(22*randu)
-            !call random_number(randu)
-            !randj = FLOOR(22*randu)
-            !GVec = matmul(rcell,[randi,randj,0]) ! we only want to translate them by one reciprocal lattice vector
-            !KptsG(:,ip) = Kpts(:,ip) + GVec ! Kpts is in SC, Kpts is for Graphene (PC)
-            !print*, "yup"
-            !print*, Kpts(:,ip), KptsG(:,ip), GVec
-            !print*, KptsG(2,ip) - FLOOR(KptsG(2,ip)/G2) * G2
-            !print*, mod(KptsG(2,ip),G2)
             ! 2 equations, 2 unknowns. Bring point back to SC reciprocal cell
             ! using G10 and G01.
             ll = (KptsG(1,ip)*G10(2)/G10(1) - KptsG(2,ip)) / (G01(1)*G10(2)/G10(1) - G01(2))
@@ -5010,9 +4179,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
                 ll = ceiling(ll)
             end if
 
-            !print*, ll, kk
-            !kpts(1,ip) = KptsG(1,ip) - kk*G10(1) - ll*G01(1)
-            !kpts(2,ip) = KptsG(2,ip) - kk*G10(2) - ll*G01(2)
             if (foldByOne) then
                kpts(1,ip) = KptsG(1,ip) - G10(1) - G01(1)
                kpts(2,ip) = KptsG(2,ip) - G10(2) - G01(2)
@@ -5024,29 +4190,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
                kpts(2,ip) = KptsG(2,ip) - kk*G10(2) - ll*G01(2)
             end if
 
-            !KptsGFrac(2,ip) = grcell(1,1)*(KptsG(2,ip)-KptsG(1,ip)*grcell(2,1)/grcell(1,1))/(grcell(2,2)*grcell(1,1)-grcell(1,2)*grcell(2,1))
-            !KptsGFrac(1,ip) = (KptsG(1,ip)-KptsGFrac(2,ip)*grcell(1,2))/grcell(1,1)
-            !KptsGFrac(3,ip) = KptsG(3,ip)/grcell(3,3)
             !!!Rat(:,i) = Rat(1,i)*ucell(:,1) + Rat(2,i)*ucell(:,2) + Rat(3,i)*ucell(:,3)
-            !Kpts(:,ip) = KptsGFrac(1,ip)*rcell(:,1) + KptsGFrac(2,ip)*rcell(:,2) + KptsGFrac(3,ip)*rcell(:,3)
 
-            !Kpts(:,ip) = KptsG(:,ip) - GVec ! this one gives the same as when starting from Kpts
-            !Kpts(1,ip) = KptsG(1,ip) - FLOOR(KptsG(1,ip)/G1) * G1
-            !Kpts(2,ip) = KptsG(2,ip) - FLOOR(KptsG(2,ip)/G2) * G2
-            !Kpts(3,ip) = KptsG(3,ip)
-            !kpts(1,ip) = mod(kptsG(1,ip),abs(G10(1)))
-            !kpts(2,ip) = mod(kptsG(2,ip),abs(G10(2)))
-            !kpts(3,ip) = kptsG(3,ip)
-            !Kpts(1,ip) = matmul(rcellInv,KptsG(1,ip))
-            !Kpts(2,ip) = matmul(rcellInv,KptsG(2,ip))
-            !Kpts(3,ip) = matmul(rcellInv,KptsG(3,ip))
-            !Kpts(1,ip) = KptsG(1,ip)/cellSize
-            !Kpts(2,ip) = KptsG(2,ip)/cellSize
-            !Kpts(3,ip) = KptsG(3,ip)
-            !v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-            !d = d + sqrt(dot_product(v,v))
          end do
-      !end do
       call MIO_Allocate(E,[nAt,nspin],'E','diag')
       flnm = trim(prefix)//'.spectral_v2'
       u=99
@@ -5089,18 +4235,14 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
-      !call MIO_Allocate(Pkc,[1,1],[ptsTot,nAt],'Pkc','diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptot,nAt,2],'Pkc','diag')
-      !call MIO_Allocate(Pkc,nAt,'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
-      !print*, "factor = ", factor
       Epts2 = CEILING(Epts/factor)
-      !print*, Epts2
       if (mod(Epts2,2).ne.0) then
          Epts2 = Epts2+1
       end if
@@ -5125,10 +4267,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       do iee=1,Epts2
           gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
       end do
-      !call MIO_Allocate(Ake1Loc,Epts,'Ake1Loc','diag')
-      !call MIO_Allocate(Ake2Loc,Epts,'Ake2Loc','diag')
-      !Ake1Loc = 0.0_dp
-      !Ake2Loc = 0.0_dp
       call MIO_Allocate(Ake1,[ptot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake2,[ptot,Epts],'Ake2','diag')
       call MIO_Allocate(Ake3,[ptot,Epts],'Ake3','diag')
@@ -5151,13 +4289,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
         EAke = 0.0_dp
       end if
 
-      !print*, gaussian
-      !Pkc = 0.0_dp ! spectral weight PkscI(k)
-      !print*, "0",  Pkc
 !HERE
       !$OMP PARALLEL DO PRIVATE(iee, ie, unfoldedK, ELoc, PkcLocA, PkcLocB, KptsLoc), &
       !$OMP& SHARED(KptsG, Kpts, AkeGaussian1, AkeGaussian2, AkeGaussian, nAt, nspin, is, ucell, gcell, gcell1, gcell2, H0, maxNeigh, hopp, NList, Nneigh, neighCell, gaussian, Epts, Ake)
-      !do ik=1,ptsTot ! K loop
       do ik=1,ptot ! K loop
          ELoc = 0.0_dp
          ELoc1 = 0.0_dp
@@ -5168,22 +4302,29 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
          KptsLoc = Kpts(:,ik)
             if (WeiKu) then
                 if (WeiKuOld) then
-                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK, &
+                         ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 else
-                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                         gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 end if
             else if (Nishi) then
-                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell,gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell, &
+                      gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
             end if
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                        if (WeiKu) then
                           if (useGaussianBroadening) then
                              !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
-                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
-                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
-                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
+                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
+                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
                           else if (DirectBand) then
                              if (iee == int(ie-(nAt/2-Epts/2))) then
                                  EAke(ik,iee) = ELoc(ie)
@@ -5213,11 +4354,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
                                  Ake2B(ik,iee) = Ake2B(ik,iee) + abs(PkcLocB(ie,2))**2 !* topBottomRatio
                                  Ake3B(ik,iee) = Ake3B(ik,iee) + abs(PkcLocB(ie,3))**2 !* topBottomRatio
                                  Ake4B(ik,iee) = Ake4B(ik,iee) + abs(PkcLocB(ie,4))**2 !* topBottomRatio
-                                 !end if
                              end if
                           end if
                        else if (Nishi) then
-                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
+                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0) &
+                                .or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + PkcLocA(ie,1)
                              Ake2(ik,iee) = Ake2(ik,iee) + PkcLocA(ie,2)
                              Ake3(ik,iee) = Ake3(ik,iee) + PkcLocA(ie,3)
@@ -5226,12 +4367,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
                        end if
                 end do
             end do
-         !end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:)
          AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
       end do
       !$OMP END PARALLEL DO
-      print*, "lets write it all out"
+      call MIO_Print("lets write it all out",'diag')
       do ik=1,ptot ! K loop
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -5246,7 +4386,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
             end do
          else
             do iee=1,Epts  ! epsilon
-                !write(u,'(3f12.6,f12.6,f12.6)') KptsG(:,ik), Energy(iee), REAL(Ake(ik,iee))
                 write(u1,'(3f12.6,f12.6,f12.6)') KptsG(:,ik), Energy(iee), REAL(Ake1(ik,iee))
                 write(u2,'(3f12.6,f12.6,f12.6)') KptsG(:,ik), Energy(iee), REAL(Ake2(ik,iee))
                 write(u3,'(3f12.6,f12.6,f12.6)') KptsG(:,ik), Energy(iee), REAL(Ake3(ik,iee))
@@ -5258,8 +4397,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
             end do
          end if
       end do
-      !end do; end do; end do
-
 
       call MIO_Print('')
       !call file%Close()
@@ -5271,7 +4408,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
       call MIO_Print('')
       close(u)
-   !end if
 
 #ifdef TIMER
    call MIO_TimerStop('diag')
@@ -5291,7 +4427,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, u1, u2, u3
    integer :: ik, iee, ie
@@ -5320,7 +4456,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    real(dp), pointer :: gaussian(:)=>NULL()
 
    complex(dp), pointer :: Pkc(:,:,:)=>NULL()
-   !complex(dp), pointer :: PkcLoc(:,:)=>NULL()
    complex(dp), pointer :: Ake(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian1(:,:)=>NULL()
@@ -5337,10 +4472,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    real(dp) :: GVec(3) , G01(3), G10(3), G11(3), unfoldedK(3)
 
    real(dp) :: eps, factor, energyGridResolution
-   !integer :: i1, i2
-
-   !real(dp) :: randu
-   !integer :: randi, randj
 
    real(dp) :: area, volume, grcell(3,3), aG
    real(dp) :: gcell(3,3), vn(3)
@@ -5388,29 +4519,19 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   !call MIO_InputParameter('Bands.MoireBS',MoireBS,.false.)
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
-   !print*, rcell(:,1)
-   !print*, rcell(:,2)
-   !print*, rcell(:,3)
 
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
-   if (MIO_InputSearchLabel('MoireCellParameters',line,id)) then
-       call MIO_InputParameter('MoireCellParameters',mmm,[0,0,0,0])
-       !gcell(1,:) = ucell(1,:)/mmm(1)/2.0
-       !gcell(2,:) = ucell(2,:)/mmm(2)/2.0
-       !gcell(3,:) = ucell(3,:)
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
+       call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
        call MIO_InputParameter('Spectral.RotateReferenceSystem',rotateRefSystem,.false.)
        call MIO_InputParameter('Spectral.RotateOpposite',rotateOpposite,.false.)
        gcell1 = gcell
-       !print*,"gcell before rotation ", gcell(:,1)
-       !print*,"gcell before rotation ", gcell(:,2)
-       !print*,"gcell before rotation ", gcell(:,3)
        if (rotateRefSystem .eqv. .true.) then
            gg = mmm(1)**2 + mmm(2)**2 + mmm(1)*mmm(2)
            delta = sqrt(real(mmm(3)**2 + mmm(4)**2 + mmm(3)*mmm(4))/gg)
@@ -5421,17 +4542,13 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
                phi = -phi*180.0_dp/pi
            end if
            aa = phi*pi/180.0_dp
-           !print*, "phi =", phi
-           !print*, "Angle= ", aa, phi
            rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
            rot(:,2) = [sin(aa),cos(aa),0.0_dp]
-           !rot(:,1) = [cos(aa),sin(aa),0.0_dp]
-           !rot(:,2) = [cos(aa+pi/3.0_dp),sin(aa+pi/3.0_dp),0.0_dp]
            rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
            gcell = matmul(rot,gcell)
        end if
    else
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -5441,14 +4558,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
-       !print*, "Angle= ", aa, phi
        rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
-       !rcell(:,2) = [cos(aa+pi/3.0_dp),sin(aa+pi/3.0_dp),0.0_dp]
        rot(:,2) = [sin(aa),cos(aa),0.0_dp]
        rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
        gcell = matmul(rot,gcell)
    end if
-
 
    vn = CrossProd(gcell(:,1),gcell(:,2))
    volume = dot_product(gcell(:,3),vn)
@@ -5458,37 +4572,19 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    grcell(:,3) = twopi*CrossProd(gcell(:,1),gcell(:,2))/volume
 
    gcell2 = gcell
-   !print*,"gcell after rotation ", gcell(:,1)
-   !print*,"gcell after rotation ", gcell(:,2)
-   !print*,"gcell after rotation ", gcell(:,3)
-   !print*,"grcell ", grcell(:,1)
-   !print*,"grcell ", grcell(:,2)
-   !print*,"grcell ", grcell(:,3)
-   !print*,"ucell ", ucell(:,1)
-   !print*,"ucell ", ucell(:,2)
-   !print*,"ucell ", ucell(:,3)
-   !print*,"rcell ", rcell(:,1)
-   !print*,"rcell ", rcell(:,2)
-   !print*,"rcell ", rcell(:,3)
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
    call MIO_Print('Calculating Spectral function around K1 (2/3,1/3)','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('KGridCut',gridCut,0.1_dp)
-   call MIO_InputParameter('KGridCutX',gridCutX,0.1_dp)
-   call MIO_InputParameter('KGridCutY',gridCutY,0.1_dp)
-   call MIO_InputParameter('KGridLowerGridHalf',lowerGridHalf,.false.)
-   !call MIO_InputParameter('Epsilon',eps,0.01_dp)
-   !call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
-   !call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
-   !call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
-   !call MIO_Allocate(DOS,[Epts,nspin],'DOS','diag')
-   !call MIO_Allocate(E,Epts,'E','diag')
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
+   call MIO_InputParameter('Spectral.KGridCutX',gridCutX,0.1_dp)
+   call MIO_InputParameter('Spectral.KGridCutY',gridCutY,0.1_dp)
+   call MIO_InputParameter('Spectral.KGridLowerGridHalf',lowerGridHalf,.false.)
    ptot = nk(1)*nk(2)*nk(3)
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
@@ -5512,86 +4608,31 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    end if
    deltaKx = (K1x2 - K1x1)/nk(1)
    K1y1 = K1(2) + gridCutY
-   !K1y2 = K1(2) + gridCutX
-   !deltaKy = (K1y2 - K1y1)/nk(2)
    K1z1 = K1(3) - gridCut
    K1z2 = K1(3) + gridCut
    deltaKz = (K1z2 - K1z1)/nk(3)
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
-      !Kgrid(:,ik) = grcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-      !              grcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + &
-      !              grcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
       Kgrid(1,ik) = (K1x1 + (i1 * deltaKx))
-      !Kgrid(2,ik) = (K1y1 + (i2 * deltaKy))
       Kgrid(2,ik) = K1y1
       Kgrid(3,ik) = (K1z1 + (i3 * deltaKz))
    end do; end do; end do
 
-   !if (MIO_InputFindBlock('Spectral.Path',nPath)) then
-      !call MIO_Print('Spectral function calculation','diag')
-      !call MIO_Print('Based on PRB 95, 085420 (2017)','diag')
-      !call MIO_Allocate(path,[3,nPath],'path','diag')
-      !call MIO_Allocate(pathG,[3,nPath],'path','diag')
-      !call MIO_InputBlock('Spectral.Path',path)
-      !call MIO_InputBlock('Spectral.Path',pathG)
-      !do ip=1,nPath
-      !   print*, "0: ", path(:,ip)
-      !   path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
-      !   pathG(:,ip) = pathG(1,ip)*grcell(:,1) + pathG(2,ip)*grcell(:,2) + pathG(3,ip)*grcell(:,3)
-      !   print*, "1: ", path(:,ip)
       !   !if (MoireBS) then
       !   !   !print*, "theta=", theta
-      !   !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
+      !   !   call MIO_InputParameter('Structure.TwistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
       !   !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
       !   !end if
-      !   print*, "2: ", path(:,ip)
-      !end do
-      !if (nPath==1) then
-      !   call MIO_Allocate(nPts,1,'nPts','diag')
-      !   nPts(1) = 1
-      !   ptsTot = 1
-      !else
-      !   call MIO_Allocate(nPts,nPath-1,'nPts','diag')
-      !   nPts(1) = nPts0
-      !   ptsTot = nPts0
-      !   if (nPath > 2) then
-      !      v = path(:,2) - path(:,1)
-      !      d0 = sqrt(dot_product(v,v))
-      !      do ip=2,nPath-1
-      !         v = path(:,ip+1) - path(:,ip)
-      !         d = sqrt(dot_product(v,v))
-      !         nPts(ip) = nint(real(d*nPts0)/real(d0))
-      !         ptsTot = ptsTot + nPts(ip)
-      !      end do
-      !   end if
-      !end if
-      !call MIO_Allocate(Kpts,[3,ptsTot],'Kpts','diag')
-      !call MIO_Allocate(KptsG,[3,ptsTot],'KptsG','diag')
-      !call MIO_Allocate(KptsGFrac,[3,ptsTot],'KptsGFrac','diag')
       call MIO_Allocate(Kpts,[3,ptot],'Kpts','diag')
       call MIO_Allocate(KptsG,[3,ptot],'KptsG','diag')
       call MIO_Allocate(KptsGFrac,[3,ptot],'KptsGFrac','diag')
-      !Kpts(:,1) = path(:,1)
-      !KptsG(:,1) = pathG(:,1)
       KptsG(:,1) = Kgrid(:,1)
       ip = 0
       d = 0.0_dp
       GVec = matmul(rcell,[1,0,0]) ! we only want to translate them by one reciprocal lattice vector
-      !KptsG(:,1) = Kpts(:,1) + GVec
-      !Kpts(:,1) = KptsG(:,1) - GVec
-      !call MIO_InputParameter('CellSize', cellSize, 1)
-      !print*, "cell size =", cellSize
-      !print*, matmul(rcell,[1,1,0]), matmul(rcell,[1,0,0]), matmul(rcell,[0,1,0])
       G10 = matmul(rcell,[1,0,0])
       G01 = matmul(rcell,[0,1,0])
       G11 = matmul(rcell,[1,1,0])
-      !Kpts(1,1) = KptsG(1,1)/cellSize
-      !Kpts(2,1) = KptsG(2,1)/cellSize
-      !Kpts(3,1) = KptsG(3,1)
-      !kpts(1,1) = mod(KptsG(1,1),abs(G10(1)))
-      !kpts(2,1) = mod(KptsG(2,1),abs(G10(2)))
-      !kpts(3,1) = KptsG(3,1)
       ll = (KptsG(1,1)*G10(2)/G10(1) - KptsG(2,1)) / (G01(1)*G10(2)/G10(1) - G01(2))
       kk = (KptsG(1,1) - ll * G01(1)) / G10(1)
       if (kk.gt.0) then
@@ -5605,9 +4646,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
           ll = ceiling(ll)
       end if
 
-      !print*, ll, kk
-      !kpts(1,1) = KptsG(1,1) - kk*G10(1) - ll*G01(1)
-      !kpts(2,1) = KptsG(2,1) - kk*G10(2) - ll*G01(2)
       if (foldByOne) then
          kpts(1,1) = KptsG(1,1) - G10(1) - G01(1)
          kpts(2,1) = KptsG(2,1) - G10(2) - G01(2)
@@ -5619,27 +4657,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
          kpts(2,1) = KptsG(2,1) - kk*G10(2) - ll*G01(2)
       end if
 
-      !print*, "tup"
-      !print*, Kpts(:,1), KptsG(:,1), GVec
-      !rcellInv = matinv3(rcell)
-      !do i=1,nPath-1
-         !do j=1,nPts(i)
-         !do j=1,ptot
          do ip=1,ptot
-            !ip = ip + 1
-            !KptsG(:,ip) = pathG(:,i) + (j-1)*(pathG(:,i+1)-pathG(:,i))/nPts(i)
             KptsG(:,ip) = Kgrid(:,ip)
-            !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
-            !call random_number(randu)
-            !randi = FLOOR(22*randu)
-            !call random_number(randu)
-            !randj = FLOOR(22*randu)
-            !GVec = matmul(rcell,[randi,randj,0]) ! we only want to translate them by one reciprocal lattice vector
-            !KptsG(:,ip) = Kpts(:,ip) + GVec ! Kpts is in SC, Kpts is for Graphene (PC)
-            !print*, "yup"
-            !print*, Kpts(:,ip), KptsG(:,ip), GVec
-            !print*, KptsG(2,ip) - FLOOR(KptsG(2,ip)/G2) * G2
-            !print*, mod(KptsG(2,ip),G2)
             ! 2 equations, 2 unknowns. Bring point back to SC reciprocal cell
             ! using G10 and G01.
             ll = (KptsG(1,ip)*G10(2)/G10(1) - KptsG(2,ip)) / (G01(1)*G10(2)/G10(1) - G01(2))
@@ -5655,9 +4674,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
                 ll = ceiling(ll)
             end if
 
-            !print*, ll, kk
-            !kpts(1,ip) = KptsG(1,ip) - kk*G10(1) - ll*G01(1)
-            !kpts(2,ip) = KptsG(2,ip) - kk*G10(2) - ll*G01(2)
             if (foldByOne) then
                kpts(1,ip) = KptsG(1,ip) - G10(1) - G01(1)
                kpts(2,ip) = KptsG(2,ip) - G10(2) - G01(2)
@@ -5669,29 +4685,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
                kpts(2,ip) = KptsG(2,ip) - kk*G10(2) - ll*G01(2)
             end if
 
-            !KptsGFrac(2,ip) = grcell(1,1)*(KptsG(2,ip)-KptsG(1,ip)*grcell(2,1)/grcell(1,1))/(grcell(2,2)*grcell(1,1)-grcell(1,2)*grcell(2,1))
-            !KptsGFrac(1,ip) = (KptsG(1,ip)-KptsGFrac(2,ip)*grcell(1,2))/grcell(1,1)
-            !KptsGFrac(3,ip) = KptsG(3,ip)/grcell(3,3)
             !!!Rat(:,i) = Rat(1,i)*ucell(:,1) + Rat(2,i)*ucell(:,2) + Rat(3,i)*ucell(:,3)
-            !Kpts(:,ip) = KptsGFrac(1,ip)*rcell(:,1) + KptsGFrac(2,ip)*rcell(:,2) + KptsGFrac(3,ip)*rcell(:,3)
 
-            !Kpts(:,ip) = KptsG(:,ip) - GVec ! this one gives the same as when starting from Kpts
-            !Kpts(1,ip) = KptsG(1,ip) - FLOOR(KptsG(1,ip)/G1) * G1
-            !Kpts(2,ip) = KptsG(2,ip) - FLOOR(KptsG(2,ip)/G2) * G2
-            !Kpts(3,ip) = KptsG(3,ip)
-            !kpts(1,ip) = mod(kptsG(1,ip),abs(G10(1)))
-            !kpts(2,ip) = mod(kptsG(2,ip),abs(G10(2)))
-            !kpts(3,ip) = kptsG(3,ip)
-            !Kpts(1,ip) = matmul(rcellInv,KptsG(1,ip))
-            !Kpts(2,ip) = matmul(rcellInv,KptsG(2,ip))
-            !Kpts(3,ip) = matmul(rcellInv,KptsG(3,ip))
-            !Kpts(1,ip) = KptsG(1,ip)/cellSize
-            !Kpts(2,ip) = KptsG(2,ip)/cellSize
-            !Kpts(3,ip) = KptsG(3,ip)
-            !v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
-            !d = d + sqrt(dot_product(v,v))
          end do
-      !end do
       call MIO_Allocate(E,[nAt,nspin],'E','diag')
       flnm = trim(prefix)//'.spectral'
       u=99
@@ -5716,18 +4712,14 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
-      !call MIO_Allocate(Pkc,[1,1],[ptsTot,nAt],'Pkc','diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptot,nAt,2],'Pkc','diag')
-      !call MIO_Allocate(Pkc,nAt,'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
-      !print*, "factor = ", factor
       Epts2 = CEILING(Epts/factor)
-      !print*, Epts2
       if (mod(Epts2,2).ne.0) then
          Epts2 = Epts2+1
       end if
@@ -5743,7 +4735,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       AkeGaussian = 0.0_dp
       AkeGaussian1 = 0.0_dp
       AkeGaussian2 = 0.0_dp
-      !print*, "nspin ", nspin
       is = 1
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
       call MIO_InputParameter('Spectral.energyGridResolution',energyGridResolution,0.005_dp)
@@ -5751,23 +4742,15 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       do iee=1,Epts2
           gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
       end do
-      !call MIO_Allocate(Ake1Loc,Epts,'Ake1Loc','diag')
-      !call MIO_Allocate(Ake2Loc,Epts,'Ake2Loc','diag')
-      !Ake1Loc = 0.0_dp
-      !Ake2Loc = 0.0_dp
       call MIO_Allocate(Ake1,[ptot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake2,[ptot,Epts],'Ake2','diag')
       call MIO_Allocate(Ake3,[ptot,Epts],'Ake3','diag')
       Ake1 = 0.0_dp
       Ake2 = 0.0_dp
       Ake3 = 0.0_dp
-      !print*, gaussian
-      !Pkc = 0.0_dp ! spectral weight PkscI(k)
-      !print*, "0",  Pkc
 !HERE
       !$OMP PARALLEL DO PRIVATE(iee, ie, unfoldedK, ELoc, PkcLocA, PkcLocB, KptsLoc), &
       !$OMP& SHARED(KptsG, Kpts, AkeGaussian1, AkeGaussian2, AkeGaussian, nAt, nspin, is, ucell, gcell, gcell1, gcell2, H0, maxNeigh, hopp, NList, Nneigh, neighCell, gaussian, Epts, Ake)
-      !do ik=1,ptsTot ! K loop
       do ik=1,ptot ! K loop
          ELoc = 0.0_dp
          ELoc1 = 0.0_dp
@@ -5778,31 +4761,37 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
          KptsLoc = Kpts(:,ik)
             if (WeiKu) then
                 if (WeiKuOld) then
-                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalentOld(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK, &
+                         ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 else
-                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell,gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
+                   call DiagSpectralWeightWeiKuInequivalent(nAt,nspin,is,PkcLocA,PkcLocB,ELoc,KptsLoc,unfoldedK,ucell, &
+                         gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell,topBottomRatio)
                 end if
             else if (Nishi) then
-                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell,gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
+                call DiagSpectralWeightWeiKuInequivalentNishi(nAt,nspin,is,PkcLocA,ELoc1,ELoc2,KptsLoc,unfoldedK,ucell, &
+                      gcell1,gcell2,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
             end if
             do iee=1,Epts  ! epsilon
                 do ie=1,nAt   ! epsilonIksc
                        if (WeiKu) then
                           if (useGaussianBroadening) then
                              !definitionDOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2))
-                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
-                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
-                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake1(ik,iee) = Ake1(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,1))**2
+                             Ake2(ik,iee) = Ake2(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
+                             Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
                           else
                              if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                                  Ake1(ik,iee) = Ake1(ik,iee) + abs(PkcLocA(ie,1))**2 !* topBottomRatio
                                  Ake2(ik,iee) = Ake2(ik,iee) + abs(PkcLocA(ie,2))**2 !* topBottomRatio
                                  Ake3(ik,iee) = Ake3(ik,iee) + abs(PkcLocA(ie,3))**2 !* topBottomRatio
-                                 !end if
                              end if
                           end if
                        else if (Nishi) then
-                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0).or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
+                          if(abs(ELoc1(ie) - Energy(iee)).lt.(energyGridResolution/g0) &
+                                .or.abs(ELoc2(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                              Ake1(ik,iee) = Ake1(ik,iee) + PkcLocA(ie,1)
                              Ake2(ik,iee) = Ake2(ik,iee) + PkcLocA(ie,2)
                              Ake3(ik,iee) = Ake3(ik,iee) + PkcLocA(ie,3)
@@ -5810,12 +4799,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
                        end if
                 end do
             end do
-         !end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:)
          AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
       end do
       !$OMP END PARALLEL DO
-      print*, "lets write it all out"
+      call MIO_Print("lets write it all out",'diag')
       do ik=1,ptot ! K loop
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -5830,8 +4818,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
             end do
          end if
       end do
-      !end do; end do; end do
-
 
       call MIO_Print('')
       !call file%Close()
@@ -5843,7 +4829,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
       call MIO_Print('')
       close(u)
-   !end if
 
 #ifdef TIMER
    call MIO_TimerStop('diag')
@@ -5863,8 +4848,6 @@ subroutine DiagHam(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,neighCe
    use tbpar,                 only : U
 
    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
-   !complex(dp), intent(out) :: H(N,N)
-   !real(dp), intent(out) :: E(N)
    complex(dp), intent(out) :: HLoc(N,N)
    real(dp), intent(out) :: ELoc(N)
    real(dp), intent(in) :: KLoc(3), cell(3,3), H0(N)
@@ -5876,20 +4859,12 @@ subroutine DiagHam(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,neighCe
    complex(dp) :: ZWorkLoc(lwork)
    real(dp) :: DWorkLoc(3*N-2)
 
-   !print*, cell
    HLoc = 0.0_dp
    do i=1,N
       HLoc(i,i) = H0(i)
       ! Add SCF terms if spin-polarized (matches other routines)
       ! Commented out: not doing any SCF calculation for now (matches BuildBlockHamiltonianOnly)
-      !if (ns==2) then
       !   !zz = charge(1,i)*charge(2,i) ! Zch
-      !   if (is==1) then
-      !      HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
-      !   else
-      !      HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(1,i)-Zch)/2.0_dp
-      !   end if
-      !end if
       ! Apply SOC modifications
       if (anySOCEnabled) call ApplySOCtoHamiltonian(i, is, ns, HLoc)
 
@@ -5898,7 +4873,6 @@ subroutine DiagHam(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,neighCe
          R = matmul(cell,neighCell(:,j,i))
          HLoc(in,i) = HLoc(in,i) - hopp(j,i)*exp(-cmplx_i*dot_product(KLoc,R))
          ! PIA hopping not yet properly implemented - commented out
-         !if (anySOCEnabled) call ApplyPIAHopping(i, j, in, N, HLoc, .false.)
       end do
    end do
    if (edgeHopp) then
@@ -5911,9 +4885,7 @@ subroutine DiagHam(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,neighCe
       end do
    end if
    call ZHEEV('N','L',N,HLoc,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
-   !call ZHEEV('V','L',N,Hts,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
    if (info/=0) then
-      !print*, "info =", info
       call MIO_Kill('Error in diagonalization','diag','DiagHam')
    end if
 
@@ -5957,18 +4929,9 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     complex(dp) :: sigma
 
     ! PARDISO variables
-    !integer, parameter :: mtype = 13  ! Complex unsymmetric matrix
-    !integer :: pt(64), iparm(64), maxfct, mnum, phase, error, msglvl
-    !integer :: nnn, nrhs
-    !complex(dp), allocatable :: a(:)
-    !integer, allocatable :: ia(:), ja(:)
-    !complex(dp) :: ddum
-    !integer :: idum
 
     INTEGER :: nnn, nnz
-    !complex(dp) :: x(N) ! Pardiso needs X(N) even if sol is returned in b
 
-    !complex(dp) :: b(N)
 !C.. Internal solver memory pointer for 64-bit architectures
     INTEGER*8 pt(64)
 !C.. Internal solver memory pointer for 32-bit architectures
@@ -5979,7 +4942,6 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 !C.. All other variables
     INTEGER maxfct, mnum, mtype, phase, nrhs, msglvl
     INTEGER iparm(64)
-    !allocate(row_ptr(N+1), col_ind(nnz_temp), values(nnz_temp))
     INTEGER, allocatable :: ia(:) ! row_ptr
     INTEGER, allocatable :: ja(:) ! col_ind
     INTEGER idum(1)
@@ -6004,22 +4966,13 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     integer, save :: se_unit
     logical, save :: se_open = .false.
 
-
     ! Parameters
-    !integer, parameter :: dp = c_double
-    !integer, parameter :: int_kind = c_int
 
     ! Variables
     !type(C_PTR) :: mkl_handle
     !!integer(int_kind) :: N, status, nnz, l, i, j, k, row_start, row_end, temp_index
     !!integer(int_kind), allocatable :: row_ptr(:), col_ind(:)
-    !integer :: N, status, nnz, l, i, j, k, row_start, row_end, temp_index
-    !integer, allocatable :: row_ptr(:), col_ind(:)
-    !real(dp), allocatable :: values(:), b(:), x(:), temp_value
     !type(SPARSE_MATRIX_DESCR) :: descr
-
-
-    !integer :: nev, ncv, lworkl
 
     nev=neig
     ncv=nev*10
@@ -6030,7 +4983,8 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     lworkl= 3*NCV**2 + 5*NCV
 
     max_iter = 10000
-    allocate(resid(N), v(N, ncv), workd(3*N), workl(lworkl), rwork(ncv), d(nev+1), iparam(11), ipntr(14), select(ncv), rand_real(N), rand_imag(N))
+    allocate(resid(N), v(N, ncv), workd(3*N), workl(lworkl), rwork(ncv), d(nev+1), iparam(11), ipntr(14), select(ncv), &
+          rand_real(N), rand_imag(N))
     allocate(z(N,nev))
     allocate(workev(2*ncv))
     allocate(ax(N))
@@ -6039,15 +4993,10 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     ! Ensure correct size of nev and ncv
     if ( (nev < 1) .or. (nev >= ncv) .or. (ncv > N) ) then
         print *, 'Error: invalid parameters - nev=', nev, 'ncv=', ncv, 'N=', N
-        stop
+        error stop 1
     end if
 
     ! Initialize arrays
-    !v = 0.0d0
-    !workd = 0.0d0
-    !workl = 0.0d0
-    !rwork = 0.0d0
-    !d = 0.0d0
 
     bmat = 'I'
 
@@ -6081,71 +5030,50 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     ido = 0
     info = 0
 
-    !iparam(4) = 1
-    !iparam(7) = 1
-
     nn = N
 
     ! Initialize the starting vector resid with random values
-    !call random_number(rand_real)
-    !call random_number(rand_imag)
-    !resid = cmplx(rand_real, rand_imag)
-    !resid = 0
 
     ! Check resid for initial state
     if (size(resid) /= N) then
         print *, 'Error: resid size mismatch: ', size(resid), ' expected: ', N
-        stop
+        error stop 1
     end if
 
      ! Debug print for resid
     if (any(resid /= resid)) then
-        print *, 'Error: resid contains NaN values initially.'
-        stop
+        call MIO_Print('Error: resid contains NaN values initially.','diag')
+        error stop 1
     end if
 
     resid_norm = sqrt(sum(abs(resid)**2))
 
     ! Debug prints
-    !print *, 'Initial resid norm: ', resid_norm
-    !print *, 'Initial iparam: ', iparam
-    !print *, 'nn, nev, ncv: ', nn, nev, ncv
 
     ! Create CSR sparse matrix storage
-    print *, "initialize the sparse matrix and put it in csr format"
+#ifdef DEBUG
+    call MIO_Print("initialize the sparse matrix and put it in csr format",'diag')
+#endif /* DEBUG */
     call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell, row_ptr, col_ind, values,sigma)
-    print *, "done"
-    !call test_sparse_matvec(nn, row_ptr, col_ind, values)
+#ifdef DEBUG
+    call MIO_Print("done",'diag')
+#endif /* DEBUG */
     symmetric = is_structurally_symmetric(values, row_ptr, col_ind, N)
 
+#ifdef DEBUG
     print*, "is it symmetric?", symmetric
+#endif /* DEBUG */
 
     ! Debug prints for CSR matrix
     if (any(values /= values)) then
-        print *, 'Error: values contains NaN values after initialization.'
-        stop
+        call MIO_Print('Error: values contains NaN values after initialization.','diag')
+        error stop 1
     end if
-
 
     if (maxval(abs(values)) > 1e10) then
-        print *, 'Warning: values contains extremely large values.'
+        call MIO_Print('Warning: values contains extremely large values.','diag')
     end if
 
-    !if (any(col_ind < 1 .or. col_ind > N)) then
-    !    print *, 'Error: col_ind contains invalid indices after initialization.'
-    !    stop
-    !end if
-
-
-
-    !print *, 'iparam: ', iparam
-    !print *, 'ipntr: ', ipntr
-    !print *, 'ido: ', ido
-    !print *, 'bmat: ', bmat
-    !print *, 'nn: ', nn
-    !print *, 'which: ', which
-    !print *, 'nev: ', nev
-    !print *, 'tol: ', tol
     if (useShift) then
        ! values = H - sigma (initialize_sparse_matrix). PARDISO wants the upper triangle of the Hermitian matrix,
        ! columns sorted; the solves below then apply OP = (H - sigma)^(-1).
@@ -6168,7 +5096,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
        call pardiso(pt, maxfct, mnum, mtype, phase, nnn, a, ia, ja, idum, nrhs, iparm, msglvl, ddum, ddum, error)
        if (error /= 0) then
           print *, 'DiagHamSparse: PARDISO factorisation error ', error
-          stop
+          error stop 1
        end if
        call MIO_Print('DiagHamSparse: factor of H - shift: '//trim(num2str(iparm(18)))//' non-zeros, '// &
           trim(num2str(iparm(14)))//' perturbed pivots','diag')
@@ -6178,7 +5106,6 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     resid_norm = sqrt(sum(abs(resid)**2))
 
     ! Debug prints
-    !print *, 'Resid norm after znaupd: ', resid_norm
 
     ! Check for convergence and errors
     if (info == -5) then
@@ -6196,57 +5123,24 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
         print *, 'Error with znaupd, INFO = ', info
         print *, 'iparam: ', iparam
         print *, 'ipntr: ', ipntr
-        stop
+        error stop 1
     else
-        print *, 'znaupd converged successfully'
+        call MIO_Print('ARPACK (znaupd) converged','diag')
     endif
 
-
-    !if (useShift) then
     !    ! Sort each row
-    !    do i = 1, N
-    !        row_start = row_ptr(i)
-    !        row_end = row_ptr(i + 1) - 1
-    !        do j = row_start, row_end - 1
-    !            do k = j + 1, row_end
-    !                if (col_ind(j) > col_ind(k)) then
     !                    ! Swap indices
-    !                    temp_index = col_ind(j)
-    !                    col_ind(j) = col_ind(k)
-    !                    col_ind(k) = temp_index
     !                    ! Swap values
-    !                    temp_value = values(j)
-    !                    values(j) = values(k)
-    !                    values(k) = temp_value
-    !                end if
-    !            end do
-    !        end do
-    !    end do
     !    ! Set matrix descriptor
     !    descr.type = SPARSE_MATRIX_TYPE_GENERAL
     !    descr.mode = SPARSE_FILL_MODE_LOWER
     !    descr.diag = SPARSE_DIAG_NON_UNIT
 
     !    ! Create the matrix handle
-    !    status = mkl_sparse_d_create_csr(mkl_handle, SPARSE_INDEX_BASE_ONE, N, N, row_ptr, row_ptr(2:N+1), col_ind, values)
-    !    if (status /= SPARSE_STATUS_SUCCESS) then
-    !        print *, "Error in matrix creation"
-    !        stop
-    !    end if
 
     !    ! Perform the analysis phase
-    !    status = mkl_sparse_set_mv_hint(mkl_handle, SPARSE_OPERATION_NON_TRANSPOSE, descr, 1000)
-    !    if (status /= SPARSE_STATUS_SUCCESS) then
-    !        print *, "Error in setting hints"
-    !        stop
-    !    end if
 
     !    ! Optimize the matrix structure
-    !    status = mkl_sparse_optimize(mkl_handle)
-    !    if (status /= SPARSE_STATUS_SUCCESS) then
-    !        print *, "Error in optimizing the matrix"
-    !        stop
-    !    end if
     !!   ! PARDISO initialization
     !!       nnn = nn
     !!       !nrhs = 1
@@ -6259,7 +5153,6 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     !!       error = 0
     !!
     !!       !call pardisoinit(pt, mtype, iparm)
-    !!       DO i = 1, 64
     !!          iparm(i) = 0
     !!          pt(i) = 0
     !!       END DO
@@ -6296,23 +5189,12 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     !!       !END DO
     !!
     !!       phase = 11  ! Reordering and Symbolic Factorization
-    !!       call pardiso(pt, maxfct, mnum, mtype, phase, nnn, a, ia, ja, idum, nrhs, iparm, msglvl, ddum, ddum, error)
-    !!       if (error /= 0) then
-    !!           print *, 'PARDISO error during symbolic factorization:', error
     !!           stop
     !!       end if
-    !!       print*, 'Reordering completed ... '
     !!
     !!       phase = 22  ! Numerical factorization
-    !!       call pardiso(pt, maxfct, mnum, mtype, phase, nnn, a, ia, ja, idum, nrhs, iparm, msglvl, ddum, ddum, error)
-    !!       if (error /= 0) then
-    !!           print *, 'PARDISO error during numerical factorization:', error
     !!           stop
     !!       end if
-    !!       print*, 'Factorization completed ... '
-
-    !end if
-
 
     iter = 0
 
@@ -6325,45 +5207,30 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
                             workd(ipntr(1)), workd(ipntr(2)), error)
                if (error /= 0) then
                   print *, 'DiagHamSparse: PARDISO solve error ', error
-                  stop
+                  error stop 1
                end if
-               !status = mkl_sparse_d_trsv(SPARSE_OPERATION_NON_TRANSPOSE, 1.0_dp, mkl_handle, descr, b, x)
-               !if (status /= SPARSE_STATUS_SUCCESS) then
-               !    print *, "Error in solving the system"
-               !    stop
-               !end if
                !! Solve the linear system (A - sigma*I) * y = x using PARDISO
-               !!call zcopy ( n, workd(ipntr(1)),1, workd(ipntr(2)), 1)
                !!phase = 33  ! Back substitution and iterative refinement
-               !!call pardiso(pt, maxfct, mnum, mtype, phase, nnn, a, ia, ja, idum, nrhs, iparm, msglvl, workd(ipntr(1)), workd(ipntr(2)), error)
-               !!if (error /= 0) then
-               !!    print *, 'PARDISO error during solve phase:', error
                !!    stop
                !!end if
            else
                print *, 'Error: ido has unexpected value ', ido
-               stop
+               error stop 1
            end if
-           !print*, 'Solve iteration completed ... '
 
            ! ARPACK iteration
            call znaupd(ido, bmat, nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr, workd, workl, lworkl, rwork, info)
            if (info /= 0) then
                print *, 'Error with znaupd during iteration, info = ', info
-               stop
+               error stop 1
            end if
-           !print*, 'znaupd iteration finished ...'
-           !iter = iter + 1
 !          ! resid_norm = sqrt(sum(abs(workd(ipntr(2):ipntr(2) + nn - 1))**2))
-           !resid_norm = sqrt(sum(abs(resid)**2))
-           !print *, 'Iteration:', iter, 'Residual norm:', resid_norm, 'IDO:', ido
        end do
-       print*, 'Solve completed ... '
+       call MIO_Print('Solve completed ... ','diag')
     else
        do while (ido /= 99)
            if (ido == -1 .or. ido == 1) then
                ! Print the input vector for debugging
-               !print *, 'Input vector:', workd(ipntr(1):ipntr(1)+nn-1)
 
                ! Perform sparse matrix-vector multiplication
                call sparse_matvec(nn, row_ptr, col_ind, values, &
@@ -6371,56 +5238,31 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
                                   workd(ipntr(2):ipntr(2)+nn-1))
 
                ! Print the output vector for debugging
-               !print *, 'Output vector:', workd(ipntr(2):ipntr(2)+nn-1)
            else
                print *, 'Error: ido has unexpected value ', ido
-               stop
+               error stop 1
            end if
 
            ! ARPACK iteration
            call znaupd(ido, bmat, nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr, workd, workl, lworkl, rwork, info)
            if (info /= 0) then
                print *, 'Error with znaupd during iteration, info = ', info
-               stop
+               error stop 1
            end if
        end do
     end if
 
-    !do while (ido /= 99)
-    !   if (ido .eq. -1 .or. ido .eq. 1 ) then
-    !       call ccopy( n, workd(ipntr(1)),1, workd(ipntr(2)), 1)
     !       !call cgttrs('N', n, 1, dl, dd, du, du2, ipiv, workd(ipntr(2)), n, ierr)
-    !       call sparse_matvec(nn, row_ptr, col_ind, values, workd(ipntr(1):ipntr(1)+nn-1), workd(ipntr(2):ipntr(2)+nn-1))
-    !       if ( ierr .ne. 0 ) then
-    !           print*, ' '
-    !           print*, ' ERROR with _gttrs in _NDRV2.'
-    !           print*, ' '
-    !       end if
-    !  else
-    !      print *, 'Error: ipntr(1) or ipntr(2) out of bounds'
-    !      stop
-    !  end if
-    !  call znaupd(ido, bmat, nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr, workd, workl, lworkl, rwork, info)
-    !  if (info /= 0) then
-    !      print *, 'Error with znaupd during iteration, info = ', info
-    !      print *, 'iparam: ', iparam
-    !      print *, 'ipntr: ', ipntr
-    !      stop
-    !  end if
-    !end do
-
-    !print *, 'before zneupd', ido
-    !d = 0.0d0
 
     ! Debug print for extreme values
     if (maxval(abs(resid)) > 1e10) then
-        print *, 'Warning: resid contains extremely large values.'
+        call MIO_Print('Warning: resid contains extremely large values.','diag')
     end if
 
-    !call zneupd(.false., 'A', select, d, v, nn, sigma, resid, v, nn, iparam, ipntr, workd, workl, lworkl, rwork, ierr)
     if (saveRitz) then
        allocate(EVectors(nn, nev))
-       call zneupd(.true.,'A', select, d, z, nn, sigma, workev, bmat,nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr,workd,workl, lworkl, rwork, info )
+       call zneupd(.true.,'A', select, d, z, nn, sigma, workev, bmat,nn, which, nev, tol, resid, ncv, v, nn, iparam, &
+             ipntr,workd,workl, lworkl, rwork, info )
        nconv = iparam(5)
        do j=1, nconv
           call av(n, v(1,j), ax)
@@ -6447,20 +5289,22 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
        end do
        close(10)
     else
-       call zneupd(.false.,'A', select, d, z, nn, sigma, workev, bmat,nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr,workd,workl, lworkl, rwork, info )
+       call zneupd(.false.,'A', select, d, z, nn, sigma, workev, bmat,nn, which, nev, tol, resid, ncv, v, nn, iparam, &
+             ipntr,workd,workl, lworkl, rwork, info )
 
        ELoc(:nev) = real(d(:nev))
     end if
     ! Debug prints after zneupd
     if (any(d /= d)) then
-        print *, 'Error: d contains NaN values after zneupd.'
+        call MIO_Print('Error: d contains NaN values after zneupd.','diag')
     endif
     if (info /= 0) then
         print *, 'Error with zneupd, ierr = ', info
-        stop
+        error stop 1
     end if
+#ifdef DEBUG
     print *, "eigenvalues: ", d
-
+#endif /* DEBUG */
 
     if (useShift) then
        phase = -1  ! release the solve factor before the count matrices are factorised
@@ -6524,11 +5368,6 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
      deallocate(resid, v, workd, workl, rwork, d, iparam, ipntr, select, row_ptr, col_ind, values, rand_real, rand_imag)
 
-        !if (N /= 3) then
-        !    call test_3x3_matrix()
-        !end if
-
-
 end subroutine DiagHamSparse
 
 !> Upper triangle of the CSR matrix of initialize_sparse_matrix in the form PARDISO needs for a Hermitian matrix:
@@ -6568,10 +5407,10 @@ subroutine sparse_upper_sorted(N, row_ptr, col_ind, values, ia, ja, a)
        end do
        if (l == ia(i)) then
           print *, 'sparse_upper_sorted: empty row ', i
-          stop
+          error stop 1
        else if (ja(ia(i)) /= i) then
           print *, 'sparse_upper_sorted: missing diagonal in row ', i
-          stop
+          error stop 1
        end if
        a(ia(i)) = real(a(ia(i)))
     end do
@@ -6695,7 +5534,7 @@ subroutine sparse_count_below(N, ia, ja, a, nE, dE, nbelow, ok)
     call pardiso(ptc, maxfct, mnum, mtype, phase, M, b, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
     if (error /= 0) then
        print *, 'sparse_count_below: PARDISO analysis error ', error
-       stop
+       error stop 1
     end if
     do ie = 1, nE
        bw = b
@@ -6704,7 +5543,7 @@ subroutine sparse_count_below(N, ia, ja, a, nE, dE, nbelow, ok)
        call pardiso(ptc, maxfct, mnum, mtype, phase, M, bw, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
        if (error /= 0) then
           print *, 'sparse_count_below: PARDISO factorisation error ', error
-          stop
+          error stop 1
        end if
        if (iparmc(14) /= 0 .or. iparmc(22) + iparmc(23) /= M) ok = .false.
        if (cplx) then
@@ -6739,7 +5578,6 @@ subroutine sparse_sort_real(n, x)
     end do
 end subroutine sparse_sort_real
 
-
 !subroutine DiagH0TAPW(N, ns, is, ELoc, eigvec, KLoc, cell_real, H0, maxN, hopp, NList, Nneigh, neighCell,neig)
 subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, Nneigh, neighCell,neig, kpoint_index, evecOut)
     use constants, only : cmplx_i
@@ -6753,10 +5591,10 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     implicit none
     integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is, neig
     integer, intent(in), optional :: kpoint_index
+    logical :: tapw_pre_ok
     real(dp), intent(out) :: ELoc(N)
     ! Optional output of TAPW eigenvectors; unused unless a caller asks for it.
     complex(dp), intent(out), optional :: evecOut(:,:)
-!    real(dp), intent(out) :: eigvec(N)
     real(dp), intent(in) :: KLoc(3), cell_real(3,3)
     real(dp), intent(inout) :: H0(N)
     complex(dp), intent(in) :: hopp(maxN,N)
@@ -6790,18 +5628,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     complex(dp) :: sigma
 
     ! PARDISO variables
-    !integer, parameter :: mtype = 13  ! Complex unsymmetric matrix
-    !integer :: pt(64), iparm(64), maxfct, mnum, phase, error, msglvl
-    !integer :: nnn, nrhs
-    !complex(dp), allocatable :: a(:)
-    !integer, allocatable :: ia(:), ja(:)
-    !complex(dp) :: ddum
-    !integer :: idum
 
     INTEGER :: nnn, nnz
-    !complex(dp) :: x(N) ! Pardiso needs X(N) even if sol is returned in b
 
-    !complex(dp) :: b(N)
 !C.. Internal solver memory pointer for 64-bit architectures
     INTEGER*8 pt(64)
 !C.. Internal solver memory pointer for 32-bit architectures
@@ -6812,7 +5641,6 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 !C.. All other variables
     INTEGER maxfct, mnum, mtype, phase, nrhs, msglvl
     INTEGER iparm(64)
-    !allocate(row_ptr(N+1), col_ind(nnz_temp), values(nnz_temp))
     INTEGER, allocatable :: ia(:) ! row_ptr
     INTEGER, allocatable :: ja(:) ! col_ind
     INTEGER idum(1)
@@ -6879,44 +5707,31 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     end if
 
     ! Parameters
-    !integer, parameter :: dp = c_double
-    !integer, parameter :: int_kind = c_int
 
     ! Variables
     !type(C_PTR) :: mkl_handle
     !!integer(int_kind) :: N, status, nnz, l, i, j, k, row_start, row_end, temp_index
     !!integer(int_kind), allocatable :: row_ptr(:), col_ind(:)
-    !integer :: N, status, nnz, l, i, j, k, row_start, row_end, temp_index
-    !integer, allocatable :: row_ptr(:), col_ind(:)
-    !real(dp), allocatable :: values(:), b(:), x(:), temp_value
     !type(SPARSE_MATRIX_DESCR) :: descr
-
-
-    !integer :: nev, ncv, lworkl
 
     nev=neig
     ncv=nev*10
     lworkl= 3*NCV**2 + 5*NCV
 
     max_iter = 10000
-    allocate(resid(N), v(N, ncv), workd(3*N), workl(lworkl), rwork(ncv), d(nev+1), iparam(11), ipntr(14), select(ncv), rand_real(N), rand_imag(N))
+    allocate(resid(N), v(N, ncv), workd(3*N), workl(lworkl), rwork(ncv), d(nev+1), iparam(11), ipntr(14), select(ncv), &
+          rand_real(N), rand_imag(N))
     allocate(z(N,nev))
     allocate(workev(2*ncv))
     allocate(ax(N))
     allocate(rd(ncv,3))
 
-    ! Ensure correct size of nev and ncv
-    if ( (nev < 1) .or. (nev >= ncv) .or. (ncv > N) ) then
-        print *, 'Error: invalid parameters - nev=', nev, 'ncv=', ncv, 'N=', N
-        stop
-    end if
+    ! (The work arrays above are a leftover of the sparse solver; this routine does not call it. The
+    ! checks of nev, ncv and of the uninitialised start vector that stood here stopped TAPW runs on
+    ! cells of fewer than ten times Bands.SparseNeig atoms, and at random when the memory of the
+    ! unset start vector happened to hold NaN.)
 
     ! Initialize arrays
-    !v = 0.0d0
-    !workd = 0.0d0
-    !workl = 0.0d0
-    !rwork = 0.0d0
-    !d = 0.0d0
 
     bmat = 'I'
 
@@ -6952,44 +5767,28 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ido = 0
     info = 0
 
-    !iparam(4) = 1
-    !iparam(7) = 1
-
     nn = N
 
     ! Initialize the starting vector resid with random values
-    !call random_number(rand_real)
-    !call random_number(rand_imag)
-    !resid = cmplx(rand_real, rand_imag)
-    !resid = 0
 
     ! Check resid for initial state
     if (size(resid) /= N) then
         print *, 'Error: resid size mismatch: ', size(resid), ' expected: ', N
-        stop
+        error stop 1
     end if
-
-     ! Debug print for resid
-    if (any(resid /= resid)) then
-        print *, 'Error: resid contains NaN values initially.'
-        stop
-    end if
-
-    resid_norm = sqrt(sum(abs(resid)**2))
 
     ! Debug prints
-    !print *, 'Initial resid norm: ', resid_norm
-    !print *, 'Initial iparam: ', iparam
-    !print *, 'nn, nev, ncv: ', nn, nev, ncv
 
     ! === TAPW settings (configurable via input parameters) ===
-    call MIO_InputParameter('useDenseMatrixTAPW',useDenseMatrixTAPW,.false.)
+    call MIO_InputParameter('TAPW.UseDenseMatrix',useDenseMatrixTAPW,.false.)
     call MIO_InputParameter('Diag.CheckTAPWUnitary',checkTAPWUnitary,.false.)
 
     ! Only initialize sparse matrix if NOT using dense matrix approach
     if (.not. useDenseMatrixTAPW) then
     ! Create CSR sparse matrix storage
-    print *, "initialize the sparse matrix and put it in csr format"
+#ifdef DEBUG
+    call MIO_Print("initialize the sparse matrix and put it in csr format",'diag')
+#endif /* DEBUG */
     if (tapwDebug) then
        print *, "DEBUG TAPW: KLoc for sparse matrix =", KLoc
        print *, "DEBUG TAPW: |KLoc| =", sqrt(dot_product(KLoc, KLoc))
@@ -6998,20 +5797,24 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
        ! Cell is already in correct column format for initialize_sparse_matrix
        ! matmul(cell, neighCell) expects cell(:,k) = k-th lattice vector
-       print *, "DEBUG TAPW: Using cell_real in column format (correct for matmul):"
+       call MIO_Print("DEBUG TAPW: Using cell_real in column format (correct for matmul):",'diag')
        print *, "TAPW:   a1 = cell_real(:,1) =", cell_real(:,1)
        print *, "TAPW:   a2 = cell_real(:,2) =", cell_real(:,2)
     end if
 
-     call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell_real, row_ptr, col_ind, values,sigma)
-    print *, "done"
-    !call test_sparse_matvec(nn, row_ptr, col_ind, values)
+     call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell_real, row_ptr, &
+           col_ind, values,sigma)
+#ifdef DEBUG
+    call MIO_Print("done",'diag')
+#endif /* DEBUG */
     symmetric = is_structurally_symmetric(values, row_ptr, col_ind, N)
 
+#ifdef DEBUG
     print*, "is it symmetric?", symmetric
+#endif /* DEBUG */
     else
         ! Skip sparse matrix initialization when using dense matrix approach
-        if (tapwDebug) print *, "Skipping sparse matrix initialization (using dense matrix approach)"
+        if (tapwDebug) call MIO_Print("Skipping sparse matrix initialization (using dense matrix approach)",'diag')
         ! Initialize dummy values to avoid uninitialized variables
         allocate(row_ptr(1), col_ind(1), values(1))
         row_ptr(1) = 1
@@ -7022,19 +5825,13 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     ! Debug prints for CSR matrix
     if (any(values /= values)) then
-        print *, 'Error: values contains NaN values after initialization.'
-        stop
+        call MIO_Print('Error: values contains NaN values after initialization.','diag')
+        error stop 1
     end if
-
 
     if (maxval(abs(values)) > 1e10) then
-        print *, 'Warning: values contains extremely large values.'
+        call MIO_Print('Warning: values contains extremely large values.','diag')
     end if
-
-    !if (any(col_ind < 1 .or. col_ind > N)) then
-    !    print *, 'Error: col_ind contains invalid indices after initialization.'
-    !    stop
-    !end if
 
     ! === TAPW settings (configurable via input parameters) ===
     NG = 20         ! for example (this gets overwritten by actual G-vector count)
@@ -7075,7 +5872,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     det = sGlattice(1,1)*sGlattice(2,2) - sGlattice(1,2)*sGlattice(2,1)
     if (abs(det) < 1e-10_dp) then
         print *, "Error: Lattice matrix is singular, det =", det
-        stop
+        error stop 1
     end if
 
     sGlattice_inv(1,1) =  sGlattice(2,2) / det
@@ -7085,11 +5882,12 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     ! With column storage for sGlattice, rG should also use column storage like rcell
     rG = 2.0_dp * pi * transpose(sGlattice_inv)  ! Column storage: rG(:,i) = i-th reciprocal vector
+#ifdef DEBUG
     print *, "A*rG =", matmul(sGlattice, rG)  ! Should give 2π*identity with column storage
+#endif /* DEBUG */
 
     ! Calculate reference K-point in reciprocal space using graphene vectors (by design)
     ! rG stores vectors as columns: rG(:,1) = b1, rG(:,2) = b2 (like rcell)
-    ! k_ref = (2/3)*b1 + (1/3)*b2 = refF(1)*rG(:,1) + refF(2)*rG(:,2)
     k_ref = refF(1)*rG(:,1) + refF(2)*rG(:,2)
 
     ! Set NGrange based on calculation mode
@@ -7101,23 +5899,23 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
         ! For valley separation: use user-specified N_G for reduced basis around K-point
         NGrange = tapwNG
         if (tapwDebug) call MIO_Print('VALLEY SEPARATION MODE: Using user-specified N_G = '//trim(num2str(NGrange)),'diag')
-        call MIO_Print('This creates a reduced TAPW basis centered around K-point','diag')
+        if (.not. tapwSetupSaid) call MIO_Print('This creates a reduced TAPW basis centered around K-point','diag')
     end if
 
     ! Debug output for TAPW parameters (always show basic parameters)
     if (tapwDebug) call MIO_Print('TAPW Parameters:','diag')
-    call MIO_Print('  N_G (requested G-vectors): '//trim(num2str(tapwNG)),'diag')
-    call MIO_Print('  Moire angle: '//trim(num2str(moireAngle,6))//' degrees','diag')
-    call MIO_Print('  TAPW graphene lattice constant: '//trim(num2str(tapw_aG,6))//' Angstroms','diag')
+    if (.not. tapwSetupSaid) call MIO_Print('  N_G (requested G-vectors): '//trim(num2str(tapwNG)),'diag')
+    if (.not. tapwSetupSaid) call MIO_Print('  Moire angle: '//trim(num2str(moireAngle,6))//' degrees','diag')
+    if (.not. tapwSetupSaid) call MIO_Print('  TAPW graphene lattice constant: '//trim(num2str(tapw_aG,6))//' Angstroms','diag')
     if (useKprimeValley) then
-       call MIO_Print('  Valley selection: K'' valley [1/3, 2/3]','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  Valley selection: K'' valley [1/3, 2/3]','diag')
     else
-       call MIO_Print('  Valley selection: K valley [2/3, 1/3]','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  Valley selection: K valley [2/3, 1/3]','diag')
     end if
     if (useRigidPositions) then
-       call MIO_Print('  Position mode: Rigid reference positions','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  Position mode: Rigid reference positions','diag')
     else
-       call MIO_Print('  Position mode: Current relaxed positions','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  Position mode: Current relaxed positions','diag')
     end if
 
     if (tapwDebug) then
@@ -7127,7 +5925,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Print lattice vectors and reference point calculation
-       print *, "DEBUG: Lattice vectors and reference point:"
+       call MIO_Print("DEBUG: Lattice vectors and reference point:",'diag')
        print *, "  Graphene lattice constant aG =", aG
        print *, "  sGlattice(1,:) =", sGlattice(1,:)
        print *, "  sGlattice(2,:) =", sGlattice(2,:)
@@ -7142,7 +5940,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Compare orientations of graphene vs moiré lattice vectors
-       print *, "DEBUG: Orientation comparison between graphene and moiré lattices:"
+       call MIO_Print("DEBUG: Orientation comparison between graphene and moiré lattices:",'diag')
        print *, "  Moiré rcell(:,1) =", rcell(:,1)
        print *, "  Moiré rcell(:,2) =", rcell(:,2)
     end if
@@ -7165,7 +5963,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        if (angle_diff_2 > 180.0_dp) angle_diff_2 = angle_diff_2 - 360.0_dp
        if (angle_diff_2 < -180.0_dp) angle_diff_2 = angle_diff_2 + 360.0_dp
 
-       print *, "  Orientation angles:"
+       call MIO_Print("  Orientation angles:",'diag')
     end if
     if (tapwDebug) then
        print *, "    Moiré b1 angle =", angle_rcell_1, "degrees"
@@ -7184,7 +5982,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     ! Choose G-vector generation method based on input flag
     if (useTriangularTruncation) then
-       call MIO_Print('Using triangular G-vector truncation (following Python get_Gvecs_tri)','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using triangular G-vector truncation (following Python get_Gvecs_tri)','diag')
 
        ! Control distance-based ordering with input parameter
        call MIO_InputParameter('TAPW.UseTriangularDistanceOrder', useTriangularDistanceOrder, .true.)
@@ -7196,7 +5994,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
        call generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, useTriangularDistanceOrder)
     else
-       call MIO_Print('Using hexagonal shell G-vector truncation (original method)','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using hexagonal shell G-vector truncation (original method)','diag')
        if (checkTAPWUnitary) then
            ! For unitary check, center G-grid around (0,0) to cover entire first BZ
            call MIO_Print('UNITARY CHECK MODE: Centering G-grid around Γ(0,0) for complete BZ coverage','diag')
@@ -7247,71 +6045,21 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     !! New (one call does all, deterministically):
 
-
     !! ensure label(:) exists
-    !if (.not. allocated(label)) then
-    !   allocate(label(N))
-    !else if (size(label) /= N) then
-    !   deallocate(label); allocate(label(N))
-    !end if
     !
     !! raw two-digit codes (e.g., 11,12,21,22)
-    !allocate(label_raw(N))
-    !do ii = 1, N
-    !   label_raw(ii) = 10*layerIndex(ii) + Species(ii)
-    !end do
     !
     !! collect uniques (unsorted first)
-    !allocate(uniq_codes(N))
-    !nuniq = 0
-    !do ii = 1, N
-    !   code = label_raw(ii)
     !   ! is 'code' already in uniq_codes(1:nuniq)?
-    !   do jj = 1, nuniq
-    !      if (uniq_codes(jj) == code) exit
-    !   end do
-    !   if (jj > nuniq) then
-    !      nuniq = nuniq + 1
-    !      uniq_codes(nuniq) = code
-    !   end if
-    !end do
     !
     !! insertion sort uniq_codes(1:nuniq) ascending (no external routine)
-    !do ii = 2, nuniq
-    !   code = uniq_codes(ii)
-    !   jj = ii - 1
-    !   do while (jj >= 1 .and. uniq_codes(jj) > code)
-    !      uniq_codes(jj+1) = uniq_codes(jj)
-    !      jj = jj - 1
-    !   end do
-    !   uniq_codes(jj+1) = code
-    !end do
     !
     !! map raw -> rank in sorted uniques => labels in 1..Nlabel
-    !do ii = 1, N
-    !   label(ii) = 0
-    !   do jj = 1, nuniq
-    !      if (label_raw(ii) == uniq_codes(jj)) then
-    !         label(ii) = jj
-    !         exit
-    !      end if
-    !   end do
-    !   if (label(ii) == 0) stop "Label remap: raw code not found (internal error)."
-    !end do
-    !Nlabel = nuniq
     !
-    !deallocate(label_raw, uniq_codes)
     !
     !! guards before build_X
-    !if (Nlabel <= 0) stop "Label remap produced Nlabel <= 0."
-    !if (any(label < 1) .or. any(label > Nlabel)) stop "Label remap: label out of [1..Nlabel]."
     !
-    !print *, "TAPW labels (sorted):"
-    !do jj = 1, Nlabel
-    !   print '(A,I0,A,I0)', "  code ", 10*((uniq_codes(jj))/10) + mod(uniq_codes(jj),10), " -> contiguous ", jj
-    !end do
     ! Now label(i) ∈ {1..Nlabel}, stable order, ready for build_X
-    !call build_X(XArray, Rat(1,:), Rat(2,:), label, Gx, Gy, N, NG, Nlabel)
 
     ! Save Nlabel for Berry curvature calculation
 #ifdef SEMICL
@@ -7327,7 +6075,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Show TAPW structure
-       print *, "TAPW Structure:"
+       call MIO_Print("TAPW Structure:",'diag')
        print *, "  Number of atoms (N):", N
        print *, "  Number of G-vectors (NG):", NG
        print *, "  Number of unique labels (Nlabel):", Nlabel
@@ -7335,7 +6083,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        print *, "  Updated M_tapw =", M_tapw, "(now matches actual matrix size)"
     else
        ! Always show basic TAPW dimensions
-       if (tapwDebug) call MIO_Print('TAPW matrix: '//trim(num2str(N))//' atoms → '//trim(num2str(M))//' projected states (NG='//trim(num2str(NG))//', Nlabel='//trim(num2str(Nlabel))//')','diag')
+       if (tapwDebug) call MIO_Print('TAPW matrix: '//trim(num2str(N))//' atoms → '//trim(num2str(M)) &
+             //' projected states (NG='//trim(num2str(NG))//', Nlabel='//trim(num2str(Nlabel))//')','diag')
     end if
 
     allocate(XArray(N, M))
@@ -7343,10 +6092,10 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Print atomic coordinates and G-vector information
-       print *, "DEBUG: Atomic coordinates and X matrix construction:"
+       call MIO_Print("DEBUG: Atomic coordinates and X matrix construction:",'diag')
        print *, "  Total atoms N =", N
        print *, "  frac flag =", frac
-       print *, "  Sample atomic coordinates (first 5 atoms):"
+       call MIO_Print("  Sample atomic coordinates (first 5 atoms):",'diag')
        do i = 1, min(5, N)
           print '(A,I3,A,2F12.6,A,I0)', "    Atom ", i, ": (", Rat(1,i), Rat(2,i), "), label=", label(i)
        end do
@@ -7358,7 +6107,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Show phase calculations for multiple atoms and G-vectors
-       print *, "DEBUG: Phase calculations G·r for X-matrix construction:"
+       call MIO_Print("DEBUG: Phase calculations G·r for X-matrix construction:",'diag')
        block
           real(dp) :: real_phase
           do i = 1, min(3, N)  ! First 3 atoms
@@ -7382,25 +6131,25 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        close(98)
     end if
     if (tapwDebug) then
-       print *, "DEBUG: Atomic coordinates written to atomic_coords_debug.dat for visualization"
+       call MIO_Print("DEBUG: Atomic coordinates written to atomic_coords_debug.dat for visualization",'diag')
 
        ! Output comprehensive debugging data for TAPW visualization
-       print *, "DEBUG: About to call output_brillouin_zones_debug..."
+       call MIO_Print("DEBUG: About to call output_brillouin_zones_debug...",'diag')
        call output_brillouin_zones_debug(aG, moireAngle, k_ref, rG)
 
        ! Output moiré BZ data
-       print *, "DEBUG: Outputting moiré BZ data..."
+       call MIO_Print("DEBUG: Outputting moiré BZ data...",'diag')
        call output_moire_bz_debug(rcell)
 
        ! Output k-path data if available
-       print *, "DEBUG: Outputting k-path data..."
+       call MIO_Print("DEBUG: Outputting k-path data...",'diag')
        call output_kpath_debug()
     end if
 
     if (useRigidPositions) then
        ! Use rigid reference positions for X matrix construction
        ! This ensures perfect TAPW unitarity even with lattice reconstruction
-       call MIO_Print('Using rigid reference positions for TAPW X matrix construction','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using rigid reference positions for TAPW X matrix construction','diag')
 
        ! Read rigid positions from generateInit.xyz
        allocate(rigid_positions(3, N))
@@ -7416,7 +6165,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        Rat = rigid_positions
     else
        ! Use current positions in Rat directly (default behavior)
-       call MIO_Print('Using current atomic positions for TAPW X matrix construction','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using current atomic positions for TAPW X matrix construction','diag')
 
        ! Store current state for consistency with rigid position path
        temp_positions = Rat  ! Save current positions (no change needed)
@@ -7452,7 +6201,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     else
        ! For current positions, ensure we're in the right coordinate system for build_X
        if (frac) call AtomsSetCart()
-       call MIO_Print('Using current positions directly for X matrix construction','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using current positions directly for X matrix construction','diag')
     end if
 
     ! Build X matrix using current positions (rigid or relaxed)
@@ -7477,7 +6226,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        ! Clean up rigid positions array
        deallocate(rigid_positions)
     else
-       call MIO_Print('Using same positions for both X matrix and TB Hamiltonian construction','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using same positions for both X matrix and TB Hamiltonian construction','diag')
     end if
 
     if (tapwDebug) then
@@ -7491,24 +6240,29 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        call verify_x_matrix_norms(XArray, N, NG)
     end if
 
-
     ! PERFORMANCE OPTIMIZATION: Use pre-allocated arrays if available
-    if (allocated(tapw_Hproj) .and. size(tapw_Hproj,1) >= M .and. size(tapw_Hproj,2) >= M) then
+    ! size() must not be evaluated for an unallocated array, and .and. does not short-circuit
+    tapw_pre_ok = .false.
+    if (allocated(tapw_Hproj)) tapw_pre_ok = (size(tapw_Hproj,1) >= M .and. size(tapw_Hproj,2) >= M)
+    if (tapw_pre_ok) then
         ! Copy from pre-allocated array (no pointer overhead)
     allocate(Hproj(M, M))
         Hproj(1:M, 1:M) = tapw_Hproj(1:M, 1:M)
         call MIO_Print('Using pre-allocated Hproj array for performance','diag')
     else
         allocate(Hproj(M, M))
+#ifdef DEBUG
         call MIO_Print('Allocated new Hproj array (not pre-allocated)','diag')
+#endif /* DEBUG */
     end if
 
     ! Branch: use dense or sparse matrix approach for TAPW transformation
     if (useDenseMatrixTAPW) then
-        call MIO_Print('Using DENSE matrix approach for TAPW transformation','diag')
-        call transform_dense_hamiltonian_tapw(N, M, XArray, Hproj, KLoc, cell_real, H0, maxN, hopp, NList, Nneigh, neighCell, ns, is)
+        if (.not. tapwSetupSaid) call MIO_Print('Using DENSE matrix approach for TAPW transformation','diag')
+        call transform_dense_hamiltonian_tapw(N, M, XArray, Hproj, KLoc, cell_real, H0, maxN, hopp, NList, Nneigh, &
+              neighCell, ns, is)
     else
-        call MIO_Print('Using SPARSE matrix approach for TAPW transformation','diag')
+        if (.not. tapwSetupSaid) call MIO_Print('Using SPARSE matrix approach for TAPW transformation','diag')
         ! For large systems (>1M atoms), force sparse approach to avoid memory issues
         if (N > 1000000) then
             call MIO_Print('Large system detected (N='//trim(num2str(N))//'), using sparse-only TAPW transformation','diag')
@@ -7548,36 +6302,45 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
         call MIO_Print('TAPW unitary check disabled (set Diag.CheckTAPWUnitary=.true. to enable)','diag')
     end if
 
-    !call zheev('V', 'U', M, Hproj, M, eigvals, work, lwork, rwork, info)
-    !call ZHEEV('N','L',N,HLoc,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
-
     ! PERFORMANCE OPTIMIZATION: Use pre-allocated arrays if available
-    if (allocated(tapw_eigvals) .and. size(tapw_eigvals) >= M) then
+    tapw_pre_ok = .false.
+    if (allocated(tapw_eigvals)) tapw_pre_ok = (size(tapw_eigvals) >= M)
+    if (tapw_pre_ok) then
     allocate(eigvals(M))
         eigvals(1:M) = tapw_eigvals(1:M)
         call MIO_Print('Using pre-allocated eigvals array for performance','diag')
     else
         allocate(eigvals(M))
+#ifdef DEBUG
         call MIO_Print('Allocated new eigvals array (not pre-allocated)','diag')
+#endif /* DEBUG */
     end if
 
     lwork = 2*M
-    if (allocated(tapw_ZWorkLoc) .and. size(tapw_ZWorkLoc) >= 2*M) then
+    tapw_pre_ok = .false.
+    if (allocated(tapw_ZWorkLoc)) tapw_pre_ok = (size(tapw_ZWorkLoc) >= 2*M)
+    if (tapw_pre_ok) then
         allocate(ZWorkLoc(2*M))
         ZWorkLoc(1:2*M) = tapw_ZWorkLoc(1:2*M)
         call MIO_Print('Using pre-allocated ZWorkLoc array for performance','diag')
     else
         allocate(ZWorkLoc(2*M))
+#ifdef DEBUG
         call MIO_Print('Allocated new ZWorkLoc array (not pre-allocated)','diag')
+#endif /* DEBUG */
     end if
 
-    if (allocated(tapw_DWorkLoc) .and. size(tapw_DWorkLoc) >= 3*M) then
+    tapw_pre_ok = .false.
+    if (allocated(tapw_DWorkLoc)) tapw_pre_ok = (size(tapw_DWorkLoc) >= 3*M)
+    if (tapw_pre_ok) then
         allocate(DWorkLoc(3*M))
         DWorkLoc(1:3*M) = tapw_DWorkLoc(1:3*M)
         call MIO_Print('Using pre-allocated DWorkLoc array for performance','diag')
     else
         allocate(DWorkLoc(3*M))
+#ifdef DEBUG
         call MIO_Print('Allocated new DWorkLoc array (not pre-allocated)','diag')
+#endif /* DEBUG */
     end if
 
     ! Extract average mass term from G=0 block BEFORE ZHEEV overwrites Hproj
@@ -7629,7 +6392,6 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        ! Extract diagonal elements from Hproj (G=0 block)
        ! Hproj is M×M where M = NG * Nlabel = 1 * Nlabel = Nlabel
        ! For NG=1, the basis is |G=0, label⟩, so Hproj(label, label) gives the G=0 block
-       ! Hproj(label_A_idx, label_A_idx) = ⟨G=0, label_A| H |G=0, label_A⟩ = V_A(G=0)
 
        ! Extract graphene layer 1 gap (A and B sublattices)
        ! NOTE: Hproj diagonal elements are normalized averages due to TAPW basis normalization
@@ -7668,7 +6430,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           if (present(kpoint_index)) then
              print *, "TAPW Average Mass Term - GRAPHENE Layer 1 (k-point ", kpoint_index, "):"
           else
-             print *, "TAPW Average Mass Term - GRAPHENE Layer 1:"
+             call MIO_Print("TAPW Average Mass Term - GRAPHENE Layer 1:",'diag')
           end if
           print *, "  TAPW basis: label_A_idx = ", label_A_idx, " (layer 1, Species 1 = A, GRAPHENE)"
           print *, "  TAPW basis: label_B_idx = ", label_B_idx, " (layer 1, Species 2 = B, GRAPHENE)"
@@ -7680,15 +6442,15 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           print *, "  V_B(G=0) = ", V_B_0, " (in units of g0)"
           print *, "  m0 = (V_A - V_B)/2 = ", m0, " (in units of g0) = ", m0_meV, " meV"
           print *, "  Delta_avg = 2|m0| = ", delta_avg, " (in units of g0) = ", delta_avg_meV, " meV"
-          print *, "  NOTE: V_A and V_B are TAPW-averaged values (normalized by 1/N_label)"
-          print *, "        For relaxed systems, spatial variations in moiré pattern can cause"
-          print *, "        on-site energies to vary across atoms with same label, leading to"
-          print *, "        smaller averaged mass term than individual atom values"
-          print *, "        The gap in bands (from eigenvalues) may still be reasonable because"
-          print *, "        it includes off-diagonal contributions and full Hproj structure"
+          call MIO_Print("  NOTE: V_A and V_B are TAPW-averaged values (normalized by 1/N_label)",'diag')
+          call MIO_Print("        For relaxed systems, spatial variations in moiré pattern can cause",'diag')
+          call MIO_Print("        on-site energies to vary across atoms with same label, leading to",'diag')
+          call MIO_Print("        smaller averaged mass term than individual atom values",'diag')
+          call MIO_Print("        The gap in bands (from eigenvalues) may still be reasonable because",'diag')
+          call MIO_Print("        it includes off-diagonal contributions and full Hproj structure",'diag')
        else
-          if (.not. found_A) print *, "Warning: Could not find layer 1 sublattice A (code 11, GRAPHENE) in TAPW basis"
-          if (.not. found_B) print *, "Warning: Could not find layer 1 sublattice B (code 12, GRAPHENE) in TAPW basis"
+          if (.not. found_A) call MIO_Print("Warning: Could not find layer 1 sublattice A (code 11, GRAPHENE) in TAPW basis",'diag')
+          if (.not. found_B) call MIO_Print("Warning: Could not find layer 1 sublattice B (code 12, GRAPHENE) in TAPW basis",'diag')
           if (found_A .and. label_A_idx > M) print *, "Warning: label_A_idx = ", label_A_idx, " > M = ", M
           if (found_B .and. label_B_idx > M) print *, "Warning: label_B_idx = ", label_B_idx, " > M = ", M
        end if
@@ -7708,7 +6470,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           if (present(kpoint_index)) then
              print *, "TAPW Average Mass Term - hBN Layer 2 (k-point ", kpoint_index, "):"
           else
-             print *, "TAPW Average Mass Term - hBN Layer 2:"
+             call MIO_Print("TAPW Average Mass Term - hBN Layer 2:",'diag')
           end if
           print *, "  TAPW basis: label_B_hBN_idx = ", label_B_hBN_idx, " (layer 2, Species 3 = B, hBN)"
           print *, "  TAPW basis: label_N_hBN_idx = ", label_N_hBN_idx, " (layer 2, Species 4 = N, hBN)"
@@ -7717,8 +6479,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           print *, "  m0_hBN = (V_B_hBN - V_N_hBN)/2 = ", m0_hBN, " (in units of g0) = ", m0_hBN_meV, " meV"
           print *, "  Delta_avg_hBN = 2|m0_hBN| = ", delta_avg_hBN, " (in units of g0) = ", delta_avg_hBN_meV, " meV"
        else
-          if (.not. found_B_hBN) print *, "Warning: Could not find layer 2 B atom (code 23, hBN) in TAPW basis"
-          if (.not. found_N_hBN) print *, "Warning: Could not find layer 2 N atom (code 24, hBN) in TAPW basis"
+          if (.not. found_B_hBN) call MIO_Print("Warning: Could not find layer 2 B atom (code 23, hBN) in TAPW basis",'diag')
+          if (.not. found_N_hBN) call MIO_Print("Warning: Could not find layer 2 N atom (code 24, hBN) in TAPW basis",'diag')
           if (found_B_hBN .and. label_B_hBN_idx > M) print *, "Warning: label_B_hBN_idx = ", label_B_hBN_idx, " > M = ", M
           if (found_N_hBN .and. label_N_hBN_idx > M) print *, "Warning: label_N_hBN_idx = ", label_N_hBN_idx, " > M = ", M
        end if
@@ -7738,7 +6500,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (info /= 0) then
        print *, "Diagonalization failed: ZHEEV info =", info
-       stop
+       error stop 1
     end if
 
     ! Extract gap from eigenvalues for comparison with diagonal extraction
@@ -7777,14 +6539,14 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        if (present(kpoint_index)) then
           print *, "TAPW Gap from Eigenvalues - GRAPHENE Layer 1 (k-point ", kpoint_index, "):"
        else
-          print *, "TAPW Gap from Eigenvalues - GRAPHENE Layer 1:"
+          call MIO_Print("TAPW Gap from Eigenvalues - GRAPHENE Layer 1:",'diag')
        end if
        print *, "  Lowest eigenvalue (idx ", idx_min1, "): ", eigval_sorted(1), " (in units of g0)"
        print *, "  2nd lowest eigenvalue (idx ", idx_min2, "): ", eigval_sorted(2), " (in units of g0)"
        print *, "  Gap from eigenvalues = ", gap_from_eigenvalues, " (in units of g0) = ", gap_from_eigenvalues_meV, " meV"
-       print *, "  NOTE: This is the actual gap that appears in the bands"
-       print *, "        It includes off-diagonal contributions from Hproj"
-       print *, "        Compare with Delta_avg from diagonal extraction above"
+       call MIO_Print("  NOTE: This is the actual gap that appears in the bands",'diag')
+       call MIO_Print("        It includes off-diagonal contributions from Hproj",'diag')
+       call MIO_Print("        Compare with Delta_avg from diagonal extraction above",'diag')
 
        ! Deallocate sorting arrays
        deallocate(eigval_sorted, idx_sorted)
@@ -7799,7 +6561,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           stored_nspin = ns  ! Store number of spin channels
           ! Calculate actual number of k-points needed based on Chern grid
           stored_nk = nk_chern_x * nk_chern_y
-          call MIO_Print('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points ('//trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))//' grid) for '//trim(num2str(stored_nspin))//' spin channel(s)','diag')
+          call MIO_Print('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points (' &
+                //trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))//' grid) for '//trim(num2str(stored_nspin)) &
+                //' spin channel(s)','diag')
           allocate(stored_eigenvectors(M, M, stored_nk, stored_nspin))
           allocate(stored_hamiltonians(M, M, stored_nk, stored_nspin))
 
@@ -7807,12 +6571,14 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           allocate(stored_X_matrix(N, M))
           stored_X_matrix = XArray
 
-          call MIO_Print('Allocated TAPW storage for Chern calculation: '//trim(num2str(M))//'x'//trim(num2str(M))//'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
+          call MIO_Print('Allocated TAPW storage for Chern calculation: '//trim(num2str(M))//'x'//trim(num2str(M))//'x' &
+                //trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
           call MIO_Print('Stored X matrix ('//trim(num2str(N))//'x'//trim(num2str(M))//') for Berry curvature calculation','diag')
 
           ! VERIFICATION: Check stored data integrity
           call MIO_Print('=== TAPW STORAGE VERIFICATION ===','diag')
-          call MIO_Print('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk='//trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag')
+          call MIO_Print('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk=' &
+                //trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag')
           call MIO_Print('XArray dimensions: '//trim(num2str(size(XArray,1)))//'x'//trim(num2str(size(XArray,2))),'diag')
           call MIO_Print('XArray norm: '//trim(num2str(sqrt(sum(abs(XArray)**2)),8)),'diag')
           call MIO_Print('XArray max element: '//trim(num2str(maxval(abs(XArray)),8)),'diag')
@@ -7839,22 +6605,28 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
              ! CRITICAL FIX: Store TAPW eigenvalues to match eigenvectors
              if (.not. allocated(stored_eigenvalues)) then
                 allocate(stored_eigenvalues(M, stored_nk, stored_nspin))
-                call MIO_Print('Allocated stored_eigenvalues array: '//trim(num2str(M))//'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
+                call MIO_Print('Allocated stored_eigenvalues array: '//trim(num2str(M))//'x'//trim(num2str(stored_nk)) &
+                      //'x'//trim(num2str(stored_nspin)),'diag')
              end if
              stored_eigenvalues(1:M,kpoint_index,is) = eigvals(1:M)  ! Store TAPW eigenvalues
 
              ! DEBUG: Verify eigenvalue storage for first k-point
              if (kpoint_index == 1 .and. is == 1) then
                 call MIO_Print('=== TAPW EIGENVALUE STORAGE VERIFICATION (k-point 1, spin 1) ===','diag')
-                call MIO_Print('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
-                call MIO_Print('First 5 TAPW eigenvalues: ['//trim(num2str(eigvals(1),6))//','//trim(num2str(eigvals(2),6))//','//trim(num2str(eigvals(3),6))//','//trim(num2str(eigvals(4),6))//','//trim(num2str(eigvals(5),6))//']','diag')
-                call MIO_Print('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:M)),6))//','//trim(num2str(maxval(eigvals(1:M)),6))//']','diag')
+                call MIO_Print('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+                      //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
+                call MIO_Print('First 5 TAPW eigenvalues: ['//trim(num2str(eigvals(1),6))//',' &
+                      //trim(num2str(eigvals(2),6))//','//trim(num2str(eigvals(3),6))//','//trim(num2str(eigvals(4),6)) &
+                      //','//trim(num2str(eigvals(5),6))//']','diag')
+                call MIO_Print('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:M)),6))//',' &
+                      //trim(num2str(maxval(eigvals(1:M)),6))//']','diag')
              end if
 
              ! VERIFICATION: Check stored eigenvectors for first k-point
              if (kpoint_index == 1) then
                 call MIO_Print('=== EIGENVECTOR STORAGE VERIFICATION (k-point 1) ===','diag')
-                call MIO_Print('Stored eigenvectors dimensions: '//trim(num2str(size(stored_eigenvectors,1)))//'x'//trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag')
+                call MIO_Print('Stored eigenvectors dimensions: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
+                      //trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag')
                 call MIO_Print('Hproj (eigenvectors) norm: '//trim(num2str(sqrt(sum(abs(Hproj)**2)),8)),'diag')
                 call MIO_Print('Hproj max element: '//trim(num2str(maxval(abs(Hproj)),8)),'diag')
                 call MIO_Print('Hproj min element: '//trim(num2str(minval(abs(Hproj)),8)),'diag')
@@ -7865,7 +6637,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
              end if
           else
              call MIO_Print('ERROR: Cannot store k-point data - array too small','diag')
-             call MIO_Print('  M='//trim(num2str(M))//', stored array size='//trim(num2str(size(stored_eigenvectors,1)))//'x'//trim(num2str(size(stored_eigenvectors,2))),'diag')
+             call MIO_Print('  M='//trim(num2str(M))//', stored array size='//trim(num2str(size(stored_eigenvectors,1))) &
+                   //'x'//trim(num2str(size(stored_eigenvectors,2))),'diag')
           end if
        end if
 
@@ -7917,10 +6690,6 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        end if
     end if
 #endif
-    !if (.not. allocated(ELoc)) then
-    !    print *, "ELoc not allocated"
-    !    stop
-    !endif
     if (tapwDebug) print *, "TAPW projected matrix size M = ", M
 
     ! Handle size mismatch gracefully - TAPW can produce more/fewer states than atoms
@@ -7952,117 +6721,119 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
 ! eigvals now contains eigenvalues of projected H
 
-
-    if (tapwDebug) print *, "Deallocating arrays..."
+    if (tapwDebug) call MIO_Print("Deallocating arrays...",'diag')
 
     ! PERFORMANCE OPTIMIZATION: Only deallocate if not using pre-allocated arrays
     ! Use a simple approach: always deallocate, pre-allocated arrays will be reused
     if (allocated(eigvals)) then
         deallocate(eigvals)
-        if (tapwDebug) print *, "Deallocated eigvals"
+        if (tapwDebug) call MIO_Print("Deallocated eigvals",'diag')
     endif
 
     if (allocated(ZWorkLoc)) then
         deallocate(ZWorkLoc)
-        if (tapwDebug) print *, "Deallocated ZWorkLoc"
+        if (tapwDebug) call MIO_Print("Deallocated ZWorkLoc",'diag')
     endif
 
     if (allocated(DWorkLoc)) then
         deallocate(DWorkLoc)
-        if (tapwDebug) print *, "Deallocated DWorkLoc"
+        if (tapwDebug) call MIO_Print("Deallocated DWorkLoc",'diag')
     endif
 
     if (allocated(XArray)) then
         deallocate(XArray)
-        if (tapwDebug) print *, "Deallocated XArray"
+        if (tapwDebug) call MIO_Print("Deallocated XArray",'diag')
     endif
 
     if (allocated(Hproj)) then
         deallocate(Hproj)
-        if (tapwDebug) print *, "Deallocated Hproj"
+        if (tapwDebug) call MIO_Print("Deallocated Hproj",'diag')
     endif
 
     if (allocated(Gx)) then
         deallocate(Gx)
-        if (tapwDebug) print *, "Deallocated Gx"
+        if (tapwDebug) call MIO_Print("Deallocated Gx",'diag')
     endif
 
     if (allocated(Gy)) then
         deallocate(Gy)
-        if (tapwDebug) print *, "Deallocated Gy"
+        if (tapwDebug) call MIO_Print("Deallocated Gy",'diag')
     endif
 
     if (allocated(label)) then
         deallocate(label)
-        if (tapwDebug) print *, "Deallocated label"
+        if (tapwDebug) call MIO_Print("Deallocated label",'diag')
     endif
 
     if (allocated(row_ptr)) then
         deallocate(row_ptr)
-        if (tapwDebug) print *, "Deallocated row_ptr"
+        if (tapwDebug) call MIO_Print("Deallocated row_ptr",'diag')
     endif
 
     if (allocated(col_ind)) then
         deallocate(col_ind)
-        if (tapwDebug) print *, "Deallocated col_ind"
+        if (tapwDebug) call MIO_Print("Deallocated col_ind",'diag')
     endif
 
     if (allocated(values)) then
         deallocate(values)
-        if (tapwDebug) print *, "Deallocated values"
+        if (tapwDebug) call MIO_Print("Deallocated values",'diag')
     endif
 
     if (allocated(rand_real)) then
         deallocate(rand_real)
-        if (tapwDebug) print *, "Deallocated rand_real"
+        if (tapwDebug) call MIO_Print("Deallocated rand_real",'diag')
     endif
 
     if (allocated(rand_imag)) then
         deallocate(rand_imag)
-        if (tapwDebug) print *, "Deallocated rand_imag"
+        if (tapwDebug) call MIO_Print("Deallocated rand_imag",'diag')
     endif
 
     if (allocated(a)) then
         deallocate(a)
-        if (tapwDebug) print *, "Deallocated a"
+        if (tapwDebug) call MIO_Print("Deallocated a",'diag')
     endif
 
     if (allocated(EVectors)) then
         deallocate(EVectors)
-        if (tapwDebug) print *, "Deallocated EVectors"
+        if (tapwDebug) call MIO_Print("Deallocated EVectors",'diag')
     endif
 
     if (allocated(ax)) then
         deallocate(ax)
-        if (tapwDebug) print *, "Deallocated ax"
+        if (tapwDebug) call MIO_Print("Deallocated ax",'diag')
     endif
 
     if (allocated(rd)) then
         deallocate(rd)
-        if (tapwDebug) print *, "Deallocated rd"
+        if (tapwDebug) call MIO_Print("Deallocated rd",'diag')
     endif
 
     if (allocated(XArray)) then
         deallocate(XArray)
-        if (tapwDebug) print *, "Deallocated XArray"
+        if (tapwDebug) call MIO_Print("Deallocated XArray",'diag')
     endif
 
     if (allocated(Hproj)) then
         deallocate(Hproj)
-        if (tapwDebug) print *, "Deallocated Hproj"
+        if (tapwDebug) call MIO_Print("Deallocated Hproj",'diag')
     endif
 
     if (allocated(ZWorkLoc)) then
         deallocate(ZWorkLoc)
-        if (tapwDebug) print *, "Deallocated ZWorkLoc"
+        if (tapwDebug) call MIO_Print("Deallocated ZWorkLoc",'diag')
     endif
 
     if (allocated(DWorkLoc)) then
         deallocate(DWorkLoc)
-        if (tapwDebug) print *, "Deallocated DWorkLoc"
+        if (tapwDebug) call MIO_Print("Deallocated DWorkLoc",'diag')
     endif
 
-    if (tapwDebug) print *, "Done deallocating."
+    if (tapwDebug) call MIO_Print("Done deallocating.",'diag')
+
+    ! the set-up messages above are printed for the first k-point only
+    tapwSetupSaid = .true.
 
 end subroutine DiagH0TAPW
 
@@ -8291,7 +7062,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     end if
 
     if (tapwDebug) then
-       call MIO_Print('  Generated NG = '//trim(num2str(NG))//' G-vectors, Nlabel = '//trim(num2str(Nlabel))//', M = '//trim(num2str(M)), 'diag')
+       call MIO_Print('  Generated NG = '//trim(num2str(NG))//' G-vectors, Nlabel = '//trim(num2str(Nlabel))//', M = ' &
+             //trim(num2str(M)), 'diag')
     end if
 
     ! Allocate TAPW arrays
@@ -8388,14 +7160,16 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     ! Debug: Show M and NG before projection
     if (tapwDebug .and. present(kpoint_index)) then
-       call MIO_Print('DiagH0TAPW_withBlockH: About to project HBlock (2N='//trim(num2str(2*N))//'×'//trim(num2str(2*N))//') to Hproj (2M='//trim(num2str(2*M))//'×'//trim(num2str(2*M))//')','diag')
-       call MIO_Print('  Using block-diagonal projector XArray (2N='//trim(num2str(2*N))//'×2M='//trim(num2str(2*M))//') to preserve spin structure','diag')
+       call MIO_Print('DiagH0TAPW_withBlockH: About to project HBlock (2N='//trim(num2str(2*N))//'×'//trim(num2str(2*N)) &
+             //') to Hproj (2M='//trim(num2str(2*M))//'×'//trim(num2str(2*M))//')','diag')
+       call MIO_Print('  Using block-diagonal projector XArray (2N='//trim(num2str(2*N))//'×2M='//trim(num2str(2*M)) &
+             //') to preserve spin structure','diag')
        call MIO_Print('  This will perform: Hproj = XArray† * HBlock * XArray','diag')
        call MIO_Print('  Matrix multiplication complexity: O(2M × 2N × 2N) ≈ '//trim(num2str(2*M*2*N*2*N))//' operations','diag')
     end if
 
     ! Debug: Check HBlock structure before projection (for forceBlockTAPW testing)
-    if (forceBlockTAPW .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if (forceBlockTAPW .and. tapw_k_at_most(kpoint_index, 2)) then
        call MIO_Print('=== HBlock STRUCTURE CHECK (before projection) ===','diag')
        call MIO_Print('  HBlock dimensions: '//trim(num2str(2*N))//'×'//trim(num2str(2*N)),'diag')
 
@@ -8446,7 +7220,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     end if
 
     ! Debug: Check HBlock before projection
-    if (tapwDebug .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if (tapwDebug .and. tapw_k_at_most(kpoint_index, 2)) then
        allocate(diag_temp(2*N))
 
        call MIO_Print('DiagH0TAPW_withBlockH: Checking HBlock before projection (k-point '//trim(num2str(kpoint_index))//')','diag')
@@ -8480,13 +7254,15 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
                 max_rashba = max(max_rashba, abs(test_rashba))
                 test_count = test_count + 1
                 if (test_count <= 5) then
-                   call MIO_Print('  Rashba bond: HBlock('//trim(num2str(test_i))//','//trim(num2str(test_in+N))//') = '//trim(num2str(real(test_rashba),6))//' + i*'//trim(num2str(aimag(test_rashba),6)),'diag')
+                   call MIO_Print('  Rashba bond: HBlock('//trim(num2str(test_i))//','//trim(num2str(test_in+N))//') = ' &
+                         //trim(num2str(real(test_rashba),6))//' + i*'//trim(num2str(aimag(test_rashba),6)),'diag')
                 end if
              end if
           end do
        end do
 
-       call MIO_Print('  Total Rashba bonds checked: '//trim(num2str(test_count))//', max |Rashba| = '//trim(num2str(max_rashba,6)),'diag')
+       call MIO_Print('  Total Rashba bonds checked: '//trim(num2str(test_count))//', max |Rashba| = ' &
+             //trim(num2str(max_rashba,6)),'diag')
 
        deallocate(diag_temp)
     end if
@@ -8518,7 +7294,6 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     ! that should be fixed in BuildBlockHamiltonianOnly, not hidden by patching here.
 
     ! Project block Hamiltonian using TAPW transformation
-    ! Hproj = XArray† * HBlock * XArray
     ! where XArray is (2N×M) and HBlock is (2N×2N)
     !
     ! HBlock structure (from BuildBlockHamiltonianOnly):
@@ -8532,7 +7307,6 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     !   XArray(N+1:2*N, 1:M) = X_up (same TAPW basis for spin-down)
     !
     ! Mathematical expansion:
-    !   Hproj = [X_up†, X_up†] * [H_up H_Rashba; H_Rashba* H_dn] * [X_up; X_up]
     !        = X_up†*H_up*X_up + X_up†*H_Rashba*X_up + X_up†*H_Rashba**X_up + X_up†*H_dn*X_up
     !        = X_up†*(H_up + H_dn)*X_up + X_up†*(H_Rashba + H_Rashba*)*X_up
     !
@@ -8566,7 +7340,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     ! Debug: Check Hproj after projection and compare with expected structure
     ! For no-SOC case (forceBlockTAPW), Hproj should be block-diagonal with identical blocks
-    if ((tapwDebug .or. forceBlockTAPW) .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if ((tapwDebug .or. forceBlockTAPW) .and. tapw_k_at_most(kpoint_index, 2)) then
        if (forceBlockTAPW) then
           call MIO_Print('=== BLOCK TAPW PROJECTION DEBUG (no SOC) ===','diag')
           call MIO_Print('  Expected: Hproj should be block-diagonal [H_TAPW 0; 0 H_TAPW]','diag')
@@ -8630,7 +7404,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        end if
     end if
 
-    if (tapwDebug .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if (tapwDebug .and. tapw_k_at_most(kpoint_index, 2)) then
        allocate(proj_diag_temp(2*M))
 
        call MIO_Print('DiagH0TAPW_withBlockH: Checking Hproj after projection','diag')
@@ -8660,10 +7434,13 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           ! Debug: Show specific off-diagonal elements to check k-dependence
           ! Also check cross-spin terms (should be non-zero with Rashba)
           if (kpoint_index <= 2 .and. 2*M >= 5) then
-             call MIO_Print('  Hproj(1,2) = '//trim(num2str(real(Hproj(1,2)),6))//' + i*'//trim(num2str(aimag(Hproj(1,2)),6)),'diag')
-             call MIO_Print('  Hproj(2,1) = '//trim(num2str(real(Hproj(2,1)),6))//' + i*'//trim(num2str(aimag(Hproj(2,1)),6)),'diag')
+             call MIO_Print('  Hproj(1,2) = '//trim(num2str(real(Hproj(1,2)),6))//' + i*' &
+                   //trim(num2str(aimag(Hproj(1,2)),6)),'diag')
+             call MIO_Print('  Hproj(2,1) = '//trim(num2str(real(Hproj(2,1)),6))//' + i*' &
+                   //trim(num2str(aimag(Hproj(2,1)),6)),'diag')
              if (2*M >= M+1) then
-                call MIO_Print('  Hproj(1,M+1) [cross-spin] = '//trim(num2str(real(Hproj(1,M+1)),6))//' + i*'//trim(num2str(aimag(Hproj(1,M+1)),6)),'diag')
+                call MIO_Print('  Hproj(1,M+1) [cross-spin] = '//trim(num2str(real(Hproj(1,M+1)),6))//' + i*' &
+                      //trim(num2str(aimag(Hproj(1,M+1)),6)),'diag')
              end if
           end if
        end if
@@ -8680,7 +7457,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              end if
           end do
        end do
-       call MIO_Print('  Hproj trace (first 100×100): '//trim(num2str(trace_Hproj,6))//', norm²: '//trim(num2str(norm_Hproj,6)),'diag')
+       call MIO_Print('  Hproj trace (first 100×100): '//trim(num2str(trace_Hproj,6))//', norm²: ' &
+             //trim(num2str(norm_Hproj,6)),'diag')
 
        deallocate(proj_diag_temp)
     end if
@@ -8706,7 +7484,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     end if
 
     ! Debug: Check eigenvalue degeneracy after diagonalization (for forceBlockTAPW testing)
-    if (forceBlockTAPW .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if (forceBlockTAPW .and. tapw_k_at_most(kpoint_index, 2)) then
        call MIO_Print('=== EIGENVALUE DEGENERACY CHECK (after diagonalization) ===','diag')
        call MIO_Print('  Total eigenvalues: '//trim(num2str(2*M)),'diag')
        call MIO_Print('  Expected: Each eigenvalue should appear twice (degenerate pairs)','diag')
@@ -8735,18 +7513,24 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           end if
        end do
 
-       call MIO_Print('  Consecutive pair check (first 10 pairs: 2i-1 and 2i): '//trim(num2str(eig_pair_count))//'/'//trim(num2str(min(M,10)))//' pairs match','diag')
+       call MIO_Print('  Consecutive pair check (first 10 pairs: 2i-1 and 2i): '//trim(num2str(eig_pair_count))//'/' &
+             //trim(num2str(min(M,10)))//' pairs match','diag')
        if (max_degen_diff > 1e-6_dp) then
-          call MIO_Print('  WARNING: Max eigenvalue pair difference: '//trim(num2str(max_degen_diff,8))//' at pair '//trim(num2str(max_degen_diff_idx)),'diag')
+          call MIO_Print('  WARNING: Max eigenvalue pair difference: '//trim(num2str(max_degen_diff,8))//' at pair ' &
+                //trim(num2str(max_degen_diff_idx)),'diag')
           call MIO_Print('  First 5 consecutive eigenvalue pairs:','diag')
           do check_i = 1, min(5, M)
-             call MIO_Print('    Pair '//trim(num2str(check_i))//': eigvals('//trim(num2str(2*check_i-1))//') = '//trim(num2str(eigvals(2*check_i-1),6))//', eigvals('//trim(num2str(2*check_i))//') = '//trim(num2str(eigvals(2*check_i),6))//', diff = '//trim(num2str(abs(eigvals(2*check_i-1)-eigvals(2*check_i)),8)),'diag')
+             call MIO_Print('    Pair '//trim(num2str(check_i))//': eigvals('//trim(num2str(2*check_i-1))//') = ' &
+                   //trim(num2str(eigvals(2*check_i-1),6))//', eigvals('//trim(num2str(2*check_i))//') = ' &
+                   //trim(num2str(eigvals(2*check_i),6))//', diff = ' &
+                   //trim(num2str(abs(eigvals(2*check_i-1)-eigvals(2*check_i)),8)),'diag')
           end do
        else
           call MIO_Print('  SUCCESS: Eigenvalues form proper consecutive pairs (eigvals(2i-1) ≈ eigvals(2i))','diag')
           call MIO_Print('  First 5 consecutive eigenvalue pairs (should be identical):','diag')
           do check_i = 1, min(5, M)
-             call MIO_Print('    Pair '//trim(num2str(check_i))//': '//trim(num2str(eigvals(2*check_i-1),6))//' (appears twice at indices '//trim(num2str(2*check_i-1))//','//trim(num2str(2*check_i))//')','diag')
+             call MIO_Print('    Pair '//trim(num2str(check_i))//': '//trim(num2str(eigvals(2*check_i-1),6)) &
+                   //' (appears twice at indices '//trim(num2str(2*check_i-1))//','//trim(num2str(2*check_i))//')','diag')
           end do
     end if
 
@@ -8767,7 +7551,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              n_unique = n_unique + 1
           end if
        end do
-       call MIO_Print('  Unique eigenvalue count: '//trim(num2str(n_unique))//' (expected: '//trim(num2str(M))//' unique eigenvalues, each appearing twice)','diag')
+       call MIO_Print('  Unique eigenvalue count: '//trim(num2str(n_unique))//' (expected: '//trim(num2str(M)) &
+             //' unique eigenvalues, each appearing twice)','diag')
        if (n_unique == M) then
           call MIO_Print('  SUCCESS: Exactly M unique eigenvalues (perfect degeneracy)','diag')
        else
@@ -8777,7 +7562,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     ! Debug: Check FULL eigenvalue range BEFORE extraction
     ! This is critical to understand if positive eigenvalues exist
-    if (tapwDebug .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if (tapwDebug .and. tapw_k_at_most(kpoint_index, 2)) then
        eig_full_min = minval(eigvals(1:2*M))
        eig_full_max = maxval(eigvals(1:2*M))
        eig_full_range = eig_full_max - eig_full_min
@@ -8791,19 +7576,25 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        call MIO_Print('  Positive eigenvalues: '//trim(num2str(n_positive))//' / '//trim(num2str(2*M)),'diag')
        call MIO_Print('  Negative eigenvalues: '//trim(num2str(n_negative))//' / '//trim(num2str(2*M)),'diag')
        call MIO_Print('  Zero eigenvalues: '//trim(num2str(n_zero))//' / '//trim(num2str(2*M)),'diag')
-       call MIO_Print('  ELoc array size: '//trim(num2str(size(ELoc)))//' (will store '//trim(num2str(min(2*M, size(ELoc))))//' eigenvalues)','diag')
+       call MIO_Print('  ELoc array size: '//trim(num2str(size(ELoc)))//' (will store ' &
+             //trim(num2str(min(2*M, size(ELoc))))//' eigenvalues)','diag')
 
        ! Show first and last few eigenvalues
        if (2*M >= 5) then
-          call MIO_Print('  First 5 eigenvalues (lowest energy): ['//trim(num2str(eigvals(1),6))//', '//trim(num2str(eigvals(2),6))//', '//trim(num2str(eigvals(3),6))//', '//trim(num2str(eigvals(4),6))//', '//trim(num2str(eigvals(5),6))//']','diag')
+          call MIO_Print('  First 5 eigenvalues (lowest energy): ['//trim(num2str(eigvals(1),6))//', ' &
+                //trim(num2str(eigvals(2),6))//', '//trim(num2str(eigvals(3),6))//', '//trim(num2str(eigvals(4),6)) &
+                //', '//trim(num2str(eigvals(5),6))//']','diag')
        end if
        if (2*M >= 5) then
-          call MIO_Print('  Last 5 eigenvalues (highest energy): ['//trim(num2str(eigvals(2*M-4),6))//', '//trim(num2str(eigvals(2*M-3),6))//', '//trim(num2str(eigvals(2*M-2),6))//', '//trim(num2str(eigvals(2*M-1),6))//', '//trim(num2str(eigvals(2*M),6))//']','diag')
+          call MIO_Print('  Last 5 eigenvalues (highest energy): ['//trim(num2str(eigvals(2*M-4),6))//', ' &
+                //trim(num2str(eigvals(2*M-3),6))//', '//trim(num2str(eigvals(2*M-2),6))//', ' &
+                //trim(num2str(eigvals(2*M-1),6))//', '//trim(num2str(eigvals(2*M),6))//']','diag')
        end if
 
        ! Check for truncation issue
        if (2*M > size(ELoc)) then
-          call MIO_Print('  WARNING: Truncation will occur! 2M='//trim(num2str(2*M))//' > ELoc size='//trim(num2str(size(ELoc))),'diag')
+          call MIO_Print('  WARNING: Truncation will occur! 2M='//trim(num2str(2*M))//' > ELoc size=' &
+                //trim(num2str(size(ELoc))),'diag')
           call MIO_Print('  Will lose '//trim(num2str(2*M - size(ELoc)))//' eigenvalues (highest energy states)','diag')
           if (size(ELoc)+1 <= 2*M .and. eigvals(size(ELoc)+1) > 0.0_dp) then
              call MIO_Print('  CRITICAL: First lost eigenvalue is POSITIVE: '//trim(num2str(eigvals(size(ELoc)+1),6)),'diag')
@@ -8832,14 +7623,17 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           ELoc(M+1:size(ELoc)) = 0.0_dp
        end if
        if (tapwDebug) then
-          call MIO_Print('TAPW with block H (no SOC): Collapsed '//trim(num2str(2*M))//' eigenvalues to '//trim(num2str(min(M, size(ELoc))))//' unique ones','diag')
+          call MIO_Print('TAPW with block H (no SOC): Collapsed '//trim(num2str(2*M))//' eigenvalues to ' &
+                //trim(num2str(min(M, size(ELoc))))//' unique ones','diag')
        end if
     else
        ! Rashba SOC case: use all 2M eigenvalues (spin-split)
        if (2*M > size(ELoc)) then
           if (tapwDebug) then
-             call MIO_Print('Warning: More TAPW states (2M='//trim(num2str(2*M))//') than output array size ('//trim(num2str(size(ELoc)))//')','diag')
-             call MIO_Print('Taking first '//trim(num2str(size(ELoc)))//' eigenvalues out of '//trim(num2str(2*M))//' total TAPW states','diag')
+             call MIO_Print('Warning: More TAPW states (2M='//trim(num2str(2*M))//') than output array size (' &
+                   //trim(num2str(size(ELoc)))//')','diag')
+             call MIO_Print('Taking first '//trim(num2str(size(ELoc)))//' eigenvalues out of '//trim(num2str(2*M)) &
+                   //' total TAPW states','diag')
              call MIO_Print('  This will only include eigenvalues up to: '//trim(num2str(eigvals(size(ELoc)),6)),'diag')
              if (eigvals(size(ELoc)) < 0.0_dp .and. n_positive > 0) then
                 call MIO_Print('  CRITICAL: All positive eigenvalues will be lost due to truncation!','diag')
@@ -8856,9 +7650,12 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     if (tapwDebug) then
        if (forceBlockTAPW .and. .not. RashbaSOCterm) then
-          call MIO_Print('TAPW with block H (no SOC): Using '//trim(num2str(min(M_tapw, size(ELoc))))//' eigenvalues for output (M_tapw='//trim(num2str(M_tapw))//', ELoc size='//trim(num2str(size(ELoc)))//')','diag')
+          call MIO_Print('TAPW with block H (no SOC): Using '//trim(num2str(min(M_tapw, size(ELoc)))) &
+                //' eigenvalues for output (M_tapw='//trim(num2str(M_tapw))//', ELoc size='//trim(num2str(size(ELoc))) &
+                //')','diag')
        else
-          call MIO_Print('TAPW with block H: Using '//trim(num2str(min(2*M, size(ELoc))))//' eigenvalues for output (2M='//trim(num2str(2*M))//', ELoc size='//trim(num2str(size(ELoc)))//')','diag')
+          call MIO_Print('TAPW with block H: Using '//trim(num2str(min(2*M, size(ELoc)))) &
+                //' eigenvalues for output (2M='//trim(num2str(2*M))//', ELoc size='//trim(num2str(size(ELoc)))//')','diag')
        end if
     end if
 
@@ -8872,7 +7669,9 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           stored_nspin = ns  ! Store number of spin channels
           ! Calculate actual number of k-points needed based on Chern grid
           stored_nk = nk_chern_x * nk_chern_y
-          call MIO_Print('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points ('//trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))//' grid) for '//trim(num2str(stored_nspin))//' spin channel(s)','diag')
+          call MIO_Print('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points (' &
+                //trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))//' grid) for '//trim(num2str(stored_nspin)) &
+                //' spin channel(s)','diag')
           allocate(stored_eigenvectors(2*M, 2*M, stored_nk, stored_nspin))
           allocate(stored_hamiltonians(2*M, 2*M, stored_nk, stored_nspin))
 
@@ -8880,12 +7679,15 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           allocate(stored_X_matrix(2*N, 2*M))
           stored_X_matrix = XArray
 
-          call MIO_Print('Allocated TAPW storage for Chern calculation: '//trim(num2str(2*M))//'x'//trim(num2str(2*M))//'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
-          call MIO_Print('Stored SOC-aware X matrix (2N='//trim(num2str(2*N))//'x 2M='//trim(num2str(2*M))//') for Berry curvature calculation','diag')
+          call MIO_Print('Allocated TAPW storage for Chern calculation: '//trim(num2str(2*M))//'x'//trim(num2str(2*M)) &
+                //'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
+          call MIO_Print('Stored SOC-aware X matrix (2N='//trim(num2str(2*N))//'x 2M='//trim(num2str(2*M)) &
+                //') for Berry curvature calculation','diag')
 
           ! VERIFICATION: Check stored data integrity
           call MIO_Print('=== TAPW STORAGE VERIFICATION (Rashba SOC) ===','diag')
-          call MIO_Print('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk='//trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag')
+          call MIO_Print('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk=' &
+                //trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag')
           call MIO_Print('XArray dimensions: '//trim(num2str(size(XArray,1)))//'x'//trim(num2str(size(XArray,2))),'diag')
           call MIO_Print('XArray norm: '//trim(num2str(sqrt(sum(abs(XArray)**2)),8)),'diag')
           call MIO_Print('XArray max element: '//trim(num2str(maxval(abs(XArray)),8)),'diag')
@@ -8895,17 +7697,18 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           if (2*M /= stored_M) then
              call MIO_Print('ERROR: M dimension changed between k-points in DiagH0TAPW_withBlockH','diag')
              call MIO_Print('  Stored M: '//trim(num2str(stored_M))//', Current M: '//trim(num2str(2*M)),'diag')
-             stop
+             error stop 1
           end if
 
           ! Verify X matrix dimensions are consistent
           if (.not. allocated(stored_X_matrix)) then
              call MIO_Print('ERROR: stored_X_matrix not allocated but stored_eigenvectors is allocated','diag')
-             stop
+             error stop 1
           end if
           if (size(stored_X_matrix, 1) /= 2*N .or. size(stored_X_matrix, 2) /= 2*M) then
              call MIO_Print('ERROR: Stored X matrix dimensions inconsistent with current calculation','diag')
-             call MIO_Print('  Stored: '//trim(num2str(size(stored_X_matrix,1)))//'x'//trim(num2str(size(stored_X_matrix,2))),'diag')
+             call MIO_Print('  Stored: '//trim(num2str(size(stored_X_matrix,1)))//'x' &
+                   //trim(num2str(size(stored_X_matrix,2))),'diag')
              call MIO_Print('  Current: '//trim(num2str(2*N))//'x'//trim(num2str(2*M)),'diag')
           end if
        end if
@@ -8923,7 +7726,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              ! CRITICAL: Store TAPW eigenvalues (now 2M)
              if (.not. allocated(stored_eigenvalues)) then
                 allocate(stored_eigenvalues(2*M, stored_nk, stored_nspin))
-                call MIO_Print('Allocated stored_eigenvalues array: '//trim(num2str(2*M))//'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
+                call MIO_Print('Allocated stored_eigenvalues array: '//trim(num2str(2*M))//'x'//trim(num2str(stored_nk)) &
+                      //'x'//trim(num2str(stored_nspin)),'diag')
              end if
              stored_eigenvalues(1:2*M,kpoint_index,1) = eigvals(1:2*M)
 
@@ -8938,9 +7742,13 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              ! DEBUG: Verify eigenvalue storage for first k-point
              if (kpoint_index == 1 .and. is == 1) then
                 call MIO_Print('=== TAPW EIGENVALUE STORAGE VERIFICATION (Rashba, k-point 1, spin-mixed) ===','diag')
-                call MIO_Print('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
-                call MIO_Print('First 5 TAPW eigenvalues (spin-mixed): ['//trim(num2str(eigvals(1),6))//','//trim(num2str(eigvals(2),6))//','//trim(num2str(eigvals(3),6))//','//trim(num2str(eigvals(4),6))//','//trim(num2str(eigvals(5),6))//']','diag')
-                call MIO_Print('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:2*M)),6))//','//trim(num2str(maxval(eigvals(1:2*M)),6))//']','diag')
+                call MIO_Print('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+                      //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
+                call MIO_Print('First 5 TAPW eigenvalues (spin-mixed): ['//trim(num2str(eigvals(1),6))//',' &
+                      //trim(num2str(eigvals(2),6))//','//trim(num2str(eigvals(3),6))//','//trim(num2str(eigvals(4),6)) &
+                      //','//trim(num2str(eigvals(5),6))//']','diag')
+                call MIO_Print('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:2*M)),6))//',' &
+                      //trim(num2str(maxval(eigvals(1:2*M)),6))//']','diag')
              end if
           end if
        end if
@@ -9005,35 +7813,6 @@ subroutine transform_block_hamiltonian_tapw(N, M, X, HBlock, Hproj)
     deallocate(temp)
 
 end subroutine transform_block_hamiltonian_tapw
-
-subroutine generate_G_list_from_rcell(rcell, NGrange, Gx, Gy, NG)
-  implicit none
-  integer, intent(in) :: NGrange
-  double precision, intent(in) :: rcell(3,3)
-  double precision, allocatable, intent(out) :: Gx(:), Gy(:)
-  integer, intent(out) :: NG
-
-  integer :: i, j, count, nmax
-  double precision :: b1(2), b2(2)
-
-  b1 = rcell(1:2,1)
-  b2 = rcell(1:2,2)
-
-  nmax = (2*NGrange + 1)**2
-  allocate(Gx(nmax), Gy(nmax))
-  count = 0
-
-  do i = -NGrange, NGrange
-     do j = -NGrange, NGrange
-        count = count + 1
-        Gx(count) = i*b1(1) + j*b2(1)
-        Gy(count) = i*b1(2) + j*b2(2)
-     end do
-  end do
-
-  NG = count
-
-end subroutine generate_G_list_from_rcell
 
 subroutine generate_shifted_G_list_reduced(rcell, k_ref, NGrange, Gx, Gy, NG, center_point, apply_BZ_filter)
   implicit none
@@ -9353,31 +8132,31 @@ subroutine generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, center_poi
   inv_rcell = reshape([b2(2), -b2(1), -b1(2), b1(1)], [2,2]) / det
 
   ! Debug: Check matrix calculations
-  print *, "DEBUG: OLD vs NEW coordinate conversion methods:"
+  call MIO_Print("DEBUG: OLD vs NEW coordinate conversion methods:",'diag')
   print *, "  det =", det
-  print *, "  OLD inv_rcell method (reciprocal lattice inverse):"
+  call MIO_Print("  OLD inv_rcell method (reciprocal lattice inverse):",'diag')
   print *, "    inv_rcell(1,1) = b2(2)/det =", b2(2), "/", det, "=", b2(2)/det
   print *, "    inv_rcell(1,2) = -b2(1)/det =", -b2(1), "/", det, "=", -b2(1)/det
   print *, "    inv_rcell(2,1) = -b1(2)/det =", -b1(2), "/", det, "=", -b1(2)/det
   print *, "    inv_rcell(2,2) = b1(1)/det =", b1(1), "/", det, "=", b1(1)/det
 
   ! Debug: Direct lattice calculation details
-  print *, "DEBUG: Direct lattice coordinate conversion (FIXED):"
-  print *, "  ucell_T (direct lattice transpose):"
+  call MIO_Print("DEBUG: Direct lattice coordinate conversion (FIXED):",'diag')
+  call MIO_Print("  ucell_T (direct lattice transpose):",'diag')
   print *, "    ucell_T(1,:) =", ucell_T(1,:)
   print *, "    ucell_T(2,:) =", ucell_T(2,:)
 
   ! Debug: Matrix multiplication k_ref @ ucell_T / (2π) (Python equivalent)
-  print *, "DEBUG: k_ref @ ucell_T / (2π) calculation (Python equivalent):"
-  print *, "  k_ref(1) * ucell_T(1,1) + k_ref(2) * ucell_T(2,1) ="
+  call MIO_Print("DEBUG: k_ref @ ucell_T / (2π) calculation (Python equivalent):",'diag')
+  call MIO_Print("  k_ref(1) * ucell_T(1,1) + k_ref(2) * ucell_T(2,1) =",'diag')
   print *, "  ", k_ref(1), "*", ucell_T(1,1), "+", k_ref(2), "*", ucell_T(2,1), "="
   print *, "  ", (k_ref(1) * ucell_T(1,1) + k_ref(2) * ucell_T(2,1)) / (2.0_dp * 3.14159265358979323846_dp)
-  print *, "  k_ref(1) * ucell_T(1,2) + k_ref(2) * ucell_T(2,2) ="
+  call MIO_Print("  k_ref(1) * ucell_T(1,2) + k_ref(2) * ucell_T(2,2) =",'diag')
   print *, "  ", k_ref(1), "*", ucell_T(1,2), "+", k_ref(2), "*", ucell_T(2,2), "="
   print *, "  ", (k_ref(1) * ucell_T(1,2) + k_ref(2) * ucell_T(2,2)) / (2.0_dp * 3.14159265358979323846_dp)
 
   ! CRITICAL CHECK: Test both transpose methods for coordinate conversion
-  print *, "DEBUG: Testing coordinate conversion methods:"
+  call MIO_Print("DEBUG: Testing coordinate conversion methods:",'diag')
   print *, "  Method 1 (current): k_ref * ucell_T =", matmul(k_ref, ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
   print *, "  Method 2 (transpose): k_ref * ucell_T^T =", matmul(k_ref, transpose(ucell_T)) / (2.0_dp * 3.14159265358979323846_dp)
 
@@ -9399,18 +8178,18 @@ subroutine generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, center_poi
   end if
 
   ! COMPREHENSIVE VERIFICATION: Test both methods by reconstruction
-  print *, "DEBUG: === COMPREHENSIVE COORDINATE CONVERSION VERIFICATION ==="
+  call MIO_Print("DEBUG: === COMPREHENSIVE COORDINATE CONVERSION VERIFICATION ===",'diag')
 
   ! Method 1 reconstruction: G_nn_int -> G_nn -> k_space
   G_nn_method1 = G_nn_int(1)*b1 + G_nn_int(2)*b2
-  print *, "Method 1 reconstruction:"
+  call MIO_Print("Method 1 reconstruction:",'diag')
   print *, "  G_nn_int =", G_nn_int
   print *, "  G_nn_method1 = G_nn_int(1)*b1 + G_nn_int(2)*b2 =", G_nn_method1
   print *, "  Distance from grid_center: |G_nn_method1 - grid_center| =", sqrt(sum((G_nn_method1 - grid_center)**2))
 
   ! Method 2 reconstruction: G_nn_int_transpose -> G_nn -> k_space
   G_nn_method2 = G_nn_int_transpose(1)*b1 + G_nn_int_transpose(2)*b2
-  print *, "Method 2 reconstruction:"
+  call MIO_Print("Method 2 reconstruction:",'diag')
   print *, "  G_nn_int_transpose =", G_nn_int_transpose
   print *, "  G_nn_method2 = G_nn_int_transpose(1)*b1 + G_nn_int_transpose(2)*b2 =", G_nn_method2
   print *, "  Distance from grid_center: |G_nn_method2 - grid_center| =", sqrt(sum((G_nn_method2 - grid_center)**2))
@@ -9418,20 +8197,20 @@ subroutine generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, center_poi
   ! Round-trip test: fractional -> integer -> fractional
   frac_roundtrip1 = matmul(G_nn_method1, ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
   frac_roundtrip2 = matmul(G_nn_method2, ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
-  print *, "Round-trip test (should recover integer values):"
+  call MIO_Print("Round-trip test (should recover integer values):",'diag')
   print *, "  Method 1: G_nn_method1 -> fractional =", frac_roundtrip1
   print *, "  Method 2: G_nn_method2 -> fractional =", frac_roundtrip2
 
   ! The correct method should give the nearest G-vector to grid_center
-  print *, "VERDICT: Method with smaller distance from grid_center is likely correct"
+  call MIO_Print("VERDICT: Method with smaller distance from grid_center is likely correct",'diag')
   if (sqrt(sum((G_nn_method1 - grid_center)**2)) < sqrt(sum((G_nn_method2 - grid_center)**2))) then
-print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
+call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",'diag')
   else
-     print *, "  -> Method 2 (transpose) appears CORRECT: closer to grid_center"
+     call MIO_Print("  -> Method 2 (transpose) appears CORRECT: closer to grid_center",'diag')
   end if
 
   G_nn = G_nn_int(1)*b1 + G_nn_int(2)*b2
-  print *, "DEBUG: G_nn reconstruction:"
+  call MIO_Print("DEBUG: G_nn reconstruction:",'diag')
   print *, "  G_nn_int(1)*b1 =", G_nn_int(1), "*", b1, "=", G_nn_int(1)*b1
   print *, "  G_nn_int(2)*b2 =", G_nn_int(2), "*", b2, "=", G_nn_int(2)*b2
   print *, "  G_nn = G_nn_int(1)*b1 + G_nn_int(2)*b2 =", G_nn
@@ -9471,7 +8250,8 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
 
   if (tapwDebug) call MIO_Print('DEBUG: First 15 raw distances from G_nn:','diag')
   do i = 1, min(15, count)
-     call MIO_Print('  Point '//trim(adjustl(num2str(real(i,dp),0)))//': distance = '//trim(adjustl(num2str(distances(i),6))),'diag')
+     call MIO_Print('  Point '//trim(adjustl(num2str(real(i,dp),0)))//': distance = ' &
+           //trim(adjustl(num2str(distances(i),6))),'diag')
   end do
 
   ! Also check around the center position
@@ -9525,14 +8305,16 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
   ! Sort unique distances to get proper shell ordering
   if (tapwDebug) call MIO_Print('DEBUG: Before sorting - first 5 unique distances:','diag')
   do i = 1, min(5, num_unique)
-     call MIO_Print('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = '//trim(adjustl(num2str(unique_distances(i),6))),'diag')
+     call MIO_Print('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = ' &
+           //trim(adjustl(num2str(unique_distances(i),6))),'diag')
   end do
 
   call sort_distances_with_inverse_update(unique_distances, num_unique, inverse, count)
 
   if (tapwDebug) call MIO_Print('DEBUG: After sorting - first 5 unique distances:','diag')
   do i = 1, min(5, num_unique)
-     call MIO_Print('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = '//trim(adjustl(num2str(unique_distances(i),6))),'diag')
+     call MIO_Print('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = ' &
+           //trim(adjustl(num2str(unique_distances(i),6))),'diag')
   end do
 
   ! Count how many G-vectors we need: inverse < NGrange (Python condition)
@@ -9645,16 +8427,17 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
      call MIO_Print('  G-vectors before BZ filter: '//trim(adjustl(num2str(real(NG_before_filter,dp),0))),'diag')
      call MIO_Print('  G-vectors after BZ filter: '//trim(adjustl(num2str(real(NG_after_filter,dp),0))),'diag')
      call MIO_Print('  G-vectors removed: '//trim(adjustl(num2str(real(NG_before_filter-NG_after_filter,dp),0))),'diag')
-     call MIO_Print('  Efficiency gain: '//trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag')
+     call MIO_Print('  Efficiency gain: ' &
+           //trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag')
   end if
 
   ! No need to reallocate - arrays are already the right size and contain correct data
   ! The filtering was done in-place, so Gx(1:NG) and Gy(1:NG) contain the correct G-vectors
 
-
   ! CRITICAL: Apply final uniqueness like Python's np.unique(np.vstack(self.G_list),axis=0)
   ! This removes duplicate G-vectors that might come from multiple reference points
-  if (tapwDebug) call MIO_Print('DEBUG: About to call remove_duplicate_G_vectors with NG='//trim(adjustl(num2str(real(NG,dp),0))),'diag')
+  if (tapwDebug) call MIO_Print('DEBUG: About to call remove_duplicate_G_vectors with NG=' &
+        //trim(adjustl(num2str(real(NG,dp),0))),'diag')
   initial_NG = NG
   call remove_duplicate_G_vectors(Gx, Gy, NG)
   if (tapwDebug) call MIO_Print('DEBUG: After remove_duplicate_G_vectors, NG='//trim(adjustl(num2str(real(NG,dp),0))),'diag')
@@ -9680,7 +8463,8 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
 
   if (tapwDebug) call MIO_Print('DEBUG: First 5 distances after final sort:','diag')
   do ii = 1, min(5, NG)
-     call MIO_Print('  '//trim(adjustl(num2str(sel_dist(perm(ii)),6)))//'  ang='//trim(adjustl(num2str(sel_ang(perm(ii)),6))),'diag')
+     call MIO_Print('  '//trim(adjustl(num2str(sel_dist(perm(ii)),6)))//'  ang=' &
+           //trim(adjustl(num2str(sel_ang(perm(ii)),6))),'diag')
   end do
 
   deallocate(sel_dist, sel_ang, perm)
@@ -9705,7 +8489,8 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
   deallocate(Gpoints, distances, inverse, unique_distances)
 
   ! Essential info: G-vector generation summary
-  call MIO_Print('G-grid: Generated NG='//trim(adjustl(num2str(real(NG,dp),0)))//' vectors, NGrange='//trim(adjustl(num2str(real(NGrange,dp),0))),'diag')
+  call MIO_Print('G-grid: Generated NG='//trim(adjustl(num2str(real(NG,dp),0)))//' vectors, NGrange=' &
+        //trim(adjustl(num2str(real(NGrange,dp),0))),'diag')
 
   ! Output G-vectors for matplotlib visualization (thread-safe)
   ! Use critical section to avoid conflicts in parallel execution
@@ -9720,249 +8505,6 @@ print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
   !$OMP END CRITICAL(g_vectors_file)
 
 end subroutine generate_shifted_G_list
-
-subroutine generate_shifted_G_list_pythonStyle(rcell, k_ref, NGrange, Gx, Gy, NG)
-  ! Generate G-vectors exactly following Python TAPW algorithm
-  ! This mimics the Python __initialize method logic precisely
-  use constants, only : pi
-  implicit none
-
-  ! Input/Output parameters
-  real(dp), intent(in) :: rcell(3,3)  ! Reciprocal lattice vectors (moiré)
-  real(dp), intent(in) :: k_ref(2)    ! Reference K-point
-  integer, intent(in) :: NGrange       ! N_G parameter (order of nearest G-vectors)
-  real(dp), allocatable, intent(out) :: Gx(:), Gy(:)
-  integer, intent(out) :: NG
-
-  ! Local variables
-  real(dp) :: Gvector(2,2)            ! Reciprocal lattice basis vectors
-  real(dp) :: ucell_T(2,2)            ! Direct lattice transpose (Tvector.T from Python)
-  real(dp) :: G_nn(2)                 ! Nearest lattice point in fractional coordinates
-  real(dp) :: G_nn_method1(2)         ! For coordinate conversion
-  integer :: G_nn_int(2)              ! Integer lattice indices
-  integer :: u, v, count, i, j, idx
-  real(dp), allocatable :: Gpoints(:,:)  ! Generated G-points [2, N_points]
-  real(dp), allocatable :: distances(:)  ! Distances from G_nn@Gvector
-  integer, allocatable :: distance_groups(:)  ! Group indices for unique distances
-  integer, allocatable :: sorted_indices(:)
-  real(dp), allocatable :: unique_distances(:)
-  logical, allocatable :: selected(:)
-  real(dp) :: current_distance, tolerance
-  integer :: n_unique_distances, group_idx, n_selected
-  real(dp) :: det
-  real(dp) :: b1(2), b2(2)            ! Reciprocal lattice vectors
-  integer :: file_unit
-
-  call MIO_Print('=== Python-style G-grid generation ===','diag')
-
-  ! Step 1: Compute reciprocal lattice vectors Gvector = 2*PI*inv(Tvector[0:2,0:2]).T
-  ! rcell contains reciprocal vectors, we need to reconstruct direct lattice first
-  ! rcell = 2*PI * inv(ucell.T), so ucell.T = 2*PI * inv(rcell)
-
-  !det = rcell(1,1)*rcell(2,2) - rcell(1,2)*rcell(2,1)
-  !ucell_T(1,1) = rcell(2,2) * (2.0_dp * pi) / det
-  !ucell_T(1,2) = -rcell(1,2) * (2.0_dp * pi) / det
-  !ucell_T(2,1) = -rcell(2,1) * (2.0_dp * pi) / det
-  !ucell_T(2,2) = rcell(1,1) * (2.0_dp * pi) / det
-  !
-  !! Gvector = rcell (since rcell = 2*PI * inv(ucell.T))
-  !! To match Python: Gvector[0] = first reciprocal vector, Gvector[1] = second reciprocal vector
-  !! Use row format like Python: Gvector(1,:) = b1, Gvector(2,:) = b2
-  !Gvector(1,:) = rcell(1:2,1)  ! First reciprocal lattice vector (as row)
-  !Gvector(2,:) = rcell(1:2,2)  ! Second reciprocal lattice vector (as row)
-  !
-  !call MIO_Print('Direct lattice transpose ucell_T:','diag')
-  !call MIO_Print('  ['//trim(num2str(ucell_T(1,1),6))//','//trim(num2str(ucell_T(1,2),6))//']','diag')
-  !call MIO_Print('  ['//trim(num2str(ucell_T(2,1),6))//','//trim(num2str(ucell_T(2,2),6))//']','diag')
-  !
-  !call MIO_Print('Reciprocal lattice vectors Gvector (row format like Python):','diag')
-  !call MIO_Print('  b1 = Gvector(1,:) = ['//trim(num2str(Gvector(1,1),6))//','//trim(num2str(Gvector(1,2),6))//']','diag')
-  !call MIO_Print('  b2 = Gvector(2,:) = ['//trim(num2str(Gvector(2,1),6))//','//trim(num2str(Gvector(2,2),6))//']','diag')
-  !
-  !! Step 2: Find nearest lattice point G_nn
-  !! Python: G_nn = np.round(np.array(point)@position.Tvector[0:2,0:2].T/(2*PI))
-  !G_nn(1) = k_ref(1)*ucell_T(1,1) + k_ref(2)*ucell_T(2,1)
-  !G_nn(2) = k_ref(1)*ucell_T(1,2) + k_ref(2)*ucell_T(2,2)
-  !G_nn = G_nn / (2.0_dp * pi)
-  !
-  !! Round to nearest integers (Python np.round equivalent)
-  !G_nn_int(1) = nint(G_nn(1))
-  !G_nn_int(2) = nint(G_nn(2))
-  !
-  !call MIO_Print('Reference point k_ref = ['//trim(num2str(k_ref(1),6))//','//trim(num2str(k_ref(2),6))//']','diag')
-  !call MIO_Print('Fractional coordinates G_nn = ['//trim(num2str(G_nn(1),6))//','//trim(num2str(G_nn(2),6))//']','diag')
-  !call MIO_Print('Nearest lattice point G_nn_int = ['//trim(num2str(real(G_nn_int(1),dp),0))//','//trim(num2str(real(G_nn_int(2),dp),0))//']','diag')
-  !
-  !! Step 3: Generate grid around G_nn
-  !! Python: U,V = np.meshgrid(np.arange(G_nn[0]-N_G,G_nn[0]+N_G+1),np.arange(G_nn[1]-N_G,G_nn[1]+N_G+1))
-  !count = (2*NGrange+1) * (2*NGrange+1)
-  !allocate(Gpoints(2, count))
-  !allocate(distances(count))
-  !
-  !idx = 0
-  !do v = G_nn_int(2)-NGrange, G_nn_int(2)+NGrange
-  !   do u = G_nn_int(1)-NGrange, G_nn_int(1)+NGrange
-  !      idx = idx + 1
-  !      ! Python: Gpoints = U.flatten()[:,None]*Gvector[0]+V.flatten()[:,None]*Gvector[1]
-  !      ! In Python: Gvector[0] is first row, Gvector[1] is second row
-  !      ! Now using row format: Gvector(1,:) = first vector, Gvector(2,:) = second vector
-  !      ! U corresponds to first lattice direction, V to second
-  !      Gpoints(1, idx) = real(u,dp)*Gvector(1,1) + real(v,dp)*Gvector(2,1)
-  !      Gpoints(2, idx) = real(u,dp)*Gvector(1,2) + real(v,dp)*Gvector(2,2)
-  !   end do
-  !end do
-
-  b1 = rcell(1:2,1); b2 = rcell(1:2,2)
-  det = b1(1)*b2(2) - b1(2)*b2(1)
-  ucell_T = reshape([b2(2), -b2(1), -b1(2), b1(1)], [2,2]) * (2.0_dp * pi) / det
-
-  ! Calculate inv_rcell for old debug prints (keeping for reference)
-  !#inv_rcell = reshape([b2(2), -b2(1), -b1(2), b1(1)], [2,2]) / det
-
-  ! Python: G_nn = np.round(np.array(point)@position.Tvector[0:2,0:2].T/(2*PI))
-  ! This gives INTEGER indices, not fractional coordinates!
-  G_nn = matmul(k_ref, ucell_T) / (2.0_dp * pi)
-  G_nn_int(1) = nint(G_nn(1))
-  G_nn_int(2) = nint(G_nn(2))
-
-  ! Reconstruct G_nn as the lattice point in Cartesian coordinates
-  ! This is the reference point for distance calculation
-  G_nn(1) = G_nn_int(1)*b1(1) + G_nn_int(2)*b2(1)
-  G_nn(2) = G_nn_int(1)*b1(2) + G_nn_int(2)*b2(2)
-
-  call MIO_Print('Reference point k_ref = ['//trim(num2str(k_ref(1),6))//','//trim(num2str(k_ref(2),6))//']','diag')
-  call MIO_Print('G_nn_int = ['//trim(num2str(real(G_nn_int(1),dp),0))//','//trim(num2str(real(G_nn_int(2),dp),0))//']','diag')
-  call MIO_Print('G_nn lattice point = ['//trim(num2str(G_nn(1),6))//','//trim(num2str(G_nn(2),6))//']','diag')
-
-  ! Allocate arrays before using them
-  count = (2*NGrange+1) * (2*NGrange+1)
-  allocate(Gpoints(2, count))
-  allocate(distances(count))
-
-  count = 0
-  ! CRITICAL FIX: Match Python meshgrid ordering exactly
-  ! Python: U,V = np.meshgrid(arange(G_nn[0]-N_G, G_nn[0]+N_G+1), arange(G_nn[1]-N_G, G_nn[1]+N_G+1))
-  ! Python: U.flatten(), V.flatten() - this orders by varying V first, then U
-  ! DON'T overwrite G_nn - keep it as fractional coordinates for distance calculation!
-  do v = -NGrange, NGrange  ! SWAPPED: v outer loop (like Python meshgrid)
-     do u = -NGrange, NGrange  ! SWAPPED: u inner loop
-        count = count + 1
-        ! Calculate G-point: Gpoint = (G_nn_int + [u,v]) * [b1, b2]
-        Gpoints(1, count) = (G_nn_int(1) + u)*b1(1) + (G_nn_int(2) + v)*b2(1)
-        Gpoints(2, count) = (G_nn_int(1) + u)*b1(2) + (G_nn_int(2) + v)*b2(2)
-        ! Python: np.linalg.norm(Gpoints - G_nn@Gvector, axis=1)
-        ! Distance from each G-point to the reconstructed G_nn lattice point
-        distances(count) = sqrt((Gpoints(1, count) - G_nn(1))**2 + (Gpoints(2, count) - G_nn(2))**2)
-     end do
-  end do
-
-  call MIO_Print('Generated '//trim(num2str(count))//' G-points in ('//trim(num2str(2*NGrange+1))//'x'//trim(num2str(2*NGrange+1))//') grid','diag')
-  call MIO_Print('Expected total points: '//trim(num2str((2*NGrange+1)**2)),'diag')
-  call MIO_Print('First 5 distances:','diag')
-  do i = 1, min(5, count)
-     call MIO_Print('  Point '//trim(num2str(i))//': distance = '//trim(num2str(distances(i),6)),'diag')
-  end do
-
-  ! Step 5: Group by unique distances (Python np.unique with return_inverse=True)
-  tolerance = 1.0e-5_dp
-  allocate(unique_distances(count))
-  allocate(distance_groups(count))
-
-  n_unique_distances = 0
-  do i = 1, count
-     ! Check if this distance already exists
-     group_idx = 0
-     do j = 1, n_unique_distances
-        if (abs(distances(i) - unique_distances(j)) < tolerance) then
-           group_idx = j
-           exit
-        end if
-     end do
-
-     if (group_idx == 0) then
-        ! New unique distance
-        n_unique_distances = n_unique_distances + 1
-        unique_distances(n_unique_distances) = distances(i)
-        distance_groups(i) = n_unique_distances
-     else
-        ! Existing distance
-        distance_groups(i) = group_idx
-     end if
-  end do
-
-  call MIO_Print('Found '//trim(num2str(n_unique_distances))//' unique distance shells','diag')
-  call MIO_Print('First 10 unique distances:','diag')
-  do i = 1, min(10, n_unique_distances)
-     call MIO_Print('  Shell '//trim(num2str(i))//': distance = '//trim(num2str(unique_distances(i),6)),'diag')
-  end do
-  call MIO_Print('Selection criterion: distance_groups <= '//trim(num2str(NGrange)),'diag')
-
-  ! Step 6: Select G-vectors with distance_group < NGrange
-  ! Python: self.G_list.append(Gpoints[inverse<N_G])
-  ! Note: Python inverse is 0-based, our distance_groups is 1-based
-  ! So Python inverse<N_G becomes distance_groups<=N_G in Fortran
-  ! But we need to be consistent with Python's strict inequality
-  allocate(selected(count))
-  selected = .false.
-  n_selected = 0
-
-  do i = 1, count
-     ! Python uses inverse<N_G where inverse is 0-based (0, 1, 2, ...)
-     ! Our distance_groups is 1-based (1, 2, 3, ...)
-     ! So Python inverse<N_G is equivalent to our distance_groups <= N_G
-     if (distance_groups(i) <= NGrange) then
-        selected(i) = .true.
-        n_selected = n_selected + 1
-     end if
-  end do
-
-  call MIO_Print('Selected '//trim(num2str(n_selected))//' G-vectors within '//trim(num2str(NGrange))//' nearest shells','diag')
-
-  ! Step 7: Store selected G-vectors
-  NG = n_selected
-  allocate(Gx(NG), Gy(NG))
-
-  idx = 0
-  do i = 1, count
-     if (selected(i)) then
-        idx = idx + 1
-        Gx(idx) = Gpoints(1, i)
-        Gy(idx) = Gpoints(2, i)
-     end if
-  end do
-
-  ! Step 8: Write debug output to file
-  open(newunit=file_unit, file='g_vectors_debug_python.dat', status='replace')
-  write(file_unit, '(A)') '# G-vectors generated by Python-style algorithm'
-  write(file_unit, '(A,I0)') '# Number of G-vectors: ', NG
-  write(file_unit, '(A,I0)') '# N_G parameter: ', NGrange
-  write(file_unit, '(A,2F12.6)') '# Reference k-point: ', k_ref
-  write(file_unit, '(A,2I0)') '# Nearest lattice point: ', G_nn_int
-  write(file_unit, '(A)') '# Format: i_G    Gx         Gy         distance_group'
-
-  idx = 0
-  do i = 1, count
-     if (selected(i)) then
-        idx = idx + 1
-        write(file_unit, '(I6,2F12.6,I6)') idx, Gpoints(1,i), Gpoints(2,i), distance_groups(i)
-     end if
-  end do
-  close(file_unit)
-
-  if (tapwDebug) then
-     call MIO_Print('G-vectors written to g_vectors_debug_python.dat','diag')
-     call MIO_Print('First 5 G-vectors:','diag')
-     do i = 1, min(5, NG)
-        call MIO_Print('  G('//trim(num2str(i))//') = ['//trim(num2str(Gx(i),6))//','//trim(num2str(Gy(i),6))//']','diag')
-     end do
-  end if
-
-  ! Cleanup
-  deallocate(Gpoints, distances, unique_distances, distance_groups, selected)
-
-  call MIO_Print('=== Python-style G-grid generation complete ===','diag')
-
-end subroutine generate_shifted_G_list_pythonStyle
 
 ! Helper subroutine to sort distances and update inverse mapping to match Python np.unique
 subroutine sort_distances_with_inverse_update(distances, n_unique, inverse, n_total)
@@ -10193,7 +8735,8 @@ subroutine generate_shifted_G_list_with_graphene_BZ(rcell, k_ref, NGrange, Gx, G
   call MIO_Print('  G-vectors after graphene BZ filter: '//trim(adjustl(num2str(real(NG_after_filter,dp),0))),'diag')
   call MIO_Print('  G-vectors removed: '//trim(adjustl(num2str(real(NG_before_filter-NG_after_filter,dp),0))),'diag')
   if (NG_before_filter > 0) then
-     call MIO_Print('  Efficiency gain: '//trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag')
+     call MIO_Print('  Efficiency gain: ' &
+           //trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag')
   end if
 
   ! Output FILTERED G-vectors for matplotlib visualization (overwrites the unfiltered version)
@@ -10210,7 +8753,6 @@ subroutine generate_shifted_G_list_with_graphene_BZ(rcell, k_ref, NGrange, Gx, G
   !$OMP END CRITICAL(g_vectors_file)
 
 end subroutine generate_shifted_G_list_with_graphene_BZ
-
 
 subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use_distance_ordering)
   ! Generate G-vectors using triangular truncation following Python get_Gvecs_tri exactly
@@ -10254,7 +8796,8 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
   ! We need to express it in fractional coordinates of the moiré lattice for grid selection
   call MIO_Print('k_ref (Cartesian): ['//trim(num2str(k_ref(1),6))//','//trim(num2str(k_ref(2),6))//']','diag')
   call cart_to_frac_single_point(k_ref, bMvec, kkDvec_ind)
-  call MIO_Print('k_ref converted to fractional: ['//trim(num2str(kkDvec_ind(1),6))//','//trim(num2str(kkDvec_ind(2),6))//']','diag')
+  call MIO_Print('k_ref converted to fractional: ['//trim(num2str(kkDvec_ind(1),6))//','//trim(num2str(kkDvec_ind(2),6)) &
+        //']','diag')
 
   ! Set grid size following Python nsize logic
   ! NGrange now controls the density of the G-vector grid (like nsize in Python)
@@ -10317,7 +8860,7 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
      call MIO_Print('ERROR: No G-vectors selected by triangular truncation!','diag')
      call MIO_Print('This will cause M=0 and matrix dimension errors.','diag')
      call MIO_Print('Check BZ triangle calculation or increase grid size.','diag')
-     stop
+     error stop 1
   end if
 
   ! OPTIONAL DISTANCE-BASED ORDERING: Match generate_shifted_G_list_reduced approach
@@ -10392,7 +8935,8 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
 
   if (do_distance_sort) then
      if (tapwDebug) then
-        call MIO_Print('Generated '//trim(num2str(NG))//' G-vectors using triangular truncation with distance-based ordering','diag')
+        call MIO_Print('Generated '//trim(num2str(NG)) &
+              //' G-vectors using triangular truncation with distance-based ordering','diag')
         call MIO_Print('First 5 G-vectors (distance-sorted):','diag')
         do i = 1, min(5, NG)
            ! Recalculate distance for debug output
@@ -10491,95 +9035,6 @@ logical function point_in_triangle(point, triangle)
 
 end function point_in_triangle
 
-subroutine calculate_triangular_BZ_corners_cartesian(k_ref_cart, ratio, BZ_triangle_cart, rG_graphene)
-  ! Calculate BZ triangle corners in Cartesian coordinates (much simpler!)
-  ! Triangle connects alternating corners of graphene hexagonal BZ
-  implicit none
-
-  real(dp), intent(in) :: k_ref_cart(2)        ! K-point in Cartesian coordinates
-  real(dp), intent(in) :: ratio               ! Scaling factor
-  real(dp), intent(out) :: BZ_triangle_cart(3,2) ! Triangle corners in Cartesian coordinates
-  real(dp), intent(in) :: rG_graphene(2,2)    ! Graphene reciprocal lattice vectors
-
-  ! Local variables
-  real(dp) :: b1(2), b2(2)
-  real(dp) :: BZ_vertices(6,2)  ! All 6 hexagonal BZ vertices in Cartesian
-  integer :: i, selected_indices(3)
-
-  call MIO_Print('Calculating triangle corners in Cartesian coordinates (simple approach)','diag')
-
-  ! Use graphene reciprocal lattice vectors for triangle shape
-  b1 = rG_graphene(:,1)
-  b2 = rG_graphene(:,2)
-
-  call MIO_Print('Graphene reciprocal lattice vectors:','diag')
-  call MIO_Print('  b1 = ['//trim(num2str(b1(1),6))//','//trim(num2str(b1(2),6))//']','diag')
-  call MIO_Print('  b2 = ['//trim(num2str(b2(1),6))//','//trim(num2str(b2(2),6))//']','diag')
-
-  ! Generate 6 hexagonal BZ vertices in Cartesian coordinates
-  BZ_vertices(1, :) = b1 / 2.0_dp                     ! +b1/2
-  BZ_vertices(2, :) = -b1 / 2.0_dp                    ! -b1/2
-  BZ_vertices(3, :) = b2 / 2.0_dp                     ! +b2/2
-  BZ_vertices(4, :) = -b2 / 2.0_dp                    ! -b2/2
-  BZ_vertices(5, :) = (b1 + b2) / 2.0_dp              ! +(b1+b2)/2
-  BZ_vertices(6, :) = -(b1 + b2) / 2.0_dp             ! -(b1+b2)/2
-
-  ! Select alternating vertices to form triangle (1/6 of hexagon)
-  if (useKprimeValley) then
-     selected_indices = [1, 3, 5]  ! Select alternating vertices for K' valley
-     call MIO_Print('Using K'' valley triangular indices: [1, 3, 5]','diag')
-  else
-     selected_indices = [2, 4, 6]  ! Select alternating vertices for K valley
-     call MIO_Print('Using K valley triangular indices: [2, 4, 6]','diag')
-  end if
-
-  do i = 1, 3
-     BZ_triangle_cart(i, :) = BZ_vertices(selected_indices(i), :) * ratio
-  end do
-
-  ! Translate triangle to be centered at k_ref (K-point)
-  do i = 1, 3
-     BZ_triangle_cart(i, 1) = BZ_triangle_cart(i, 1) + k_ref_cart(1)
-     BZ_triangle_cart(i, 2) = BZ_triangle_cart(i, 2) + k_ref_cart(2)
-  end do
-
-  call MIO_Print('Triangle corners (Cartesian, centered at K-point):','diag')
-  do i = 1, 3
-     call MIO_Print('  Triangle('//trim(num2str(i))//') = ['//trim(num2str(BZ_triangle_cart(i,1),6))//','// &
-                    trim(num2str(BZ_triangle_cart(i,2),6))//']','diag')
-  end do
-
-end subroutine calculate_triangular_BZ_corners_cartesian
-
-subroutine create_simple_triangle_around_kpoint(kpoint_frac, ratio, triangle_corners)
-  ! Create a simple equilateral triangle around the K-point in fractional coordinates
-  ! This avoids complex coordinate transformations and just works
-  implicit none
-
-  real(dp), intent(in) :: kpoint_frac(2)     ! K-point in fractional coordinates
-  real(dp), intent(in) :: ratio             ! Scaling factor
-  real(dp), intent(out) :: triangle_corners(3,2) ! Triangle corners in fractional coordinates
-
-  real(dp) :: triangle_size
-
-  call MIO_Print('Creating simple triangle around K-point (avoiding coordinate issues)','diag')
-
-  ! Make triangle size proportional to grid range (reasonable for integer grid)
-  triangle_size = 3.0_dp * ratio  ! Should encompass several grid points
-
-  ! Create equilateral triangle centered at K-point
-  triangle_corners(1, :) = kpoint_frac + [triangle_size, 0.0_dp]
-  triangle_corners(2, :) = kpoint_frac + [-triangle_size/2.0_dp, triangle_size * sqrt(3.0_dp)/2.0_dp]
-  triangle_corners(3, :) = kpoint_frac + [-triangle_size/2.0_dp, -triangle_size * sqrt(3.0_dp)/2.0_dp]
-
-  call MIO_Print('Triangle size: '//trim(num2str(triangle_size,2)),'diag')
-  call MIO_Print('Triangle corners (fractional):','diag')
-  call MIO_Print('  Corner 1: ['//trim(num2str(triangle_corners(1,1),6))//','//trim(num2str(triangle_corners(1,2),6))//']','diag')
-  call MIO_Print('  Corner 2: ['//trim(num2str(triangle_corners(2,1),6))//','//trim(num2str(triangle_corners(2,2),6))//']','diag')
-  call MIO_Print('  Corner 3: ['//trim(num2str(triangle_corners(3,1),6))//','//trim(num2str(triangle_corners(3,2),6))//']','diag')
-
-end subroutine create_simple_triangle_around_kpoint
-
 subroutine create_triangle_from_graphene_BZ(k_ref_cart, ratio, triangle_frac, rG, bMvec)
   ! Create triangle from alternating corners of graphene BZ, shifted to K-point
   ! This is the CORRECT approach following your instructions exactly
@@ -10654,83 +9109,6 @@ subroutine create_triangle_from_graphene_BZ(k_ref_cart, ratio, triangle_frac, rG
 
 end subroutine create_triangle_from_graphene_BZ
 
-subroutine get_BZ_corners_for_layer(bbvec, kkDvec_ind, BZ_corners, NGrange)
-  ! Analytical calculation of hexagonal BZ corners around a K-point
-  ! Implements get_BZinds logic for hexagonal reciprocal lattices (graphene)
-  implicit none
-
-  real(dp), intent(in) :: bbvec(2,2)      ! Reciprocal lattice vectors for this layer
-  real(dp), intent(in) :: kkDvec_ind(2)   ! Target K-point fractional coordinates
-  integer, intent(in) :: NGrange          ! Grid range to scale triangle size
-  real(dp), intent(out) :: BZ_corners(3,2) ! BZ corners in Cartesian coordinates
-
-  ! Local variables
-  real(dp) :: K_cart(2)
-  real(dp) :: b1(2), b2(2)  ! Reciprocal lattice vectors
-  real(dp) :: hex_vertices(6,2)  ! All 6 hexagonal BZ vertices
-  real(dp) :: angles(6), distances(6)
-  real(dp) :: target_angle, angle_diff, triangle_size
-  integer :: i, closest_indices(3)
-
-  ! Convert K-point from fractional to Cartesian coordinates
-  K_cart(1) = kkDvec_ind(1) * bbvec(1,1) + kkDvec_ind(2) * bbvec(1,2)
-  K_cart(2) = kkDvec_ind(1) * bbvec(2,1) + kkDvec_ind(2) * bbvec(2,2)
-
-  ! Extract reciprocal lattice vectors (bbvec is organized as rows)
-  b1 = bbvec(1, :)  ! First reciprocal lattice vector (row 1)
-  b2 = bbvec(2, :)  ! Second reciprocal lattice vector (row 2)
-
-  print *, "DEBUG: Extracted lattice vectors:"
-  print *, "  b1 =", b1
-  print *, "  b2 =", b2
-
-  ! Calculate 6 vertices of hexagonal BZ using reciprocal lattice vectors
-  ! For hexagonal lattice: BZ vertices are at ±b1/2, ±b2/2, ±(b1-b2)/2
-  hex_vertices(1, :) =  b1 / 2.0_dp                    ! +b1/2
-  hex_vertices(2, :) = -b1 / 2.0_dp                    ! -b1/2
-  hex_vertices(3, :) =  b2 / 2.0_dp                    ! +b2/2
-  hex_vertices(4, :) = -b2 / 2.0_dp                    ! -b2/2
-  hex_vertices(5, :) =  (b1 - b2) / 2.0_dp             ! +(b1-b2)/2
-  hex_vertices(6, :) = -(b1 - b2) / 2.0_dp             ! -(b1-b2)/2
-
-  print *, "DEBUG: All 6 hex vertices:"
-  do i = 1, 6
-     print *, "  hex_vertices(", i, ") =", hex_vertices(i, :)
-  end do
-
-  ! Find the 3 closest vertices to the K-point to form triangle
-  ! This selects 1/6 of the hexagonal BZ around the K-point
-  target_angle = atan2(K_cart(2), K_cart(1))
-
-  ! Calculate angles and distances for all vertices relative to K-point
-  do i = 1, 6
-     angles(i) = atan2(hex_vertices(i,2) - K_cart(2), hex_vertices(i,1) - K_cart(1))
-     distances(i) = sqrt((hex_vertices(i,1) - K_cart(1))**2 + (hex_vertices(i,2) - K_cart(2))**2)
-  end do
-
-  ! Select 3 adjacent vertices around K-point to form proper triangle
-  ! For hexagonal BZ around K-point, we need vertices that form 1/6 of the hexagon
-  ! This should create a triangular wedge centered at K-point
-
-  ! SIMPLIFIED APPROACH: Create a reasonable triangular region instead of complex hexagonal calculation
-  ! Use a simple equilateral triangle centered at origin (will be shifted to K-point later)
-  ! Scale triangle size with NGrange to allow more G-vectors for larger grids
-  triangle_size = 0.01_dp * real(NGrange, dp)  ! Scale with N_G: 20 → 0.2, 200 → 2.0
-
-  print *, "Triangle size scaled with N_G:", triangle_size, "(N_G =", NGrange, ")"
-
-  ! Create equilateral triangle vertices around origin
-  BZ_corners(1, :) = [triangle_size, 0.0_dp]                                    ! Right vertex
-  BZ_corners(2, :) = [-triangle_size/2.0_dp, triangle_size * sqrt(3.0_dp)/2.0_dp]  ! Top-left vertex
-  BZ_corners(3, :) = [-triangle_size/2.0_dp, -triangle_size * sqrt(3.0_dp)/2.0_dp] ! Bottom-left vertex
-
-  print *, "Created simple equilateral triangle:"
-  print *, "  Vertex 1:", BZ_corners(1, :)
-  print *, "  Vertex 2:", BZ_corners(2, :)
-  print *, "  Vertex 3:", BZ_corners(3, :)
-
-end subroutine get_BZ_corners_for_layer
-
 subroutine cart_to_frac_coords(cart_coords, basis_vectors, frac_coords)
   ! Convert Cartesian coordinates to fractional coordinates (cart2fracArr equivalent)
   ! Implements the coordinate transformation using matrix inversion
@@ -10744,11 +9122,18 @@ subroutine cart_to_frac_coords(cart_coords, basis_vectors, frac_coords)
   integer :: i
 
   ! Calculate inverse of basis vectors matrix
+#ifdef DEBUG
+  call MIO_Debug('cart_to_frac_coords',0)
+#endif /* DEBUG */
+
   det = basis_vectors(1,1) * basis_vectors(2,2) - basis_vectors(1,2) * basis_vectors(2,1)
 
   if (abs(det) < 1.0e-12_dp) then
      call MIO_Print('Warning: Singular basis vectors matrix in cart_to_frac_coords','diag')
      frac_coords = cart_coords  ! Fallback
+#ifdef DEBUG
+     call MIO_Debug('cart_to_frac_coords',1)
+#endif /* DEBUG */
      return
   end if
 
@@ -10762,6 +9147,10 @@ subroutine cart_to_frac_coords(cart_coords, basis_vectors, frac_coords)
      frac_coords(i, 1) = inv_basis(1,1) * cart_coords(i,1) + inv_basis(1,2) * cart_coords(i,2)
      frac_coords(i, 2) = inv_basis(2,1) * cart_coords(i,1) + inv_basis(2,2) * cart_coords(i,2)
   end do
+
+#ifdef DEBUG
+  call MIO_Debug('cart_to_frac_coords',1)
+#endif /* DEBUG */
 
 end subroutine cart_to_frac_coords
 
@@ -10860,7 +9249,9 @@ subroutine compute_unique_labels(labels, N, num_unique)
 
   deallocate(unique_labels)
 
+#ifdef DEBUG
   print *, "Found", num_unique, "unique layer×sublattice combinations"
+#endif /* DEBUG */
 end subroutine compute_unique_labels
 
 ! Subroutine to remap labels to contiguous indices 1..Nlabel
@@ -10904,10 +9295,12 @@ subroutine remap_labels_to_contiguous(labels, N, num_unique)
   end do
 
   ! Debug output
-  print *, "Label mapping (original -> contiguous):"
+#ifdef DEBUG
+  call MIO_Print("Label mapping (original -> contiguous):",'diag')
   do i = 1, num_unique
      print *, "  ", unique_labels(i), "->", i
   end do
+#endif /* DEBUG */
 
   deallocate(unique_labels, label_map)
 end subroutine remap_labels_to_contiguous
@@ -10930,28 +9323,28 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
 
   ! Validate CSR size
   if (size(row_ptr) /= N+1) then
-     print *, "ERROR: row_ptr size mismatch!"
+     call MIO_Print("ERROR: row_ptr size mismatch!",'diag')
      print *, "ERROR: row_ptr has", size(row_ptr), "entries but should have", N+1
-     print *, "ERROR: This will cause array bounds violations in sparse multiplication"
-     stop "row_ptr size mismatch in transform_sparse_hamiltonian"
+     call MIO_Print("ERROR: This will cause array bounds violations in sparse multiplication",'diag')
+     error stop "row_ptr size mismatch in transform_sparse_hamiltonian"
   endif
 
   nnz = row_ptr(N+1) - 1
   if (size(values) < nnz) then
      print *, "ERROR: size(values) <", nnz
-     stop "CSR format inconsistency: not enough values"
+     error stop "CSR format inconsistency: not enough values"
   endif
   if (maxval(col_ind(1:nnz)) > N) then
      print *, "ERROR: max(col_ind) >", N
-     stop "col_ind contains out-of-bounds indices for X"
+     error stop "col_ind contains out-of-bounds indices for X"
   endif
 
   ! Validate matrix dimensions
   if (size(X,1) /= N) then
-     print *, "ERROR: Matrix dimension mismatch!"
+     call MIO_Print("ERROR: Matrix dimension mismatch!",'diag')
      print *, "ERROR: X matrix has", size(X,1), "rows but sparse matrix H has", N, "rows"
-     print *, "ERROR: This will cause incorrect matrix multiplication"
-     stop "Matrix dimension mismatch in transform_sparse_hamiltonian"
+     call MIO_Print("ERROR: This will cause incorrect matrix multiplication",'diag')
+     error stop "Matrix dimension mismatch in transform_sparse_hamiltonian"
   endif
 
   ! Allocate Y = H * X
@@ -10963,11 +9356,11 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
         j = col_ind(k)
         if (j < 1 .or. j > N) then
            print *, "ERROR: j = col_ind(k) = ", j, " out of bounds at i=", i, " k=", k
-           stop
+           error stop 1
         endif
         if (k < 1 .or. k > size(values)) then
            print *, "ERROR: k=", k, " out of bounds (values size=", size(values), ")"
-           stop
+           error stop 1
         endif
      end do
   end do
@@ -10992,7 +9385,7 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
   !$OMP END PARALLEL DO
 
   ! Debug: Check sparse matrix structure
-  print *, "Debug: Sparse matrix info:"
+  call MIO_Print("Debug: Sparse matrix info:",'diag')
   print *, "Debug: N =", N, "M =", M
   print *, "Debug: row_ptr range:", row_ptr(1), "to", row_ptr(N+1)
   print *, "Debug: col_ind range:", minval(col_ind(1:row_ptr(N+1)-1)), "to", maxval(col_ind(1:row_ptr(N+1)-1))
@@ -11001,7 +9394,7 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
   print *, "Debug: First few values:", (values(i), i=1,min(10,row_ptr(N+1)-1))
 
   ! Debug: Check if Y calculation is reasonable
-  print *, "Debug: After Y = H * X calculation:"
+  call MIO_Print("Debug: After Y = H * X calculation:",'diag')
   print *, "Debug: Max |values| in sparse matrix:", maxval(abs(values))
   print *, "Debug: Max |X| element used in multiplication:", maxval(abs(X))
   print *, "Debug: Expected max |Y| should be around:", maxval(abs(values)) * maxval(abs(X)) * maxval(row_ptr(2:N+1) - row_ptr(1:N))
@@ -11017,7 +9410,7 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
        print *, "Debug: Original max values - X:", maxval(abs(X)), "Y:", maxval(abs(Y))
 
        ! Debug: Check matrices before zgemm
-       print *, "Debug: Before zgemm call:"
+       call MIO_Print("Debug: Before zgemm call:",'diag')
        print *, "Debug: X matrix shape:", shape(X), "leading dimension:", N
        print *, "Debug: Y matrix shape:", shape(Y), "leading dimension:", N
        print *, "Debug: Hproj matrix shape:", shape(Hproj), "leading dimension:", M
@@ -11028,20 +9421,20 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
        call zgemm('C', 'N', M, M, N, cmplx_1, X, N, Y, N, cmplx_0, Hproj, M)
 
        ! Debug: Check result with transpose
-       print *, "Debug: After zgemm('C') call:"
+       call MIO_Print("Debug: After zgemm('C') call:",'diag')
        print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
 
        ! If that fails, try without transpose 'N' (no transpose)
        if (maxval(abs(Hproj)) == 0.0_dp) then
-          print *, "Debug: Transpose failed, trying without transpose..."
+          call MIO_Print("Debug: Transpose failed, trying without transpose...",'diag')
           call zgemm('N', 'N', M, M, N, cmplx_1, X, N, Y, N, cmplx_0, Hproj, M)
-          print *, "Debug: After zgemm('N') call:"
+          call MIO_Print("Debug: After zgemm('N') call:",'diag')
           print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
        endif
 
        ! If both zgemm calls fail, try manual matrix multiplication
        if (maxval(abs(Hproj)) == 0.0_dp) then
-          print *, "Debug: Both zgemm calls failed, trying manual multiplication..."
+          call MIO_Print("Debug: Both zgemm calls failed, trying manual multiplication...",'diag')
           Hproj = (0.0_dp, 0.0_dp)
           do i = 1, M
              do j = 1, M
@@ -11050,12 +9443,12 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
                 end do
              end do
           end do
-          print *, "Debug: After manual multiplication:"
+          call MIO_Print("Debug: After manual multiplication:",'diag')
           print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
        endif
 
        ! Debug: Check result immediately after zgemm
-       print *, "Debug: After zgemm call:"
+       call MIO_Print("Debug: After zgemm call:",'diag')
        print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
        print *, "Debug: Hproj first few diagonal elements:", (abs(Hproj(i,i)), i=1,min(5,M))
 
@@ -11255,13 +9648,13 @@ subroutine build_X(X, xcoord, ycoord, label, Gx, Gy, N_orbit, N_G, N_label)
 
   if (tapwDebug) then
      ! Debug: Print label counts and normalizations
-     print *, "DEBUG: Label counts and normalizations in build_X:"
+     call MIO_Print("DEBUG: Label counts and normalizations in build_X:",'diag')
      do i_label = 1, N_label
         print *, "  Label ", i_label, ": count =", count(i_label), ", norm = 1/√count =", norm(i_label)
      end do
 
      ! Debug: Check X-matrix phases for first few elements
-     print *, "DEBUG: X-matrix phase factors (first 3 G-vectors, first 3 atoms):"
+     call MIO_Print("DEBUG: X-matrix phase factors (first 3 G-vectors, first 3 atoms):",'diag')
      do i_G = 1, min(3, N_G)
         do i_orb = 1, min(3, N_orbit)
            if (label(i_orb) == 1) then  ! Only check first label
@@ -11418,51 +9811,11 @@ logical function is_structurally_symmetric(a, ia, ja, n)
     deallocate(trans_ja)
 end function is_structurally_symmetric
 
-
 real(dp) function norm2(x)
     implicit none
     complex(dp), intent(in) :: x(:)
     norm2 = sqrt(sum(abs(x)**2))
 end function norm2
-
-subroutine test_3x3_matrix()
-    use constants, only : cmplx_i
-    implicit none
-    real(dp) :: H0_test(3, 3)
-    real(dp) :: KLoc(3) = (/0.0_dp, 0.0_dp, 0.0_dp/)
-    real(dp) :: cell(3, 3) = reshape([1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 1.0_dp], [3, 3])
-    complex(dp) :: hopp(10, 3) = 0.0_dp
-    integer :: NList(10, 3) = 0
-    integer :: Nneigh(3) = 0
-    integer :: neighCell(3, 10, 3) = 0
-    real(dp) :: ELoc_test(3)
-    real(dp) :: expected_eigenvalues(3)
-    integer :: N_test = 3, maxN_test = 10
-    integer :: i
-
-    H0_test = reshape([1.0_dp, 0.0_dp, 0.0_dp, &
-                       0.0_dp, 2.0_dp, 0.0_dp, &
-                       0.0_dp, 0.0_dp, 3.0_dp], [3, 3])
-
-    expected_eigenvalues = (/1.0_dp, 2.0_dp, 3.0_dp/)
-
-    !print *, 'Testing 3x3 matrix eigenvalues:'
-    ! Call the sparse matrix solver for the 3x3 test matrix
-    !call DiagHamSparse(N_test, 1, 1, ELoc_test, KLoc, cell, H0_test, maxN_test, hopp, NList, Nneigh, neighCell)
-
-    ! Print results
-    !print *, 'Computed eigenvalues: ', ELoc_test
-    !print *, 'Expected eigenvalues: ', expected_eigenvalues
-
-    ! Check results
-    do i = 1, 3
-        if (abs(ELoc_test(i) - expected_eigenvalues(i)) > 1.0e-6) then
-            print *, 'Error: Eigenvalue ', i, ' does not match. Computed: ', ELoc_test(i), ', Expected: ', expected_eigenvalues(i)
-        else
-            print *, 'Eigenvalue ', i, ' matches.'
-        end if
-    end do
-end subroutine test_3x3_matrix
 
 subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell, row_ptr, col_ind, values,sigma)
     use constants, only : cmplx_i
@@ -11489,13 +9842,6 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
     real(dp) :: soc_diagonal_contrib
 
     call MIO_InputParameter('Diag.SparseUseShift',useShift,.false.)
-    !call MIO_InputParameter('Diag.SparseAlpha',alpha,0.0_dp)
-    !if (useShift) then
-    !   do i = 1, N
-    !       H0(i) = H0(i) + alpha
-    !   end do
-    !end if
-
 
     ! First pass to count non-zero elements
     nnz_temp = 0
@@ -11518,12 +9864,10 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
     end if
 
     ! Allocate space for CSR arrays
-    !allocate(row_ptr(N+1), col_ind(nnz_temp), values(nnz_temp))
     allocate(row_ptr(N+1), col_ind(nnz_temp + 1000), values(nnz_temp + 1000))
 
     row_ptr(1) = 1
     l = 1  ! Use a different variable to increment the non-zero element index
-
 
     ! Populate CSR arrays directly
     do i = 1, N
@@ -11592,32 +9936,15 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
 
         ! Add SCF terms if spin-polarized (matches DiagHam implementation)
         ! Commented out: not doing any SCF calculation for now (matches BuildBlockHamiltonianOnly)
-        !if (ns==2) then
-        !   if (is==1) then
-        !      soc_diagonal_contrib = soc_diagonal_contrib + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
-        !   else
-        !      soc_diagonal_contrib = soc_diagonal_contrib + U(Species(i))*(charge(1,i)-Zch)/2.0_dp
-        !   end if
-        !end if
 
         ! Add diagonal element if H0(i) is non-zero OR if SOC/SCF contributions are non-zero
         if (useShift .or. H0(i) /= 0.0_dp .or. soc_diagonal_contrib /= 0.0_dp) then
-            !if (l > nnz_temp) then
-            !   print *, "CSR OVERFLOW: l =", l, " > nnz_temp =", nnz_temp
-            !   stop "Sparse matrix allocation overflow in initialize_sparse_matrix"
-            !endif
             values(l) = H0(i) - sigma + soc_diagonal_contrib
             col_ind(l) = i
             l = l + 1
         end if
 
         ! Off-diagonal elements
-        !if (useShift) then
-        !   do j = 1, Nneigh(i)
-        !      in = NList(j, i)
-        !      if (in > i) then
-        !          R = matmul(cell, neighCell(:, j, i))
-        !          if (hopp(j, i) /= 0.0_dp) then
         !             !found = .false.
         !             !! Check if we already have an entry for this off-diagonal element
         !             !do k = row_ptr(i), l - 1
@@ -11630,14 +9957,7 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
         !             !end do
         !             !! If no entry exists, add a new one
         !             !if (.not. found) then
-        !                 values(l) = -hopp(j, i) * exp(cmplx_i * dot_product(KLoc, R))
-        !                 col_ind(l) = in
-        !                 l = l + 1
         !             !end if
-        !          end if
-        !      end if
-        !   end do
-        !else
            do j = 1, Nneigh(i)
                in = NList(j,i)
                ! Use actual atomic position difference instead of lattice vector
@@ -11659,7 +9979,7 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
                   if (.not. found) then
                       if (l > nnz_temp) then
                          print *, "CSR OVERFLOW: l =", l, " > nnz_temp =", nnz_temp
-                         stop "Sparse matrix allocation overflow in initialize_sparse_matrix"
+                         error stop "Sparse matrix allocation overflow in initialize_sparse_matrix"
                       endif
                       ! Debug first few k-dependent phases for K-point analysis (now using NeighD)
                       if (tapwDebug .and. i <= 3 .and. j <= 2) then
@@ -11691,106 +10011,35 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
                   end if
                end if
            end do
-        !end if
 
         ! Edge hopping elements
-        !if (edgeHopp) then
-        !    do j = 1, nQ
-        !        do k = 1, nEdgeN(j)
-        !            in = NeI(k,j)
-        !            R = matmul(cell, NedgeCell(:,k,j))
-        !            if (edgeH(k,j) /= 0.0_dp) then
-        !                values(l) = edgeH(k,j) * exp(cmplx_i * dot_product(KLoc, R))
-        !                col_ind(l) = in
-        !                l = l + 1
-        !            end if
-        !        end do
-        !    end do
-        !end if
     end do
-
 
     nnz = l - 1
     row_ptr(N+1) = nnz + 1
 
     ! Trim the allocated arrays to actual size
-    !if (useShift) then
-    !   values = values(1:nnz)
-    !   col_ind = col_ind(1:nnz)
-    !end if
 
     ! Debug print for sparse matrix
+#ifdef DEBUG
     print *, 'Sparse matrix row_ptr: ', row_ptr(1:min(N+1,10))
     print *, 'Sparse matrix col_ind: ', col_ind(1:min(nnz_temp,10))
     print *, 'Sparse matrix values: ', values(1:min(nnz,10))
     print *, "CSR max l =", l-1, "allocated nnz_temp =", nnz_temp
+#endif /* DEBUG */
 end subroutine initialize_sparse_matrix
 
-
 !subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell, row_ptr, col_ind, values)
-!    use constants, only : cmplx_i
-!    use interface, only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
-!    use scf, only : charge, Zch
-!    use atoms, only : Species
-!    use tbpar, only : U
-!    implicit none
-!    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
-!    real(dp), intent(in) :: KLoc(3), cell(3,3), H0(N)
-!    complex(dp) :: HLoc(N,N)
-!    complex(dp), intent(in) :: hopp(maxN,N)
-!    integer, allocatable :: row_ptr(:), col_ind(:)
-!    complex(dp), allocatable, intent(out) :: values(:)
-!    integer :: i, j, k, nnz, in
-!    real(dp) :: R(3)
 !
-!    HLoc = 0.0_dp
-!    do i=1,N
-!       HLoc(i,i) = H0(i)
-!       if (ns==2) then
 !          !zz = charge(1,i)*charge(2,i) ! Zch
-!          if (is==1) then
-!             HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
-!          else
-!             HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(1,i)-Zch)/2.0_dp
-!          end if
-!       end if
-!       do j=1,Nneigh(i)
-!          in = NList(j,i)
-!          R = matmul(cell,neighCell(:,j,i))
 !          !print*, "nownow", KLoc
 !          !print*, "niwniw", R
-!          HLoc(in,i) = HLoc(in,i) - hopp(j,i)*exp(-cmplx_i*dot_product(KLoc,R))
-!       end do
-!    end do
-!    if (edgeHopp) then
-!       do i=1,nQ
-!          do j=1,nEdgeN(i)
-!             in = NeI(j,i)
-!             R = matmul(cell,NedgeCell(:,j,i))
-!             HLoc(in,edgeIndx(i)) = HLoc(in,edgeIndx(i)) + edgeH(j,i)*exp(-cmplx_i*dot_product(KLoc,R))
-!          end do
-!       end do
-!    end if
 !    ! Count the number of non-zero elements
-!    nnz = count(HLoc /= 0.0_dp)
 !
 !    ! Allocate space for CSR arrays
-!    allocate(row_ptr(N+1), col_ind(nnz), values(nnz))
 !
-!    row_ptr(1) = 1
-!    k = 1
 !
 !    ! Populate CSR arrays
-!    do i = 1, N
-!        do j = 1, N
-!            if (HLoc(i, j) /= 0.0_dp) then
-!                values(k) = HLoc(j, i)
-!                col_ind(k) = j
-!                k = k + 1
-!            end if
-!        end do
-!        row_ptr(i+1) = k
-!    end do
 !    ! Parallelize the outer loop with OpenMP
 !    !!$OMP PARALLEL DO PRIVATE(i, j, k_local) SHARED(row_ptr, col_ind, values, HLoc) REDUCTION(+:k)
 !    !do i = 1, N
@@ -11811,22 +10060,9 @@ end subroutine initialize_sparse_matrix
 !    !print *, 'Sparse matrix row_ptr: ', row_ptr(1:min(N+1,10))
 !    !print *, 'Sparse matrix col_ind: ', col_ind(1:min(nnz,10))
 !    !print *, 'Sparse matrix values: ', values(1:min(nnz,10))
-!end subroutine initialize_sparse_matrix
 
 !subroutine sparse_matvec(nn, row_ptr, col_ind, values, x, y)
-!    implicit none
-!    integer, intent(in) :: nn, row_ptr(:), col_ind(:)
-!    complex(dp), intent(in) :: values(:), x(:)
-!    complex(dp), intent(out) :: y(nn)
-!    integer :: i, j
 !
-!    y = 0.0_dp
-!    do i = 1, nn
-!        do j = row_ptr(i), row_ptr(i+1) - 1
-!            y(i) = y(i) + values(j) * x(col_ind(j))
-!        end do
-!    end do
-!end subroutine sparse_matvec
 
 subroutine sparse_matvec(nn, row_ptr, col_ind, values, x, y)
     implicit none
@@ -11847,227 +10083,6 @@ subroutine sparse_matvec(nn, row_ptr, col_ind, values, x, y)
     !$OMP END PARALLEL DO
 end subroutine sparse_matvec
 
-subroutine test_sparse_matvec(nn, row_ptr, col_ind, values)
-    implicit none
-    integer, intent(in) :: nn, row_ptr(:), col_ind(:)
-    complex(dp), intent(in) :: values(:)
-    complex(dp), allocatable :: x(:), y(:)
-    real(dp), allocatable :: rand_real(:), rand_imag(:)
-
-    ! Allocate and initialize test vectors
-    allocate(x(nn), y(nn), rand_real(nn), rand_imag(nn))
-    call random_number(rand_real)
-    call random_number(rand_imag)
-    x = cmplx(rand_real, rand_imag)
-
-    ! Perform sparse matrix-vector multiplication
-    call sparse_matvec(nn, row_ptr, col_ind, values, x, y)
-
-    ! Print results for verification
-    !print *, 'Test sparse matvec result: ', y(1:min(10, nn))
-    !print *, 'Input vector x: ', x(1:min(10, nn))
-    !print *, 'Row_ptr: ', row_ptr(1:min(size(row_ptr), 10))
-    !print *, 'Col_ind: ', col_ind(1:min(size(col_ind), 10))
-    !print *, 'Values: ', values(1:min(size(values), 10))
-end subroutine test_sparse_matvec
-
-
-
-subroutine DiagHamSparse2(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nneigh, neighCell)
-    use constants, only : cmplx_i
-    use interface, only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
-    use scf, only : charge, Zch
-    use atoms, only : Species
-    use tbpar, only : U
-    implicit none
-    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
-    real(dp), intent(out) :: ELoc(N)
-    real(dp), intent(in) :: KLoc(3), cell(3,3), H0(N)
-    complex(dp), intent(in) :: hopp(maxN,N)
-
-    integer :: i, j, k, iter, max_iter, nev, nnz
-    real(dp) :: tol, alpha, beta
-    complex(dp) :: mu
-    real(dp), allocatable :: alpha_vec(:), beta_vec(:), diag(:), offdiag(:)
-    complex(dp), allocatable :: q(:,:), v(:), w(:), r(:)
-    integer, allocatable :: row_ptr(:), col_ind(:)
-    complex(dp), allocatable :: values(:)
-    real(dp), allocatable :: rand_real(:), rand_imag(:)
-
-    max_iter = 1000
-    tol = 1.0e-10
-    nev = 100  ! Number of eigenvalues to compute
-
-    ! Initialize sparse matrix storage
-    call initialize_sparse_matrix2(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell, row_ptr, col_ind, values)
-
-    ! Allocate memory for Lanczos method
-    allocate(q(N, nev+1), alpha_vec(nev), beta_vec(nev), v(N), w(N), r(N), rand_real(N), rand_imag(N))
-    q = cmplx(0.0_dp, 0.0_dp)
-    alpha_vec = 0.0_dp
-    beta_vec = 0.0_dp
-
-    ! Initialize the starting vector with random values
-    call random_number(rand_real)
-    call random_number(rand_imag)
-    v = cmplx(rand_real, rand_imag)
-    v = v / sqrt(sum(abs(v)**2))
-
-    ! Shift-and-invert strategy parameters
-    mu = cmplx(0.0_dp, 0.0_dp)  ! Fermi energy assumed to be zero
-
-    ! Lanczos algorithm
-    beta = 0.0_dp
-    do iter = 1, nev
-        if (iter > 1) then
-            r = r - beta * q(:, iter-1)
-        else
-            r = v
-        end if
-
-        call shift_invert_sparse_matvec2(N, row_ptr, col_ind, values, r, w, mu)
-        alpha = real(dot_product(r, w))
-        r = w - alpha * r - beta * q(:, iter)
-        beta = sqrt(sum(abs(r)**2))
-
-        alpha_vec(iter) = alpha
-        beta_vec(iter) = beta
-
-        if (beta < tol) exit
-
-        q(:, iter+1) = r / beta
-    end do
-
-    ! Tridiagonal matrix T construction
-    diag = alpha_vec(1:iter)
-    offdiag = beta_vec(2:iter)
-
-    ! Compute eigenvalues of T using LAPACK routine
-    call dstev('N', iter, diag, offdiag, diag, iter, diag, nnz)
-
-    ! Copy the eigenvalues to output
-    ELoc(1:nev) = diag(1:nev)
-
-    ! Deallocate memory
-    deallocate(q, alpha_vec, beta_vec, v, w, r, row_ptr, col_ind, values, rand_real, rand_imag)
-end subroutine DiagHamSparse2
-
-subroutine initialize_sparse_matrix2(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell, row_ptr, col_ind, values)
-    implicit none
-    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), ns, is
-    real(dp), intent(in) :: KLoc(3), cell(3,3), H0(N)
-    complex(dp), intent(in) :: hopp(maxN,N)
-    integer, intent(in) :: neighCell(3,maxN,N)
-    integer, allocatable, intent(out) :: row_ptr(:), col_ind(:)
-    complex(dp), allocatable, intent(out) :: values(:)
-    integer :: i, j, k, nnz
-
-    nnz = 0
-    allocate(row_ptr(N+1))
-    row_ptr(1) = 1
-    do i = 1, N
-        do j = 1, Nneigh(i)
-            nnz = nnz + 1
-        end do
-        row_ptr(i+1) = nnz + 1
-    end do
-
-    allocate(col_ind(nnz), values(nnz))
-
-    nnz = 0
-    do i = 1, N
-        do j = 1, Nneigh(i)
-            nnz = nnz + 1
-            col_ind(nnz) = NList(j, i)
-            values(nnz) = hopp(j, i)
-        end do
-    end do
-end subroutine initialize_sparse_matrix2
-
-subroutine shift_invert_sparse_matvec2(N, row_ptr, col_ind, values, x, y, mu)
-    implicit none
-    integer, intent(in) :: N, row_ptr(:), col_ind(:)
-    complex(dp), intent(in) :: values(:), x(:), mu
-    complex(dp), intent(out) :: y(N)
-    complex(dp), allocatable :: temp(:)
-    integer :: i, j
-
-    allocate(temp(N))
-    y = cmplx(0.0_dp, 0.0_dp)
-    temp = cmplx(0.0_dp, 0.0_dp)
-
-    ! Perform (A - mu*I) * x
-    do i = 1, N
-        temp(i) = -mu * x(i)
-        do j = row_ptr(i), row_ptr(i+1)-1
-            temp(i) = temp(i) + values(j) * x(col_ind(j))
-        end do
-    end do
-
-    ! Solve (A - mu*I) * y = x
-    ! Use a simple iterative solver like Conjugate Gradient or GMRES
-    call iterative_solver2(N, row_ptr, col_ind, values, temp, y)
-
-    deallocate(temp)
-end subroutine shift_invert_sparse_matvec2
-
-subroutine iterative_solver2(N, row_ptr, col_ind, values, b, x)
-    implicit none
-    integer, intent(in) :: N, row_ptr(:), col_ind(:)
-    complex(dp), intent(in) :: values(:), b(:)
-    complex(dp), intent(out) :: x(N)
-    integer :: max_iter, iter
-    real(dp) :: tol, alpha, beta, rsold, rsnew
-    complex(dp), allocatable :: r(:), p(:), Ap(:)
-
-    max_iter = 1000
-    tol = 1.0e-10
-    allocate(r(N), p(N), Ap(N))
-
-    ! Initial guess x = 0
-    x = cmplx(0.0_dp, 0.0_dp)
-
-    ! r = b - A*x
-    call sparse_matvec2(N, row_ptr, col_ind, values, x, Ap)
-    r = b - Ap
-    p = r
-    rsold = real(dot_product(conjg(r), r))
-
-    do iter = 1, max_iter
-        call sparse_matvec2(N, row_ptr, col_ind, values, p, Ap)
-        alpha = rsold / real(dot_product(conjg(p), Ap))
-        x = x + alpha * p
-        r = r - alpha * Ap
-        rsnew = real(dot_product(conjg(r), r))
-        if (sqrt(rsnew) < tol) exit
-        beta = rsnew / rsold
-        p = r + beta * p
-        rsold = rsnew
-    end do
-
-    deallocate(r, p, Ap)
-end subroutine iterative_solver2
-
-subroutine sparse_matvec2(N, row_ptr, col_ind, values, x, y)
-    implicit none
-    integer, intent(in) :: N, row_ptr(:), col_ind(:)
-    complex(dp), intent(in) :: values(:), x(:)
-    complex(dp), intent(out) :: y(N)
-    integer :: i, j
-
-    y = cmplx(0.0_dp, 0.0_dp)
-    do i = 1, N
-        do j = row_ptr(i), row_ptr(i+1)-1
-            y(i) = y(i) + values(j) * x(col_ind(j))
-        end do
-    end do
-end subroutine sparse_matvec2
-
-
-
-
-
-
 subroutine DiagHamWF(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
 
    use constants,             only : cmplx_i
@@ -12077,8 +10092,6 @@ subroutine DiagHamWF(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,neigh
    use tbpar,                 only : U
 
    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
-   !complex(dp), intent(out) :: H(N,N)
-   !real(dp), intent(out) :: E(N)
    complex(dp), intent(out) :: HLoc(N,N)
    real(dp), intent(out) :: ELoc(N)
    real(dp), intent(in) :: KLoc(3), cell(3,3), H0(N)
@@ -12090,12 +10103,10 @@ subroutine DiagHamWF(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,neigh
    complex(dp) :: ZWorkLoc(lwork)
    real(dp) :: DWorkLoc(3*N-2)
 
-   !print*, cell
    HLoc = 0.0_dp
    do i=1,N
       HLoc(i,i) = H0(i)
       if (ns==2) then
-         !zz = charge(1,i)*charge(2,i) ! Zch
          if (is==1) then
             HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
          else
@@ -12110,7 +10121,6 @@ subroutine DiagHamWF(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,neigh
          R = matmul(cell,neighCell(:,j,i))
          HLoc(in,i) = HLoc(in,i) - hopp(j,i)*exp(-cmplx_i*dot_product(KLoc,R))
          ! PIA hopping not yet properly implemented - commented out
-         !if (anySOCEnabled) call ApplyPIAHopping(i, j, in, N, HLoc, .false.)
       end do
    end do
    if (edgeHopp) then
@@ -12122,13 +10132,10 @@ subroutine DiagHamWF(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,neigh
          end do
       end do
    end if
-   !call ZHEEV('N','L',N,HLoc,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
    call ZHEEV('V','L',N,HLoc,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
    if (info/=0) then
-      !print*, "info =", info
       call MIO_Kill('Error in diagonalization','diag','DiagHam')
    end if
-
 
 end subroutine DiagHamWF
 
@@ -12141,13 +10148,12 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
    use tbpar,                 only : U
 
    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
-   !complex(dp), intent(out) :: H(N,N)
-   !real(dp), intent(out) :: E(N)
    complex(dp), intent(out) :: HLoc(N,N)
    complex(dp) :: HLocM1dx(N,N), HLocM1dy(N,N), H_derivativeDX(N,N), H_derivativeDY(N,N)
    complex(dp) :: dHdx(N,N)
    complex(dp) :: dHdy(N,N)
-   complex(dp) :: eigvec(N,N), Vxmn(N,N), Vymn(N,N), temp_matrix(N,N), ones_matrix(N,N), difference_matrix(N,N), eigval_matrix(N,N), eigval_repeated_matrix(N, N)
+   complex(dp) :: eigvec(N,N), Vxmn(N,N), Vymn(N,N), temp_matrix(N,N), ones_matrix(N,N), difference_matrix(N,N), &
+         eigval_matrix(N,N), eigval_repeated_matrix(N, N)
    real(dp), intent(out) :: ChernLoc(N)
    complex(dp) :: ChernLocSum(N)
    real(dp) :: ELoc(N)
@@ -12167,14 +10173,12 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
    delta_kx = 0.01d0
    delta_ky = 0.01d0
 
-
-   call MIO_InputParameter('Epsilon',eps,0.001_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.001_dp)
 
    HLoc = 0.0_dp
    do i=1,N
       HLoc(i,i) = H0(i)
       if (ns==2) then
-         !zz = charge(1,i)*charge(2,i) ! Zch
          if (is==1) then
             HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
          else
@@ -12187,8 +10191,6 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
       do j=1,Nneigh(i)
          in = NList(j,i)
          R = matmul(cell,neighCell(:,j,i))
-         !print*, "nownow", KLoc
-         !print*, "niwniw", R
          KLocM1(1) = KLoc(1)-delta_kx
          KLocM1(2) = KLoc(2)
          KLocM1(3) = KLoc(3)
@@ -12201,7 +10203,6 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
    do i=1,N
       HLoc(i,i) = H0(i)
       if (ns==2) then
-         !zz = charge(1,i)*charge(2,i) ! Zch
          if (is==1) then
             HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
          else
@@ -12214,8 +10215,6 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
       do j=1,Nneigh(i)
          in = NList(j,i)
          R = matmul(cell,neighCell(:,j,i))
-         !print*, "nownow", KLoc
-         !print*, "niwniw", R
          KLocM1(1) = KLoc(1)
          KLocM1(2) = KLoc(2)-delta_ky
          KLocM1(3) = KLoc(3)
@@ -12224,12 +10223,10 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
    end do
    HLocM1dy = HLoc
 
-   !print*, cell
    HLoc = 0.0_dp
    do i=1,N
       HLoc(i,i) = H0(i)
       if (ns==2) then
-         !zz = charge(1,i)*charge(2,i) ! Zch
          if (is==1) then
             HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
          else
@@ -12244,7 +10241,6 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
          R = matmul(cell,neighCell(:,j,i))
          HLoc(in,i) = HLoc(in,i) - hopp(j,i)*exp(-cmplx_i*dot_product(KLoc,R))
          ! PIA hopping not yet properly implemented - commented out
-         !if (anySOCEnabled) call ApplyPIAHopping(i, j, in, N, HLoc, .false.)
       end do
    end do
 
@@ -12264,10 +10260,8 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
       end do
    end do
 
-   !call ZHEEV('N','L',N,HLoc,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
    call ZHEEV('V','L',N,HLoc,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
    if (info/=0) then
-      !print*, "info =", info
       call MIO_Kill('Error in diagonalization','diag','DiagHam')
    end if
 
@@ -12286,35 +10280,21 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
    end do
    print*, "Vxmn", Vxmn
 
-   !forall(i=1:N, j=1:N) ones_matrix(i, j) = 1.0d0
    !! Calculating Chern
-   !do j = 1, N
-   !    temp_matrix = Vxmn * transpose(Vymn) / (matmul(ones_matrix, transpose(eigval)) - eigval)**2 + eps
-   !    do k = 1, N
-   !        Chern(i) = Chern(i) + 2.0 * aimag(temp_matrix(j, k))
-   !    end do
-   !end do
    forall(i=1:N, j=1:N) ones_matrix(i, j) = 1.0_dp
 
    ! Calculating Chern
    forall(i=1:N, j=1:N) eigval_matrix(i, j) = eigval(j)
    forall(i=1:N, j=1:N) eigval_repeated_matrix(i, j) = eigval(i)
    difference_matrix = eigval_matrix - eigval_repeated_matrix
-   !print*, "diffma", difference_matrix
    temp_matrix = Vxmn * transpose(Vymn) / (difference_matrix**2 + eps)
-   !print*, "temp_ma", temp_matrix
 
-   !ChernLocSum = 0.0_dp
    do j = 1, N
        do k = 1, N
-           !ChernLocSum = ChernLocSum + temp_matrix(j, k)
            ChernLoc = ChernLoc + 2.0 * aimag(temp_matrix(j, k))
        end do
    end do
-   !print*, ChernLoc
-   !ChernLoc = 2.0_dp*aimag(ChernLocSum)
    ! Chern[i] = 2*np.imag(np.sum(Vxmn*(Vymn.T/((eigval*np.ones((N_orbit,N_orbit))).T-eigval)**2+eps), axis=1))
-
 
 end subroutine DiagHamChern
 
@@ -12327,8 +10307,6 @@ subroutine DiagHamPDOS(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,nei
    use tbpar,                 only : U
 
    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
-   !complex(dp), intent(out) :: H(N,N)
-   !real(dp), intent(out) :: E(N)
    complex(dp), intent(out) :: HLoc(N,N)
    real(dp), intent(out) :: ELoc(N)
    real(dp), intent(in) :: KLoc(3), cell(3,3), H0(N)
@@ -12340,12 +10318,10 @@ subroutine DiagHamPDOS(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,nei
    complex(dp) :: ZWorkLoc(lwork)
    real(dp) :: DWorkLoc(3*N-2)
 
-   !print*, cell
    HLoc = 0.0_dp
    do i=1,N
       HLoc(i,i) = H0(i)
       if (ns==2) then
-         !zz = charge(1,i)*charge(2,i) ! Zch
          if (is==1) then
             HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
          else
@@ -12360,7 +10336,6 @@ subroutine DiagHamPDOS(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,nei
          R = matmul(cell,neighCell(:,j,i))
          HLoc(in,i) = HLoc(in,i) - hopp(j,i)*exp(-cmplx_i*dot_product(KLoc,R))
          ! PIA hopping not yet properly implemented - commented out
-         !if (anySOCEnabled) call ApplyPIAHopping(i, j, in, N, HLoc, .false.)
       end do
    end do
    if (edgeHopp) then
@@ -12373,9 +10348,7 @@ subroutine DiagHamPDOS(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,nei
       end do
    end if
    call ZHEEV('V','L',N,HLoc,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
-   !call ZHEEV('V','L',N,Hts,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
    if (info/=0) then
-      !print*, "info =", info
       call MIO_Kill('Error in diagonalization','diag','DiagHamPDOS')
    end if
 
@@ -12390,8 +10363,6 @@ subroutine DiagHamArpack(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,n
    use tbpar,                 only : U
 
    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
-   !complex(dp), intent(out) :: H(N,N)
-   !real(dp), intent(out) :: E(N)
    complex(dp), intent(out) :: HLoc(N,N)
    real(dp), intent(out) :: ELoc(N)
    real(dp), intent(in) :: KLoc(3), cell(3,3), H0(N)
@@ -12403,19 +10374,16 @@ subroutine DiagHamArpack(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,n
    complex(dp) :: ZWorkLoc(lwork)
    real(dp) :: DWorkLoc(3*N-2)
 
+#ifdef DEBUG
+   call MIO_Debug('DiagHamArpack',0)
+#endif /* DEBUG */
+
    HLoc = 0.0_dp
    do i=1,N
       HLoc(i,i) = H0(i)
       ! Add SCF terms if spin-polarized (matches other routines)
       ! Commented out: not doing any SCF calculation for now (matches BuildBlockHamiltonianOnly)
-      !if (ns==2) then
       !   !zz = charge(1,i)*charge(2,i) ! Zch
-      !   if (is==1) then
-      !      HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
-      !   else
-      !      HLoc(i,i) = HLoc(i,i) + U(Species(i))*(charge(1,i)-Zch)/2.0_dp
-      !   end if
-      !end if
       ! Apply SOC modifications
       call ApplySOCtoHamiltonian(i, is, ns, HLoc)
 
@@ -12435,12 +10403,13 @@ subroutine DiagHamArpack(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,n
       end do
    end if
    call ZHEEV('N','L',N,HLoc,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
-   !call ZHEEV('V','L',N,Hts,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
-   !call matvecA('V','L',N,Hts,N,ELoc,ZWorkLoc,lwork,DWorkLoc,info)
    if (info/=0) then
-      !print*, "info =", info
       call MIO_Kill('Error in diagonalization','diag','DiagHamArpack')
    end if
+
+#ifdef DEBUG
+   call MIO_Debug('DiagHamArpack',1)
+#endif /* DEBUG */
 
 end subroutine DiagHamArpack
 
@@ -12480,29 +10449,22 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
    integer :: nTS
    integer :: kk
 
+#ifdef DEBUG
+   call MIO_Debug('DiagSpectralWeightNishi',0)
+#endif /* DEBUG */
 
-   call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
    gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
 
-   !aBN = aG*1.018181818
-   !bncell(:,1) = [aBN,0.0_dp,0.0_dp]
-   !bncell(:,2) = [aBN/2.0_dp,sqrt(3.0_dp)*aBN/2.0_dp,0.0_dp]
-   !bncell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
-
    cellts = gcell
    celltsp = gcell
-
-   !print*, "cellts", cellts
-   !print*, "celltsp", celltsp
 
    Hts = 0.0_dp
    Htsp = 0.0_dp
    Pkc = 0.0_dp
 
-   !Rts = matmul(cellts,neighCell(:,j,i)) ! Moire
-   !Rtsp = matmul(celltsp,neighCell(:,j,i)) ! graphene
    RtsVec(1,:) = [matmul(cellts,[1,0,0])]
    RtsVec(2,:) = [matmul(cellts,[0,1,0])]
    RtsVec(3,:) = [matmul(cellts,[1,1,0])]
@@ -12517,33 +10479,10 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
    RtspVec(5,:) = [matmul(cellts,[0,-1,0])]
    RtspVec(6,:) = [matmul(cellts,[-1,-1,0])]
 
-   !Rtsx = RtsVec(1,1)
-   !Rtsy = RtsVec(2,2)
-
    call MIO_InputParameter('Spectral.numberOfTS',nTS,1)
-
-
-   !if (frac) call AtomsSetCart()
-   !do i=1,N
-   !    print*, Rat(1,i), Rat(2,i)
-   !    print*, floor((Rat(1,i)-0.1)/Rtsx), floor(Rat(2,i)/Rtsy)
-   !    RtsVec(i,:) = matmul(cellts,[floor((Rat(1,i)-0.1)/Rtsx),floor(Rat(2,i)/Rtsy),0]) ! Moire
-   !    RtspVec(i,:) = matmul(celltsp,[floor((Rat(1,i)-0.1)/Rtsx),floor(Rat(2,i)/Rtsy),0]) ! Moire
-   !end do
-
-   !kk = 0
-   !do i=0,4
-   !    do j=0,4
-   !        kk = kk+1
-   !        RtsVec(kk,:) = matmul(cellts,[i,j,0]) ! Moire
-   !        RtspVec(kk,:) = matmul(celltsp,[i,j,0]) ! Moire
-   !    end do
-   !end do
 
    nTS = 6
 
-   !print*, "hohoho", RtsVec
-   !print*, "hehehe", RtsVec(1,:)
    do i1=1,nTS!SIZE(RtsVec)
       do i2=1,nTS!SIZE(RtspVec)
          Rts = RtsVec(i1,:)
@@ -12551,11 +10490,8 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
          do i=1,N
             Hts(i,i) = H0(i)
             Htsp(i,i) = H0(i)
-            !Rtsp = matmul(celltsp,neighCell(:,j,i)) ! graphene
             do j=1,Nneigh(i)
                in = NList(j,i)
-               !Rts = matmul(cellts,[floor(Rat(1,in)/RtsVec(1,1)),floor(Rat(2,in)/RtsVec(1,2)),0]) ! Moire
-               !Rtsp = matmul(celltsp,[floor(Rat(1,i)/RtsVec(1,1)),floor(Rat(2,i)/RtsVec(1,2)),0]) ! Moire
                Tm = matmul(cell,neighCell(:,j,i))
                Hts(in,i) = Hts(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(K,Tm-Rts))
                Htsp(in,i) = Htsp(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(K,Tm-Rtsp))
@@ -12563,24 +10499,10 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
          end do
          call ZHEEV('V','L',N,Hts,N,E,ZWork,lwork,DWork,info)
          call ZHEEV('V','L',N,Htsp,N,E,ZWork,lwork,DWork,info)
-         !print*, "jk1"
-         !print*, Htsp(:,1)
-         !print*, "jk2"
-         !print*, Hts(:,1)
 
          do i=1,N
-            !Pkcaux = 0.0_dp
-            !do i2=1,N
-            !do j=1,Nneigh(i) ! maybe go back to full system
             do in=1,N
-               !in = NList(j,i)
-               !Rts = matmul(cellts,[1,0,0]) ! Moire
-               !Rts = matmul(cellts,neighCell(:,j,i)) ! Moire
-               !Rtsp = matmul(celltsp,neighCell(:,j,i)) ! graphene
-               !Rts = matmul(cellts,[floor(Rat(1,in)/RtsVec(1,1)),floor(Rat(2,in)/RtsVec(1,2)),0]) ! Moire
-               !Rtsp = matmul(celltsp,[floor(Rat(1,i)/RtsVec(1,1)),floor(Rat(2,i)/RtsVec(1,2)),0]) ! Moire
                Pkcaux = CONJG(Hts(in,i)) * Htsp(in,i)
-               !Pkcaux = CONJG(Hts(i,in)) * Htsp(i,in)
                Pkc(i) = Pkc(i) + exp(cmplx_i*dot_product(KG,Rts-Rtsp)) * Pkcaux
             end do
          end do
@@ -12589,31 +10511,16 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
    Nc = 1.0_dp
    nc2 = 5.0_dp*5.0_dp
    Pkc = Nc/nc2 * Pkc
-   !print*, "jk7"
-   !print*, Pkc
 
    if (info/=0) then
       call MIO_Kill('Error in diagonalization','diag','DiagSpectralWeight')
    end if
 
-         !Pkc = Pkc + exp(cmplx_i*dot_product(KG,Rts-Rtsp)) * (dot_product(CONJG(Hts(:,N)), Htsp(:,N)))
    ! steps
-   !Uts = Hts
-   !Utsp = Htsp
-   !print*, "jk1"
-   !print*, Htsp(:,1)
-   !print*, "jk2"
-   !print*, dot_product(CONJG(Hts(:,1)), Htsp(:,1))
-   !print*, "jk3"
-   !print*, matmul(cellts,[1,1,1])
-   !print*, "jk4"
-   !print*, matmul(celltsp,[1,1,1])
-   !print*, "jk5"
-   !Rts = matmul(cellts,[1,1,1])
-   !Rtsp = matmul(celltsp,[1,1,1])
-   !print*, dot_product(KG,Rts-Rtsp)
-   !print*, "jk6"
-   !print*, KG
+
+#ifdef DEBUG
+   call MIO_Debug('DiagSpectralWeightNishi',1)
+#endif /* DEBUG */
 
 end subroutine DiagSpectralWeightNishi
 
@@ -12629,7 +10536,6 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
    complex(dp) :: Hts(N,N)
    complex(dp) :: Htsp(N,N)
-   !complex(dp), intent(out) :: PkcLoc(N)
    complex(dp), intent(out) :: PkcLoc(N,2)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: E(N)
@@ -12658,102 +10564,36 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
 
    integer :: at1, at2
 
-
-   call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
    gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
 
-   !aBN = aG*1.018181818
-   !bncell(:,1) = [aBN,0.0_dp,0.0_dp]
-   !bncell(:,2) = [aBN/2.0_dp,sqrt(3.0_dp)*aBN/2.0_dp,0.0_dp]
-   !bncell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
-
    cellts = gcell
    celltsp = gcell
 
-   !print*, "cellts", cellts
-   !print*, "celltsp", celltsp
-
    Hts = 0.0_dp
-   !Htsp = 0.0_dp
    PkcLoc = 0.0_dp
 
-   !Rts = matmul(cellts,neighCell(:,j,i)) ! Moire
-   !Rtsp = matmul(celltsp,neighCell(:,j,i)) ! graphene
-   !RtsVec(1,:) = [matmul(cellts,[1,0,0])]
-   !RtsVec(2,:) = [matmul(cellts,[0,1,0])]
-   !RtsVec(3,:) = [matmul(cellts,[1,1,0])]
-   !RtsVec(4,:) = [matmul(cellts,[-1,0,0])]
-   !RtsVec(5,:) = [matmul(cellts,[0,-1,0])]
-   !RtsVec(6,:) = [matmul(cellts,[-1,-1,0])]
-
-   !RtspVec(1,:) = [matmul(cellts,[1,0,0])]
-   !RtspVec(2,:) = [matmul(cellts,[0,1,0])]
-   !RtspVec(3,:) = [matmul(cellts,[1,1,0])]
-   !RtspVec(4,:) = [matmul(cellts,[-1,0,0])]
-   !RtspVec(5,:) = [matmul(cellts,[0,-1,0])]
-   !RtspVec(6,:) = [matmul(cellts,[-1,-1,0])]
-
-   !Rtsx = RtsVec(1,1)
-   !Rtsy = RtsVec(2,2)
-
-   !call MIO_InputParameter('Spectral.numberOfTS',nTS,1)
-   call MIO_InputParameter('CellSize', cellSize, 1)
-
+   call MIO_InputParameter('Structure.CellSize', cellSize, 1)
 
    if (.not. frac) call AtomsSetFrac()
    do i=1,N
-       !print*, Rat(1,i), Rat(2,i), floor((Rat(1,i)-0.001)*cellSize), floor(Rat(2,i)*cellSize)
        RtsVec(i,:) = matmul(cellts,[floor((Rat(1,i)-0.001)*cellSize),floor(Rat(2,i)*cellSize),0]) ! Moire
    end do
-   !print*, "next"
 
-   !kk = 0
-   !do i=0,4
-   !    do j=0,4
-   !        kk = kk+1
-   !        RtsVec(kk,:) = matmul(cellts,[i,j,0]) ! Moire
-   !        RtspVec(kk,:) = matmul(celltsp,[i,j,0]) ! Moire
-   !    end do
-   !end do
-
-   !nTS = 6
-
-   !print*, "hohoho", RtsVec
-   !print*, "hehehe", RtsVec(1,:)
-   !do i1=1,nTS!SIZE(RtsVec)
-   !   do i2=1,nTS!SIZE(RtspVec)
-   !      Rts = RtsVec(i1,:)
-   !      Rtsp = RtspVec(i2,:)
          do i=1,N
             Hts(i,i) = H0(i)
-            !Htsp(i,i) = H0(i)
-            !Rtsp = matmul(celltsp,neighCell(:,j,i)) ! graphene
             do j=1,Nneigh(i)
                in = NList(j,i)
-               !Rts = matmul(cellts,[floor(Rat(1,in)/RtsVec(1,1)),floor(Rat(2,in)/RtsVec(1,2)),0]) ! Moire
-               !Rtsp = matmul(celltsp,[floor(Rat(1,i)/RtsVec(1,1)),floor(Rat(2,i)/RtsVec(1,2)),0]) ! Moire
                Tm = matmul(cell,neighCell(:,j,i))
-               !Hts(in,i) = Hts(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(K,Tm-RtsVec(i,:)))
                Hts(in,i) = Hts(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(K,Tm))
-               !Htsp(in,i) = Htsp(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(K,Tm))
             end do
          end do
          call ZHEEV('V','L',N,Hts,N,E,ZWork,lwork,DWork,info)
-         !call ZHEEV('V','L',N,Htsp,N,E,ZWork,lwork,DWork,info)
-         !print*, "jk1"
-         !print*, Htsp(:,1)
-         !print*, "jk2"
-         !print*, Hts(:,1)
 
-         !print*, "here", (Hts)
-
-         !do i=1,N
-         !   Pkcaux = 0.0_dp
          !   !do i2=1,N
          !   !do j=1,Nneigh(i) ! maybe go back to full system
-         !   do in=1,N
          !      !in = i
          !      !in = NList(j,i)
          !      !Rts = matmul(cellts,[1,0,0]) ! Moire
@@ -12763,18 +10603,9 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
          !      !Rtsp = matmul(celltsp,[floor(Rat(1,i)/RtsVec(1,1)),floor(Rat(2,i)/RtsVec(1,2)),0]) ! Moire
          !      !Pkcaux = CONJG(Hts(i,in)) * Htsp(i,in)
          !      !Pkcaux = Pkcaux + exp(-cmplx_i*dot_product(KG,RtsVec(in,:))) * Hts(in,i)
-         !      Pkcaux = Pkcaux + exp(-cmplx_i*dot_product(KG,RtsVec(in,:))) * Hts(1,in)
-         !      Pkcaux = Pkcaux + exp(-cmplx_i*dot_product(KG,RtsVec(in,:))) * Hts(3,in)
          !   !end do
-         !   PkcLoc(i) = PkcLoc(i) + Pkcaux
-         !end do
-         !do i=1,N
-         !   Pkcaux = 0.0_dp
-         !   Pkcaux1 = 0.0_dp
-         !   Pkcaux3 = 0.0_dp
          !   !do i2=1,N
          !   !do j=1,Nneigh(i) ! maybe go back to full system
-         !   do in=1,N
          !      !in = i
          !      !in = NList(j,i)
          !      !Rts = matmul(cellts,[1,0,0]) ! Moire
@@ -12784,75 +10615,36 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
          !      !Rtsp = matmul(celltsp,[floor(Rat(1,i)/RtsVec(1,1)),floor(Rat(2,i)/RtsVec(1,2)),0]) ! Moire
          !      !Pkcaux = CONJG(Hts(i,in)) * Htsp(i,in)
          !      !if (i.eq.in) then
-         !           Pkcaux = Pkcaux + exp(-cmplx_i*dot_product(KG,RtsVec(in,:))) * Hts(i,in)
          !      !end if
          !      !Pkcaux1 = Pkcaux1 + exp(-cmplx_i*dot_product(KG,RtsVec(in,:))) * Hts(in,1)
          !      !Pkcaux3 = Pkcaux3 + exp(-cmplx_i*dot_product(KG,RtsVec(in,:))) * Hts(in,3)
-         !   end do
-         !   PkcLoc(i) = PkcLoc(i) + Pkcaux
          !   !PkcLoc(1) = PkcLoc(1) + Pkcaux1
          !   !PkcLoc(2) = PkcLoc(2) + Pkcaux3
-         !end do
-         !do i=1,2
-         !print*, Species(in), Species(22), Species(21)
-         !if (frac) call AtomsSetCart()
-         !do i=1,N
-         !   if (Rat(1,i).lt.1.5_dp) then
-         !      at1 = i
-         !   else if (Rat(2,i).lt.1.5_dp .and. Rat(1,i).lt.2.5) then
-         !      at2 = i
-         !   end if
-         !end do
-         !print*, at1, at2
          do j=1,N ! These are the eigenvectors with band index J
-             do in=1,N ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
+             ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
+             do in=1,N
                  if (Species(in).eq.1) then
-                     PkcLoc(j,1) = PkcLoc(j,1) + exp(-cmplx_i*dot_product(KG, RtsVec(in,:))) * Hts(in,j) ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-                     !print*, "hi1"
+                     ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
+                     PkcLoc(j,1) = PkcLoc(j,1) + exp(-cmplx_i*dot_product(KG, RtsVec(in,:))) * Hts(in,j)
                  else if (Species(in).eq.2) then
                      PkcLoc(j,2) = PkcLoc(j,2) + exp(-cmplx_i*dot_product(KG, RtsVec(in,:))) * Hts(in,j)
-                     !print*, "hi3"
                  end if
              end do
          end do
-   !   end do
-   !end do
-   !print*, "PkcLoc(1) ", PkcLoc(1)
-   !print*, "PkcLoc(2) ", PkcLoc(2)
    Nc = 1.0
    nc2 = 1.0
    PkcLoc = Nc/nc2 * PkcLoc
-   !Pkc = abs(Pkc)**2.0_dp
-   !print*, Pkc
-   !print*, "jk7"
-   !print*, Pkc
 
    if (info/=0) then
       call MIO_Kill('Error in diagonalization','diag','DiagSpectralWeight')
    end if
 
-         !Pkc = Pkc + exp(cmplx_i*dot_product(KG,Rts-Rtsp)) * (dot_product(CONJG(Hts(:,N)), Htsp(:,N)))
    ! steps
-   !Uts = Hts
-   !Utsp = Htsp
-   !print*, "jk1"
-   !print*, Htsp(:,1)
-   !print*, "jk2"
-   !print*, dot_product(CONJG(Hts(:,1)), Htsp(:,1))
-   !print*, "jk3"
-   !print*, matmul(cellts,[1,1,1])
-   !print*, "jk4"
-   !print*, matmul(celltsp,[1,1,1])
-   !print*, "jk5"
-   !Rts = matmul(cellts,[1,1,1])
-   !Rtsp = matmul(celltsp,[1,1,1])
-   !print*, dot_product(KG,Rts-Rtsp)
-   !print*, "jk6"
-   !print*, KG
 
 end subroutine DiagSpectralWeightWeiKu
 
-subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
+subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+      Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -12886,14 +10678,11 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
    real(dp) :: Nc, nc2
 
    integer :: nTS
-   !integer :: kk
    real(dp) :: ll, kk
 
    integer :: cellSize
 
    integer :: at1, at2
-
-   !integer :: mmm(4)
 
    character(len=80) :: line
    integer :: id
@@ -12908,9 +10697,7 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
 
    logical :: changeExpSign
 
-
    cellts = gcell ! Lattice vectors of PC (either top or bottom layer)
-   !celltsp = gcell
 
    Hts = 0.0_dp
    PkcLocA = 0.0_dp
@@ -12932,8 +10719,6 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
            else
                ll = ceiling(ll)
            end if
-           !print*, Rat(1,i), Rat(2,i), kk, ll
-           !RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
            RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
        end do
          do i=1,N
@@ -12950,20 +10735,6 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
          end if
          ! Note that I'm using the Wei Ku expression for the spectral function
          ! (this is NOT the NISHI one)
-!         do j=1,N ! These are the eigenvectors with band index J
-!             do in=1,N ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
-!                 if (layerIndex(in).eq.1) then
-!                     PkcLoc(j,1) = PkcLoc(j,1) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-!                 else if (layerIndex(in).eq.2) then
-!                     PkcLoc(j,2) = PkcLoc(j,2) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-!                 else if (layerIndex(in).eq.3) then
-!                     PkcLoc(j,3) = PkcLoc(j,3) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) * topBottomRatio ! to account for experimental weight between top and bottom ARPES
-!                 end if
-!             end do
-!         end do
-         !call MIO_InputParameter('changeExpSign',changeExpSign,.true.)
-         !changeExpSign = .true.
-         !if (changeExpSign) then
              do j=1,N
                  do in=1,N
                    if (Species(in).eq.1) then
@@ -12984,22 +10755,7 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
                      end if
                    end if
                  end do
-                 !print*, "here3", abs(PkcLoc(j,1))
-                 !print*, "here4", abs(PkcLoc(j,2))
              end do
-         !else
-         !    do j=1,N
-         !        do in=1,N
-         !            if (layerIndex(in).eq.1) then
-         !                PkcLoc(j,1) = PkcLoc(j,1) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-         !            else if (layerIndex(in).eq.2) then
-         !                PkcLoc(j,2) = PkcLoc(j,2) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-         !            else if (layerIndex(in).eq.3) then
-         !                PkcLoc(j,3) = PkcLoc(j,3) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-         !            end if
-         !        end do
-         !    end do
-         !end if
    Nc = 1.0
    nc2 = 1.0
    PkcLocA = Nc/nc2 * PkcLocA
@@ -13007,7 +10763,8 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
 
 end subroutine DiagSpectralWeightWeiKuInequivalentOld
 
-subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
+subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+      Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -13041,14 +10798,11 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
    real(dp) :: Nc, nc2
 
    integer :: nTS
-   !integer :: kk
    real(dp) :: ll, kk
 
    integer :: cellSize
 
    integer :: at1, at2
-
-   !integer :: mmm(4)
 
    character(len=80) :: line
    integer :: id
@@ -13063,9 +10817,7 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
 
    logical :: changeExpSign
 
-
    cellts = gcell ! Lattice vectors of PC (either top or bottom layer)
-   !celltsp = gcell
 
    Hts = 0.0_dp
    PkcLocA = 0.0_dp
@@ -13087,8 +10839,6 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
            else
                ll = ceiling(ll)
            end if
-           !print*, Rat(1,i), Rat(2,i), kk, ll
-           !RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
            RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
        end do
          do i=1,N
@@ -13105,43 +10855,8 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
          end if
          ! Note that I'm using the Wei Ku expression for the spectral function
          ! (this is NOT the NISHI one)
-!         do j=1,N ! These are the eigenvectors with band index J
-!             do in=1,N ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
-!                 if (layerIndex(in).eq.1) then
-!                     PkcLoc(j,1) = PkcLoc(j,1) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-!                 else if (layerIndex(in).eq.2) then
-!                     PkcLoc(j,2) = PkcLoc(j,2) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-!                 else if (layerIndex(in).eq.3) then
-!                     PkcLoc(j,3) = PkcLoc(j,3) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) * topBottomRatio ! to account for experimental weight between top and bottom ARPES
-!                 end if
-!             end do
-!         end do
-         !call MIO_InputParameter('changeExpSign',changeExpSign,.true.)
-         !changeExpSign = .true.
-         !if (changeExpSign) then
              do j=1,N
                  do in=1,N
-                   !if (Species(in).eq.1) then
-                   !  if (layerIndex(in).eq.1) then
-                   !      PkcLocA(j,1) = PkcLocA(j,1) + exp(-cmplx_i*dot_product(KG, Rat(:,1)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.2) then
-                   !      PkcLocA(j,2) = PkcLocA(j,2) + exp(-cmplx_i*dot_product(KG, Rat(:,1)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.3) then
-                   !      PkcLocA(j,3) = PkcLocA(j,3) + exp(-cmplx_i*dot_product(KG, Rat(:,1)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.4) then
-                   !      PkcLocA(j,4) = PkcLocA(j,4) + exp(-cmplx_i*dot_product(KG, Rat(:,1)-Rat(:,in))) * Hts(in,j)
-                   !  end if
-                   !else if (Species(in).eq.2) then
-                   !  if (layerIndex(in).eq.1) then
-                   !      PkcLocB(j,1) = PkcLocB(j,1) + exp(-cmplx_i*dot_product(KG, Rat(:,2)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.2) then
-                   !      PkcLocB(j,2) = PkcLocB(j,2) + exp(-cmplx_i*dot_product(KG, Rat(:,2)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.3) then
-                   !      PkcLocB(j,3) = PkcLocB(j,3) + exp(-cmplx_i*dot_product(KG, Rat(:,2)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.4) then
-                   !      PkcLocB(j,4) = PkcLocB(j,4) + exp(-cmplx_i*dot_product(KG, Rat(:,2)-Rat(:,in))) * Hts(in,j)
-                   !  end if
-                   !end if
                    if (Species(in).eq.1) then
                      if (layerIndex(in).eq.1) then
                          PkcLocA(j,1) = PkcLocA(j,1) + exp(-cmplx_i*dot_product(KG, -Rat(:,in))) * Hts(in,j)
@@ -13164,22 +10879,7 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
                      end if
                    end if
                  end do
-                 !print*, "here3", abs(PkcLoc(j,1))
-                 !print*, "here4", abs(PkcLoc(j,2))
              end do
-         !else
-         !    do j=1,N
-         !        do in=1,N
-         !            if (layerIndex(in).eq.1) then
-         !                PkcLoc(j,1) = PkcLoc(j,1) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-         !            else if (layerIndex(in).eq.2) then
-         !                PkcLoc(j,2) = PkcLoc(j,2) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-         !            else if (layerIndex(in).eq.3) then
-         !                PkcLoc(j,3) = PkcLoc(j,3) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-         !            end if
-         !        end do
-         !    end do
-         !end if
    Nc = 1.0
    nc2 = 1.0
    PkcLocA = Nc/nc2 * PkcLocA
@@ -13187,7 +10887,8 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
 
 end subroutine DiagSpectralWeightWeiKuInequivalent
 
-subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLocB,PkcLocC,PkcLocD,PkcLocE,PkcLocF,PkcLocG,PkcLocH,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
+subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLocB,PkcLocC,PkcLocD,PkcLocE,PkcLocF, &
+      PkcLocG,PkcLocH,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -13224,14 +10925,11 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
    real(dp) :: Nc, nc2
 
    integer :: nTS
-   !integer :: kk
    real(dp) :: ll, kk
 
    integer :: cellSize
 
    integer :: at1, at2
-
-   !integer :: mmm(4)
 
    character(len=80) :: line
    integer :: id
@@ -13246,9 +10944,7 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
 
    logical :: changeExpSign
 
-
    cellts = gcell ! Lattice vectors of PC (either top or bottom layer)
-   !celltsp = gcell
 
    Hts = 0.0_dp
    PkcLocA = 0.0_dp
@@ -13276,8 +10972,6 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
            else
                ll = ceiling(ll)
            end if
-           !print*, Rat(1,i), Rat(2,i), kk, ll
-           !RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
            RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
        end do
          do i=1,N
@@ -13294,43 +10988,8 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
          end if
          ! Note that I'm using the Wei Ku expression for the spectral function
          ! (this is NOT the NISHI one)
-!         do j=1,N ! These are the eigenvectors with band index J
-!             do in=1,N ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
-!                 if (layerIndex(in).eq.1) then
-!                     PkcLoc(j,1) = PkcLoc(j,1) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-!                 else if (layerIndex(in).eq.2) then
-!                     PkcLoc(j,2) = PkcLoc(j,2) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-!                 else if (layerIndex(in).eq.3) then
-!                     PkcLoc(j,3) = PkcLoc(j,3) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) * topBottomRatio ! to account for experimental weight between top and bottom ARPES
-!                 end if
-!             end do
-!         end do
-         !call MIO_InputParameter('changeExpSign',changeExpSign,.true.)
-         !changeExpSign = .true.
-         !if (changeExpSign) then
              do j=1,N
                  do in=1,N
-                   !if (Species(in).eq.1) then
-                   !  if (layerIndex(in).eq.1) then
-                   !      PkcLocA(j,1) = PkcLocA(j,1) + exp(-cmplx_i*dot_product(KG, Rat(:,1)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.2) then
-                   !      PkcLocA(j,2) = PkcLocA(j,2) + exp(-cmplx_i*dot_product(KG, Rat(:,1)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.3) then
-                   !      PkcLocA(j,3) = PkcLocA(j,3) + exp(-cmplx_i*dot_product(KG, Rat(:,1)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.4) then
-                   !      PkcLocA(j,4) = PkcLocA(j,4) + exp(-cmplx_i*dot_product(KG, Rat(:,1)-Rat(:,in))) * Hts(in,j)
-                   !  end if
-                   !else if (Species(in).eq.2) then
-                   !  if (layerIndex(in).eq.1) then
-                   !      PkcLocB(j,1) = PkcLocB(j,1) + exp(-cmplx_i*dot_product(KG, Rat(:,2)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.2) then
-                   !      PkcLocB(j,2) = PkcLocB(j,2) + exp(-cmplx_i*dot_product(KG, Rat(:,2)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.3) then
-                   !      PkcLocB(j,3) = PkcLocB(j,3) + exp(-cmplx_i*dot_product(KG, Rat(:,2)-Rat(:,in))) * Hts(in,j)
-                   !  else if (layerIndex(in).eq.4) then
-                   !      PkcLocB(j,4) = PkcLocB(j,4) + exp(-cmplx_i*dot_product(KG, Rat(:,2)-Rat(:,in))) * Hts(in,j)
-                   !  end if
-                   !end if
                    if (Species(in).eq.1) then
                      if (layerIndex(in).eq.1) then
                          PkcLocA(j,1) = PkcLocA(j,1) + exp(-cmplx_i*dot_product(KG, -Rat(:,in))) * Hts(in,j)
@@ -13365,22 +11024,7 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
                          PkcLocH(j,2) = PkcLocH(j,2) + exp(-cmplx_i*dot_product(KG, -Rat(:,in))) * Hts(in,j)
                    end if
                  end do
-                 !print*, "here3", abs(PkcLoc(j,1))
-                 !print*, "here4", abs(PkcLoc(j,2))
              end do
-         !else
-         !    do j=1,N
-         !        do in=1,N
-         !            if (layerIndex(in).eq.1) then
-         !                PkcLoc(j,1) = PkcLoc(j,1) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-         !            else if (layerIndex(in).eq.2) then
-         !                PkcLoc(j,2) = PkcLoc(j,2) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-         !            else if (layerIndex(in).eq.3) then
-         !                PkcLoc(j,3) = PkcLoc(j,3) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-         !            end if
-         !        end do
-         !    end do
-         !end if
    Nc = 1.0
    nc2 = 1.0
    PkcLocA = Nc/nc2 * PkcLocA
@@ -13388,7 +11032,8 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
 
 end subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals
 
-subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
+subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+      Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -13396,7 +11041,6 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
    use atoms,                 only : Species, Rat, AtomsSetCart, AtomsSetFrac, frac, layerIndex
    use tbpar,                 only : U
    use neigh,                 only : maxNeigh
-   use math
 
    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
    complex(dp) :: Hts(N,N)
@@ -13426,14 +11070,11 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
    real(dp) :: Nc, nc2
 
    integer :: nTS
-   !integer :: kk
    real(dp) :: ll, kk
 
    integer :: cellSize
 
    integer :: at1, at2
-
-   !integer :: mmm(4)
 
    character(len=80) :: line
    integer :: id
@@ -13450,7 +11091,6 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
 
    integer :: ix, iy, ncell(3,9)
    real(dp) :: rMinRp(3), v(3), dmin
-
 
    cellts = cell ! Lattice vectors of PC (either top or bottom layer)
    celltsp = gcell
@@ -13478,8 +11118,6 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
        else
            ll = ceiling(ll)
        end if
-       !print*, Rat(1,i), Rat(2,i), kk, ll
-       !RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
        RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
 
        ll = (Rat(1,i)*G10p(2)/G10p(1) - Rat(2,i)) / (G01p(1)*G10p(2)/G10p(1) - G01p(2))
@@ -13510,138 +11148,50 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
    end if
    ! Note that I'm using the Wei Ku expression for the spectral function
    ! (this is NOT the NISHI one)
-!   do j=1,N ! These are the eigenvectors with band index J
-!       do in=1,N ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
-!           if (layerIndex(in).eq.1) then
-!               PkcLoc(j,1) = PkcLoc(j,1) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-!           else if (layerIndex(in).eq.2) then
-!               PkcLoc(j,2) = PkcLoc(j,2) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-!           else if (layerIndex(in).eq.3) then
-!               PkcLoc(j,3) = PkcLoc(j,3) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) * topBottomRatio ! to account for experimental weight between top and bottom ARPES
-!           end if
-!       end do
-!   end do
-   !call MIO_InputParameter('changeExpSign',changeExpSign,.true.)
-   !changeExpSign = .true.
-   !if (changeExpSign) then
-   !RatG(:,1) = Rat(:,543)
-   !RatG(:,2) = Rat(:,544)
    RatG(:,1) = Rat(:,1)
    RatG(:,2) = Rat(:,2)
-   !print*, Rat(:,10)
    do j=1,N
        do in=1,N
-           !dmin = 10000.0_dp
            !do ix=-1,1; do iy=-1,1
            !   !if (i==j .and. ix==0 .and. iy==0) cycle
-           !   ncell(:,1) = [ix,iy,0] ! We only use one of the nine columns if small, the other columns are used for the other case
-           !   if (Species(in).eq.1) then
-           !      v = Rat(:,1) - Rat(:,in) ! - matmul(cell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
-           !   else
-           !      v = Rat(:,2) - Rat(:,in) !- matmul(cell,ncell(:,1)) ! If they are from different unit cells, this extra term will make v very big, and it will not satisfy the distance condition.
-           !   end if
-           !   if (norm(v) < dmin) then
-           !       rMinRp = v
-           !       dmin = norm(v)
-           !   end if
-           !end do; end do
 
            if (Species(in).eq.1) then
               rMinRp = Rat(:,1)-Rat(:,in)
            else
               rMinRp = Rat(:,2)-Rat(:,in)
            end if
-           !rMinRp = -TmVec(in,:)
-           !rMinRp = RtsVec - RtspVec(in,:)
            if (layerIndex(in).eq.1) then
-               !if (mod(in,2)>0) then
-               !   PkcLoc1(j,1) = PkcLoc1(j,1) + exp(cmplx_i*dot_product(KG, (RatG(:,1) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-               !else
-               !   PkcLoc2(j,1) = PkcLoc2(j,1) + exp(cmplx_i*dot_product(KG, (RatG(:,2) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-               !end if
-               !PkcLoc(j,1) = PkcLoc(j,1) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
                if (Species(in).eq.1) then
                   PkcLoc1(j,1) = PkcLoc1(j,1) + exp(cmplx_i*dot_product(KG, rMinRp)) * Hts(in,j) * conjg(Hts(in,j))
-                  !PkcLocB(j,2) = PkcLocB(j,2) + exp(-cmplx_i*dot_product(KG, Rat(:,2)-Rat(:,in))) * Hts(in,j)
                else
                   PkcLoc2(j,1) = PkcLoc2(j,1) + exp(cmplx_i*dot_product(KG, rMinRp)) * Hts(in,j) * conjg(Hts(in,j))
                end if
            else if (layerIndex(in).eq.2) then
-               !if (mod(in,2)>0) then
-               !   PkcLoc1(j,2) = PkcLoc1(j,2) + exp(cmplx_i*dot_product(KG, (RatG(:,1) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-               !else
-               !   PkcLoc2(j,2) = PkcLoc2(j,2) + exp(cmplx_i*dot_product(KG, (RatG(:,2) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-               !end if
-               !PkcLoc1(j,2) = PkcLoc1(j,2) + exp(cmplx_i*dot_product(KG, rMinRp)) * Hts(in,j) * conjg(Hts(in,j))
-               !PkcLoc(j,2) = PkcLoc(j,2) + exp(-cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) * conjg(Hts(in,j))
-               !PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
                if (Species(in).eq.1) then
                   PkcLoc1(j,2) = PkcLoc1(j,2) + exp(cmplx_i*dot_product(KG, rMinRp)) * Hts(in,j) * conjg(Hts(in,j))
                else
                   PkcLoc2(j,2) = PkcLoc2(j,2) + exp(cmplx_i*dot_product(KG, rMinRp)) * Hts(in,j) * conjg(Hts(in,j))
                end if
            else if (layerIndex(in).eq.3) then
-               !if (mod(in,2)>0) then
-               !   PkcLoc1(j,3) = PkcLoc1(j,3) + exp(cmplx_i*dot_product(KG, (RatG(:,1) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-               !else
-               !   PkcLoc2(j,3) = PkcLoc2(j,3) + exp(cmplx_i*dot_product(KG, (RatG(:,2) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-               !end if
-               !PkcLoc1(j,3) = PkcLoc1(j,3) + exp(cmplx_i*dot_product(KG, rMinRp)) * Hts(in,j) * conjg(Hts(in,j))
-               !PkcLoc(j,3) = PkcLoc(j,3) + exp(-cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) * conjg(Hts(in,j))
-               !PkcLoc(j,3) = PkcLoc(j,3) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
                if (Species(in).eq.1) then
                   PkcLoc1(j,3) = PkcLoc1(j,3) + exp(cmplx_i*dot_product(KG, rMinRp)) * Hts(in,j) * conjg(Hts(in,j))
                else
                   PkcLoc2(j,3) = PkcLoc2(j,3) + exp(cmplx_i*dot_product(KG, rMinRp)) * Hts(in,j) * conjg(Hts(in,j))
                end if
            end if
-           !if (layerIndex(in).eq.1) then
-           !    if (mod(in,2)>0) then
            !       !PkcLoc1(j,1) = PkcLoc1(j,1) + exp(cmplx_i*dot_product(KG, (RatG(:,1) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-           !       PkcLoc1(j,1) = PkcLoc1(j,1) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
-           !    else
            !       !PkcLoc2(j,1) = PkcLoc2(j,1) + exp(cmplx_i*dot_product(KG, (RatG(:,2) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-           !       PkcLoc2(j,1) = PkcLoc2(j,1) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
-           !    end if
            !    !PkcLoc(j,1) = PkcLoc(j,1) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
-           !else if (layerIndex(in).eq.2) then
-           !    if (mod(in,2)>0) then
            !       !PkcLoc1(j,2) = PkcLoc1(j,2) + exp(cmplx_i*dot_product(KG, (RatG(:,1) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-           !       PkcLoc1(j,2) = PkcLoc1(j,2) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
-           !    else
            !       !PkcLoc2(j,2) = PkcLoc2(j,2) + exp(cmplx_i*dot_product(KG, (RatG(:,2) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-           !       PkcLoc2(j,2) = PkcLoc2(j,2) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
-           !    end if
            !    !PkcLoc(j,2) = PkcLoc(j,2) + exp(-cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) * conjg(Hts(in,j))
            !    !PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
-           !else if (layerIndex(in).eq.3) then
-           !    if (mod(in,2)>0) then
-           !       PkcLoc1(j,3) = PkcLoc1(j,3) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
            !       !PkcLoc1(j,3) = PkcLoc1(j,3) + exp(cmplx_i*dot_product(KG, (RatG(:,1) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-           !    else
-           !       PkcLoc2(j,3) = PkcLoc2(j,3) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
            !       !PkcLoc2(j,3) = PkcLoc2(j,3) + exp(cmplx_i*dot_product(KG, (RatG(:,2) - Rat(:,in)))) * Hts(in,j) * conjg(Hts(in,j))
-           !    end if
            !    !PkcLoc(j,3) = PkcLoc(j,3) + exp(-cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j) * conjg(Hts(in,j))
            !    !PkcLoc(j,3) = PkcLoc(j,3) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtsVec(in,:)))) * Hts(in,j) * conjg(Hts(in,j))
-           !end if
        end do
-       !print*, "here3", abs(PkcLoc(j,1))
-       !print*, "here4", abs(PkcLoc(j,2))
    end do
-   !else
-   !    do j=1,N
-   !        do in=1,N
-   !            if (layerIndex(in).eq.1) then
-   !                PkcLoc(j,1) = PkcLoc(j,1) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-   !            else if (layerIndex(in).eq.2) then
-   !                PkcLoc(j,2) = PkcLoc(j,2) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-   !            else if (layerIndex(in).eq.3) then
-   !                PkcLoc(j,3) = PkcLoc(j,3) - exp(cmplx_i*dot_product(KG, Rat(:,in))) * Hts(in,j)
-   !            end if
-   !        end do
-   !    end do
-   !end if
    Nc = 1.0
    nc2 = 1.0
    PkcLoc1 = Nc/nc2 * PkcLoc1
@@ -13649,7 +11199,8 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
 
 end subroutine DiagSpectralWeightWeiKuInequivalentLee
 
-subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,KptsLoc,KG,cell,gcell1,gcell2,H0,maxN,hopp,NList,Nneigh,neighCell)
+subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,KptsLoc,KG,cell,gcell1,gcell2,H0,maxN, &
+      hopp,NList,Nneigh,neighCell)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -13661,8 +11212,6 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
    complex(dp) :: Hts(N,N)
    complex(dp) :: Htsp(N,N)
-   !complex(dp), intent(out) :: PkcLoc(N)
-   !complex(dp), intent(out) :: Pkc(N,2)
    complex(dp), intent(out) :: PkcLoc(N,2)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc1(N), ELoc2(N)
@@ -13686,14 +11235,11 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    real(dp) :: Nc, nc2
 
    integer :: nTS
-   !integer :: kk
    real(dp) :: ll, kk
 
    integer :: cellSize
 
    integer :: at1, at2
-
-   !integer :: mmm(4)
 
    character(len=80) :: line
    integer :: id
@@ -13705,7 +11251,6 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    complex(dp) :: ZWorkLoc2(lwork)
    real(dp) :: DWorkLoc1(3*N-2)
    real(dp) :: DWorkLoc2(3*N-2)
-
 
    cellts = gcell1
    celltsp = gcell2
@@ -13733,8 +11278,6 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
        else
            ll = ceiling(ll)
        end if
-       !print*, Rat(1,i), Rat(2,i), kk, ll
-       !RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
        RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
 
        ll = (Rat(1,i)*G10p(2)/G10p(1) - Rat(2,i)) / (G01p(1)*G10p(2)/G10p(1) - G01p(2))
@@ -13768,27 +11311,21 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    end if
    ! This one is NISHI
    do j=1,N ! These are the eigenvectors with band index J
-       do in=1,N ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
+       ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
+       do in=1,N
            do inn=1,N
-               !if (Species(in).eq.1 .and. Species(inn).eq.1 ) then
                   if (layerIndex(in).eq.1 .and. layerIndex(inn).eq.1) then
-                      PkcLoc(j,1) = PkcLoc(j,1) + exp(cmplx_i*dot_product(KG, (RtsVec(in,:)-RtsVec(inn,:)))) * conjg(Hts(in,j)) * Hts(inn,j)! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-                      !print*, "hi1"
+                      ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
+                      PkcLoc(j,1) = PkcLoc(j,1) + exp(cmplx_i*dot_product(KG, &
+                            (RtsVec(in,:)-RtsVec(inn,:)))) * conjg(Hts(in,j)) * Hts(inn,j)
                   else if (layerIndex(in).eq.2 .and. layerIndex(inn).eq.2) then
-                      PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtspVec(inn,:)))) * conjg(Htsp(in,j)) * Htsp(inn,j)! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
-                      !PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, RtsVec(in,:))) * Hts(in,j)
-                      !print*, "hi3"
+                      ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
+                      PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, &
+                            (RtspVec(in,:)-RtspVec(inn,:)))) * conjg(Htsp(in,j)) * Htsp(inn,j)
                   end if
-               !else if (Species(in).eq.2 .and. Species(inn).eq.2) then
-               !   if (layerIndex(in).eq.1 .and. layerIndex(inn).eq.1) then
-               !       PkcLoc(j,1) = PkcLoc(j,1) + exp(cmplx_i*dot_product(KG, (RtsVec(in,:)-RtsVec(inn,:)))) * conjg(Hts(in,j)) * Hts(inn,j)! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
                !       !print*, "hi1"
-               !   else if (layerIndex(in).eq.2 .and. layerIndex(inn).eq.2) then
-               !       PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, (RtspVec(in,:)-RtspVec(inn,:)))) * conjg(Htsp(in,j)) * Htsp(inn,j)! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
                !       !PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, RtsVec(in,:))) * Hts(in,j)
                !       !print*, "hi3"
-               !   end if
-               !end if
            end do
        end do
    end do
@@ -13804,19 +11341,13 @@ function convolve(x, h, Epts)
     integer :: Epts
     !x is the signal array
     !h is the noise/impulse array
-    !real, dimension(:), allocatable :: convolve, y
-    !real, dimension(:) :: x, h
     real(dp), allocatable :: convolve(:), y(:)
     real(dp) :: x(Epts), h(Epts)
-    !complex(dp), allocatable :: convolve, y
-    !complex(dp), dimension(:) :: x, h
     integer :: kernelsize, datasize
     integer :: i,j,k
 
     datasize = size(x)  ! Ake
     kernelsize = size(h) ! gaussian
-
-
 
     allocate(y(datasize))
     allocate(convolve(datasize))
@@ -13955,7 +11486,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
    call MIO_Print('Implementing TAPW Berry curvature calculation using ANALYTICAL derivatives...','diag')
    if (soc_enabled) call MIO_Print('SOC-enabled Chern calculation','diag')
-   call MIO_Print('E array dimensions: '//trim(num2str(size(E,1)))//' x '//trim(num2str(size(E,2)))//' x '//trim(num2str(size(E,3))),'diag')
+   call MIO_Print('E array dimensions: '//trim(num2str(size(E,1)))//' x '//trim(num2str(size(E,2)))//' x ' &
+         //trim(num2str(size(E,3))),'diag')
    call MIO_Print('nAt = '//trim(num2str(nAt))//', nk = '//trim(num2str(nk)),'diag')
 
    ! Store k-points array for Option B Berry curvature calculation
@@ -13966,10 +11498,14 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
       ! VERIFICATION: Check stored k-points
       call MIO_Print('=== K-POINTS STORAGE VERIFICATION ===','diag')
-      call MIO_Print('Stored k-points dimensions: '//trim(num2str(size(stored_Kpts,1)))//'x'//trim(num2str(size(stored_Kpts,2))),'diag')
-      call MIO_Print('First k-point: ['//trim(num2str(stored_Kpts(1,1),6))//','//trim(num2str(stored_Kpts(2,1),6))//','//trim(num2str(stored_Kpts(3,1),6))//']','diag')
-      if (nk > 1) call MIO_Print('Second k-point: ['//trim(num2str(stored_Kpts(1,2),6))//','//trim(num2str(stored_Kpts(2,2),6))//','//trim(num2str(stored_Kpts(3,2),6))//']','diag')
-      call MIO_Print('Last k-point: ['//trim(num2str(stored_Kpts(1,nk),6))//','//trim(num2str(stored_Kpts(2,nk),6))//','//trim(num2str(stored_Kpts(3,nk),6))//']','diag')
+      call MIO_Print('Stored k-points dimensions: '//trim(num2str(size(stored_Kpts,1)))//'x' &
+            //trim(num2str(size(stored_Kpts,2))),'diag')
+      call MIO_Print('First k-point: ['//trim(num2str(stored_Kpts(1,1),6))//','//trim(num2str(stored_Kpts(2,1),6))//',' &
+            //trim(num2str(stored_Kpts(3,1),6))//']','diag')
+      if (nk > 1) call MIO_Print('Second k-point: ['//trim(num2str(stored_Kpts(1,2),6))//',' &
+            //trim(num2str(stored_Kpts(2,2),6))//','//trim(num2str(stored_Kpts(3,2),6))//']','diag')
+      call MIO_Print('Last k-point: ['//trim(num2str(stored_Kpts(1,nk),6))//','//trim(num2str(stored_Kpts(2,nk),6))//',' &
+            //trim(num2str(stored_Kpts(3,nk),6))//']','diag')
    end if
 
    ! Make energy window and band selection method configurable
@@ -14001,14 +11537,16 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
    ! Find bands for Chern number calculation
    n_bands_near_fermi = 0
-   max_bands_near_fermi = min(size(E,1), max(n_chern_bands, n_bands_below_fermi + n_bands_above_fermi + 10))  ! Use configured number of bands
+   ! Use configured number of bands
+   max_bands_near_fermi = min(size(E,1), max(n_chern_bands, n_bands_below_fermi + n_bands_above_fermi + 10))
 
    ! Debug: Show eigenvalue range at first k-point
    call MIO_Print('Eigenvalue range at first k-point:','diag')
    call MIO_Print('  First 10 eigenvalues: '//trim(num2str(E(1,1,1)*g0,3))//' to '//trim(num2str(E(10,1,1)*g0,3))//' eV','diag')
    call MIO_Print('  Around band 100: '//trim(num2str(E(max(1,100),1,1)*g0,3))//' eV','diag')
    call MIO_Print('  Around band 500: '//trim(num2str(E(min(size(E,1),500),1,1)*g0,3))//' eV','diag')
-   call MIO_Print('  Last few: '//trim(num2str(E(size(E,1)-2,1,1)*g0,3))//' to '//trim(num2str(E(size(E,1),1,1)*g0,3))//' eV','diag')
+   call MIO_Print('  Last few: '//trim(num2str(E(size(E,1)-2,1,1)*g0,3))//' to '//trim(num2str(E(size(E,1),1,1)*g0,3)) &
+         //' eV','diag')
 
    ! Allocate band indices array
    allocate(band_indices(max_bands_near_fermi))
@@ -14078,7 +11616,9 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
       ! Debug: Show band range calculation
       if (tapwDebug) call MIO_Print('DEBUG: Band range calculation:','diag')
-      call MIO_Print('  Requested: '//trim(num2str(n_bands_below_fermi))//' below + '//trim(num2str(n_bands_above_fermi))//' above = '//trim(num2str(n_bands_below_fermi + n_bands_above_fermi + 1))//' total','diag')
+      call MIO_Print('  Requested: '//trim(num2str(n_bands_below_fermi))//' below + ' &
+            //trim(num2str(n_bands_above_fermi))//' above = ' &
+            //trim(num2str(n_bands_below_fermi + n_bands_above_fermi + 1))//' total','diag')
       call MIO_Print('  Fermi band index: '//trim(num2str(fermi_band_index)),'diag')
       call MIO_Print('  Total bands available: '//trim(num2str(size(E,1))),'diag')
       call MIO_Print('  Requested start_band: '//trim(num2str(fermi_band_index - n_bands_below_fermi)),'diag')
@@ -14100,14 +11640,17 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          iband = start_band + i - 1
          ! Bounds check: ensure iband doesn't exceed available bands
          if (iband > size(E,1)) then
-            call MIO_Print('  ERROR: Calculated band index '//trim(num2str(iband))//' exceeds E array size '//trim(num2str(size(E,1))),'diag')
-            call MIO_Print('    start_band='//trim(num2str(start_band))//', i='//trim(num2str(i))//', n_bands_near_fermi='//trim(num2str(n_bands_near_fermi)),'diag')
+            call MIO_Print('  ERROR: Calculated band index '//trim(num2str(iband))//' exceeds E array size ' &
+                  //trim(num2str(size(E,1))),'diag')
+            call MIO_Print('    start_band='//trim(num2str(start_band))//', i='//trim(num2str(i)) &
+                  //', n_bands_near_fermi='//trim(num2str(n_bands_near_fermi)),'diag')
             ! Truncate to valid range
             n_bands_near_fermi = i - 1
             exit
          end if
          if (iband > stored_M .and. stored_M > 0) then
-            call MIO_Print('  WARNING: Band index '//trim(num2str(iband))//' exceeds stored_M='//trim(num2str(stored_M))//', will be excluded later','diag')
+            call MIO_Print('  WARNING: Band index '//trim(num2str(iband))//' exceeds stored_M='//trim(num2str(stored_M)) &
+                  //', will be excluded later','diag')
          end if
          band_indices(i) = iband
          if (i <= 5 .or. i > n_bands_near_fermi - 5) then  ! Show first and last 5
@@ -14154,14 +11697,14 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
       end do
    end if
 
-
    call MIO_Print('Found '//trim(num2str(n_bands_near_fermi))//' bands near Fermi energy ('// &
                  trim(num2str(fermi_energy,6))//' eV)','diag')
 
    if (n_bands_near_fermi >= 1) then
       call MIO_Print('Will calculate Chern numbers for '//trim(num2str(n_bands_near_fermi))//' bands','diag')
       if (n_bands_near_fermi >= 2) then
-         call MIO_Print('First few bands: '//trim(num2str(band_indices(1)))//' to '//trim(num2str(band_indices(min(n_bands_near_fermi,5)))),'diag')
+         call MIO_Print('First few bands: '//trim(num2str(band_indices(1)))//' to ' &
+               //trim(num2str(band_indices(min(n_bands_near_fermi,5)))),'diag')
       end if
 
       ! Calculate area element for BZ integration (2D) - following Python approach
@@ -14244,7 +11787,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
       end if
 
          ! Main Berry curvature calculation loop for this spin channel
-         call MIO_Print('Calculating Berry curvature at '//trim(num2str(nk))//' k-points for spin '//trim(num2str(is))//'...','diag')
+         call MIO_Print('Calculating Berry curvature at '//trim(num2str(nk))//' k-points for spin '//trim(num2str(is)) &
+               //'...','diag')
       call MIO_Print('Processing '//trim(num2str(n_bands_near_fermi))//' bands','diag')
 
       ! Area element already calculated above
@@ -14270,14 +11814,20 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
                call MIO_Print('kpoint_index: '//trim(num2str(ik)),'diag')
                call MIO_Print('spin_index: '//trim(num2str(is)),'diag')
                call MIO_Print('n_bands_near_fermi: '//trim(num2str(n_bands_near_fermi)),'diag')
-               call MIO_Print('band_indices(1:5): ['//trim(num2str(band_indices(1)))//','//trim(num2str(band_indices(2)))//','//trim(num2str(band_indices(3)))//','//trim(num2str(band_indices(4)))//','//trim(num2str(band_indices(5)))//']','diag')
+               call MIO_Print('band_indices(1:5): ['//trim(num2str(band_indices(1)))//',' &
+                     //trim(num2str(band_indices(2)))//','//trim(num2str(band_indices(3)))//',' &
+                     //trim(num2str(band_indices(4)))//','//trim(num2str(band_indices(5)))//']','diag')
                call MIO_Print('E(:,is,ik) dimensions: '//trim(num2str(size(E,1))),'diag')
-               call MIO_Print('E(:,is,ik) first 5 values: ['//trim(num2str(E(1,is,ik),6))//','//trim(num2str(E(2,is,ik),6))//','//trim(num2str(E(3,is,ik),6))//','//trim(num2str(E(4,is,ik),6))//','//trim(num2str(E(5,is,ik),6))//']','diag')
+               call MIO_Print('E(:,is,ik) first 5 values: ['//trim(num2str(E(1,is,ik),6))//',' &
+                     //trim(num2str(E(2,is,ik),6))//','//trim(num2str(E(3,is,ik),6))//','//trim(num2str(E(4,is,ik),6)) &
+                     //','//trim(num2str(E(5,is,ik),6))//']','diag')
             end if
             if (soc_enabled) then
-               call CalculateBerryAtKpointFromStored_OptionA_withSOC(ik, is, band_indices(1:n_bands_near_fermi), E(:,is,ik), berry_curv_bands)
+               call CalculateBerryAtKpointFromStored_OptionA_withSOC(ik, is, band_indices(1:n_bands_near_fermi), &
+                     E(:,is,ik), berry_curv_bands)
             else
-               call CalculateBerryAtKpointFromStored_OptionA(ik, is, band_indices(1:n_bands_near_fermi), E(:,is,ik), berry_curv_bands)
+               call CalculateBerryAtKpointFromStored_OptionA(ik, is, band_indices(1:n_bands_near_fermi), E(:,is,ik), &
+                     berry_curv_bands)
             end if
          else
             call CalculateBerryAtKpointFromStored(ik, is, band_indices(1:n_bands_near_fermi), E(:,is,ik), berry_curv_bands)
@@ -14285,16 +11835,19 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
          ! DEBUG: Verify k-point ordering and coordinates (only if tapwDebug enabled)
          if (tapwDebug .and. (ik <= 5 .or. modulo(ik, max(1, nk/10)) == 0)) then
-            call MIO_Print('DEBUG k-point '//trim(num2str(ik))//': kx='//trim(num2str(Kpts(1,ik),6))//', ky='//trim(num2str(Kpts(2,ik),6))//', kz='//trim(num2str(Kpts(3,ik),6)),'diag')
+            call MIO_Print('DEBUG k-point '//trim(num2str(ik))//': kx='//trim(num2str(Kpts(1,ik),6))//', ky=' &
+                  //trim(num2str(Kpts(2,ik),6))//', kz='//trim(num2str(Kpts(3,ik),6)),'diag')
          end if
 
          ! CRITICAL: Verify k-point correspondence between storage and retrieval (only if tapwDebug enabled)
          if (tapwDebug .and. ik <= 3) then
             call MIO_Print('=== K-POINT CORRESPONDENCE CHECK ===','diag')
             call MIO_Print('Chern calculation k-point '//trim(num2str(ik))//':','diag')
-            call MIO_Print('  Kpts(:,ik) = ['//trim(num2str(Kpts(1,ik),6))//','//trim(num2str(Kpts(2,ik),6))//','//trim(num2str(Kpts(3,ik),6))//']','diag')
+            call MIO_Print('  Kpts(:,ik) = ['//trim(num2str(Kpts(1,ik),6))//','//trim(num2str(Kpts(2,ik),6))//',' &
+                  //trim(num2str(Kpts(3,ik),6))//']','diag')
             if (allocated(stored_Kpts) .and. ik <= size(stored_Kpts,2)) then
-               call MIO_Print('  stored_Kpts(:,ik) = ['//trim(num2str(stored_Kpts(1,ik),6))//','//trim(num2str(stored_Kpts(2,ik),6))//','//trim(num2str(stored_Kpts(3,ik),6))//']','diag')
+               call MIO_Print('  stored_Kpts(:,ik) = ['//trim(num2str(stored_Kpts(1,ik),6))//',' &
+                     //trim(num2str(stored_Kpts(2,ik),6))//','//trim(num2str(stored_Kpts(3,ik),6))//']','diag')
                ! Check if they match
                if (abs(Kpts(1,ik) - stored_Kpts(1,ik)) < 1e-10_dp .and. &
                    abs(Kpts(2,ik) - stored_Kpts(2,ik)) < 1e-10_dp .and. &
@@ -14322,7 +11875,6 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
          ! Calculate total and target Chern numbers for this spin channel
       chern_total = sum(chern_bands)
-
 
          ! Report Chern numbers for target bands (closest to Fermi) for this spin channel
          call MIO_Print('=== Chern Number Results for Spin Channel '//trim(num2str(is))//' ===','diag')
@@ -14366,7 +11918,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          target_end = n_target_bands  ! Process n_target_bands closest bands
 
          ! Debug: Show which bands are actually closest
-         if (tapwDebug) call MIO_Print('DEBUG: Bands closest to Fermi energy (E_F = '//trim(num2str(fermi_energy,6))//' eV) for spin '//trim(num2str(is))//':','diag')
+         if (tapwDebug) call MIO_Print('DEBUG: Bands closest to Fermi energy (E_F = '//trim(num2str(fermi_energy,6)) &
+               //' eV) for spin '//trim(num2str(is))//':','diag')
          do i = 1, min(n_target_bands, 5)
             iband = band_indices(sorted_indices(i))
             band_energy_at_gamma = E(iband,is,1) * g0
@@ -14376,7 +11929,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          end do
 
          call MIO_Print('Target bands ('//trim(num2str(n_target_bands))//' closest to Fermi):','diag')
-         if (tapwDebug) call MIO_Print('  DEBUG: E array dimensions: '//trim(num2str(size(E,1)))//' x '//trim(num2str(size(E,2)))//' x '//trim(num2str(size(E,3))),'diag')
+         if (tapwDebug) call MIO_Print('  DEBUG: E array dimensions: '//trim(num2str(size(E,1)))//' x ' &
+               //trim(num2str(size(E,2)))//' x '//trim(num2str(size(E,3))),'diag')
 
          ! Calculate min/max energies of target bands across all k-points
          call MIO_Print('  Energy ranges of target bands:','diag')
@@ -14390,14 +11944,15 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
             iband = band_indices(sorted_indices(i))
             ! Additional bounds check: ensure iband is valid
             if (iband < 1 .or. iband > stored_M) then
-               call MIO_Print('  ERROR: Band index '//trim(num2str(iband))//' out of range [1,'//trim(num2str(stored_M))//'] for target band '//trim(num2str(i)),'diag')
-               call MIO_Print('    This indicates band_indices('//trim(num2str(sorted_indices(i)))//') = '//trim(num2str(iband))//' is invalid','diag')
+               call MIO_Print('  ERROR: Band index '//trim(num2str(iband))//' out of range [1,'//trim(num2str(stored_M)) &
+                     //'] for target band '//trim(num2str(i)),'diag')
+               call MIO_Print('    This indicates band_indices('//trim(num2str(sorted_indices(i)))//') = ' &
+                     //trim(num2str(iband))//' is invalid','diag')
                cycle
             end if
             ! Find min and max energies across all k-points for this band
             ! Extract eigenvalues from stored Hamiltonians instead of using E array
             call GetBandEnergyRange(iband, min_energy, max_energy, is)
-
 
             call MIO_Print('  Band '//trim(num2str(iband))//': E_min = '// &
                           trim(num2str(min_energy*g0,6))//' eV, E_max = '// &
@@ -14444,18 +11999,21 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          end if
       end if
 
-         call MIO_Print('  Total Chern number (all bands) for spin '//trim(num2str(is))//': C_total = '//trim(num2str(chern_total,6)),'diag')
+         call MIO_Print('  Total Chern number (all bands) for spin '//trim(num2str(is))//': C_total = ' &
+               //trim(num2str(chern_total,6)),'diag')
 
       ! Validation: Check for reasonable Chern number values
          call MIO_Print('=== Validation Checks for Spin '//trim(num2str(is))//' ===','diag')
       if (abs(chern_total) > 10.0_dp) then
-            call MIO_Print('WARNING: Total Chern number unusually large for spin '//trim(num2str(is))//': '//trim(num2str(chern_total,6)),'diag')
+            call MIO_Print('WARNING: Total Chern number unusually large for spin '//trim(num2str(is))//': ' &
+                  //trim(num2str(chern_total,6)),'diag')
       end if
 
       ! Check for NaN or infinite values
       do i = 1, n_bands_near_fermi
          if (chern_bands(i) /= chern_bands(i)) then  ! NaN check
-               call MIO_Print('ERROR: NaN detected in band '//trim(num2str(band_indices(i)))//' for spin '//trim(num2str(is)),'diag')
+               call MIO_Print('ERROR: NaN detected in band '//trim(num2str(band_indices(i)))//' for spin ' &
+                     //trim(num2str(is)),'diag')
          end if
       end do
 
@@ -14487,11 +12045,9 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
 end subroutine CalculateChernTAPW
 
-
 subroutine CalculateBerryAtKpoint(kpt, band_indices, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, berry_curv)
    ! Calculate Berry curvature at a single k-point using analytical derivatives (following Python dHdk method)
    use constants, only : pi, twopi, cmplx_i
-   use math
    use atoms, only : nAt
    implicit none
 
@@ -14540,14 +12096,10 @@ subroutine CalculateBerryAtKpoint(kpt, band_indices, ucell, H0, maxNeigh, hopp, 
    ! Step 2: Vx = eigvec^† * temp
    allocate(temp_x(M,M), temp_y(M,M))
 
-   ! temp_x = dHdkx * eigvec
    call zgemm('N', 'N', M, M, M, (1.0_dp,0.0_dp), dHdkx, M, eigvec, M, (0.0_dp,0.0_dp), temp_x, M)
-   ! Vx = eigvec^† * temp_x
    call zgemm('C', 'N', M, M, M, (1.0_dp,0.0_dp), eigvec, M, temp_x, M, (0.0_dp,0.0_dp), Vx, M)
 
-   ! temp_y = dHdky * eigvec
    call zgemm('N', 'N', M, M, M, (1.0_dp,0.0_dp), dHdky, M, eigvec, M, (0.0_dp,0.0_dp), temp_y, M)
-   ! Vy = eigvec^† * temp_y
    call zgemm('C', 'N', M, M, M, (1.0_dp,0.0_dp), eigvec, M, temp_y, M, (0.0_dp,0.0_dp), Vy, M)
 
    deallocate(temp_x, temp_y)
@@ -14619,7 +12171,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    end if
 
    if (kpoint_index > stored_nk .or. kpoint_index < 1) then
-      call MIO_Print('Error: k-point index '//trim(num2str(kpoint_index))//' out of range [1,'//trim(num2str(stored_nk))//']','diag')
+      call MIO_Print('Error: k-point index '//trim(num2str(kpoint_index))//' out of range [1,'//trim(num2str(stored_nk)) &
+            //']','diag')
       berry_curv_bands = 0.0_dp
       return
    end if
@@ -14627,7 +12180,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    ! Check band indices bounds for all bands
    do i = 1, size(band_indices)
       if (band_indices(i) < 1 .or. band_indices(i) > stored_M) then
-         call MIO_Print('Error: Band index '//trim(num2str(band_indices(i)))//' out of range [1,'//trim(num2str(stored_M))//']','diag')
+         call MIO_Print('Error: Band index '//trim(num2str(band_indices(i)))//' out of range [1,' &
+               //trim(num2str(stored_M))//']','diag')
          berry_curv_bands = 0.0_dp
          return
       end if
@@ -14658,12 +12212,15 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    if (kpoint_index == 1) then
       if (tapwDebug) call MIO_Print('CRITICAL DEBUG: Dimension analysis','diag')
       call MIO_Print('  stored_M value: '//trim(num2str(stored_M)),'diag')
-      call MIO_Print('  stored_eigenvectors actual size: '//trim(num2str(size(stored_eigenvectors,1)))//'x'//trim(num2str(size(stored_eigenvectors,2))),'diag')
-      call MIO_Print('  stored_hamiltonians actual size: '//trim(num2str(size(stored_hamiltonians,1)))//'x'//trim(num2str(size(stored_hamiltonians,2))),'diag')
+      call MIO_Print('  stored_eigenvectors actual size: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
+            //trim(num2str(size(stored_eigenvectors,2))),'diag')
+      call MIO_Print('  stored_hamiltonians actual size: '//trim(num2str(size(stored_hamiltonians,1)))//'x' &
+            //trim(num2str(size(stored_hamiltonians,2))),'diag')
       call MIO_Print('  Using safe M = '//trim(num2str(M))//' (actual array dimensions)','diag')
 
       if (stored_M /= M) then
-         call MIO_Print('ERROR: stored_M ('//trim(num2str(stored_M))//') inconsistent with actual array size ('//trim(num2str(M))//')','diag')
+         call MIO_Print('ERROR: stored_M ('//trim(num2str(stored_M))//') inconsistent with actual array size (' &
+               //trim(num2str(M))//')','diag')
          call MIO_Print('This indicates a serious bug in array allocation - using actual array size for safety','diag')
       end if
    end if
@@ -14673,7 +12230,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
       call MIO_Print('Debug: Stored array info:','diag')
       call MIO_Print('  stored_M: '//trim(num2str(stored_M)),'diag')
       call MIO_Print('  stored_nk: '//trim(num2str(stored_nk)),'diag')
-      call MIO_Print('  stored_eigenvectors shape: '//trim(num2str(size(stored_eigenvectors,1)))//'x'//trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag')
+      call MIO_Print('  stored_eigenvectors shape: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
+            //trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag')
       call MIO_Print('  eigval_from_E size: '//trim(num2str(size(eigval_from_E))),'diag')
       call MIO_Print('  Max band index requested: '//trim(num2str(maxval(band_indices))),'diag')
       call MIO_Print('  Using M = '//trim(num2str(M))//' (min of stored_M and actual array dimensions)','diag')
@@ -14708,20 +12266,24 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    ! CRITICAL FIX: Use TAPW eigenvalues instead of TB eigenvalues
    ! The eigenvectors are from TAPW diagonalization, so eigenvalues must be too
    if (allocated(stored_eigenvalues)) then
-      if (size(stored_eigenvalues,1) >= M .and. size(stored_eigenvalues,2) >= kpoint_index .and. size(stored_eigenvalues,3) >= spin_index) then
+      if (size(stored_eigenvalues,1) >= M .and. size(stored_eigenvalues,2) >= kpoint_index &
+            .and. size(stored_eigenvalues,3) >= spin_index) then
          eigval(1:M) = stored_eigenvalues(1:M,kpoint_index,spin_index)
          call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index)),'diag')
-         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M)),6))//','//trim(num2str(maxval(eigval(1:M)),6))//']','diag')
+         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M)),6))//',' &
+               //trim(num2str(maxval(eigval(1:M)),6))//']','diag')
       else
          call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
-         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2))),'diag')
+         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+               //trim(num2str(size(stored_eigenvalues,2))),'diag')
          call MIO_Print('  Required: '//trim(num2str(M))//'x'//trim(num2str(kpoint_index)),'diag')
-         stop
+         error stop 1
       end if
    else
       call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
       call MIO_Print('This will cause eigenvector-eigenvalue misalignment!','diag')
-      call MIO_Print('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//','//trim(num2str(maxval(eigval_from_E),6))//']','diag')
+      call MIO_Print('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//',' &
+            //trim(num2str(maxval(eigval_from_E),6))//']','diag')
       ! Fallback to TB eigenvalues (this is wrong but prevents crash)
    if (size(eigval_from_E) >= M) then
       eigval(1:M) = eigval_from_E(1:M)
@@ -14735,7 +12297,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    if (kpoint_index == 1) then
       call MIO_Print('=== EIGENVALUES VERIFICATION (k-point 1) ===','diag')
       call MIO_Print('Eigenvalues dimensions: '//trim(num2str(size(eigval))),'diag')
-      call MIO_Print('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//','//trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag')
+      call MIO_Print('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//',' &
+            //trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag')
       call MIO_Print('Eigenvalue range: ['//trim(num2str(minval(eigval),6))//','//trim(num2str(maxval(eigval),6))//']','diag')
    end if
 
@@ -14792,7 +12355,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
          call MIO_Print('  |dH_TB/dky| max = '//trim(num2str(maxval(abs(dH_TB_dky)),8)),'diag')
          call MIO_Print('  |dH_TAPW/dkx| max = '//trim(num2str(maxval(abs(dHdkx)),8)),'diag')
          call MIO_Print('  |dH_TAPW/dky| max = '//trim(num2str(maxval(abs(dHdky)),8)),'diag')
-         call MIO_Print('  Amplification factor ≈ '//trim(num2str(maxval(abs(dHdkx))/max(maxval(abs(dH_TB_dkx)),1e-12_dp),2)),'diag')
+         call MIO_Print('  Amplification factor ≈ '//trim(num2str(maxval(abs(dHdkx))/max(maxval(abs(dH_TB_dkx)), &
+               1e-12_dp),2)),'diag')
       end if
 
       ! Clean up TB derivative matrices
@@ -14846,7 +12410,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
       call MIO_Print('  Last band index to access: '//trim(num2str(band_indices(size(band_indices)))),'diag')
 
       if (M /= M_safe) then
-         call MIO_Print('CRITICAL WARNING: M variable ('//trim(num2str(M))//') differs from actual array bounds ('//trim(num2str(M_safe))//')','diag')
+         call MIO_Print('CRITICAL WARNING: M variable ('//trim(num2str(M))//') differs from actual array bounds (' &
+               //trim(num2str(M_safe))//')','diag')
          call MIO_Print('This indicates M was corrupted after array allocation - using M_safe for loops','diag')
       end if
    end if
@@ -14945,7 +12510,7 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
    if (M_tapw <= 0) then
       call MIO_Print('ERROR: M_tapw not initialized. TAPW calculation must be performed first.','diag')
       call MIO_Print('Current M_tapw = '//trim(num2str(M_tapw)),'diag')
-      stop
+      error stop 1
    end if
 
    ! CRITICAL FIX: For Berry curvature calculation, use stored_M instead of M_tapw
@@ -14953,7 +12518,7 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
    if (.not. allocated(stored_hamiltonians) .or. .not. allocated(stored_eigenvectors)) then
       call MIO_Print('ERROR: No stored TAPW data available','diag')
       call MIO_Print('TAPW bands calculation must be performed before Chern calculation','diag')
-      stop
+      error stop 1
    end if
 
    ! Use the stored M value to ensure consistency with stored arrays
@@ -14980,7 +12545,7 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
    ! Use the first k-point's data as reference (this should be improved for better k-point handling)
    if (stored_nk < 1) then
       call MIO_Print('ERROR: No k-points stored in TAPW data','diag')
-      stop
+      error stop 1
    end if
 
    ! Extract Hamiltonian and eigenvectors from stored data (use first k-point as reference, spin 1)
@@ -15000,7 +12565,7 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
 
    if (info /= 0) then
       call MIO_Print('ERROR in GetTAPWHamiltonian: ZHEEV failed with info = '//trim(num2str(info)),'diag')
-      stop
+      error stop 1
    end if
 
    call MIO_Print('Successfully extracted TAPW eigenvalues and eigenvectors','diag')
@@ -15069,10 +12634,12 @@ subroutine build_TAPW_position_differences(delX, delY, M, Gx, Gy, NG, Nlabel)
                call MIO_Print('WARNING: Cached matrix dimensions mismatch - recomputing','diag')
                call MIO_Print('  Expected: '//trim(num2str(M))//'x'//trim(num2str(M)),'diag')
                if (allocated(cached_delX)) then
-                  call MIO_Print('  Cached delX: '//trim(num2str(size(cached_delX,1)))//'x'//trim(num2str(size(cached_delX,2))),'diag')
+                  call MIO_Print('  Cached delX: '//trim(num2str(size(cached_delX,1)))//'x' &
+                        //trim(num2str(size(cached_delX,2))),'diag')
                end if
                if (allocated(cached_delY)) then
-                  call MIO_Print('  Cached delY: '//trim(num2str(size(cached_delY,1)))//'x'//trim(num2str(size(cached_delY,2))),'diag')
+                  call MIO_Print('  Cached delY: '//trim(num2str(size(cached_delY,1)))//'x' &
+                        //trim(num2str(size(cached_delY,2))),'diag')
                end if
             end if
          else
@@ -15171,10 +12738,13 @@ subroutine compute_TB_hamiltonian_derivatives(dH_TB_dkx, dH_TB_dky, N, KLoc, H0,
    ! DEBUG: Check units and magnitudes
    if (N >= 1 .and. Nneigh(1) >= 1) then
       if (tapwDebug) call MIO_Print('DEBUG: Units check for TB derivatives:','diag')
-      call MIO_Print('  KLoc = ['//trim(num2str(KLoc(1),6))//','//trim(num2str(KLoc(2),6))//','//trim(num2str(KLoc(3),6))//'] (1/Angstrom)','diag')
+      call MIO_Print('  KLoc = ['//trim(num2str(KLoc(1),6))//','//trim(num2str(KLoc(2),6))//',' &
+            //trim(num2str(KLoc(3),6))//'] (1/Angstrom)','diag')
       if (NList(1,1) > 0 .and. NList(1,1) <= N) then
-         call MIO_Print('  First NeighD = ['//trim(num2str(NeighD(1,1,1),6))//','//trim(num2str(NeighD(2,1,1),6))//'] (Angstrom)','diag')
-         call MIO_Print('  R used in derivatives = ['//trim(num2str(-NeighD(1,1,1),6))//','//trim(num2str(-NeighD(2,1,1),6))//'] (Angstrom)','diag')
+         call MIO_Print('  First NeighD = ['//trim(num2str(NeighD(1,1,1),6))//','//trim(num2str(NeighD(2,1,1),6)) &
+               //'] (Angstrom)','diag')
+         call MIO_Print('  R used in derivatives = ['//trim(num2str(-NeighD(1,1,1),6))//',' &
+               //trim(num2str(-NeighD(2,1,1),6))//'] (Angstrom)','diag')
          call MIO_Print('  k·R = '//trim(num2str(dot_product(KLoc(1:2), -NeighD(1:2,1,1)),6))//' (dimensionless)','diag')
       end if
    end if
@@ -15229,7 +12799,8 @@ end subroutine compute_TB_hamiltonian_derivatives
 !! @param[in]     NList           Neighbor list
 !! @param[in]     Nneigh          Number of neighbors per atom
 !! @param[in]     neighCell       Neighbor cell indices
-subroutine compute_block_hamiltonian_derivatives(dH_Block_dkx, dH_Block_dky, N, KLoc, cell, H0, maxNeigh, hopp, NList, Nneigh, neighCell)
+subroutine compute_block_hamiltonian_derivatives(dH_Block_dkx, dH_Block_dky, N, KLoc, cell, H0, maxNeigh, hopp, NList, &
+      Nneigh, neighCell)
    ! Compute derivatives of the block Hamiltonian for SOC
    ! dH^Block/dkx and dH^Block/dky using the same gauge as in BuildBlockHamiltonianOnly
    use constants, only : cmplx_i, cmplx_0
@@ -15297,7 +12868,6 @@ subroutine compute_block_hamiltonian_derivatives(dH_Block_dkx, dH_Block_dky, N, 
                end if
 
                ! Rashba term from ApplySpinFlipSOC:
-               ! RashbaHopp = lambdaR * (dx + i*dy) * exp(-i k·R)
                ! where dx, dy are normalized direction cosines
 
                ! Normalize direction cosines (same as in ApplySpinFlipSOC)
@@ -15458,7 +13028,6 @@ subroutine transform_TAPW_eigenvectors_to_TB(eigvec_TAPW, X, N, M, eigvec_TB)
    call MIO_Print('  Output: '//trim(num2str(M))//' TB eigenvectors in '//trim(num2str(N))//'-dimensional space','diag')
 
    ! Transform eigenvectors: eigvec_TB = X * eigvec_TAPW
-   ! X(N,M) * eigvec_TAPW(M,M) = eigvec_TB(N,M)
    call zgemm('N', 'N', N, M, M, cmplx_1, X, N, eigvec_TAPW, M, cmplx_0, eigvec_TB, N)
 
    call MIO_Print('TAPW eigenvectors successfully transformed to TB basis','diag')
@@ -15496,12 +13065,12 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    ! Check stored data availability (only need X matrix, TB parameters are module-level)
    if (.not. allocated(stored_X_matrix)) then
       call MIO_Print('ERROR: Stored X matrix not available for Option A','diag')
-      stop
+      error stop 1
    end if
 
    if (.not. allocated(stored_hamiltonians) .or. .not. allocated(stored_eigenvectors)) then
       call MIO_Print('ERROR: Stored TAPW data not available for Option A','diag')
-      stop
+      error stop 1
    end if
 
    ! Get dimensions (use module-level variables directly)
@@ -15509,7 +13078,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    M_local = stored_M
    num_bands = size(band_indices)
 
-   call MIO_Print('Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands='//trim(num2str(num_bands)),'diag')
+   call MIO_Print('Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands=' &
+         //trim(num2str(num_bands)),'diag')
 
    ! Allocate arrays
    allocate(H_k(M_local,M_local), eigvec_TAPW(M_local,M_local), eigvec_TB(N_local,M_local))
@@ -15531,20 +13101,24 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    ! CRITICAL FIX: Use TAPW eigenvalues instead of TB eigenvalues
    ! The eigenvectors are from TAPW diagonalization, so eigenvalues must be too
    if (allocated(stored_eigenvalues)) then
-      if (size(stored_eigenvalues,1) >= M_local .and. size(stored_eigenvalues,2) >= kpoint_index .and. size(stored_eigenvalues,3) >= spin_index) then
+      if (size(stored_eigenvalues,1) >= M_local .and. size(stored_eigenvalues,2) >= kpoint_index &
+            .and. size(stored_eigenvalues,3) >= spin_index) then
          eigval(1:M_local) = stored_eigenvalues(1:M_local,kpoint_index,spin_index)
          call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index)),'diag')
-         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//','//trim(num2str(maxval(eigval(1:M_local)),6))//']','diag')
+         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//',' &
+               //trim(num2str(maxval(eigval(1:M_local)),6))//']','diag')
       else
          call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
-         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2))),'diag')
+         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+               //trim(num2str(size(stored_eigenvalues,2))),'diag')
          call MIO_Print('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index)),'diag')
-         stop
+         error stop 1
       end if
    else
       call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
       call MIO_Print('This will cause eigenvector-eigenvalue misalignment!','diag')
-      call MIO_Print('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//','//trim(num2str(maxval(eigval_from_E),6))//']','diag')
+      call MIO_Print('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//',' &
+            //trim(num2str(maxval(eigval_from_E),6))//']','diag')
       ! Fallback to TB eigenvalues (this is wrong but prevents crash)
    if (size(eigval_from_E) >= M_local) then
       eigval(1:M_local) = eigval_from_E(1:M_local)
@@ -15558,7 +13132,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    if (kpoint_index == 1) then
       call MIO_Print('=== EIGENVALUES VERIFICATION (k-point 1) ===','diag')
       call MIO_Print('Eigenvalues dimensions: '//trim(num2str(size(eigval))),'diag')
-      call MIO_Print('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//','//trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag')
+      call MIO_Print('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//',' &
+            //trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag')
       call MIO_Print('Eigenvalue range: ['//trim(num2str(minval(eigval),6))//','//trim(num2str(maxval(eigval),6))//']','diag')
    end if
 
@@ -15600,7 +13175,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
          if (debug_band >= 1 .and. debug_band <= M_local) then
             norm_tapw = real(dot_product(eigvec_TAPW(:,debug_band), eigvec_TAPW(:,debug_band)))
             norm_tb = real(dot_product(eigvec_TB(:,debug_band), eigvec_TB(:,debug_band)))
-            if (tapwDebug) call MIO_Print('DEBUG Option A: Band '//trim(num2str(debug_band))//' norms AFTER renormalization:','diag')
+            if (tapwDebug) call MIO_Print('DEBUG Option A: Band '//trim(num2str(debug_band)) &
+                  //' norms AFTER renormalization:','diag')
             call MIO_Print('  TAPW eigenvector norm: '//trim(num2str(sqrt(norm_tapw),8)),'diag')
             call MIO_Print('  TB eigenvector norm: '//trim(num2str(sqrt(norm_tb),8))//' (should be 1.0)','diag')
          end if
@@ -15608,11 +13184,9 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    end if
 
    ! Step 3: Calculate velocity matrix elements in TB space
-   ! Vx_TB(n,m) = ⟨ψ_TB_n| dH_TB/dkx |ψ_TB_m⟩
    call MIO_Print('Computing velocity matrix elements in TB space','diag')
 
    ! Note: eigvec_TB is N×M, so we compute M×M velocity matrices
-   ! Vx_TB = eigvec_TB† * dH_TB_dkx * eigvec_TB
    ! This is computationally expensive: (N×M)† * (N×N) * (N×M) = M×M
 
    ! Use temporary array for intermediate result
@@ -15654,8 +13228,10 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
          n2 = band_indices(2)
          if (n1 >= 1 .and. n1 <= M_local .and. n2 >= 1 .and. n2 <= M_local) then
             if (tapwDebug) call MIO_Print('DEBUG Option A: Velocity matrix elements:','diag')
-            call MIO_Print('  |Vx_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = '//trim(num2str(abs(Vx_TB(n1,n2)),8)),'diag')
-            call MIO_Print('  |Vy_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = '//trim(num2str(abs(Vy_TB(n1,n2)),8)),'diag')
+            call MIO_Print('  |Vx_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = ' &
+                  //trim(num2str(abs(Vx_TB(n1,n2)),8)),'diag')
+            call MIO_Print('  |Vy_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = ' &
+                  //trim(num2str(abs(Vy_TB(n1,n2)),8)),'diag')
          end if
       end block
    end if
@@ -15700,7 +13276,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
       call MIO_Print('  Last band index to access: '//trim(num2str(band_indices(size(band_indices)))),'diag')
 
       if (M_local /= M_safe) then
-         call MIO_Print('CRITICAL WARNING: M_local ('//trim(num2str(M_local))//') differs from actual array bounds ('//trim(num2str(M_safe))//')','diag')
+         call MIO_Print('CRITICAL WARNING: M_local ('//trim(num2str(M_local))//') differs from actual array bounds (' &
+               //trim(num2str(M_safe))//')','diag')
          call MIO_Print('This indicates M_local was corrupted after array allocation - using M_safe for loops','diag')
       end if
    end if
@@ -15741,7 +13318,6 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
 
          berry_curv_bands(i) = -2.0_dp * aimag(berry_sum)
 
-
          ! DEBUG: Check actual energy differences being processed
          if (kpoint_index == 1 .and. i == 1) then
             if (tapwDebug) call MIO_Print('DEBUG: Checking energy differences for first band:','diag')
@@ -15750,7 +13326,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
                do m = 1, min(10, M_safe)
                   if (n /= m .and. n <= size(eigval) .and. m <= size(eigval)) then
                      energy_diff = abs(eigval(n) - eigval(m))
-                     call MIO_Print('  |E('//trim(num2str(n))//') - E('//trim(num2str(m))//')| = '//trim(num2str(energy_diff,12)),'diag')
+                     call MIO_Print('  |E('//trim(num2str(n))//') - E('//trim(num2str(m))//')| = ' &
+                           //trim(num2str(energy_diff,12)),'diag')
                      if (energy_diff < 1.0e-6_dp) then
                         call MIO_Print('    *** VERY SMALL ENERGY DIFFERENCE ***','diag')
                      end if
@@ -15762,8 +13339,10 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
          ! DEBUG: Compare velocity matrix elements for first few bands
          if (kpoint_index == 1 .and. i <= 3) then
             if (tapwDebug) call MIO_Print('DEBUG Option A: Velocity matrix elements for band '//trim(num2str(n))//':','diag')
-            call MIO_Print('  |Vx_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = '//trim(num2str(abs(Vx_TB(n,n+1)),8)),'diag')
-            call MIO_Print('  |Vy_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = '//trim(num2str(abs(Vy_TB(n,n+1)),8)),'diag')
+            call MIO_Print('  |Vx_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = ' &
+                  //trim(num2str(abs(Vx_TB(n,n+1)),8)),'diag')
+            call MIO_Print('  |Vy_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = ' &
+                  //trim(num2str(abs(Vy_TB(n,n+1)),8)),'diag')
             call MIO_Print('  Berry curvature = '//trim(num2str(berry_curv_bands(i),8)),'diag')
          end if
       end if
@@ -15841,12 +13420,12 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    ! Check stored data availability
    if (.not. allocated(stored_X_matrix)) then
       call MIO_Print('ERROR: Stored X matrix not available for SOC Option A','diag')
-      stop
+      error stop 1
    end if
 
    if (.not. allocated(stored_hamiltonians) .or. .not. allocated(stored_eigenvectors)) then
       call MIO_Print('ERROR: Stored TAPW data not available for SOC Option A','diag')
-      stop
+      error stop 1
    end if
 
    ! Get dimensions
@@ -15854,7 +13433,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    M_local = stored_M
    num_bands = size(band_indices)
 
-   call MIO_Print('SOC Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands='//trim(num2str(num_bands)),'diag')
+   call MIO_Print('SOC Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands=' &
+         //trim(num2str(num_bands)),'diag')
 
    ! Check X matrix dimensions to determine if block or regular version should be used
    ! For Rashba: stored_X_matrix is 2N×M (from DiagH0TAPW_withBlockH)
@@ -15917,15 +13497,20 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    ! CRITICAL: Use TAPW eigenvalues instead of TB eigenvalues (matches non-SOC Option A)
    ! The eigenvectors are from TAPW diagonalization, so eigenvalues must be too
    if (allocated(stored_eigenvalues)) then
-      if (size(stored_eigenvalues,1) >= M_local .and. size(stored_eigenvalues,2) >= kpoint_index .and. size(stored_eigenvalues,3) >= spin_index) then
+      if (size(stored_eigenvalues,1) >= M_local .and. size(stored_eigenvalues,2) >= kpoint_index &
+            .and. size(stored_eigenvalues,3) >= spin_index) then
          eigval(1:M_local) = stored_eigenvalues(1:M_local,kpoint_index,spin_index)
-         call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index))//', spin '//trim(num2str(spin_index)),'diag')
-         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//','//trim(num2str(maxval(eigval(1:M_local)),6))//']','diag')
+         call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index))//', spin ' &
+               //trim(num2str(spin_index)),'diag')
+         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//',' &
+               //trim(num2str(maxval(eigval(1:M_local)),6))//']','diag')
       else
          call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
-         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x'//trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
-         call MIO_Print('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index))//'x'//trim(num2str(spin_index)),'diag')
-         stop
+         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+               //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
+         call MIO_Print('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index))//'x' &
+               //trim(num2str(spin_index)),'diag')
+         error stop 1
       end if
    else
       call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
@@ -15954,11 +13539,9 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    if (use_block_derivatives) then
       call MIO_Print('Computing velocity matrix elements in TB block space (2N×2N)','diag')
       ! Note: eigvec_TB is 2N×M, dH_Block_dk is 2N×2N, so we compute M×M velocity matrices
-      ! Vx_TB = eigvec_TB† * dH_Block_dkx * eigvec_TB
    else
       call MIO_Print('Computing velocity matrix elements in TB space (N×N)','diag')
       ! Note: eigvec_TB is N×M, dH_TB_dk is N×N, so we compute M×M velocity matrices
-      ! Vx_TB = eigvec_TB† * dH_TB_dkx * eigvec_TB
    end if
 
    ! Use temporary array for intermediate result
@@ -15966,13 +13549,15 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
 
    if (use_block_derivatives) then
       ! Step 3a: temp = dH_Block_dkx * eigvec_TB
-      call zgemm('N', 'N', 2*N_local, M_local, 2*N_local, cmplx_1, dH_Block_dkx, 2*N_local, eigvec_TB, 2*N_local, cmplx_0, temp_TB, 2*N_local)
+      call zgemm('N', 'N', 2*N_local, M_local, 2*N_local, cmplx_1, dH_Block_dkx, 2*N_local, eigvec_TB, 2*N_local, &
+            cmplx_0, temp_TB, 2*N_local)
 
       ! Step 3b: Vx_TB = eigvec_TB† * temp
       call zgemm('C', 'N', M_local, M_local, 2*N_local, cmplx_1, eigvec_TB, 2*N_local, temp_TB, 2*N_local, cmplx_0, Vx_TB, M_local)
 
       ! Repeat for y-direction
-      call zgemm('N', 'N', 2*N_local, M_local, 2*N_local, cmplx_1, dH_Block_dky, 2*N_local, eigvec_TB, 2*N_local, cmplx_0, temp_TB, 2*N_local)
+      call zgemm('N', 'N', 2*N_local, M_local, 2*N_local, cmplx_1, dH_Block_dky, 2*N_local, eigvec_TB, 2*N_local, &
+            cmplx_0, temp_TB, 2*N_local)
       call zgemm('C', 'N', M_local, M_local, 2*N_local, cmplx_1, eigvec_TB, 2*N_local, temp_TB, 2*N_local, cmplx_0, Vy_TB, M_local)
    else
       ! Step 3a: temp = dH_TB_dkx * eigvec_TB
@@ -16029,7 +13614,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    end do
 
    if (tapwDebug) then
-      call MIO_Print('SOC Option A: Skipped '//trim(num2str(skipped_pairs))//'/'//trim(num2str(total_pairs))//' band pairs due to small energy differences','diag')
+      call MIO_Print('SOC Option A: Skipped '//trim(num2str(skipped_pairs))//'/'//trim(num2str(total_pairs)) &
+            //' band pairs due to small energy differences','diag')
    end if
 
    call MIO_Print('SOC Option A: Berry curvature calculation completed for '//trim(num2str(num_bands))//' bands','diag')
@@ -16362,7 +13948,8 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
     call MIO_Print('G-vector coverage analysis:','diag')
     call MIO_Print('  Total G-vectors used: '//trim(num2str(real(NG,dp),0)),'diag')
     call MIO_Print('  Labels (sublattices): '//trim(num2str(real(Nlabel,dp),0)),'diag')
-    call MIO_Print('  TAPW subspace dimension: '//trim(num2str(real(M,dp),0))//' (vs full space: '//trim(num2str(real(N,dp),0))//')','diag')
+    call MIO_Print('  TAPW subspace dimension: '//trim(num2str(real(M,dp),0))//' (vs full space: ' &
+          //trim(num2str(real(N,dp),0))//')','diag')
     call MIO_Print('  Compression ratio: '//trim(num2str(real(N,dp)/real(M,dp),2)),'diag')
 
     ! Cleanup
@@ -16573,7 +14160,7 @@ subroutine output_moire_bz_debug(rcell)
    write(96, '(2F16.8)') moire_b2(1), moire_b2(2)
    close(96)
 
-   print *, "Moiré BZ data written to moire_bz_debug.dat"
+   call MIO_Print("Moiré BZ data written to moire_bz_debug.dat",'diag')
 
 end subroutine output_moire_bz_debug
 
@@ -16584,7 +14171,7 @@ subroutine output_kpath_debug()
 
    ! This is a placeholder - we'll need to modify the main routine to call this
    ! with the actual path data
-   print *, "K-path debug output placeholder - needs path data from main routine"
+   call MIO_Print("K-path debug output placeholder - needs path data from main routine",'diag')
 
 end subroutine output_kpath_debug
 
@@ -16666,75 +14253,26 @@ subroutine write_chern_tapw_results(band_indices, chern_bands, chern_total, nkx,
 
 end subroutine write_chern_tapw_results
 
-subroutine apply_rcell_rotation(rcell_in, rcell_out)
-   ! Apply G-grid rotation to rcell for consistency with TAPW G-grid rotation
-   use constants, only: pi
-   implicit none
-   real(dp), intent(in) :: rcell_in(3,3)
-   real(dp), intent(out) :: rcell_out(3,3)
-
-   real(dp) :: rotation_angle, cos_rot, sin_rot, temp_vec(3)
-
-   ! Start with original rcell
-   rcell_out = rcell_in
-
-   ! Apply rotation if G-grid rotation is specified
-   if (abs(gGridRotationAngle) > 1.0e-10_dp) then
-      rotation_angle = gGridRotationAngle * pi / 180.0_dp
-      cos_rot = cos(rotation_angle)
-      sin_rot = sin(rotation_angle)
-
-      ! Rotate the first two lattice vectors (in-plane rotation for 2D system)
-      ! rcell(:,1) = first lattice vector, rcell(:,2) = second lattice vector
-      temp_vec = rcell_out(:,1)
-      rcell_out(1,1) = cos_rot * temp_vec(1) - sin_rot * temp_vec(2)
-      rcell_out(2,1) = sin_rot * temp_vec(1) + cos_rot * temp_vec(2)
-      rcell_out(3,1) = temp_vec(3)  ! Keep z-component unchanged
-
-      temp_vec = rcell_out(:,2)
-      rcell_out(1,2) = cos_rot * temp_vec(1) - sin_rot * temp_vec(2)
-      rcell_out(2,2) = sin_rot * temp_vec(1) + cos_rot * temp_vec(2)
-      rcell_out(3,2) = temp_vec(3)  ! Keep z-component unchanged
-
-      ! Third lattice vector (z-direction) remains unchanged for 2D systems
-      rcell_out(:,3) = rcell_in(:,3)
-
-      if (tapwDebug) call MIO_Print("DEBUG: Applied rcell rotation by "//trim(adjustl(num2str(gGridRotationAngle,3)))//" degrees")
-   end if
-
-end subroutine apply_rcell_rotation
-
-subroutine apply_inverse_rotation_to_path(path_point, rotation_angle_degrees)
-   ! Apply inverse (counter) rotation to a single path point to maintain same absolute k-points
-   ! when rcell is rotated
-   use constants, only: pi
-   implicit none
-   real(dp), intent(inout) :: path_point(3)
-   real(dp), intent(in) :: rotation_angle_degrees
-
-   real(dp) :: rotation_angle, cos_rot, sin_rot, temp_x, temp_y
-
-   ! Apply inverse rotation: rotate by -rotation_angle_degrees
-   rotation_angle = -rotation_angle_degrees * pi / 180.0_dp
-   cos_rot = cos(rotation_angle)
-   sin_rot = sin(rotation_angle)
-
-   ! Apply 2D rotation to x,y components (in-plane rotation for 2D system)
-   ! For counter-clockwise rotation by -θ: x' = cos(-θ)x - sin(-θ)y, y' = sin(-θ)x + cos(-θ)y
-   ! This gives: x' = cos(θ)x + sin(θ)y, y' = -sin(θ)x + cos(θ)y
-   temp_x = path_point(1)
-   temp_y = path_point(2)
-   path_point(1) = cos_rot * temp_x + sin_rot * temp_y
-   path_point(2) = -sin_rot * temp_x + cos_rot * temp_y
-   ! path_point(3) remains unchanged (z-component)
-
-end subroutine apply_inverse_rotation_to_path
-
 !> Comprehensive numerical verification of lattice operations and TAPW setup
+!> True if the optional k-point index is present and not larger than n. An absent optional argument
+!! must not appear in the same condition as its presence test: Fortran evaluates both sides of .and.
+logical function tapw_k_at_most(k, n)
+
+   implicit none
+
+   integer, intent(in), optional :: k
+   integer, intent(in) :: n
+
+   tapw_k_at_most = .false.
+   if (present(k)) tapw_k_at_most = (k <= n)
+
+end function tapw_k_at_most
+
 subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngle, &
                                             Gx, Gy, NG, aG, path_frac, nPath)
    use cell, only: ucell  ! Import actual direct lattice from cell module
    implicit none
+   logical :: havePath
    ! Input parameters
    real(dp), intent(in) :: rcell(3,3)           ! Moiré reciprocal lattice
    real(dp), intent(in) :: rG(2,2)              ! Graphene reciprocal lattice (2x2)
@@ -16809,7 +14347,6 @@ subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngl
    ! Calculate inv(ucell_T)
    det_rot = ucell_T(1,1)*ucell_T(2,2) - ucell_T(1,2)*ucell_T(2,1)
    rotation_matrix = reshape([ucell_T(2,2), -ucell_T(1,2), -ucell_T(2,1), ucell_T(1,1)], [2,2]) / det_rot
-   ! rcell_reconstructed = 2π * inv(ucell_T)
    rotation_matrix = rotation_matrix * (2.0_dp * pi)
    ! Check deviation
    identity_dev = rcell_2d - rotation_matrix
@@ -16868,7 +14405,10 @@ subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngl
    end if
 
    ! 5. Path round-trip test (if path provided)
-   if (present(path_frac) .and. present(nPath) .and. nPath > 0) then
+   ! an absent optional argument must not be evaluated: Fortran does not short-circuit .and.
+   havePath = .false.
+   if (present(path_frac) .and. present(nPath)) havePath = (nPath > 0)
+   if (havePath) then
       call MIO_Print('5. Path coordinate round-trip test (first point)','diag')
       ! frac → abs → frac
       path_abs = path_frac(1,1)*rcell_2d(:,1) + path_frac(2,1)*rcell_2d(:,2)
@@ -16995,13 +14535,13 @@ subroutine verify_projected_hamiltonian_hermiticity(Hproj, M)
    end if
 
    call MIO_Print('Projected H Hermiticity check:','diag')
-   call MIO_Print('  Matrix size M = '//trim(adjustl(num2str(real(M,dp),0)))//', elements checked = '//trim(adjustl(num2str(real(count,dp),0))),'diag')
+   call MIO_Print('  Matrix size M = '//trim(adjustl(num2str(real(M,dp),0)))//', elements checked = ' &
+         //trim(adjustl(num2str(real(count,dp),0))),'diag')
    call MIO_Print('  Max |H(i,j) - H*(j,i)| = '//trim(adjustl(num2str(max_hermitian_dev,10))),'diag')
    call MIO_Print('  Avg |H(i,j) - H*(j,i)| = '//trim(adjustl(num2str(avg_hermitian_dev,10))),'diag')
    call MIO_Print('  Expected: ~0.0 for Hermitian matrix','diag')
 
 end subroutine verify_projected_hamiltonian_hermiticity
-
 
 subroutine build_tapw_labels(layerIndex, species, N, label, Nlabel)
   use iso_fortran_env, only: dp => real64
@@ -17020,7 +14560,7 @@ subroutine build_tapw_labels(layerIndex, species, N, label, Nlabel)
   allocate(raw_label(N))
   do i = 1, N
      if (layerIndex(i) < 0 .or. species(i) < 0) then
-        stop "build_tapw_labels: negative layer/species not allowed"
+        error stop "build_tapw_labels: negative layer/species not allowed"
      end if
      raw_label(i) = 10*layerIndex(i) + species(i)
   end do
@@ -17061,7 +14601,7 @@ subroutine build_tapw_labels(layerIndex, species, N, label, Nlabel)
   end do
 
   ! (Optional) debug print
-  print *, "TAPW labels (sorted):"
+  call MIO_Print("TAPW labels (sorted):",'diag')
   do j = 1, Nlabel
      print '(A,I0,A,I0)', "  code ", uniq(j), " -> contiguous ", j
   end do
@@ -17203,13 +14743,6 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
 
         ! Add SCF terms if spin-polarized (matches DiagHam implementation)
         ! Commented out: not doing any SCF calculation for now (matches BuildBlockHamiltonianOnly)
-        !if (ns==2) then
-        !   if (is==1) then
-        !      soc_diagonal_contrib = soc_diagonal_contrib + U(Species(i))*(charge(2,i)-Zch)/2.0_dp
-        !   else
-        !      soc_diagonal_contrib = soc_diagonal_contrib + U(Species(i))*(charge(1,i)-Zch)/2.0_dp
-        !   end if
-        !end if
 
         ! Add diagonal element if H0(i) is non-zero OR if SOC/SCF contributions are non-zero
         ! Note: Dense path matches DiagHam exactly (no sigma - sigma is only for sparse shift-and-invert)
@@ -17235,14 +14768,9 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
                 H_dense(in, i) = H_dense(in, i) - hopp(j, i) * exp(-cmplx_i * dot_product(KLoc, R))
                 ! Apply PIA hopping terms if enabled (matches DiagHam implementation)
                 ! PIA hopping not yet properly implemented - commented out
-                !if (PIASOCterm) then
                 !   ! PIA hopping: ApplyPIAHopping sets HLoc(in, i) = HLoc(in, i) + phase
                 !   ! where phase = lambdaPIA * cmplx(neighD(2, j, i), neighD(1, j, i))
                 !   ! Then it sets HLoc(i, in) = HLoc(i, in) - conjg(phase) for Hermiticity
-                !   phase = lambdaPIA * cmplx(NeighD(2, j, i), NeighD(1, j, i))
-                !   H_dense(in, i) = H_dense(in, i) + phase
-                !   H_dense(i, in) = H_dense(i, in) - conjg(phase)
-                !end if
             end if
         end do
     end do
@@ -17262,7 +14790,8 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
     end if
 
     if (tapwDebug) call MIO_Print('Dense Hamiltonian matrix constructed, performing TAPW transformation','diag')
-    if (tapwDebug) call MIO_Print('  Matrix dimensions: H('//trim(num2str(N))//'×'//trim(num2str(N))//'), X('//trim(num2str(N))//'×'//trim(num2str(M))//')','diag')
+    if (tapwDebug) call MIO_Print('  Matrix dimensions: H('//trim(num2str(N))//'×'//trim(num2str(N))//'), X(' &
+          //trim(num2str(N))//'×'//trim(num2str(M))//')','diag')
 
     ! Check hermiticity of dense Hamiltonian (only if tapwDebug enabled)
     if (tapwDebug) then
@@ -17295,27 +14824,35 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
             call MIO_Print('  H('//trim(num2str(max_j))//','//trim(num2str(max_i))//') = '//&
                          trim(num2str(real(H_dense(max_j,max_i)),8))//' + i*'//trim(num2str(aimag(H_dense(max_j,max_i)),8)),'diag')
             call MIO_Print('  conjg(H('//trim(num2str(max_j))//','//trim(num2str(max_i))//')) = '//&
-                         trim(num2str(real(conjg(H_dense(max_j,max_i))),8))//' + i*'//trim(num2str(aimag(conjg(H_dense(max_j,max_i))),8)),'diag')
+                         trim(num2str(real(conjg(H_dense(max_j,max_i))),8))//' + i*' &
+                               //trim(num2str(aimag(conjg(H_dense(max_j,max_i))),8)),'diag')
             call MIO_Print('  Error = '//trim(num2str(max_debug_error,8)),'diag')
 
             ! DEBUG: Check if there are duplicate entries in neighbor list for problematic atoms
-            call MIO_Print('DEBUG: Checking neighbor list for atoms '//trim(num2str(max_i))//' and '//trim(num2str(max_j))//':','diag')
+            call MIO_Print('DEBUG: Checking neighbor list for atoms '//trim(num2str(max_i))//' and ' &
+                  //trim(num2str(max_j))//':','diag')
 
             ! Check if max_i has max_j as neighbor
             do j = 1, Nneigh(max_i)
                 if (NList(j, max_i) == max_j) then
-                    call MIO_Print('  Atom '//trim(num2str(max_i))//' has atom '//trim(num2str(max_j))//' as neighbor '//trim(num2str(j)),'diag')
-                    call MIO_Print('  NeighD = ['//trim(num2str(NeighD(1,j,max_i),6))//','//trim(num2str(NeighD(2,j,max_i),6))//']','diag')
-                    call MIO_Print('  hopp = '//trim(num2str(real(hopp(j,max_i)),8))//' + i*'//trim(num2str(aimag(hopp(j,max_i)),8)),'diag')
+                    call MIO_Print('  Atom '//trim(num2str(max_i))//' has atom '//trim(num2str(max_j))//' as neighbor ' &
+                          //trim(num2str(j)),'diag')
+                    call MIO_Print('  NeighD = ['//trim(num2str(NeighD(1,j,max_i),6))//',' &
+                          //trim(num2str(NeighD(2,j,max_i),6))//']','diag')
+                    call MIO_Print('  hopp = '//trim(num2str(real(hopp(j,max_i)),8))//' + i*' &
+                          //trim(num2str(aimag(hopp(j,max_i)),8)),'diag')
                 end if
             end do
 
             ! Check if max_j has max_i as neighbor
             do j = 1, Nneigh(max_j)
                 if (NList(j, max_j) == max_i) then
-                    call MIO_Print('  Atom '//trim(num2str(max_j))//' has atom '//trim(num2str(max_i))//' as neighbor '//trim(num2str(j)),'diag')
-                    call MIO_Print('  NeighD = ['//trim(num2str(NeighD(1,j,max_j),6))//','//trim(num2str(NeighD(2,j,max_j),6))//']','diag')
-                    call MIO_Print('  hopp = '//trim(num2str(real(hopp(j,max_j)),8))//' + i*'//trim(num2str(aimag(hopp(j,max_j)),8)),'diag')
+                    call MIO_Print('  Atom '//trim(num2str(max_j))//' has atom '//trim(num2str(max_i))//' as neighbor ' &
+                          //trim(num2str(j)),'diag')
+                    call MIO_Print('  NeighD = ['//trim(num2str(NeighD(1,j,max_j),6))//',' &
+                          //trim(num2str(NeighD(2,j,max_j),6))//']','diag')
+                    call MIO_Print('  hopp = '//trim(num2str(real(hopp(j,max_j)),8))//' + i*' &
+                          //trim(num2str(aimag(hopp(j,max_j)),8)),'diag')
                 end if
             end do
         else
@@ -17364,7 +14901,7 @@ subroutine read_rigid_positions_for_tapw(filename, N, rigid_positions)
     if (i /= 0) then
         call MIO_Print('ERROR: Cannot open rigid position file: '//trim(filename),'diag')
         call MIO_Print('Make sure generateInit.xyz exists in the working directory','diag')
-        stop 'Failed to open rigid position file'
+        error stop 'Failed to open rigid position file'
     end if
 
     ! Read cell vectors (3 lines) - we don't need them but must skip them
@@ -17378,7 +14915,7 @@ subroutine read_rigid_positions_for_tapw(filename, N, rigid_positions)
         call MIO_Print('ERROR: Atom count mismatch!','diag')
         call MIO_Print('  Current system has '//trim(num2str(N))//' atoms','diag')
         call MIO_Print('  Rigid file has '//trim(num2str(N_file))//' atoms','diag')
-        stop 'Atom count mismatch between current system and rigid reference'
+        error stop 'Atom count mismatch between current system and rigid reference'
     end if
 
     ! Read atomic positions (columns 2, 3, 4 are x, y, z)
@@ -17455,7 +14992,8 @@ subroutine GetBandEnergyRange(band_index, min_energy, max_energy, spin_index)
 
    ! Check spin index bounds
    if (is_local < 1 .or. is_local > stored_nspin) then
-      call MIO_Print('WARNING: spin_index '//trim(num2str(is_local))//' out of range [1,'//trim(num2str(stored_nspin))//'], using 1','diag')
+      call MIO_Print('WARNING: spin_index '//trim(num2str(is_local))//' out of range [1,'//trim(num2str(stored_nspin)) &
+            //'], using 1','diag')
       is_local = 1
    end if
 
@@ -17577,10 +15115,12 @@ subroutine verify_eigenvector_eigenvalue_alignment(H, eigvec, eigval, M, kpoint_
 
    ! Report results
    if (alignment_ok) then
-      call MIO_Print('  ✓ Eigenvector-eigenvalue alignment verified (max residual = '//trim(num2str(abs(max_residual),8))//')','diag')
+      call MIO_Print('  ✓ Eigenvector-eigenvalue alignment verified (max residual = ' &
+            //trim(num2str(abs(max_residual),8))//')','diag')
    else
       call MIO_Print('  ✗ EIGENVECTOR-EIGENVALUE MISALIGNMENT DETECTED!','diag')
-      call MIO_Print('  ✗ Maximum residual = '//trim(num2str(abs(max_residual),8))//' (tolerance = '//trim(num2str(tolerance,8))//')','diag')
+      call MIO_Print('  ✗ Maximum residual = '//trim(num2str(abs(max_residual),8))//' (tolerance = ' &
+            //trim(num2str(tolerance,8))//')','diag')
       call MIO_Print('  ✗ This indicates eigenvectors and eigenvalues are from different diagonalizations!','diag')
 
       ! Additional diagnostic for first few bands
@@ -17592,7 +15132,8 @@ subroutine verify_eigenvector_eigenvalue_alignment(H, eigvec, eigval, M, kpoint_
                residual = residual + (H(j,i) - eigval(i) * eigvec(j,i)) * conjg(H(j,i) - eigval(i) * eigvec(j,i))
             end do
             residual = sqrt(residual)
-            call MIO_Print('    Band '//trim(num2str(i))//': λ = '//trim(num2str(eigval(i),6))//', residual = '//trim(num2str(abs(residual),8)),'diag')
+            call MIO_Print('    Band '//trim(num2str(i))//': λ = '//trim(num2str(eigval(i),6))//', residual = ' &
+                  //trim(num2str(abs(residual),8)),'diag')
          end do
       end if
    end if
@@ -17731,7 +15272,8 @@ subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band
       write(filename, '(A,I0,A,I0,A)') 'berry_curvature_bands_', band_indices(1), '_and_', band_indices(2), '.dat'
    else
       ! For 3+ bands, show first and last with count
-      write(filename, '(A,I0,A,I0,A,I0,A)') 'berry_curvature_bands_', band_indices(1), '_to_', band_indices(n_target_bands), '_', n_target_bands, 'bands.dat'
+      write(filename, '(A,I0,A,I0,A,I0,A)') 'berry_curvature_bands_', band_indices(1), '_to_', &
+            band_indices(n_target_bands), '_', n_target_bands, 'bands.dat'
    end if
 
    ! Open file (append mode for multiple k-points)
@@ -17774,9 +15316,11 @@ subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band
       call MIO_Print('=== HOTSPOT DETECTION (k-point 1) ===','diag')
       do i = 1, n_target_bands
          if (abs(berry_curv_bands(i)) > 1.0_dp) then
-            call MIO_Print('  HOTSPOT: Band '//trim(num2str(band_indices(i)))//' |Ω| = '//trim(num2str(abs(berry_curv_bands(i)),6)),'diag')
+            call MIO_Print('  HOTSPOT: Band '//trim(num2str(band_indices(i)))//' |Ω| = ' &
+                  //trim(num2str(abs(berry_curv_bands(i)),6)),'diag')
          else if (abs(berry_curv_bands(i)) > 0.1_dp) then
-            call MIO_Print('  Moderate: Band '//trim(num2str(band_indices(i)))//' |Ω| = '//trim(num2str(abs(berry_curv_bands(i)),6)),'diag')
+            call MIO_Print('  Moderate: Band '//trim(num2str(band_indices(i)))//' |Ω| = ' &
+                  //trim(num2str(abs(berry_curv_bands(i)),6)),'diag')
          end if
       end do
    end if
@@ -17925,7 +15469,8 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
    if (.not. SOCEnabledForLayer(layerIndex(i))) then
       ! Debug output when SOC is skipped due to layer control
       if (socDebug .and. i <= 5 .and. j == 1) then
-         call MIO_Print('SOC skipped: atom i='//trim(num2str(i))//' is in layer '//trim(num2str(layerIndex(i)))//' (not in SOCLayers list)', 'diag')
+         call MIO_Print('SOC skipped: atom i='//trim(num2str(i))//' is in layer '//trim(num2str(layerIndex(i))) &
+               //' (not in SOCLayers list)', 'diag')
       end if
       return
    end if
@@ -17937,8 +15482,10 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
    if (socDebug .and. i <= 2 .and. j <= 10) then  ! Show first 10 neighbors instead of just 2
       acc = 2.46_dp / sqrt(3.0_dp)
       dist = sqrt(neighD(1, j, i)**2.0_dp + neighD(2, j, i)**2.0_dp)
-      call MIO_Print('Rashba Check: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in))//', layer_i='//trim(num2str(layerIndex(i)))//', layer_in='//trim(num2str(layerIndex(in))), 'diag')
-      call MIO_Print('Species_i='//trim(num2str(Species(i)))//', Species_in='//trim(num2str(Species(in)))//', dist='//trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp)), 'diag')
+      call MIO_Print('Rashba Check: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
+            //', layer_i='//trim(num2str(layerIndex(i)))//', layer_in='//trim(num2str(layerIndex(in))), 'diag')
+      call MIO_Print('Species_i='//trim(num2str(Species(i)))//', Species_in='//trim(num2str(Species(in)))//', dist=' &
+            //trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp)), 'diag')
 
       ! Check each condition individually
       if (i == in) then
@@ -17948,7 +15495,8 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
       else if (Species(i) == Species(in)) then
          call MIO_Print('  -> REJECTED: Same species', 'diag')
       else if (dist >= acc * 1.1_dp) then
-         call MIO_Print('  -> REJECTED: Distance too large (dist='//trim(num2str(dist))//' >= cutoff='//trim(num2str(acc*1.1_dp))//')', 'diag')
+         call MIO_Print('  -> REJECTED: Distance too large (dist='//trim(num2str(dist))//' >= cutoff=' &
+               //trim(num2str(acc*1.1_dp))//')', 'diag')
       else
          call MIO_Print('  -> ALL CONDITIONS MET! (A-B nearest neighbor)', 'diag')
       end if
@@ -17967,7 +15515,9 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
 
      ! Debug: Rashba is being applied!
      if (socDebug .and. i <= 2 .and. j <= 10) then  ! Show first 10 neighbors instead of just 2
-        call MIO_Print('*** RASHBA APPLIED *** i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in))//', dist='//trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp))//' (A-B nearest neighbor)', 'diag')
+        call MIO_Print('*** RASHBA APPLIED *** i='//trim(num2str(i))//', j='//trim(num2str(j))//', in=' &
+              //trim(num2str(in))//', dist='//trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp)) &
+              //' (A-B nearest neighbor)', 'diag')
      end if
 
      dx = neighD(1, j, i)
@@ -17982,7 +15532,8 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
 
      ! Debug output for first few bonds
      if (socDebug .and. i <= 2 .and. j <= 10) then  ! Show first 10 neighbors instead of just 2
-        call MIO_Print('Rashba Debug: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in))//', lambdaR='//trim(num2str(lambdaR))//', dx='//trim(num2str(dx))//', dy='//trim(num2str(dy)), 'diag')
+        call MIO_Print('Rashba Debug: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
+              //', lambdaR='//trim(num2str(lambdaR))//', dx='//trim(num2str(dx))//', dy='//trim(num2str(dy)), 'diag')
         call MIO_Print('RashbaHopp = '//trim(num2str(real(RashbaHopp)))//' + i*'//trim(num2str(aimag(RashbaHopp))), 'diag')
         call MIO_Print('Adding to HLoc('//trim(num2str(i))//','//trim(num2str(in+N))//') = spin-flip term', 'diag')
      end if
@@ -17994,11 +15545,14 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
      ! Debug: Check if we're accidentally adding diagonal terms (which would cause global shift)
      if (socDebug .and. i <= 2 .and. j <= 10) then
         if (i == in) then
-           call MIO_Print('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','//trim(num2str(i))//') - this causes global shift!', 'diag')
+           call MIO_Print('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','//trim(num2str(i)) &
+                 //') - this causes global shift!', 'diag')
         else if (i == in + N) then
-           call MIO_Print('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','//trim(num2str(in+N))//') - this causes global shift!', 'diag')
+           call MIO_Print('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','//trim(num2str(in+N)) &
+                 //') - this causes global shift!', 'diag')
         else
-           call MIO_Print('OK: Adding Rashba to off-diagonal spin-flip term HLoc('//trim(num2str(i))//','//trim(num2str(in+N))//')', 'diag')
+           call MIO_Print('OK: Adding Rashba to off-diagonal spin-flip term HLoc('//trim(num2str(i))//',' &
+                 //trim(num2str(in+N))//')', 'diag')
         end if
      end if
 
@@ -18052,11 +15606,7 @@ subroutine BuildBlockHamiltonian(N, KLoc, cell, H0, maxN, hopp, NList, Nneigh, n
       HBlock(i + N, i + N) = H0(i) ! Spin-down diagonal
 
       ! Apply SCF potential if spin-polarized and SCF is enabled
-      !if (nspin == 2) then
       !   ! Use charge data even for non-SCF (charge is still available)
-      !   HBlock(i, i) = HBlock(i, i) + U(Species(i)) * (charge(2,i) - Zch) / 2.0_dp
-      !   HBlock(i + N, i + N) = HBlock(i + N, i + N) + U(Species(i)) * (charge(1,i) - Zch) / 2.0_dp
-      !end if
 
       ! Apply diagonal SOC terms to both blocks
       call ApplySOCtoBlock(i, HBlock)
@@ -18072,11 +15622,11 @@ subroutine BuildBlockHamiltonian(N, KLoc, cell, H0, maxN, hopp, NList, Nneigh, n
 
          ! Debug: Check if we're actually looping through all neighbors
          if (socDebug .and. i <= 2 .and. j <= 5) then
-            call MIO_Print('  Neighbor loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in))//', total_neighbors='//trim(num2str(Nneigh(i))), 'diag')
+            call MIO_Print('  Neighbor loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
+                  //', total_neighbors='//trim(num2str(Nneigh(i))), 'diag')
          end if
 
          ! Only set lower triangular elements (row >= col)
-         !if (in <= i) then
             ! Use actual atomic position difference instead of lattice vector
             ! NeighD(:,j,i) contains the vector from atom i to atom j: (τ_j - τ_i) + T_ij
             ! For consistency with paper formulation, use -NeighD to get distance from i to j
@@ -18090,13 +15640,11 @@ subroutine BuildBlockHamiltonian(N, KLoc, cell, H0, maxN, hopp, NList, Nneigh, n
 
             ! Apply PIA hopping terms if enabled (matches non-TAPW SOC path)
             ! PIA hopping not yet properly implemented - commented out
-            !call ApplyPIAHopping(i, j, in, N, HBlock, .true.)
 
             ! Apply Rashba spin-flip terms if enabled
             if (RashbaSOCterm) then
                call ApplySpinFlipSOC(i, j, in, KLoc, R, N, HBlock)
             end if
-         !end if
       end do
    end do
 
@@ -18174,11 +15722,7 @@ subroutine BuildBlockHamiltonianOnly(N, KLoc, cell, H0, maxN, hopp, NList, Nneig
       HBlock(i + N, i + N) = H0(i) ! Spin-down diagonal
 
       ! Apply SCF potential if spin-polarized and SCF is enabled
-      !if (nspin == 2) then
       !   ! Use charge data even for non-SCF (charge is still available)
-      !   HBlock(i, i) = HBlock(i, i) + U(Species(i)) * (charge(2,i) - Zch) / 2.0_dp
-      !   HBlock(i + N, i + N) = HBlock(i + N, i + N) + U(Species(i)) * (charge(1,i) - Zch) / 2.0_dp
-      !end if
 
       ! Apply diagonal SOC terms to both blocks
       call ApplySOCtoBlock(i, HBlock)
@@ -18186,7 +15730,8 @@ subroutine BuildBlockHamiltonianOnly(N, KLoc, cell, H0, maxN, hopp, NList, Nneig
       ! Build hopping for both spin blocks
       ! Debug: Check neighbor count for first few atoms
       if (socDebug .and. i <= 2) then
-         call MIO_Print('BuildBlockHamiltonianOnly: Atom '//trim(num2str(i))//' has '//trim(num2str(Nneigh(i)))//' neighbors', 'diag')
+         call MIO_Print('BuildBlockHamiltonianOnly: Atom '//trim(num2str(i))//' has '//trim(num2str(Nneigh(i))) &
+               //' neighbors', 'diag')
       end if
 
       do j = 1, Nneigh(i)
@@ -18194,16 +15739,17 @@ subroutine BuildBlockHamiltonianOnly(N, KLoc, cell, H0, maxN, hopp, NList, Nneig
 
          ! Debug: Check if we're actually looping through all neighbors
          if (socDebug .and. i <= 2 .and. j <= 5) then
-            call MIO_Print('  Neighbor loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in))//', total_neighbors='//trim(num2str(Nneigh(i))), 'diag')
+            call MIO_Print('  Neighbor loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
+                  //', total_neighbors='//trim(num2str(Nneigh(i))), 'diag')
          end if
 
          ! Debug: Progress indicator for atom 1
          if (socDebug .and. i == 1 .and. modulo(j, 10) == 0) then
-            call MIO_Print('BuildBlockHamiltonianOnly: Atom 1 progress: j='//trim(num2str(j))//'/'//trim(num2str(Nneigh(i))), 'diag')
+            call MIO_Print('BuildBlockHamiltonianOnly: Atom 1 progress: j='//trim(num2str(j))//'/' &
+                  //trim(num2str(Nneigh(i))), 'diag')
          end if
 
          ! Only set lower triangular elements (row >= col)
-         !if (in <= i) then
             ! Use actual atomic position difference instead of lattice vector
             ! NeighD(:,j,i) contains the vector from atom i to atom j: (τ_j - τ_i) + T_ij
             ! For consistency with paper formulation, use -NeighD to get distance from i to j
@@ -18217,7 +15763,6 @@ subroutine BuildBlockHamiltonianOnly(N, KLoc, cell, H0, maxN, hopp, NList, Nneig
 
             ! Apply PIA hopping terms if enabled (matches non-TAPW SOC path)
             ! PIA hopping not yet properly implemented - commented out
-            !call ApplyPIAHopping(i, j, in, N, HBlock, .true.)
 
             ! Apply Rashba spin-flip terms if enabled
             ! Note: ApplySpinFlipSOC uses NeighD internally for bond direction (unit vector)
@@ -18225,7 +15770,6 @@ subroutine BuildBlockHamiltonianOnly(N, KLoc, cell, H0, maxN, hopp, NList, Nneig
             if (RashbaSOCterm) then
                call ApplySpinFlipSOC(i, j, in, KLoc, R, N, HBlock)
             end if
-         !end if
       end do
 
       ! Debug: Show completion of atom i in BuildBlockHamiltonianOnly
@@ -18280,8 +15824,10 @@ subroutine DiagBlockHamiltonian(HBlock, EBlock, N)
 
    ! Debug: Warn about large matrix diagonalization
    if (socDebug) then
-      call MIO_Print('DiagBlockHamiltonian: Starting ZHEEV diagonalization for '//trim(num2str(2*N))//'×'//trim(num2str(2*N))//' matrix (this may take several minutes to hours for large systems)', 'diag')
-      call MIO_Print('  Matrix size: N='//trim(num2str(N))//', 2N='//trim(num2str(2*N))//', estimated memory: ~'//trim(num2str(int(2*N*2*N*16.0_dp/1024.0_dp/1024.0_dp/1024.0_dp)))//' GB', 'diag')
+      call MIO_Print('DiagBlockHamiltonian: Starting ZHEEV diagonalization for '//trim(num2str(2*N))//'×' &
+            //trim(num2str(2*N))//' matrix (this may take several minutes to hours for large systems)', 'diag')
+      call MIO_Print('  Matrix size: N='//trim(num2str(N))//', 2N='//trim(num2str(2*N))//', estimated memory: ~' &
+            //trim(num2str(int(2*N*2*N*16.0_dp/1024.0_dp/1024.0_dp/1024.0_dp)))//' GB', 'diag')
    end if
 
    ! Diagonalize block Hamiltonian
@@ -18306,7 +15852,8 @@ end subroutine DiagBlockHamiltonian
 !! @param[inout]  HBlock  Block Hamiltonian (2N×2N)
 subroutine ApplySOCtoBlock(i, HBlock)
 
-   use ham, only : Zterm, gZeeman, IntrinsicSOCterm, lambdaI, IsingSOCterm, lambdaIsing, PIASOCterm, lambdaPIA, nspin, SOCEnabledForLayer
+   use ham, only : Zterm, gZeeman, IntrinsicSOCterm, lambdaI, IsingSOCterm, lambdaIsing, PIASOCterm, lambdaPIA, nspin, &
+         SOCEnabledForLayer
    use magf, only : BmagZeeman
    use atoms, only : nAt, Species, layerIndex
 

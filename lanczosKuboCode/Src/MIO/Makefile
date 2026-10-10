@@ -83,7 +83,7 @@ mem.f90: $(SRC_DIR)/MIO/mem_in.f90
 debug.o: file.o io.o
 file.o: io.o sys.o format.o
 format.o: precision.o io.o
-input.o: file.o io.o sys.o options.o mem.o
+input.o: file.o io.o sys.o options.o mem.o $(SRC_DIR)/MIO/input_aliases.inc
 input.o: string.o parser.o
 mem.o: format.o sys.o
 parser.o: sys.o precision.o format.o io.o string.o

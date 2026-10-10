@@ -742,6 +742,76 @@ the conductivity remain untested, and the other initialization routines
 - **`ifx`, macOS, Open MPI, MPICH, OpenBLAS:** not tested with the current
   sources.
 
+## Survey of the model switches (October 2026)
+
+`tests/regression/model_survey.py` runs one or more small cases for every model
+switch of the solver (`model_cases.py`) and records how each run ends and a
+fingerprint of the Hamiltonian it builds. It was first run with the checked GNU
+build, then with the optimized GNU and Intel builds. What it found, and what
+was done:
+
+| Finding | Cases | Action |
+| --- | --- | --- |
+| Interlayer decay length shared between OpenMP threads while taking two values; stacks mixing graphene and hBN got a run-dependent, non-Hermitian Hamiltonian with several threads | `encapsulatedFourLayers`, `t2GBN`, `BNt2GBN`, `t3GwithBN` | fixed (thread-private) |
+| Per-thread atom range unset on all threads but the first; every loop over it touched element 0 | `NeighList`, Gaussian disorder | fixed (empty range) |
+| Neighbor index never set in the second-moire bond term | `MoireAddSecondMoire` | fixed |
+| Intralayer parameters of the Bernal-bilayer F2G2 model used without being set: zero, pi, or NaN depending on the compiler | multilayer stacks without `middleTwist`, `fourLayers` | `middleTwist` is now the default unless `forceBilayerF2G2Intralayer`; the remaining combination is refused |
+| Non-finite hoppings or on-site energies, run ended normally | `TypeOfBL BLKaxiras` on a twisted bilayer, `singleLayerXYZ`, `MoireTrilayer` | refused (`HamCheckFinite`) |
+| Reads beyond array bounds | `TypeOfBL Jeil`, `RandomStrain`, `printBubble`, `realisticBubbles`, `addDisplacements` without table | refused |
+| `stop` after an error message ended the run with status 0 | 46 places in `diag.F90` | `error stop` |
+| Size of an unallocated array queried | TAPW work arrays, layer lists of the SOC and Haldane terms | fixed |
+| Spin terms without effect outside TAPW; unfinished self-consistency module | `ZeemanTerm`, `PseudoZeemanTerm`, `IsingSOCterm`; `RashbaSOCterm`; `SpinPolarized` with `EnableSCF` | warning; refused; refused |
+| TAPW with several OpenMP threads aborted with an unrelated message | | refused with instructions |
+| Disorder seeded from the clock only | `Anderson`, `Bubbles`, `GaussDisorder`, `deltaDisorder`, `SublatticeDisorder` | `setSeed` now applies (`RandSeedFromInput`) |
+| Legacy search `NeighList` without `Neigh.CompareAll` gives bands several eV off | graphene cells of 72 to 3200 atoms | warning |
+| Non-Hermitian table without notice | `HaldaneNNN` with `HaldaneSpecifyPhase` | warning |
+| A key given twice: the first value was used silently | | warning |
+
+**Variables used without being set.** 51 cases gave a different Hamiltonian
+with the three builds for identical input. GNU Fortran reports about 120 local
+variables of `HamHopping` that may be used without being set, and the
+variables private to the parallel loops cannot be checked by the compiler.
+`tools/maintenance/mark_unset_variables.py` therefore inserted "not set"
+markers (NaN) in `HamOnSite` and `HamHopping`: for the reported locals at the
+start of the routine, and for every real or complex private variable at the
+top of each iteration of its parallel loop. A model that uses such a value
+unset now produces a non-finite matrix element and is stopped. Effects:
+
+- No model that ran and was the same for all compilers changed, with these
+  exceptions, which had been using an unset value: `GBNOffDiag` (the amplitude
+  `CabG` of its graphene-layer term was only set by `tBGOffDiag`; it is now
+  taken from `MoirePotCabG`, and the model runs with the warning that its
+  hopping table is not Hermitian), `TypeOfBL Mayou` on the twisted bilayer, `BLKaxiras` and
+  `BLSrivani` with `addPressureDependence .false.`, `BLSrivani` with
+  `findThetasGeometrically` (refused through the non-finite check).
+- `realStrain` used the reference distance of the previous neighbor for a
+  bond whose length lay in no shell window. The reference is now set per bond;
+  a bond without hopping needs none, and a bond with a hopping and no
+  reference is counted, left without strain factor, and reported. This also
+  made `Graphene_Over_BN` with `realStrain` Hermitian. The production strained
+  cell (26570 atoms, `shellsFromRigidPositions`) is unchanged: 0 of 106280
+  levels differ.
+- 33 cases remain compiler dependent (`model_cases.COMPILER_DEPENDENT`): the
+  random-disorder models (different generators), on-site potentials that
+  differ with Intel only (`sinusModulation`, `SquareFunction`, `PNP`,
+  `Zterm1D`), `MoireAddSecondMoire` on a minimal input, shifts of the
+  generated structures, and `BLKaxiras` variants that the GNU builds refuse
+  while Intel runs them: with Intel's default floating-point model a marked
+  value does not always propagate.
+
+**Still open.** 55 switches had no effect on any of the 37 structures
+tried; some need companion input that the survey does not give, some are
+probably dead.
+
+**TAPW.** The TAPW routine carried the set-up of the sparse solver without
+calling it; its checks stopped every cell with fewer atoms than ten times
+`Bands.SparseNeig` (1000 by default) and stopped at random when the unset
+start vector happened to hold NaN. They were removed. `check_physics.py` now
+compares TAPW with exact diagonalization on a 364-atom twisted bilayer: within
+1 eV of neutrality the levels of the K and K' runs together are the exact
+levels one to one (0.001 meV, the precision of the band file), and the same
+comparison fails with a wrong moire angle.
+
 ## Suggested next regression tests
 
 Ordered by the amount of existing functionality each one protects:

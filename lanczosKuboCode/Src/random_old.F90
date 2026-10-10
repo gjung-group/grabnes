@@ -59,9 +59,9 @@ subroutine RandInit()
 #ifdef MPI
    end if
 #endif /* MPI */
-   call MIO_InputParameter('RandomTest',test,.false.)
+   call MIO_InputParameter('Random.Test',test,.false.)
    if (test) then
-      call MIO_InputParameter('RandomTestNumber',ntest,100)
+      call MIO_InputParameter('Random.TestNumber',ntest,100)
       call file%Open(name=trim(prefix)//'.RNDM',serial=.true.)
       u = file%GetUnit()
       s = 0.0_dp

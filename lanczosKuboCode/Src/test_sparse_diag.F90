@@ -35,6 +35,10 @@ contains
         integer :: nnz, k, i, j
 
         ! Count the number of non-zero elements
+#ifdef DEBUG
+        call MIO_Debug('convert_to_csr',0)
+#endif /* DEBUG */
+
         nnz = count(HLoc /= (0.0, 0.0))
 
         ! Allocate CSR arrays
@@ -60,6 +64,11 @@ contains
         print *, 'CSR row_ptr: ', row_ptr
         print *, 'CSR col_ind: ', col_ind
         print *, 'CSR values: ', values
+
+#ifdef DEBUG
+        call MIO_Debug('convert_to_csr',1)
+#endif /* DEBUG */
+
     end subroutine convert_to_csr
 end module sparse_matrix_module
 
@@ -94,7 +103,8 @@ program test_csr
     nev = 2
     ncv = 2*nev
     lworkl = 3*ncv**2 + 5*ncv
-    allocate(resid(nn), v(nn, ncv), workd(3*nn), workl(lworkl), rwork(ncv), d(nev), z(nn, nev), iparam(11), ipntr(14), select(ncv), workev(2*ncv))
+    allocate(resid(nn), v(nn, ncv), workd(3*nn), workl(lworkl), rwork(ncv), d(nev), z(nn, nev), iparam(11), ipntr(14), &
+          select(ncv), workev(2*ncv))
 
     bmat = 'I'
     which = 'SM'  ! Smallest magnitude
@@ -126,7 +136,8 @@ program test_csr
     end if
 
     ! Extract eigenvalues and eigenvectors
-    call zneupd(.false., 'A', select, d, z, nn, sigma, workev, bmat, nn, which, nev, 1.0e-10, resid, ncv, v, nn, iparam, ipntr, workd, workl, lworkl, rwork, info)
+    call zneupd(.false., 'A', select, d, z, nn, sigma, workev, bmat, nn, which, nev, 1.0e-10, resid, ncv, v, nn, iparam, &
+          ipntr, workd, workl, lworkl, rwork, info)
     if (info /= 0) then
         print *, 'Error with zneupd, info = ', info
         stop

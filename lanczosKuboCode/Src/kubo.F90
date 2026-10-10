@@ -25,7 +25,6 @@ subroutine KuboInitWF(Psi)
 
    use constants,            only : twopi, cmplx_i, cmplx_0, cmplx_1
    use parallel,             only : nDiv, procID
-   !use random,               only : RandNum, rand_t, RandSeed
 
    complex(dp), intent(out) :: Psi(inode1:)
 
@@ -47,25 +46,20 @@ subroutine KuboInitWF(Psi)
    call random_seed(size = n)
    allocate(seed(n))
    call system_clock(COUNT=clock)
-   call MIO_InputParameter('setSeed',setSeed,.false.)
-   call MIO_InputParameter('seedValue',seedValue,123456)
+   call MIO_InputParameter('Kubo.SetSeed',setSeed,.false.)
+   call MIO_InputParameter('Kubo.SeedValue',seedValue,123456)
    if (setSeed) then
        seed = seedValue
-       print*, "seedValue considered from Gendata"
+       call MIO_Print('seedValue considered from Gendata','kubo')
    else
        seed = clock + 37 * (/ (i - 1, i = 1, n) /)
    end if
    call random_seed(PUT = seed)
 
-   !!$OMP PARALLEL DO
-   !call RandSeed(rng,nThread)
-   !do i=1,nAt
    do i=inode1, inode2
       call random_number(r)
-      !Psi(i) = exp(twopi*cmplx_i*RandNum(rng))/sqrt(real(nAt))
       Psi(i) = exp(twopi*cmplx_i*r)/sqrt(real(nAt))
    end do
-   !!$OMP END PARALLEL DO
 
    cnum = 0.0_dp
    !$OMP PARALLEL DO REDUCTION(+:cnum)
@@ -92,7 +86,6 @@ subroutine KuboInitWFPDOS(Psi,PDOSAtomNumber)
 
    use constants,            only : twopi, cmplx_i, cmplx_0, cmplx_1
    use parallel,             only : nDiv, procID
-   !use random,               only : RandNum, rand_t, RandSeed
 
    complex(dp), intent(out) :: Psi(inode1:)
 
@@ -116,14 +109,10 @@ subroutine KuboInitWFPDOS(Psi,PDOSAtomNumber)
    seed = clock + 37 * (/ (i - 1, i = 1, n) /)
    call random_seed(PUT = seed)
 
-   !!$OMP PARALLEL DO
-   !call RandSeed(rng,nThread)
-   !do i=1,nAt
    do i=inode1, inode2
       Psi(i) = cmplx_0
    end do
    Psi(PDOSAtomNumber) = cmplx_1
-   !!$OMP END PARALLEL DO
 
    cnum = 0.0_dp
    !$OMP PARALLEL DO REDUCTION(+:cnum)
@@ -151,7 +140,6 @@ subroutine KuboInitWFLayerDOS(Psi,layerNumber,numberOfLayers,numberOfAtomsInLaye
    use constants,            only : twopi, cmplx_i, cmplx_0, cmplx_1
    use parallel,             only : nDiv, procID
    use atoms,                only : layerIndex
-   !use random,               only : RandNum, rand_t, RandSeed
 
    complex(dp), intent(out) :: Psi(inode1:)
 
@@ -173,17 +161,12 @@ subroutine KuboInitWFLayerDOS(Psi,layerNumber,numberOfLayers,numberOfAtomsInLaye
    call random_seed(size = n)
    allocate(seed(n))
    call system_clock(COUNT=clock)
-   !seed = clock + 37 * (/ (i - 1, i = 1, n) /)
-   call MIO_InputParameter('SeedSet',SetSeed,1235)
-   print*, "setting the RP seed to", SetSeed
+   call MIO_InputParameter('Kubo.SeedSet',SetSeed,1235)
+   call MIO_Print('Seed of the random-phase state: '//trim(num2str(SetSeed)),'kubo')
    seed = SetSeed
    call random_seed(PUT = seed)
 
-   print*, "inode1, inode2, nAt", inode1, inode2, nAt
-   !!$OMP PARALLEL DO
-   !call RandSeed(rng,nThread)
    do i=1,nAt
-   !do i=inode1, inode2
       if (layerIndex(i).eq.layerNumber) then
           call random_number(r)
           Psi(i) = exp(twopi*cmplx_i*r)/sqrt(real(numberOfAtomsInLayer))
@@ -191,7 +174,6 @@ subroutine KuboInitWFLayerDOS(Psi,layerNumber,numberOfLayers,numberOfAtomsInLaye
           Psi(i) = cmplx_0
       end if
    end do
-   !!$OMP END PARALLEL DO
 
    cnum = 0.0_dp
    !$OMP PARALLEL DO REDUCTION(+:cnum)
@@ -219,7 +201,6 @@ subroutine KuboInitWFLayerAndSpeciesDOS(Psi,layerNumber,speciesNumber,numberOfLa
    use constants,            only : twopi, cmplx_i, cmplx_0, cmplx_1
    use parallel,             only : nDiv, procID
    use atoms,                only : layerIndex, Species
-   !use random,               only : RandNum, rand_t, RandSeed
 
    complex(dp), intent(out) :: Psi(inode1:)
 
@@ -241,17 +222,12 @@ subroutine KuboInitWFLayerAndSpeciesDOS(Psi,layerNumber,speciesNumber,numberOfLa
    call random_seed(size = n)
    allocate(seed(n))
    call system_clock(COUNT=clock)
-   !seed = clock + 37 * (/ (i - 1, i = 1, n) /)
-   call MIO_InputParameter('SeedSet',SetSeed,1235)
-   print*, "setting the RP seed to", SetSeed
+   call MIO_InputParameter('Kubo.SeedSet',SetSeed,1235)
+   call MIO_Print('Seed of the random-phase state: '//trim(num2str(SetSeed)),'kubo')
    seed = SetSeed
    call random_seed(PUT = seed)
 
-   print*, "inode1, inode2, nAt", inode1, inode2, nAt
-   !!$OMP PARALLEL DO
-   !call RandSeed(rng,nThread)
    do i=1,nAt
-   !do i=inode1, inode2
       if (layerIndex(i).eq.layerNumber .and. Species(i) .eq. speciesNumber) then
           call random_number(r)
           Psi(i) = exp(twopi*cmplx_i*r)/sqrt(real(numberOfAtomsInLayer))
@@ -259,7 +235,6 @@ subroutine KuboInitWFLayerAndSpeciesDOS(Psi,layerNumber,speciesNumber,numberOfLa
           Psi(i) = cmplx_0
       end if
    end do
-   !!$OMP END PARALLEL DO
 
    cnum = 0.0_dp
    !$OMP PARALLEL DO REDUCTION(+:cnum)
@@ -286,10 +261,6 @@ subroutine KuboDOS(Psi,Psin,Psinm1,a,b,H,H0,hopp,NList,nRecurs,eps,nEn,Emin,Emax
 
    use name,                 only : prefix
    use kubosubs,             only : KuboRecursion, KuboFrac, KuboFermi
-   !use neigh,                only : nList
-
-   !real(dp), parameter :: epsF=0.01_dp, EnF=10.0_dp
-   !integer, parameter :: EptsF=20000
 
    complex(dp), intent(out) :: Psi(inode1:),Psin(inode1:),Psinm1(inode1:)
    real(dp), intent(out) :: a(nRecurs), b(nRecurs)
@@ -316,17 +287,9 @@ subroutine KuboDOS(Psi,Psin,Psinm1,a,b,H,H0,hopp,NList,nRecurs,eps,nEn,Emin,Emax
    call MIO_print('Calculating DOS by recursion','kubo')
    call KuboRecursion(Psi,Psin,Psinm1,nRecurs,a,b,H,H0,hopp,nList,.true.,trim(prefix))
    ! DOS for all energy range to obtain Fermi energy
-   !call KuboFrac(a,b,nRecurs,1.0_dp,epsF,EptsF,-EnF,EnF,'DAT.FERMI')
-   !call KuboFermi(EptsF)
    ! The DOS with more resoulution in the range specified
    flnm = trim(prefix)//'.DOS'
    flnm2 = trim(prefix)//'.AB'
-   !call MIO_InputParameter('CalculateInterval',calculateInterval,.false.)
-   !if (calculateInterval) then
-   !   call intervalle(a, b, ac, bc, nRecurs)
-   !   Emin = ac-2.0d0*bc
-   !   Emax = ac+2.0d0*bc
-   !end if
    call KuboFrac(a,b,nRecurs,1.0_dp,eps,nEn,Emin,Emax,flnm,flnm2)
    call MIO_Print('DOS written','kubo')
    call MIO_Print('')
@@ -337,7 +300,6 @@ subroutine KuboDOS(Psi,Psin,Psinm1,a,b,H,H0,hopp,NList,nRecurs,eps,nEn,Emin,Emax
 #ifdef DEBUG
    call MIO_Debug('KuboDOS',1)
 #endif /* DEBUG */
-
 
 end subroutine KuboDOS
 
@@ -424,45 +386,18 @@ end subroutine KuboTEvol
 !!-----------------------------------------------------------------------
 !
 !      SUBROUTINE intervalle (a, b, ac, bc, NRECURS)
-!      IMPLICIT NONE
-!      integer :: NRECURS
-!      real(dp) :: a (NRECURS), b (NRECURS), ac, bc
 !      !INTEGER NRECURS
-!      real(dp) :: am (NRECURS), bm (NRECURS), z (NRECURS, NRECURS)
-!      integer ::  i, j
-!      real(dp) :: emin, emax
 !!  Fait appel a tqli.f, DOnc aussi a pythag.f (Numerical Recipes)
 !
-!      z(:,:) = 0.
 !
-!      DO i = 1, NRECURS
-!        z (i, i) = 1.
-!      ENDDO
 !
-!      DO i = 1, NRECURS - 1
-!      am (i) = a (i)
-!      bm (i + 1) = b (i)
-!      ENDDO
-!      am (NRECURS) = a (NRECURS)
 !
-!      CALL tqli (am, bm, NRECURS, NRECURS, z)
 !
-!      emin = am (1)
-!      emax = am (1)
-!      DO i = 2, NRECURS
-!      IF (am (i) .le.emin) emin = am (i)
-!      IF (am (i) .ge.emax) emax = am (i)
-!      ENDDO
 !
 !!  Intervalle [ac-2bc,ac+2bc] contenant tout le spectre (avec 10% de
 !!  marge) :
-!      ac = (emax + emin) / 2.
-!      bc = 1.1 * (emax - emin) / 4.
 !      !print*, "inside subroutine place 5"
 !
-!      RETURN
-!      END SUBROUTINE intervalle
 !
-
 
 end module kubo

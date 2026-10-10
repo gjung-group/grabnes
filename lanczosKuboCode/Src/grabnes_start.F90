@@ -11,7 +11,7 @@ contains
 subroutine GrabnesStart(success)
 
    use mio
-   use name
+   use name,                 only : prefix, sysname
    !use random,               only : RandTest, RandSeed, rand_t
 
    logical, intent(out) :: success
@@ -24,19 +24,19 @@ subroutine GrabnesStart(success)
    call MIO_Initialize('grabnes',success)
    if (success) then
       call StartHeader()
-      call MIO_InputParameter('Description',desc,'')
+      call MIO_InputParameter('Run.Description',desc,'')
       if (desc/='') then
          call MIO_Print('---- Description of the system ----','start')
          call MIO_Print(desc,'start')
          call MIO_Print('-------------------------------------------------------'&
            //'-----------','start')
       end if
-      call MIO_InputParameter('Prefix',sysname,'grabnes')
+      call MIO_InputParameter('Run.Prefix',sysname,'grabnes')
       prefix = sysname
    end if
    call MIO_Print('')
-   !call MIO_InputParameter('RandomTest',rtest,.false.)
-   !call MIO_InputParameter('RandomTestNumber',ntest,100)
+   !call MIO_InputParameter('Random.Test',rtest,.false.)
+   !call MIO_InputParameter('Random.TestNumber',ntest,100)
    !if (rtest) then
    !!$OMP PARALLEL
    !   call RandSeed(rng,nThread)

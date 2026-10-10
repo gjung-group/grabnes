@@ -27,20 +27,17 @@ subroutine moireBLShiftInit()
    call MIO_TimerCount('moireBLShift')
 #endif /* TIMER */
 
-   call MIO_InputParameter('moireBLShiftDefinedValues',u,.false.)
-   call MIO_InputParameter('moireBLShiftRange',v,.false.)
+   call MIO_InputParameter('Moire.BLShiftDefinedValues',u,.false.)
+   call MIO_InputParameter('Moire.BLShiftRange',v,.false.)
    if (u) then
       mSi = 0
       mSf = mSi
       mSStep = 1
-      print*, "hereclup", mSi, mSf
    else if (v) then
-      call MIO_InputParameter('moireBLShiftRangeSteps',mSStep,10)
+      call MIO_InputParameter('Moire.BLShiftRangeSteps',mSStep,10)
       mSi = 0
       mSf = mSi + mSStep
-      print*, "hereclap", mSi, mSf
    end if
-
 
 #ifdef TIMER
    call MIO_TimerStop('moireBLShift')
@@ -66,22 +63,22 @@ subroutine moireBLShiftValue(mS)
    call MIO_TimerCount('moireBLShift')
 #endif /* TIMER */
 
-   call MIO_InputParameter('moireBLShiftDefinedValues',u,.false.)
-   call MIO_InputParameter('moireBLShiftRange',v,.false.)
+   call MIO_InputParameter('Moire.BLShiftDefinedValues',u,.false.)
+   call MIO_InputParameter('Moire.BLShiftRange',v,.false.)
    if (u) then
-      call MIO_InputParameter('MoireBilayerBottomXShift',tauX1,0.0_dp)
-      call MIO_InputParameter('MoireBilayerBottomYShift',tauY1,0.0_dp)
-      call MIO_InputParameter('MoireBilayerTopXShift',tauX2,0.0_dp)
-      call MIO_InputParameter('MoireBilayerTopYShift',tauY2,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerBottomXShift',tauX1,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerBottomYShift',tauY1,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerTopXShift',tauX2,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerTopYShift',tauY2,0.0_dp)
    else if (v) then
-      call MIO_InputParameter('MoireBilayerBottomXMin',xmin1,0.0_dp)
-      call MIO_InputParameter('MoireBilayerBottomXMax',xmax1,0.0_dp)
-      call MIO_InputParameter('MoireBilayerBottomYMin',ymin1,0.0_dp)
-      call MIO_InputParameter('MoireBilayerBottomYMax',ymax1,0.0_dp)
-      call MIO_InputParameter('MoireBilayerTopXMin',xmin2,0.0_dp)
-      call MIO_InputParameter('MoireBilayerTopXMax',xmax2,0.0_dp)
-      call MIO_InputParameter('MoireBilayerTopYMin',ymin2,0.0_dp)
-      call MIO_InputParameter('MoireBilayerTopYMax',ymax2,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerBottomXMin',xmin1,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerBottomXMax',xmax1,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerBottomYMin',ymin1,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerBottomYMax',ymax1,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerTopXMin',xmin2,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerTopXMax',xmax2,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerTopYMin',ymin2,0.0_dp)
+      call MIO_InputParameter('Moire.BilayerTopYMax',ymax2,0.0_dp)
       tauX1= xmin1 + mS*(xmax1-xmin1)/mSStep
       tauY1= ymin1 + mS*(ymax1-ymin1)/mSStep
       tauX2= xmin2 + mS*(xmax2-xmin2)/mSStep
@@ -95,7 +92,6 @@ subroutine moireBLShiftValue(mS)
       end if
    end if
 
-
 #ifdef TIMER
    call MIO_TimerStop('moireBLShift')
 #endif /* TIMER */
@@ -104,7 +100,5 @@ subroutine moireBLShiftValue(mS)
 #endif /* DEBUG */
 
 end subroutine moireBLShiftValue
-
-
 
 end module moireBLShift

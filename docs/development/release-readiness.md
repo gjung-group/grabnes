@@ -122,6 +122,47 @@ capabilities outside that set are released as research code.
 - Kubo transport, TAPW, spin-orbit terms, and Berry curvature are retained as
   research functionality without examples.
 
+## Planned developments
+
+Recorded so that they are not lost; none is required for the first release.
+
+- **Spin terms in exact tight-binding calculations.** `ZeemanTerm`,
+  `PseudoZeemanTerm`, `IsingSOCterm`, and `RashbaSOCterm` are implemented in the
+  TAPW path only. Without `useTAPW` the first three have no effect (the solver
+  prints a warning) and Rashba is refused. They are to be added to the exact
+  diagonalization as well.
+- **Self-consistent Hubbard calculations (`scf.F90`, `SpinPolarized` with
+  `EnableSCF`).** The module was never completed or tested; a spin-polarized run
+  with the default `EnableSCF .true.` ends with a segmentation fault. Finishing
+  and validating it is an important item for future development.
+- **Models refused until repaired** (the solver stops with a message):
+  `TypeOfBL Jeil`, `RandomStrain`, `printBubble`, `realisticBubbles` without its
+  list of centres, and every combination of switches that gives non-finite
+  matrix elements (found so far: `TypeOfBL BLKaxiras` on a twisted bilayer,
+  `singleLayerXYZ`, `MoireTrilayer` on the effective model).
+- **Hermitian evaluation of the remaining position-dependent bond terms**
+  (`tBGOffDiag`, `GBNOffDiag`, the non-plain variants of `MoireOffDiag`), in the
+  way `MoireOffDiagMidpoint` does it for the plain effective model.
+- **Hopping part of the PIA spin-orbit term.** `ApplyPIAHopping` exists but is
+  not called and was never tested, so `PIASOCterm` acts through its on-site
+  part only. To be wired in and validated.
+- **Geometry names that are tested in the source but not accepted:**
+  `TwistedBilayerBasedOnMoireCellRectangular`, `BLtoSLYoungju`, `Hybrid`.
+- **Keys read with different defaults in different places.** Most are the
+  parameter sets of different models read under one name (`SingleLayert2KSL`,
+  `BilayertAB1`, `CAA`, `PhiAA`, ...), which is harmless but undocumented. A
+  few are inconsistencies whose resolution changes a default and is therefore
+  left to a decision (`SuperCell` and `InterlayerDistance` were settled in
+  October 2026: 1 and 3.35 everywhere):
+  `CellSize` (50; 55 for the position of `MoireBilayerElectricFieldInvert`;
+  1 in two spectral-function routines);
+  `MagField.Integer` (0; 1 where `ham.F90` reads it for `FrankMagneticField`);
+  `Neigh.LayerNeighbors` (0, 1 or 2 depending on the routine);
+  `Epsilon` (0.01; 0.001 in `DiagHamChern`);
+  `bubbleSigmaR` (1.0 and 1.42); `vpppi0` (2.7 and 3.5);
+  `MoirePotCabG` (0.002235 and 0.001987).
+- **MPI domain decomposition**, disabled at present.
+
 ## Minimum actions before the announcement
 
 1. Obtain the co-authors' agreement with the license (a written record is

@@ -5,6 +5,8 @@
 | [`release-readiness.md`](release-readiness.md) | Checklist for the first announced release: what is complete, what needs a maintainer decision, what is optional |
 | [`functionality-status.md`](functionality-status.md) | Every capability classified by the evidence that exists for it |
 | [`cluster-build-and-validation.md`](cluster-build-and-validation.md) | Build on Linux, test results for both compilers, defects fixed, independent Hamiltonian validation, parameters, performance |
+| [`coding-conventions.md`](coding-conventions.md) | Conventions of the solver sources (modules, routines, the `debug.log` trace, `Section.Name` input keys) and the rules added by the tests |
+| [`input-key-renaming-proposal.md`](input-key-renaming-proposal.md) | Table of the present and former names of the input keys; source of the renaming of October 2026 |
 | [`licensing-audit.md`](licensing-audit.md) | The license decision (GPL-3.0-or-later), the notices found, and the open points |
 | [`citation-checklist.md`](citation-checklist.md) | What `CITATION.cff` contains and what is deliberately absent |
 | [`software-paper-outline.md`](software-paper-outline.md) | Outline of a possible software paper |

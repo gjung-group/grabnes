@@ -33,16 +33,20 @@ subroutine InterfacePot1()
    real(dp) :: Amp, f, fp, l
    integer :: i
 
-   call MIO_InputParameter('InterfaceClambda',lambda(1,1),6.78_dp)
-   call MIO_InputParameter('InterfaceBNlambda',lambda(1,3),12.56_dp)
-   call MIO_InputParameter('InterfaceClambda_B',lambda(1,1),lambda(1,1))
-   call MIO_InputParameter('InterfaceClambda_N',lambda(2,1),lambda(1,1))
-   call MIO_InputParameter('InterfaceBNlambda_B',lambda(1,3),lambda(1,3))
-   call MIO_InputParameter('InterfaceBNlambda_N',lambda(2,3),lambda(1,3))
-   call MIO_InputParameter('InterfaceAmpN',AmpN(3),0.56_dp)
-   call MIO_InputParameter('InterfaceAmpB',AmpB(3),0.56_dp)
-   call MIO_InputParameter('InterfaceAmpCN',AmpN(1),AmpN(3))
-   call MIO_InputParameter('InterfaceAmpCB',AmpB(1),AmpB(3))
+#ifdef DEBUG
+   call MIO_Debug('InterfacePot1',0)
+#endif /* DEBUG */
+
+   call MIO_InputParameter('Interlayer.InterfaceClambda',lambda(1,1),6.78_dp)
+   call MIO_InputParameter('Interlayer.InterfaceBNlambda',lambda(1,3),12.56_dp)
+   call MIO_InputParameter('Interlayer.InterfaceClambda_B',lambda(1,1),lambda(1,1))
+   call MIO_InputParameter('Interlayer.InterfaceClambda_N',lambda(2,1),lambda(1,1))
+   call MIO_InputParameter('Interlayer.InterfaceBNlambda_B',lambda(1,3),lambda(1,3))
+   call MIO_InputParameter('Interlayer.InterfaceBNlambda_N',lambda(2,3),lambda(1,3))
+   call MIO_InputParameter('Interlayer.InterfaceAmpN',AmpN(3),0.56_dp)
+   call MIO_InputParameter('Interlayer.InterfaceAmpB',AmpB(3),0.56_dp)
+   call MIO_InputParameter('Interlayer.InterfaceAmpCN',AmpN(1),AmpN(3))
+   call MIO_InputParameter('Interlayer.InterfaceAmpCB',AmpB(1),AmpB(3))
    call MIO_Print('Graphene-BN interface potential','ham')
    if (AmpB(1)/=AmpB(3) .or. AmpN(1)/=AmpN(3)) then
       call MIO_Print('  Amp. B for C:  '//trim(num2str(AmpB(1),3))//' eV*Ang')
@@ -89,9 +93,13 @@ subroutine InterfacePot1()
    end do
    NcellInt(1) = ceiling(rmaxInt/ucell(1,1))
    NcellInt(2) = ceiling(rmaxInt/ucell(2,2))
-   call MIO_InputParameter('EdgeHopping',edgeHopp,.false.)
-   call MIO_InputParameter('EdgeHoppingAmp',Ampeh,0.2_dp)
-   call MIO_InputParameter('EdgeHoppingDamp',dampeh,0.65_dp)
+   call MIO_InputParameter('Interface.EdgeHopping',edgeHopp,.false.)
+   call MIO_InputParameter('Interface.EdgeHoppingAmp',Ampeh,0.2_dp)
+   call MIO_InputParameter('Interface.EdgeHoppingDamp',dampeh,0.65_dp)
+
+#ifdef DEBUG
+   call MIO_Debug('InterfacePot1',1)
+#endif /* DEBUG */
 
 end subroutine InterfacePot1
 
@@ -101,7 +109,7 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
    use neigh,                only : maxNeigh
    use cell,                 only : ucell, aG
    use constants,            only : pi
-   use math
+   use math,                 only : norm
 
    real(dp), intent(inout) :: H(inode1:)
    integer, intent(in) :: Nneigh(inode1:), NList(1:maxNeigh,inode1:inode2), neighCell(1:3,1:maxNeigh,inode1:inode2)
@@ -112,6 +120,10 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
    real(dp), pointer :: Rq(:,:)
    integer, pointer :: s(:)
    real(dp) :: v(3), d, r0
+
+#ifdef DEBUG
+   call MIO_Debug('InterfacePot2',0)
+#endif /* DEBUG */
 
    nQ = 0
    r0 = Nradii(1,1)
@@ -145,7 +157,6 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
                d = sqrt(NeighD(1,j,i)**2+NeighD(2,j,i)**2)
                if (d<r0) then
                   nQ = nQ + 1
-                  !Rq(:,nQ) = (Rat(:,i)+Rat(:,NList(j,i)))/2.0_dp
                   Rq(:,nQ) = Rat(:,i) + NeighD(:,j,i)/2.0_dp !*0.43_dp
                   s(nQ) = 1
                   if (edgeHopp) then
@@ -156,7 +167,6 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
                d = sqrt(NeighD(1,j,i)**2+NeighD(2,j,i)**2)
                if (d<r0) then
                   nQ = nQ + 1
-                  !Rq(:,nQ) = (Rat(:,i)+Rat(:,NList(j,i)))/2.0_dp
                   Rq(:,nQ) = Rat(:,i) + NeighD(:,j,i)/2.0_dp !*0.56_dp
                   s(nQ) = -1
                   if (edgeHopp) then
@@ -169,28 +179,21 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
    end do
    call MIO_Print('Number of interface bonds: '//trim(num2str(nQ)),'interface')
    call MIO_Print('')
-   !NcellInt(1) = 0
    do i=inode1,inode2
       do j=1,nQ
          do icy=-NcellInt(2),NcellInt(2); do icx=-NcellInt(1),NcellInt(1)
             v = Rat(:,i) - Rq(:,j) - matmul(ucell,[icx,icy,0])
             d = norm(v)
             if (d < rmaxInt) then
-               !d = d-1.42_dp/2.0_dp
                if (s(j)==1) then
                   H(i) = H(i) + AmpB(Species(i))*exp(-d/lambda(1,Species(i)))/d
-                  !H(i) = H(i) + AmpB(Species(i))*exp(-d/lambda(Species(i)))
                else
                   H(i) = H(i) - AmpN(Species(i))*exp(-d/lambda(2,Species(i)))/d
-                  !H(i) = H(i) - AmpN(Species(i))*exp(-d/lambda(Species(i)))
                end if
             end if
          end do; end do
       end do
    end do
-   !do i=inode1,inode2
-   !   write(77,*) Rat(2,i), H(i)
-   !end do
    if (edgeHopp) then
       nEdgeN = 0
       sz = size(Nradii,1)
@@ -219,7 +222,10 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
    call MIO_Deallocate(Rq,'Rq','interface')
    call MIO_Deallocate(s,'s','interface')
 
+#ifdef DEBUG
+   call MIO_Debug('InterfacePot2',1)
+#endif /* DEBUG */
+
 end subroutine InterfacePot2
 
 end module interface
-

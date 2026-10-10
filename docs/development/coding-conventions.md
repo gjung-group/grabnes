@@ -1,0 +1,184 @@
+# Coding conventions of the solver
+
+These are the conventions of the original GRABNES sources (`kubo.F90`,
+`kubosubs.F90`, `cell.F90`, `hybrid.F90`, `interface.F90`, `parallel.F90`,
+`kuboarrays.f90`, and the `MIO` library), written down so that new code and the
+clean-up of the later, larger files (`ham.F90`, `diag.F90`, `neigh.F90`,
+`calc.F90`) follow one style. The second part lists rules that the tests of
+October 2026 showed to be necessary.
+
+## Conventions of the original code
+
+**Files and modules**
+
+- One module per file, named after the file. The module starts with `use mio`,
+  `implicit none`, `PRIVATE`, and then one `public ::` line per exported name.
+- Generic names are declared with an `interface` block
+  (`KuboUpdate` for `KuboUpdate_d` and `KuboUpdate_z`).
+- Module variables are few. Data shared between modules lives in the module
+  that owns it (`atoms`, `cell`, `neigh`, `ham`) and is imported with
+  `use module, only : names`.
+
+**Routines**
+
+- Names are `ModuleVerb` in mixed case: `KuboRecursion`, `CellGet`, `HybridGen`.
+  Variables are lower camel case.
+- A routine imports what only it needs with its own `use ..., only :` lines.
+  The `only` keywords are aligned in one column.
+- Declarations come in this order: dummy arguments, each with `intent`; a blank
+  line; local variables. Reals are `real(dp)`, literals carry `_dp`, constants
+  come from the `constants` module. Pointers are initialized with `=>NULL()`.
+- A routine starts with the trace and timer hooks and ends with their
+  counterparts:
+
+  ```fortran
+  #ifdef DEBUG
+     call MIO_Debug('KuboRecursion',0)
+  #endif /* DEBUG */
+  #ifdef TIMER
+     call MIO_TimerCount('kubo::Rec')
+  #endif /* TIMER */
+  ```
+
+  Code that must always run is never placed inside the `DEBUG` block.
+- Routines are short enough to read on a few screens (the largest original
+  routine has 164 lines) and nest a few levels deep at most.
+
+**The execution trace (`debug.log`)**
+
+- A build with `-DDEBUG` writes the file `debug.log`. Every routine reports
+  when it is entered and when it is left:
+
+  ```fortran
+  #ifdef DEBUG
+     call MIO_Debug('KuboRecursion',0)     ! first executable statement
+  #endif /* DEBUG */
+     ...
+  #ifdef DEBUG
+     call MIO_Debug('KuboRecursion',1)     ! last executable statement
+  #endif /* DEBUG */
+  ```
+
+  which gives the lines `DEBUG: Entering subroutine KuboRecursion` and
+  `DEBUG: Finished subroutine KuboRecursion`. The file is flushed after every
+  line, so after a crash its last line names the routine that was running. With
+  MPI only the printing process writes.
+- The name passed is the name of the routine, exactly. The exit call has the
+  argument 1 and is placed before every `return` as well as at the end.
+- The original files follow this throughout (`kubo.F90`, `gauss.F90`,
+  `magf.F90`, `cell.F90`: every routine). The later files did not (3 of 36
+  routines in `ham.F90`, 16 of 119 in `diag.F90`, 2 of 17 in `neigh.F90`, none
+  in `calc.F90`). `tools/maintenance/add_debug_trace.py` adds the two calls to
+  the subroutines that lack them, with two exceptions that are deliberate:
+  a routine called from inside a parallel region (several threads would write
+  at once; this includes everything below the k-point loop of `DiagBands`) and
+  a routine called once per atom or bond are not traced. New routines of
+  those kinds stay without trace; every other new subroutine gets it.
+- The same pair exists for timing, `MIO_TimerCount('module::Routine')` and
+  `MIO_TimerStop`, under `#ifdef TIMER`.
+
+**Input keys**
+
+- A key has the form `Section.Name`, both parts in mixed case with a capital
+  first letter: `Diag.Calc`, `Kubo.Calc`, `Calculate.Bands`, `TB.Hopping`,
+  `TB.NeighLevels`, `Neigh.LayerNeighbors`, `MagField.Integer`,
+  `Bands.NumPoints`, `Spectral.WeiKu`. The section names the part of the code
+  that reads the key (usually the module), so that related keys sort together
+  and a key says where it belongs.
+- Before October 2026 only 135 of the 722 keys followed this form; the other
+  585 were renamed then (see "Renaming keys" below).
+- New keys follow the `Section.Name` form. The existing keys keep working: see
+  "Renaming keys" below.
+
+**Layout**
+
+- Three spaces per indentation level; no tabs; no trailing blanks.
+- Lines stay below 132 columns. A continued line ends with `&`, and the
+  continuation is indented.
+- `end subroutine Name`, `end do`, `end if` are written out.
+
+**Services of the MIO library**
+
+- Input: `call MIO_InputParameter('Key',variable,default)`; blocks with
+  `MIO_InputFindBlock` and `MIO_InputBlock`.
+- Output: `call MIO_Print('text','module')`. No bare `print *` or
+  `write(*,*)` in finished code.
+- Errors: `call MIO_Kill('what is wrong and what to do','module','Routine')`.
+- Memory: `call MIO_Allocate(array,bounds,'name','module')` and
+  `MIO_Deallocate`, so that the memory report is complete.
+- Files: the `cl_file` type (`file%Open`, `file%GetUnit`, `file%Close`).
+
+**OpenMP**
+
+- Every parallel loop lists its `PRIVATE` and `REDUCTION` variables explicitly
+  and is closed with `!$OMP END PARALLEL DO`.
+
+**Units**
+
+- Energies are in units of the nearest-neighbor hopping `g0` inside the solver;
+  electron-volts appear only in the input and in the output.
+- `hopp(j,i)` holds minus the hopping of neighbor entry `j` of atom `i`.
+
+## Rules added by the tests of October 2026
+
+Each rule answers a defect that was found (see
+[`cluster-build-and-validation.md`](cluster-build-and-validation.md) and
+`tests/regression/model_survey.py`).
+
+1. **A model that cannot work stops.** If a combination of switches is not
+   implemented, or needs data that are missing, the solver calls `MIO_Kill`
+   with a message that names the switch and says what to do. It never continues
+   with unset values.
+2. **No parameter is used before it is set.** A parameter that only some
+   branches set is marked as unset before them (see `t2KA` in `HamHopping`),
+   and its use is checked.
+3. **Every scalar assigned inside a parallel loop is private** unless all
+   threads assign the same value. A shared scalar that takes different values
+   in different iterations makes the result depend on the run.
+4. **Loops over a per-thread range (`in1`, `in2`) must be valid on every
+   thread**, including the threads that own no atoms.
+5. **A key has one default.** The same key must not be read with different
+   defaults in different routines; read it once and pass the value on.
+   (`tools/input/list_input_keys.py` lists the present exceptions.)
+6. **A switch that has no effect in the selected calculation is reported**
+   with a warning, as is done for the spin terms outside TAPW.
+7. **No commented-out code.** The history is in the version control system.
+8. **Random numbers are seeded through `RandSeedFromInput`**, so that
+   `setSeed .true.` reproduces a disordered Hamiltonian.
+9. **Every new switch gets a case in `tests/regression/model_cases.py`**, and
+   an intended change of a model is recorded with
+   `model_survey.py --update-reference`.
+10. **New behavior is opt-in.** A new switch defaults to the previous result;
+    a default is changed only to replace a result that was wrong, and the
+    change is stated in the log of the run.
+
+## Renaming keys without breaking inputs
+
+The 585 keys without a section were given the `Section.Name` form in
+October 2026 (`Strain.RealStrain`, `Stack.MiddleTwist`, `Structure.SuperCell`,
+...). Existing input files are not affected:
+
+1. `lanczosKuboCode/Src/MIO/input_aliases.inc` maps every present name to its
+   former name(s). The solver asks for the present name; the input library
+   looks for it and then for the former names, so an input file with only old
+   names gives exactly the same run. The model survey runs with the old names
+   and so tests this for every switch.
+2. If both names are in the input file, the present one is used and a warning
+   is printed. If former names were used, one line at the end of the run says
+   how many (`Input.ListFormerNames .true.` lists them with their present
+   names); nothing stops.
+3. The table of names is
+   [`input-key-renaming-proposal.md`](input-key-renaming-proposal.md);
+   `tools/input/apply_key_names.py` applies it to the sources and writes the
+   alias file. The variables inside the solver are not renamed.
+4. A pair can also be declared in an input file, for a trial:
+
+   ```
+   &begin Input.Aliases 1
+   Ham.Shells  TB.NeighLevels
+   &end Input.Aliases
+   ```
+
+The former names stay accepted indefinitely unless a later release decides
+otherwise and announces it. New keys are given the `Section.Name` form from
+the start.

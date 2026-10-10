@@ -22,6 +22,10 @@ subroutine ParallelDiv()
 
    integer ::sq, i, j
 
+#ifdef DEBUG
+   call MIO_Debug('ParallelDiv',0)
+#endif /* DEBUG */
+
 #ifdef MPI
    call MPIAllRedSum(numThreads,nDiv,1,MPI_INTEGER)
    call MIO_Allocate(nTh,nProc,'nTh','parallel')
@@ -64,7 +68,6 @@ subroutine ParallelDiv()
    end if
 #ifdef MPI
    !$OMP Parallel
-   !procID = sum(nTh(:Node)) + nThread + 1
    procID = 1
    !$OMP End Parallel
 #else
@@ -72,6 +75,10 @@ subroutine ParallelDiv()
    procID = nThread + 1
    !$OMP End Parallel
 #endif /* MPI */
+
+#ifdef DEBUG
+   call MIO_Debug('ParallelDiv',1)
+#endif /* DEBUG */
 
 end subroutine ParallelDiv
 
