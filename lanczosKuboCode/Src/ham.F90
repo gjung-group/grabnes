@@ -5154,108 +5154,7 @@ subroutine HamHopping
          t4K = t2KA
          t5KA = t2KA
          t5KB = t2KA
-         if (GBNtwoLayersF2G2s) then
-            call MIO_Print('defining the GBNtwoLayersF2G2 parameters','ham')
-            t1K = g0/g0
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLGfromGBNA,-0.24498_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLGfromGBNB,-0.24523_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLGfromGBN,0.19334_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLGfromGBN,-0.0_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLGfromGBNA,-0.06618_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLGfromGBNB,-0.06624_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLGfromGBNA,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLGfromGBNB,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK7A',t7KSLGfromGBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK8A',t8KSLGfromGBN,0.0_dp)
-            t2KSLGfromGBNA = t2KSLGfromGBNA/g0
-            t2KSLGfromGBNB = t2KSLGfromGBNB/g0
-            t3KSLGfromGBN = t3KSLGfromGBN/g0
-            t4KSLGfromGBN = t4KSLGfromGBN/g0
-            t5KSLGfromGBNA = t5KSLGfromGBNA/g0
-            t5KSLGfromGBNB = t5KSLGfromGBNB/g0
-            t6KSLGfromGBNA = t6KSLGfromGBNA/g0
-            t6KSLGfromGBNB = t6KSLGfromGBNB/g0
-            t7KSLGfromGBN = t7KSLGfromGBN/g0
-            t8KSLGfromGBN = t8KSLGfromGBN/g0
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBNfromGBNA,-0.081055_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBNfromGBNB,-0.24562_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLBNfromGBN,0.15399_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLBNfromGBN,-0.0_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBNfromGBNA,-0.065654_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBNfromGBNB,-0.04892_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLBNfromGBNA,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLBNfromGBNB,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK7A',t7KSLBNfromGBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK8A',t8KSLBNfromGBN,0.0_dp)
-            t2KSLBNfromGBNA = t2KSLBNfromGBNA/g0
-            t2KSLBNfromGBNB = t2KSLBNfromGBNB/g0
-            t3KSLBNfromGBN = t3KSLBNfromGBN/g0
-            t4KSLBNfromGBN = t4KSLBNfromGBN/g0
-            t5KSLBNfromGBNA = t5KSLBNfromGBNA/g0
-            t5KSLBNfromGBNB = t5KSLBNfromGBNB/g0
-            t6KSLBNfromGBNA = t6KSLBNfromGBNA/g0
-            t6KSLBNfromGBNB = t6KSLBNfromGBNB/g0
-            t7KSLBNfromGBN = t7KSLBNfromGBN/g0
-            t8KSLBNfromGBN = t8KSLBNfromGBN/g0
-         else if (F2G2Model) then
-            t1K = g0/g0
-            if (useOldGrapheneF2G2) then
-                call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSL,-0.21264_dp)
-                call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSL,0.23442_dp)
-                call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSL,-0.05350_dp)
-                call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSL,-0.07326_dp)
-                call MIO_InputParameter('Intralayer.BilayertK6A',t6K,0.0_dp)
-                call MIO_InputParameter('Intralayer.BilayertK7A',t7K,0.0_dp)
-                call MIO_InputParameter('Intralayer.BilayertK8A',t8K,0.0_dp)
-            else
-                call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSL,-0.2354_dp)
-                call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSL,0.1877_dp)
-                call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSL,0.0_dp)
-                call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSL,-0.0633_dp)
-                call MIO_InputParameter('Intralayer.BilayertK6A',t6K,0.0_dp)
-                call MIO_InputParameter('Intralayer.BilayertK7A',t7K,0.0_dp)
-                call MIO_InputParameter('Intralayer.BilayertK8A',t8K,0.0_dp)
-            end if
-            t2KSL = t2KSL/g0
-            t3KSL = t3KSL/g0
-            t4KSL = t4KSL/g0
-            t5KSL = t5KSL/g0
-            t6K = t6K/g0
-            t7K = t7K/g0
-            t8K = t8K/g0
-            ! BNBN F2G2
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBN_B,-0.0542_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBN_N,-0.2228_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLBN,0.1329_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBN_B,-0.0566_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBN_N,-0.0429_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK7A',t7KBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK8A',t8KBN,0.0_dp)
-            t2KSLBN_B = t2KSLBN_B/g0
-            t2KSLBN_N = t2KSLBN_N/g0
-            t3KSLBN = t3KSLBN/g0
-            t4KSLBN = t4KSLBN/g0
-            t5KSLBN_B = t5KSLBN_B/g0
-            t5KSLBN_N = t5KSLBN_N/g0
-            t6KBN = t6KBN/g0
-            t7KBN = t7KBN/g0
-            t8KBN = t8KBN/g0
-         else
-            t1K = g0/g0
-            t2KSL = -0.2425_dp/g0
-            t3KSL = 0.2656_dp/g0
-            t4KSL = -0.0235_dp/g0
-            t5KSL = -0.0524_dp/g0
-            t6K = 0.0209_dp/g0
-            t7K = 0.0148_dp/g0
-            t8K = 0.0211_dp/g0
-            t2KA = t2KSL
-            t2KB = t2KSL
-            t5KA = t5KSL
-            t5KB = t5KSL
-         end if
+         call HamHopF2G2sParameters()
          call MIO_InputParameter('Intralayer.ForceBilayerF2G2Intralayer',forceBilayerF2G2Intralayer,.false.)
          if (forceBilayerF2G2Intralayer) then
              t1K = g0/g0
@@ -5300,314 +5199,7 @@ subroutine HamHopping
              t7K = t7K/g0
              t8K = t8K/g0
          end if
-         if (MIO_StringComp(BilayerModel,'BLKaxiras')) then
-            call MIO_InputParameter('Interlayer.UseBNGKaxiras',useBNGKaxiras,.false.)
-            tAB = 0.29_dp
-            if (useBNGKaxiras) then
-                lambda0_CB = 0.3905_dp/g0
-                epsilon0_CB = 1.5426_dp
-                kappa0_CB = 1.8229_dp
-                lambda3_BC = -0.0588_dp/g0
-                epsilon3_BC = 3.0827_dp
-                x3_BC = 0.6085_dp
-                lambda3_CB = -0.0651_dp/g0
-                epsilon3_CB = 3.7998_dp
-                x3_CB = 0.6341_dp
-                xi0_CB = epsilon0_CB
-                xi3_BC = epsilon3_BC
-                xi3_CB = epsilon3_CB
-                lambda0_CN = 0.2517_dp/g0
-                epsilon0_CN = 1.6061_dp
-                kappa0_CN = 2.1909_dp
-                lambda3_NC = -0.0606_dp/g0
-                epsilon3_NC = 3.3502_dp
-                x3_NC = 0.5142_dp
-                lambda3_CN = -0.0465_dp/g0
-                epsilon3_CN = 3.0464_dp
-                x3_CN = 0.5264_dp
-                xi0_CN = epsilon0_CN
-                xi3_NC = epsilon3_NC
-                xi3_CN = epsilon3_CN
-                t1K = g0/g0
-                t2KB = 0.0594_dp/g0
-                t2KN = 0.2276_dp/g0
-                t3K = -0.2163_dp/g0
-            else ! just use GG
-                call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
-                if (addPressureDependence) then
-                    !
-                    !
-                    c1_0 = 0.310_dp
-                    c1_1 = -1.882_dp
-                    c1_2 = 7.741_dp
-                    c2_0 = 1.750_dp
-                    c2_1 = -1.618_dp
-                    c2_2 = 1.848_dp
-                    c3_0 = 1.990_dp
-                    c3_1 = 1.007_dp
-                    c3_2 = 2.427_dp
-                    c4_0 = -0.068_dp
-                    c4_1 = 0.399_dp
-                    c4_2 = -1.739_dp
-                    c5_0 = 3.286_dp
-                    c5_1 = -0.914_dp
-                    c5_2 = 12.011_dp
-                    c6_0 = 0.5_dp
-                    c6_1 = 0.322_dp
-                    c6_2 = 0.908_dp
-                    c7_0 = -0.008_dp
-                    c7_1 = 0.046_dp
-                    c7_2 = -0.183_dp
-                    c8_0 = 2.272_dp
-                    c8_1 = -0.721_dp
-                    c8_2 = -4.414_dp
-                    c9_0 = 1.217_dp
-                    c9_1 = 0.027_dp
-                    c9_2 = -0.658_dp
-                    c10_0 = 1.562_dp
-                    c10_1 = -0.371_dp
-                    c10_2 = -0.134_dp
-                else
-                    lambda0 = 0.3155_dp/g0
-                    epsilon0 = 1.7543_dp
-                    x0 = 0.0_dp
-                    kappa0 = 2.0010_dp
-                    lambda3 = -0.0688_dp/g0
-                    epsilon3 = 3.4692_dp
-                    x3 = 0.5212_dp
-                    kappa3 = 0.0_dp
-                    lambda6 = -0.008300_dp/g0
-                    epsilon6 = 2.876400_dp
-                    x6 = 1.52060_dp
-                    kappa6 = 1.57310_dp
-                    xi0 = epsilon0
-                    xi3 = epsilon3
-                    xi6 = epsilon6
-               end if
-            end if
-         else if (MIO_StringComp(BilayerModel,'BLSrivani')) then
-            call MIO_InputParameter('Interlayer.UseBNGSrivani',useBNGSrivani,.false.)
-            call MIO_InputParameter('Interlayer.Oppositedxdy',oppositedxdy,.false.)
-            call MIO_InputParameter('Interlayer.SublatticeDependent',sublatticeDependent,.false.)
-            call MIO_InputParameter('Interlayer.UseThetaIJ',useThetaIJ,.false.)
-            call MIO_InputParameter('Interlayer.UseTheta',useTheta,.false.)
-            call MIO_InputParameter('Interlayer.SublatticeIndependent',sublatticeIndependent,.false.)
-            if (useBNGSrivani) then
-                lambda0_CB = 0.3905_dp/g0
-                epsilon0_CB = 1.5426_dp
-                kappa0_CB = 1.8229_dp
-                lambda3_BC = -0.0588_dp/g0
-                epsilon3_BC = 3.0827_dp
-                x3_BC = 0.6085_dp
-                lambda3_CB = -0.0651_dp/g0
-                epsilon3_CB = 3.7998_dp
-                x3_CB = 0.6341_dp
-                xi0_CB = epsilon0_CB
-                xi3_BC = epsilon3_BC
-                xi3_CB = epsilon3_CB
-                lambda0_CN = 0.2517_dp/g0
-                epsilon0_CN = 1.6061_dp
-                kappa0_CN = 2.1909_dp
-                lambda3_NC = -0.0606_dp/g0
-                epsilon3_NC = 3.3502_dp
-                x3_NC = 0.5142_dp
-                lambda3_CN = -0.0465_dp/g0
-                epsilon3_CN = 3.0464_dp
-                x3_CN = 0.5264_dp
-                xi0_CN = epsilon0_CN
-                xi3_NC = epsilon3_NC
-                xi3_CN = epsilon3_CN
-                t1K = g0/g0
-                t2KB = 0.0594_dp/g0
-                t2KN = 0.2276_dp/g0
-                t3K = -0.2163_dp/g0
-            else
-                call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
-                call MIO_InputParameter('Interlayer.OldParameterSet',oldParameterSet,.false.)
-                call MIO_InputParameter('Interlayer.UseOnlyVAB',useOnlyVAB,.false.)
-                if (addPressureDependence) then
-                    call MIO_Print('Adding pressure (distance) dependent Srivani parameters','ham')
-                    if (oldParameterSet) then
-                        tAB = 0.355_dp
-                        c1_0 = 0.3571385063263838_dp
-                        c1_1 = -1.891884708936455_dp
-                        c1_2 = 6.652946573261291_dp
-                        c2_0 = 1.8867190568791063_dp
-                        c2_1 = -0.41000467960493125_dp
-                        c2_2 = 4.578192878264396_dp
-                        c3_0 = 1.8270139657989923_dp
-                        c3_1 = -0.40382997041549323_dp
-                        c3_2 = 0.8339980356453551_dp
-                        c4_0 = 0.07516409521688965_dp
-                        c4_1 = -0.4003623778798789_dp
-                        c4_2 = 1.8994745927765773_dp
-                        c5_0 = 3.6275668776932046_dp
-                        c5_1 = -3.6911506279524273_dp
-                        c5_2 = -10.77882608119433_dp
-                        c6_0 = 0.5315846479951798_dp
-                        c6_1 = 0.005642504054093722_dp
-                        c6_2 = -2.1672957606642598_dp
-                        c7_0 = -0.009733220417244328_dp
-                        c7_1 = 0.0508999779194876_dp
-                        c7_2 = -0.1994906574479795_dp
-                        c8_0 = 2.694749513617616_dp
-                        c8_1 = -0.7312487102958507_dp
-                        c8_2 = 8.375059780569929_dp
-                        c9_0 = 1.5483753173366424_dp
-                        c9_1 = 0.1578717903624763_dp
-                        c9_2 = -0.4478833970593441_dp
-                        c10_0 =1.5906430728955332_dp
-                        c10_1 =-0.26841222887036603_dp
-                        c10_2 =0.6153669604354582_dp
-                    else
-                        tAB = 0.3357_dp
-                        if (useOnlyVAB) then
-                            c1_0 =   0.3356095024843812
-                            c1_1 =   -1.9555147793478367
-                            c1_2 =   5.542631379367501
-                            c2_0 =   1.718698822030771
-                            c2_1 =   -1.989378866684143
-                            c2_2 =   6.0025023827468775
-                            c3_0 =   1.7543868745706959
-                            c3_1 =   -0.7739949690181664
-                            c3_2 =   1.903243378532328
-                            c4_0 =   0.06851906419484396
-                            c4_1 =   -0.6872433666263775
-                            c4_2 =   3.769207297230312
-                            c5_0 =   3.1733357766403234
-                            c5_1 =   2.5647115615881324
-                            c5_2 =   -123.63154378822028
-                            c6_0 =   0.39765806464770465
-                            c6_1 =   1.543230705089051
-                            c6_2 =   -22.973479855570684
-                            c7_0 =   -0.012256483205855817
-                            c7_1 =   0.16990943196521704
-                            c7_2 =   -2.1647529202020253
-                            c8_0 =   1.1716245804866041
-                            c8_1 =   4.487359824823402
-                            c8_2 =   -58.75949608817599
-                            c9_0 =   0.8917021392108377
-                            c9_1 =   1.0187648341101367
-                            c9_2 =   -16.229901468075237
-                            c10_0 =  2.09879167259061
-                            c10_1 =  0.29714623365951714
-                            c10_2 =  12.863626996121283
-                            c11_0 =  0.04071154326934091
-                            c11_1 =  -0.5873777395380401
-                            c11_2 =  7.654992092022496
-                            c12_0 =  0.4488364197392876
-                            c12_1 =  0.013400104807997755
-                            c12_2 =  -2.142393269209168e-06
-                            c13_0 =  -0.7078365546490298
-                            c13_1 =  -0.06723178248496989
-                            c13_2 =  2.0037377859863668
-                            c14_0 =  2.109173635556271
-                            c14_1 =  -0.14140771101700622
-                            c14_2 =  7.571534745370173
-                        else
-                            c1_0 =  0.3575872537033165_dp
-                            c1_1 =  -1.9347697178845817_dp
-                            c1_2 =  3.8706979283760394_dp
-                            c2_0 =  1.9106957393116117_dp
-                            c2_1 =  -0.09989684567144147_dp
-                            c2_2 =  -8.720932407008418_dp
-                            c3_0 =  1.8228523809344535_dp
-                            c3_1 =  -0.3667529691024049_dp
-                            c3_2 =  -2.3050530340090782_dp
-                            c4_0 =  0.071115719665038_dp
-                            c4_0 = -c4_0
-                            c4_1 =  -0.42093264500073585_dp
-                            c4_2 =  0.9178867554728614_dp
-                            c5_0 =  3.9416508464100466_dp
-                            c5_1 =  -2.214147419045211_dp
-                            c5_2 =  41.76842643035146_dp
-                            c6_0 =  0.5481096417108225_dp
-                            c6_1 =  0.04235827800799908_dp
-                            c6_2 =  3.973507493054687_dp
-                            c7_0 =  -0.031087946815144728_dp
-                            c7_1 =  0.19481521423521497_dp
-                            c7_2 =  -0.7770045478761431_dp
-                            c8_0 =  1.1147111796813856_dp
-                            c8_1 =  -0.013399935958530826_dp
-                            c8_2 =  -1.4302593524023142e-06_dp
-                            c9_0 =  0.9353113982829261_dp
-                            c9_1 =  0.20106572786860608_dp
-                            c9_2 =  -1.13259450482717_dp
-                            c10_0 = 1.3970867695033276_dp
-                            c10_1 = 0.032853758467485825_dp
-                            c10_2 = -0.6913705164987503_dp
-                            c11_0 = 0.08985168760341603_dp
-                            c11_1 = -0.5898948298140482_dp
-                            c11_2 = 2.5050264708064574_dp
-                            c12_0 = 0.49260894402823696_dp
-                            c12_1 = 0.013400115682404422_dp
-                            c12_2 = -2.3561065136309557e-06_dp
-                            c13_0 = -0.5744255984608703_dp
-                            c13_1 = 0.16416466983562875_dp
-                            c13_2 = -0.00014391022969531333_dp
-                            c14_0 = 1.3345101551849814_dp
-                            c14_1 = -0.01942463416793111_dp
-                            c14_2 = 0.22425121204108625_dp
-                        end if
-                    end if
-                else !  New parameters from 2020 by Srivani
-                    lambda0 =  0.3575896463595361_dp/g0
-                    epsilon0 = 1.9108224313643323_dp
-                    x0 = 0.0_dp
-                    kappa0 = 1.8227815545297545_dp
-                    lambda3 = 0.07111484887484568_dp/g0
-                    epsilon3 = 3.9428998931290584_dp
-                    x3 = 0.5482006335511792_dp
-                    kappa3 = 0.0_dp
-                    lambda6 = -0.013721066052788262_dp/g0
-                    epsilon6 = 1.25349967_dp
-                    x6 = 1.09324627_dp
-                    kappa6 = 1.7524165109575078_dp
-                    lambda6b = 0.029028452050848814_dp/g0
-                    epsilon6b = 0.4749792471502847_dp
-                    x6b = 1.9276014_dp
-                    kappa6b = -0.5685377300000001_dp
-                    xi0 = epsilon0
-                    xi3 = epsilon3
-                    xi6 = epsilon6
-                    xi6b = epsilon6b
-                       lambda0AAp     = 0.3777452105728493_dp/g0
-                       xi0AAp         =  1.673723757628059_dp
-                       kappa0AAp      = -1.9375254860531055_dp
-                       lambda0bAAp     = -0.03297124774024884_dp/g0
-                       xi0bAAp         =  1.0731649983324736_dp
-                       kappa0bAAp      = 2.1774201575458982_dp
-
-                       lambda0ABp     = 0.3339824357142346_dp/g0
-                       xi0ABp         =  1.6086712193494612_dp
-                       kappa0ABp      = -1.8083599334947213_dp
-                       lambda0bABp     = -0.017946450497759416_dp/g0
-                       xi0bABp         =  0.798265793648077_dp
-                       kappa0bABp      = 2.093789675583678_dp
-
-                       lambda0BAp     = 0.3339824357142346_dp/g0
-                       xi0BAp         =  1.6086712193494612_dp
-                       kappa0BAp      = -1.8083599334947213_dp
-                       lambda0bBAp     = -0.017946450497759416_dp/g0
-                       xi0bBAp         =  0.798265793648077_dp
-                       kappa0bBAp      = 2.093789675583678_dp
-
-                       lambda3ABp     =  0.22358533630187713_dp/g0
-                       xi3ABp         =  2.515609650785262_dp
-                       x3ABp          =  0.6615199942493694_dp
-                       lambda3bABp     =  -0.13763943627632735_dp/g0
-                       xi3bABp         =  2.5155817180683107_dp
-                       x3bABp        =  0.6618620509164502_dp
-
-                       lambda3BAp     =  0.22358533630187713_dp/g0
-                       xi3BAp         =  2.515609650785262_dp
-                       x3BAp          =  0.6615199942493694_dp
-                       lambda3bBAp     =  -0.13763943627632735_dp/g0
-                       xi3bBAp         =  2.5155817180683107_dp
-                       x3bBAp        =  0.6618620509164502_dp
-               end if
-            end if
-         end if
+         call HamHopInterlayerParameters()
          call MIO_InputParameter('Neigh.LayerDistFactor',distFact,1.0_dp)
          call MIO_InputParameter('Interlayer.KaxirasCutoff',KaxirasCutoff,1.0_dp)
          KaxirasCutoff2 = (KaxirasCutoff)**2.0_dp
@@ -10432,161 +10024,7 @@ subroutine HamHopping
         call MIO_Print(' HBA '//trim(num2str(numberOfHBA1))//' '//trim(num2str(numberOfHBA2)),'HamHopping')
 #endif /* DEBUG */
 
-        if (zz) then
-          call MIO_InputParameter('Moire.LatticePercentFactor',epsFactor,1.0_dp)
-! ---  Repeat one more time - This time, add only a term delta... ---
-          !$OMP PARALLEL DO PRIVATE(d,nlay,delta,del,realH,imagH,Habjj,dx,dy,HBL), &
-          !$OMP& PRIVATE(Cabd), &
-          !$OMP& REDUCTION (+:numberOfDel1,numberOfDel2,numberOfDel3,numberOfInterlayerHoppings)
-          do i=1,nAt
-              ! >>> unset markers
-              d = hamUnset
-              delta = hamUnset
-              del = hamUnset
-              realh = hamUnset
-              imagh = hamUnset
-              habjj = cmplx(hamUnset,hamUnset,dp)
-              dx = hamUnset
-              dy = hamUnset
-              hbl = cmplx(hamUnset,hamUnset,dp)
-              cabd = hamUnset
-              ! <<< unset markers
-              delta = 0.0
-              nlay = (Species(i)-1)/2 + 1
-              if (l) then
-                if (ll) then
-                   dx = Rat(1,i) * ((1.0_dp+eps2) * cos(twistAngleGrad2) - 1.0_dp) &
-                         - (Rat(2,i)) * (1.0_dp+eps2) * sin(twistAngleGrad2)
-                   dy = (Rat(2,i)) * ((1.0_dp+eps2) * cos(twistAngleGrad2) - 1.0_dp) &
-                         + Rat(1,i) * (1.0_dp+eps2) * sin(twistAngleGrad2)
-                else
-                   if (rotateFirst) then
-                       dx = Rat(1,i) * ((1.0_dp+eps*epsFactor) * cos(twistAngleGrad2) - 1.0_dp) &
-                              - (Rat(2,i)) * (1.0_dp+eps*epsFactor) * sin(twistAngleGrad2)
-                       dy = (Rat(2,i)) * ((1.0_dp+eps*epsFactor) * cos(twistAngleGrad2) - 1.0_dp) &
-                              + Rat(1,i) * (1.0_dp+eps*epsFactor) * sin(twistAngleGrad2)
-                   else
-                       dx = Rat(1,i)  * ((1.0_dp+eps*epsFactor) * cos(twistAngleGrad2) - 1.0_dp) &
-                              - (Rat(2,i) - shift2/eps/epsFactor) * (1.0_dp+eps) * sin(twistAngleGrad2)
-                       dy = (Rat(2,i) - shift2/eps/epsFactor) * ((1.0_dp+eps) * cos(twistAngleGrad2) - 1.0_dp) &
-                              + Rat(1,i) * (1.0_dp+eps/epsFactor) * sin(twistAngleGrad2)
-                   end if
-                end if
-                if (addDisplacements) then
-                    dx = dx + displacements(1,i)
-                    dy = dy + displacements(2,i)
-                end if
-                if (sign2.lt.0.0) then
-                    dx = -dx
-                    dy = -dy
-                end if
-                if (rotateFirst) then ! This is the default behavior
-                   dx = dx + shift2_x
-                   dy = dy + shift2_y
-                end if
-                ! --- theta is in radian so just multiplied without conversion
-                if (distanceDependentEffectiveModel) then
-                   ! it should be ok to take the first neighbor as it is effective model with only 3 neighbors
-                   call distanceDependentC(Cabd, Cab, BfactorCab, interlayerDistances(i), z0)
-                else
-                   Cabd = Cab
-                end if
-                call offdiago(Habjj,dx,dy,Cabd,Phiab)
-                if (writeData) then
-                   write(587,*) Habjj
-                end if
-                realH = real(Habjj)
-                imagH = imag(Habjj)
-                if (sign2.lt.0.0) then
-                  imagH = -imagH
-                end if
-
-                    if (Species(i).eq.2) then   ! ---  B sublattice
-
-                       del(1) = 2.0_dp*realH/3.0_dp
-                       del(2) = ( -realH + sqrt(3.0_dp)*imagH )/3.0_dp
-                       del(3) = -(  realH + sqrt(3.0_dp)*imagH )/3.0_dp
-                     ! del(2) and del(3) are inverted to take into account
-                     ! difference
-                     ! between A and B
-                    end if
-
-                    if (Species(i).eq.1) then   ! ---  A sublattice
-
-                      del(1) =  2.0_dp*realH/3.0_dp
-                      del(2) = -(  realH + sqrt(3.0_dp)*imagH )/3.0_dp
-                      del(3) =  ( -realH + sqrt(3.0_dp)*imagH )/3.0_dp
-
-                    end if
-
-                !else ! See discussions with Jeil, both GBN and GNB have same
-                !virtual strain effect
-
-                !     ! del(2) and del(3) are inverted to take into account
-                !     ! difference
-                !     ! between A and B
-              else
-                    del(1) = 0.0_dp
-                    del(2) = 0.0_dp
-                    del(3) = 0.0_dp
-              end if
-              do j=1,Nneigh(i)
-                 jj = NList(j,i)
-                 if (layerIndex(i) .eq. layerIndex(jj)) then
-                    d = sqrt(NeighD(1,j,i)**2+NeighD(2,j,i)**2)
-                    do ilvl=1,tbnn
-                       if (d < Nradii(ilvl,nlay)) then
-                          !hopp(j,i) =
-                          !cmplx(gn(Species(i),Species(NList(j,i)),ilvl))
-                          if (abs(NeighD(1,j,i)) < 0.01_dp) then
-                             delta = del(1)
-                             numberOfdel1 = numberOfDel1+1
-                          else if (NeighD(1,j,i) < -0.02_dp ) then
-                             if (sign2.lt.0.0) then
-                                 delta = del(2)
-                             else
-                                 delta = del(3)
-                             end if
-                             numberOfdel2 = numberOfDel2+1
-                          else if (NeighD(1,j,i) > 0.02_dp) then
-                             if (sign2.lt.0.0) then
-                                 delta = del(3)
-                             else
-                                 delta = del(2)
-                             end if
-                             numberOfdel3 = numberOfDel3+1
-                          endif
-                          if (moireMid) then ! same term at the bond midpoint (Hermitian)
-                             call MoireBondDeltaMidpoint(Rat(1:2,i), NeighD(1:2,j,i), Species(i), eps*epsFactor, &
-                                  twistAngleGrad2, 0.0_dp, (sign2.lt.0.0), [shift2_x, shift2_y], (sign2.lt.0.0), &
-                                  (sign2.lt.0.0), Cab, Phiab, delta)
-                          end if
-                          if (d > 1.7_dp) then ! only use delta !=0 for first NN hoppings
-                                               ! useful to separate when other
-                                               ! routine asks for more distant
-                                               ! neighbors (realStrain for
-                                               ! instance)
-                              delta = 0.0_dp
-                          end if
-                          hopp(j,i) = hopp(j,i) - cmplx(1.0_dp*delta ,kind=dp)
-                          exit
-                       end if
-                    end do
-                    !if ((Species(i)==1 .and. Species(NList(j,i))==2) .or. &
-                    !  (Species(i)==2 .and. Species(NList(j,i))==1)) then
-                    !else if ((Species(i)==3 .and. Species(NList(j,i))==4) .or. &
-                    !  (Species(i)==4 .and. Species(NList(j,i))==3)) then
-                 else
-                    d = sqrt(dot_product(NeighD(1:2,j,i),NeighD(1:2,j,i)))
-                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay),kind=dp)
-                 end if
-              end do
-          end do
-        !$OMP END PARALLEL DO
-        if (writeData) then
-            close(586)
-        end if
-        end if
+        if (zz) call HamHopSecondMoire()
 
 ! --- Repeatation ended
         call MIO_Print(' All 3 numbers should be equal '//trim(num2str(numberOfDel1))//' '// &
@@ -11609,6 +11047,611 @@ subroutine HamHopShellsFromRigid()
 #endif /* DEBUG */
 
 end subroutine HamHopShellsFromRigid
+
+!> Bond terms of a second moire potential on the same layer (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopSecondMoire()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopSecondMoire',0)
+#endif /* DEBUG */
+
+          call MIO_InputParameter('Moire.LatticePercentFactor',epsFactor,1.0_dp)
+! ---  Repeat one more time - This time, add only a term delta... ---
+          !$OMP PARALLEL DO PRIVATE(d,nlay,delta,del,realH,imagH,Habjj,dx,dy,HBL), &
+          !$OMP& PRIVATE(Cabd), &
+          !$OMP& REDUCTION (+:numberOfDel1,numberOfDel2,numberOfDel3,numberOfInterlayerHoppings)
+          do i=1,nAt
+              ! >>> unset markers
+              d = hamUnset
+              delta = hamUnset
+              del = hamUnset
+              realh = hamUnset
+              imagh = hamUnset
+              habjj = cmplx(hamUnset,hamUnset,dp)
+              dx = hamUnset
+              dy = hamUnset
+              hbl = cmplx(hamUnset,hamUnset,dp)
+              cabd = hamUnset
+              ! <<< unset markers
+              delta = 0.0
+              nlay = (Species(i)-1)/2 + 1
+              if (l) then
+                if (ll) then
+                   dx = Rat(1,i) * ((1.0_dp+eps2) * cos(twistAngleGrad2) - 1.0_dp) &
+                         - (Rat(2,i)) * (1.0_dp+eps2) * sin(twistAngleGrad2)
+                   dy = (Rat(2,i)) * ((1.0_dp+eps2) * cos(twistAngleGrad2) - 1.0_dp) &
+                         + Rat(1,i) * (1.0_dp+eps2) * sin(twistAngleGrad2)
+                else
+                   if (rotateFirst) then
+                       dx = Rat(1,i) * ((1.0_dp+eps*epsFactor) * cos(twistAngleGrad2) - 1.0_dp) &
+                              - (Rat(2,i)) * (1.0_dp+eps*epsFactor) * sin(twistAngleGrad2)
+                       dy = (Rat(2,i)) * ((1.0_dp+eps*epsFactor) * cos(twistAngleGrad2) - 1.0_dp) &
+                              + Rat(1,i) * (1.0_dp+eps*epsFactor) * sin(twistAngleGrad2)
+                   else
+                       dx = Rat(1,i)  * ((1.0_dp+eps*epsFactor) * cos(twistAngleGrad2) - 1.0_dp) &
+                              - (Rat(2,i) - shift2/eps/epsFactor) * (1.0_dp+eps) * sin(twistAngleGrad2)
+                       dy = (Rat(2,i) - shift2/eps/epsFactor) * ((1.0_dp+eps) * cos(twistAngleGrad2) - 1.0_dp) &
+                              + Rat(1,i) * (1.0_dp+eps/epsFactor) * sin(twistAngleGrad2)
+                   end if
+                end if
+                if (addDisplacements) then
+                    dx = dx + displacements(1,i)
+                    dy = dy + displacements(2,i)
+                end if
+                if (sign2.lt.0.0) then
+                    dx = -dx
+                    dy = -dy
+                end if
+                if (rotateFirst) then ! This is the default behavior
+                   dx = dx + shift2_x
+                   dy = dy + shift2_y
+                end if
+                ! --- theta is in radian so just multiplied without conversion
+                if (distanceDependentEffectiveModel) then
+                   ! it should be ok to take the first neighbor as it is effective model with only 3 neighbors
+                   call distanceDependentC(Cabd, Cab, BfactorCab, interlayerDistances(i), z0)
+                else
+                   Cabd = Cab
+                end if
+                call offdiago(Habjj,dx,dy,Cabd,Phiab)
+                if (writeData) then
+                   write(587,*) Habjj
+                end if
+                realH = real(Habjj)
+                imagH = imag(Habjj)
+                if (sign2.lt.0.0) then
+                  imagH = -imagH
+                end if
+
+                    if (Species(i).eq.2) then   ! ---  B sublattice
+
+                       del(1) = 2.0_dp*realH/3.0_dp
+                       del(2) = ( -realH + sqrt(3.0_dp)*imagH )/3.0_dp
+                       del(3) = -(  realH + sqrt(3.0_dp)*imagH )/3.0_dp
+                     ! del(2) and del(3) are inverted to take into account
+                     ! difference
+                     ! between A and B
+                    end if
+
+                    if (Species(i).eq.1) then   ! ---  A sublattice
+
+                      del(1) =  2.0_dp*realH/3.0_dp
+                      del(2) = -(  realH + sqrt(3.0_dp)*imagH )/3.0_dp
+                      del(3) =  ( -realH + sqrt(3.0_dp)*imagH )/3.0_dp
+
+                    end if
+
+                !else ! See discussions with Jeil, both GBN and GNB have same
+                !virtual strain effect
+
+                !     ! del(2) and del(3) are inverted to take into account
+                !     ! difference
+                !     ! between A and B
+              else
+                    del(1) = 0.0_dp
+                    del(2) = 0.0_dp
+                    del(3) = 0.0_dp
+              end if
+              do j=1,Nneigh(i)
+                 jj = NList(j,i)
+                 if (layerIndex(i) .eq. layerIndex(jj)) then
+                    d = sqrt(NeighD(1,j,i)**2+NeighD(2,j,i)**2)
+                    do ilvl=1,tbnn
+                       if (d < Nradii(ilvl,nlay)) then
+                          !hopp(j,i) =
+                          !cmplx(gn(Species(i),Species(NList(j,i)),ilvl))
+                          if (abs(NeighD(1,j,i)) < 0.01_dp) then
+                             delta = del(1)
+                             numberOfdel1 = numberOfDel1+1
+                          else if (NeighD(1,j,i) < -0.02_dp ) then
+                             if (sign2.lt.0.0) then
+                                 delta = del(2)
+                             else
+                                 delta = del(3)
+                             end if
+                             numberOfdel2 = numberOfDel2+1
+                          else if (NeighD(1,j,i) > 0.02_dp) then
+                             if (sign2.lt.0.0) then
+                                 delta = del(3)
+                             else
+                                 delta = del(2)
+                             end if
+                             numberOfdel3 = numberOfDel3+1
+                          endif
+                          if (moireMid) then ! same term at the bond midpoint (Hermitian)
+                             call MoireBondDeltaMidpoint(Rat(1:2,i), NeighD(1:2,j,i), Species(i), eps*epsFactor, &
+                                  twistAngleGrad2, 0.0_dp, (sign2.lt.0.0), [shift2_x, shift2_y], (sign2.lt.0.0), &
+                                  (sign2.lt.0.0), Cab, Phiab, delta)
+                          end if
+                          if (d > 1.7_dp) then ! only use delta !=0 for first NN hoppings
+                                               ! useful to separate when other
+                                               ! routine asks for more distant
+                                               ! neighbors (realStrain for
+                                               ! instance)
+                              delta = 0.0_dp
+                          end if
+                          hopp(j,i) = hopp(j,i) - cmplx(1.0_dp*delta ,kind=dp)
+                          exit
+                       end if
+                    end do
+                    !if ((Species(i)==1 .and. Species(NList(j,i))==2) .or. &
+                    !  (Species(i)==2 .and. Species(NList(j,i))==1)) then
+                    !else if ((Species(i)==3 .and. Species(NList(j,i))==4) .or. &
+                    !  (Species(i)==4 .and. Species(NList(j,i))==3)) then
+                 else
+                    d = sqrt(dot_product(NeighD(1:2,j,i),NeighD(1:2,j,i)))
+                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay),kind=dp)
+                 end if
+              end do
+          end do
+        !$OMP END PARALLEL DO
+        if (writeData) then
+            close(586)
+        end if
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopSecondMoire',1)
+#endif /* DEBUG */
+
+end subroutine HamHopSecondMoire
+
+!> Parameters of the interlayer hopping model selected with TypeOfBL (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopInterlayerParameters()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopInterlayerParameters',0)
+#endif /* DEBUG */
+
+         if (MIO_StringComp(BilayerModel,'BLKaxiras')) then
+            call MIO_InputParameter('Interlayer.UseBNGKaxiras',useBNGKaxiras,.false.)
+            tAB = 0.29_dp
+            if (useBNGKaxiras) then
+                lambda0_CB = 0.3905_dp/g0
+                epsilon0_CB = 1.5426_dp
+                kappa0_CB = 1.8229_dp
+                lambda3_BC = -0.0588_dp/g0
+                epsilon3_BC = 3.0827_dp
+                x3_BC = 0.6085_dp
+                lambda3_CB = -0.0651_dp/g0
+                epsilon3_CB = 3.7998_dp
+                x3_CB = 0.6341_dp
+                xi0_CB = epsilon0_CB
+                xi3_BC = epsilon3_BC
+                xi3_CB = epsilon3_CB
+                lambda0_CN = 0.2517_dp/g0
+                epsilon0_CN = 1.6061_dp
+                kappa0_CN = 2.1909_dp
+                lambda3_NC = -0.0606_dp/g0
+                epsilon3_NC = 3.3502_dp
+                x3_NC = 0.5142_dp
+                lambda3_CN = -0.0465_dp/g0
+                epsilon3_CN = 3.0464_dp
+                x3_CN = 0.5264_dp
+                xi0_CN = epsilon0_CN
+                xi3_NC = epsilon3_NC
+                xi3_CN = epsilon3_CN
+                t1K = g0/g0
+                t2KB = 0.0594_dp/g0
+                t2KN = 0.2276_dp/g0
+                t3K = -0.2163_dp/g0
+            else ! just use GG
+                call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
+                if (addPressureDependence) then
+                    !
+                    !
+                    c1_0 = 0.310_dp
+                    c1_1 = -1.882_dp
+                    c1_2 = 7.741_dp
+                    c2_0 = 1.750_dp
+                    c2_1 = -1.618_dp
+                    c2_2 = 1.848_dp
+                    c3_0 = 1.990_dp
+                    c3_1 = 1.007_dp
+                    c3_2 = 2.427_dp
+                    c4_0 = -0.068_dp
+                    c4_1 = 0.399_dp
+                    c4_2 = -1.739_dp
+                    c5_0 = 3.286_dp
+                    c5_1 = -0.914_dp
+                    c5_2 = 12.011_dp
+                    c6_0 = 0.5_dp
+                    c6_1 = 0.322_dp
+                    c6_2 = 0.908_dp
+                    c7_0 = -0.008_dp
+                    c7_1 = 0.046_dp
+                    c7_2 = -0.183_dp
+                    c8_0 = 2.272_dp
+                    c8_1 = -0.721_dp
+                    c8_2 = -4.414_dp
+                    c9_0 = 1.217_dp
+                    c9_1 = 0.027_dp
+                    c9_2 = -0.658_dp
+                    c10_0 = 1.562_dp
+                    c10_1 = -0.371_dp
+                    c10_2 = -0.134_dp
+                else
+                    lambda0 = 0.3155_dp/g0
+                    epsilon0 = 1.7543_dp
+                    x0 = 0.0_dp
+                    kappa0 = 2.0010_dp
+                    lambda3 = -0.0688_dp/g0
+                    epsilon3 = 3.4692_dp
+                    x3 = 0.5212_dp
+                    kappa3 = 0.0_dp
+                    lambda6 = -0.008300_dp/g0
+                    epsilon6 = 2.876400_dp
+                    x6 = 1.52060_dp
+                    kappa6 = 1.57310_dp
+                    xi0 = epsilon0
+                    xi3 = epsilon3
+                    xi6 = epsilon6
+               end if
+            end if
+         else if (MIO_StringComp(BilayerModel,'BLSrivani')) then
+            call MIO_InputParameter('Interlayer.UseBNGSrivani',useBNGSrivani,.false.)
+            call MIO_InputParameter('Interlayer.Oppositedxdy',oppositedxdy,.false.)
+            call MIO_InputParameter('Interlayer.SublatticeDependent',sublatticeDependent,.false.)
+            call MIO_InputParameter('Interlayer.UseThetaIJ',useThetaIJ,.false.)
+            call MIO_InputParameter('Interlayer.UseTheta',useTheta,.false.)
+            call MIO_InputParameter('Interlayer.SublatticeIndependent',sublatticeIndependent,.false.)
+            if (useBNGSrivani) then
+                lambda0_CB = 0.3905_dp/g0
+                epsilon0_CB = 1.5426_dp
+                kappa0_CB = 1.8229_dp
+                lambda3_BC = -0.0588_dp/g0
+                epsilon3_BC = 3.0827_dp
+                x3_BC = 0.6085_dp
+                lambda3_CB = -0.0651_dp/g0
+                epsilon3_CB = 3.7998_dp
+                x3_CB = 0.6341_dp
+                xi0_CB = epsilon0_CB
+                xi3_BC = epsilon3_BC
+                xi3_CB = epsilon3_CB
+                lambda0_CN = 0.2517_dp/g0
+                epsilon0_CN = 1.6061_dp
+                kappa0_CN = 2.1909_dp
+                lambda3_NC = -0.0606_dp/g0
+                epsilon3_NC = 3.3502_dp
+                x3_NC = 0.5142_dp
+                lambda3_CN = -0.0465_dp/g0
+                epsilon3_CN = 3.0464_dp
+                x3_CN = 0.5264_dp
+                xi0_CN = epsilon0_CN
+                xi3_NC = epsilon3_NC
+                xi3_CN = epsilon3_CN
+                t1K = g0/g0
+                t2KB = 0.0594_dp/g0
+                t2KN = 0.2276_dp/g0
+                t3K = -0.2163_dp/g0
+            else
+                call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
+                call MIO_InputParameter('Interlayer.OldParameterSet',oldParameterSet,.false.)
+                call MIO_InputParameter('Interlayer.UseOnlyVAB',useOnlyVAB,.false.)
+                if (addPressureDependence) then
+                    call MIO_Print('Adding pressure (distance) dependent Srivani parameters','ham')
+                    if (oldParameterSet) then
+                        tAB = 0.355_dp
+                        c1_0 = 0.3571385063263838_dp
+                        c1_1 = -1.891884708936455_dp
+                        c1_2 = 6.652946573261291_dp
+                        c2_0 = 1.8867190568791063_dp
+                        c2_1 = -0.41000467960493125_dp
+                        c2_2 = 4.578192878264396_dp
+                        c3_0 = 1.8270139657989923_dp
+                        c3_1 = -0.40382997041549323_dp
+                        c3_2 = 0.8339980356453551_dp
+                        c4_0 = 0.07516409521688965_dp
+                        c4_1 = -0.4003623778798789_dp
+                        c4_2 = 1.8994745927765773_dp
+                        c5_0 = 3.6275668776932046_dp
+                        c5_1 = -3.6911506279524273_dp
+                        c5_2 = -10.77882608119433_dp
+                        c6_0 = 0.5315846479951798_dp
+                        c6_1 = 0.005642504054093722_dp
+                        c6_2 = -2.1672957606642598_dp
+                        c7_0 = -0.009733220417244328_dp
+                        c7_1 = 0.0508999779194876_dp
+                        c7_2 = -0.1994906574479795_dp
+                        c8_0 = 2.694749513617616_dp
+                        c8_1 = -0.7312487102958507_dp
+                        c8_2 = 8.375059780569929_dp
+                        c9_0 = 1.5483753173366424_dp
+                        c9_1 = 0.1578717903624763_dp
+                        c9_2 = -0.4478833970593441_dp
+                        c10_0 =1.5906430728955332_dp
+                        c10_1 =-0.26841222887036603_dp
+                        c10_2 =0.6153669604354582_dp
+                    else
+                        tAB = 0.3357_dp
+                        if (useOnlyVAB) then
+                            c1_0 =   0.3356095024843812
+                            c1_1 =   -1.9555147793478367
+                            c1_2 =   5.542631379367501
+                            c2_0 =   1.718698822030771
+                            c2_1 =   -1.989378866684143
+                            c2_2 =   6.0025023827468775
+                            c3_0 =   1.7543868745706959
+                            c3_1 =   -0.7739949690181664
+                            c3_2 =   1.903243378532328
+                            c4_0 =   0.06851906419484396
+                            c4_1 =   -0.6872433666263775
+                            c4_2 =   3.769207297230312
+                            c5_0 =   3.1733357766403234
+                            c5_1 =   2.5647115615881324
+                            c5_2 =   -123.63154378822028
+                            c6_0 =   0.39765806464770465
+                            c6_1 =   1.543230705089051
+                            c6_2 =   -22.973479855570684
+                            c7_0 =   -0.012256483205855817
+                            c7_1 =   0.16990943196521704
+                            c7_2 =   -2.1647529202020253
+                            c8_0 =   1.1716245804866041
+                            c8_1 =   4.487359824823402
+                            c8_2 =   -58.75949608817599
+                            c9_0 =   0.8917021392108377
+                            c9_1 =   1.0187648341101367
+                            c9_2 =   -16.229901468075237
+                            c10_0 =  2.09879167259061
+                            c10_1 =  0.29714623365951714
+                            c10_2 =  12.863626996121283
+                            c11_0 =  0.04071154326934091
+                            c11_1 =  -0.5873777395380401
+                            c11_2 =  7.654992092022496
+                            c12_0 =  0.4488364197392876
+                            c12_1 =  0.013400104807997755
+                            c12_2 =  -2.142393269209168e-06
+                            c13_0 =  -0.7078365546490298
+                            c13_1 =  -0.06723178248496989
+                            c13_2 =  2.0037377859863668
+                            c14_0 =  2.109173635556271
+                            c14_1 =  -0.14140771101700622
+                            c14_2 =  7.571534745370173
+                        else
+                            c1_0 =  0.3575872537033165_dp
+                            c1_1 =  -1.9347697178845817_dp
+                            c1_2 =  3.8706979283760394_dp
+                            c2_0 =  1.9106957393116117_dp
+                            c2_1 =  -0.09989684567144147_dp
+                            c2_2 =  -8.720932407008418_dp
+                            c3_0 =  1.8228523809344535_dp
+                            c3_1 =  -0.3667529691024049_dp
+                            c3_2 =  -2.3050530340090782_dp
+                            c4_0 =  0.071115719665038_dp
+                            c4_0 = -c4_0
+                            c4_1 =  -0.42093264500073585_dp
+                            c4_2 =  0.9178867554728614_dp
+                            c5_0 =  3.9416508464100466_dp
+                            c5_1 =  -2.214147419045211_dp
+                            c5_2 =  41.76842643035146_dp
+                            c6_0 =  0.5481096417108225_dp
+                            c6_1 =  0.04235827800799908_dp
+                            c6_2 =  3.973507493054687_dp
+                            c7_0 =  -0.031087946815144728_dp
+                            c7_1 =  0.19481521423521497_dp
+                            c7_2 =  -0.7770045478761431_dp
+                            c8_0 =  1.1147111796813856_dp
+                            c8_1 =  -0.013399935958530826_dp
+                            c8_2 =  -1.4302593524023142e-06_dp
+                            c9_0 =  0.9353113982829261_dp
+                            c9_1 =  0.20106572786860608_dp
+                            c9_2 =  -1.13259450482717_dp
+                            c10_0 = 1.3970867695033276_dp
+                            c10_1 = 0.032853758467485825_dp
+                            c10_2 = -0.6913705164987503_dp
+                            c11_0 = 0.08985168760341603_dp
+                            c11_1 = -0.5898948298140482_dp
+                            c11_2 = 2.5050264708064574_dp
+                            c12_0 = 0.49260894402823696_dp
+                            c12_1 = 0.013400115682404422_dp
+                            c12_2 = -2.3561065136309557e-06_dp
+                            c13_0 = -0.5744255984608703_dp
+                            c13_1 = 0.16416466983562875_dp
+                            c13_2 = -0.00014391022969531333_dp
+                            c14_0 = 1.3345101551849814_dp
+                            c14_1 = -0.01942463416793111_dp
+                            c14_2 = 0.22425121204108625_dp
+                        end if
+                    end if
+                else !  New parameters from 2020 by Srivani
+                    lambda0 =  0.3575896463595361_dp/g0
+                    epsilon0 = 1.9108224313643323_dp
+                    x0 = 0.0_dp
+                    kappa0 = 1.8227815545297545_dp
+                    lambda3 = 0.07111484887484568_dp/g0
+                    epsilon3 = 3.9428998931290584_dp
+                    x3 = 0.5482006335511792_dp
+                    kappa3 = 0.0_dp
+                    lambda6 = -0.013721066052788262_dp/g0
+                    epsilon6 = 1.25349967_dp
+                    x6 = 1.09324627_dp
+                    kappa6 = 1.7524165109575078_dp
+                    lambda6b = 0.029028452050848814_dp/g0
+                    epsilon6b = 0.4749792471502847_dp
+                    x6b = 1.9276014_dp
+                    kappa6b = -0.5685377300000001_dp
+                    xi0 = epsilon0
+                    xi3 = epsilon3
+                    xi6 = epsilon6
+                    xi6b = epsilon6b
+                       lambda0AAp     = 0.3777452105728493_dp/g0
+                       xi0AAp         =  1.673723757628059_dp
+                       kappa0AAp      = -1.9375254860531055_dp
+                       lambda0bAAp     = -0.03297124774024884_dp/g0
+                       xi0bAAp         =  1.0731649983324736_dp
+                       kappa0bAAp      = 2.1774201575458982_dp
+
+                       lambda0ABp     = 0.3339824357142346_dp/g0
+                       xi0ABp         =  1.6086712193494612_dp
+                       kappa0ABp      = -1.8083599334947213_dp
+                       lambda0bABp     = -0.017946450497759416_dp/g0
+                       xi0bABp         =  0.798265793648077_dp
+                       kappa0bABp      = 2.093789675583678_dp
+
+                       lambda0BAp     = 0.3339824357142346_dp/g0
+                       xi0BAp         =  1.6086712193494612_dp
+                       kappa0BAp      = -1.8083599334947213_dp
+                       lambda0bBAp     = -0.017946450497759416_dp/g0
+                       xi0bBAp         =  0.798265793648077_dp
+                       kappa0bBAp      = 2.093789675583678_dp
+
+                       lambda3ABp     =  0.22358533630187713_dp/g0
+                       xi3ABp         =  2.515609650785262_dp
+                       x3ABp          =  0.6615199942493694_dp
+                       lambda3bABp     =  -0.13763943627632735_dp/g0
+                       xi3bABp         =  2.5155817180683107_dp
+                       x3bABp        =  0.6618620509164502_dp
+
+                       lambda3BAp     =  0.22358533630187713_dp/g0
+                       xi3BAp         =  2.515609650785262_dp
+                       x3BAp          =  0.6615199942493694_dp
+                       lambda3bBAp     =  -0.13763943627632735_dp/g0
+                       xi3bBAp         =  2.5155817180683107_dp
+                       x3bBAp        =  0.6618620509164502_dp
+               end if
+            end if
+         end if
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopInterlayerParameters',1)
+#endif /* DEBUG */
+
+end subroutine HamHopInterlayerParameters
+
+!> Intralayer hopping parameters of the graphene/hBN bilayer (GBNtwoLayersF2G2s) (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopF2G2sParameters()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopF2G2sParameters',0)
+#endif /* DEBUG */
+
+         if (GBNtwoLayersF2G2s) then
+            call MIO_Print('defining the GBNtwoLayersF2G2 parameters','ham')
+            t1K = g0/g0
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLGfromGBNA,-0.24498_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLGfromGBNB,-0.24523_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLGfromGBN,0.19334_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLGfromGBN,-0.0_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLGfromGBNA,-0.06618_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLGfromGBNB,-0.06624_dp)
+            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLGfromGBNA,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLGfromGBNB,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK7A',t7KSLGfromGBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK8A',t8KSLGfromGBN,0.0_dp)
+            t2KSLGfromGBNA = t2KSLGfromGBNA/g0
+            t2KSLGfromGBNB = t2KSLGfromGBNB/g0
+            t3KSLGfromGBN = t3KSLGfromGBN/g0
+            t4KSLGfromGBN = t4KSLGfromGBN/g0
+            t5KSLGfromGBNA = t5KSLGfromGBNA/g0
+            t5KSLGfromGBNB = t5KSLGfromGBNB/g0
+            t6KSLGfromGBNA = t6KSLGfromGBNA/g0
+            t6KSLGfromGBNB = t6KSLGfromGBNB/g0
+            t7KSLGfromGBN = t7KSLGfromGBN/g0
+            t8KSLGfromGBN = t8KSLGfromGBN/g0
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBNfromGBNA,-0.081055_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBNfromGBNB,-0.24562_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLBNfromGBN,0.15399_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLBNfromGBN,-0.0_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBNfromGBNA,-0.065654_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBNfromGBNB,-0.04892_dp)
+            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLBNfromGBNA,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLBNfromGBNB,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK7A',t7KSLBNfromGBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK8A',t8KSLBNfromGBN,0.0_dp)
+            t2KSLBNfromGBNA = t2KSLBNfromGBNA/g0
+            t2KSLBNfromGBNB = t2KSLBNfromGBNB/g0
+            t3KSLBNfromGBN = t3KSLBNfromGBN/g0
+            t4KSLBNfromGBN = t4KSLBNfromGBN/g0
+            t5KSLBNfromGBNA = t5KSLBNfromGBNA/g0
+            t5KSLBNfromGBNB = t5KSLBNfromGBNB/g0
+            t6KSLBNfromGBNA = t6KSLBNfromGBNA/g0
+            t6KSLBNfromGBNB = t6KSLBNfromGBNB/g0
+            t7KSLBNfromGBN = t7KSLBNfromGBN/g0
+            t8KSLBNfromGBN = t8KSLBNfromGBN/g0
+         else if (F2G2Model) then
+            t1K = g0/g0
+            if (useOldGrapheneF2G2) then
+                call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSL,-0.21264_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSL,0.23442_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSL,-0.05350_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSL,-0.07326_dp)
+                call MIO_InputParameter('Intralayer.BilayertK6A',t6K,0.0_dp)
+                call MIO_InputParameter('Intralayer.BilayertK7A',t7K,0.0_dp)
+                call MIO_InputParameter('Intralayer.BilayertK8A',t8K,0.0_dp)
+            else
+                call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSL,-0.2354_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSL,0.1877_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSL,0.0_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSL,-0.0633_dp)
+                call MIO_InputParameter('Intralayer.BilayertK6A',t6K,0.0_dp)
+                call MIO_InputParameter('Intralayer.BilayertK7A',t7K,0.0_dp)
+                call MIO_InputParameter('Intralayer.BilayertK8A',t8K,0.0_dp)
+            end if
+            t2KSL = t2KSL/g0
+            t3KSL = t3KSL/g0
+            t4KSL = t4KSL/g0
+            t5KSL = t5KSL/g0
+            t6K = t6K/g0
+            t7K = t7K/g0
+            t8K = t8K/g0
+            ! BNBN F2G2
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBN_B,-0.0542_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBN_N,-0.2228_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLBN,0.1329_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBN_B,-0.0566_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBN_N,-0.0429_dp)
+            call MIO_InputParameter('Intralayer.BilayertK6A',t6KBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK7A',t7KBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK8A',t8KBN,0.0_dp)
+            t2KSLBN_B = t2KSLBN_B/g0
+            t2KSLBN_N = t2KSLBN_N/g0
+            t3KSLBN = t3KSLBN/g0
+            t4KSLBN = t4KSLBN/g0
+            t5KSLBN_B = t5KSLBN_B/g0
+            t5KSLBN_N = t5KSLBN_N/g0
+            t6KBN = t6KBN/g0
+            t7KBN = t7KBN/g0
+            t8KBN = t8KBN/g0
+         else
+            t1K = g0/g0
+            t2KSL = -0.2425_dp/g0
+            t3KSL = 0.2656_dp/g0
+            t4KSL = -0.0235_dp/g0
+            t5KSL = -0.0524_dp/g0
+            t6K = 0.0209_dp/g0
+            t7K = 0.0148_dp/g0
+            t8K = 0.0211_dp/g0
+            t2KA = t2KSL
+            t2KB = t2KSL
+            t5KA = t5KSL
+            t5KB = t5KSL
+         end if
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopF2G2sParameters',1)
+#endif /* DEBUG */
+
+end subroutine HamHopF2G2sParameters
 
 end subroutine HamHopping
 

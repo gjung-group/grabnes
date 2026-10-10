@@ -161,7 +161,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Interface.EdgeHoppingAmp` | `EdgeHoppingAmp` | real | `0.2` | interface.F90: InterfacePot1 |
 | `Interface.EdgeHoppingDamp` | `EdgeHoppingDamp` | real | `0.65` | interface.F90: InterfacePot1 |
 | `Interlayer.AddExponentialDecayForDihedral` | `addExponentialDecayForDihedral` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.AddPressureDependence` | `addPressureDependence` | logical | `.true.` | ham.F90: HamHopping |
+| `Interlayer.AddPressureDependence` | `addPressureDependence` | logical | `.true.` | ham.F90: HamHopInterlayerParameters; ham.F90: HamHopping |
 | `Interlayer.AddSecondLayerInteractions` | `addSecondLayerInteractions` | logical | `.false.` | neigh.F90: fastNNnotsquareBulkSmall |
 | `Interlayer.BilayerOneParameter` | `BilayerOneParameter` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.BLdelta` | `BLdelta` |  | `0.184*aG` | ham.F90: HamHopping |
@@ -215,10 +215,10 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Interlayer.KoshinoSR` | `KoshinoSR` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.MinDelta` | `minDelta` | real | `1.0` | ham.F90: HamHopping |
 | `Interlayer.NewFittingFunctions` | `newFittingFunctions` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.OldParameterSet` | `oldParameterSet` | logical | `.false.` | ham.F90: HamHopping |
+| `Interlayer.OldParameterSet` | `oldParameterSet` | logical | `.false.` | ham.F90: HamHopInterlayerParameters; ham.F90: HamHopping |
 | `Interlayer.OnlyV0` | `onlyV0` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.Onlyvppsigma` | `onlyvppsigma` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.Oppositedxdy` | `oppositedxdy` | logical | `.false.` | ham.F90: HamHopping |
+| `Interlayer.Oppositedxdy` | `oppositedxdy` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
 | `Interlayer.PhiAA` | `PhiAA` | real | `82.54` | ham.F90: HamOnSiteMoirePotential |
 | `Interlayer.PhiAA` | `PhiAA` | real | `90.0` | ham.F90: HamOnSiteMoirePotential |
 | `Interlayer.PhiApAp` | `PhiApAp` | real | `-82.54` | ham.F90: HamOnSiteMoirePotential |
@@ -233,17 +233,17 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Interlayer.RenormalizeHoppingFactorBAp` | `renormalizeHoppingFactorBAp` | real | `1.0` | ham.F90: HamHopping |
 | `Interlayer.RenormalizeHoppingFactorBBp` | `renormalizeHoppingFactorBBp` | real | `1.0` | ham.F90: HamHopping |
 | `Interlayer.SetnLayersToZero` | `setnLayersToZero` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.SublatticeDependent` | `sublatticeDependent` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.SublatticeIndependent` | `sublatticeIndependent` | logical | `.false.` | ham.F90: HamHopping |
+| `Interlayer.SublatticeDependent` | `sublatticeDependent` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
+| `Interlayer.SublatticeIndependent` | `sublatticeIndependent` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
 | `Interlayer.SwitchV3Sign` | `switchV3Sign` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.TwistedBLtbt` | `twistedBLtbt` | real | `0.113` | ham.F90: HamHopping |
 | `Interlayer.TypeOfBL` | `TypeOfBL` | string | `'None'` | ham.F90: HamHopping |
 | `Interlayer.TypeOfSL` | `TypeOfSL` | string | `'None'` | ham.F90: HamHopping |
-| `Interlayer.UseBNGKaxiras` | `useBNGKaxiras` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.UseBNGSrivani` | `useBNGSrivani` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.UseOnlyVAB` | `useOnlyVAB` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.UseTheta` | `useTheta` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.UseThetaIJ` | `useThetaIJ` | logical | `.false.` | ham.F90: HamHopping |
+| `Interlayer.UseBNGKaxiras` | `useBNGKaxiras` | logical | `.false.` | ham.F90: HamHopInterlayerParameters; ham.F90: HamHopping |
+| `Interlayer.UseBNGSrivani` | `useBNGSrivani` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
+| `Interlayer.UseOnlyVAB` | `useOnlyVAB` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
+| `Interlayer.UseTheta` | `useTheta` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
+| `Interlayer.UseThetaIJ` | `useThetaIJ` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
 | `Interlayer.Vpppi0` | `vpppi0` | real | `2.7` | ham.F90: HamHopping |
 | `Interlayer.Vpppi0` | `vpppi0` | real | `3.5` | ham.F90: HamHopping |
 | `Interlayer.Vppsigma0` | `vppsigma0` | real | `0.48` | ham.F90: HamHopping |
@@ -264,9 +264,9 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Intralayer.BilayertBA0` | `BilayertBA0` | real | `0.0001` | ham.F90: HamHopping |
 | `Intralayer.BilayertBA0` | `BilayertBA0` | real | `0.331` | ham.F90: HamHopping |
 | `Intralayer.BilayerThreeParameters` | `BilayerThreeParameters` | logical | `.false.` | ham.F90: HamHopping |
-| `Intralayer.BilayertK6A` | `BilayertK6A` | real | `0.0` | ham.F90: HamHopping |
-| `Intralayer.BilayertK7A` | `BilayertK7A` | real | `0.0` | ham.F90: HamHopping |
-| `Intralayer.BilayertK8A` | `BilayertK8A` | real | `0.0` | ham.F90: HamHopping |
+| `Intralayer.BilayertK6A` | `BilayertK6A` | real | `0.0` | ham.F90: HamHopF2G2sParameters; ham.F90: HamHopping |
+| `Intralayer.BilayertK7A` | `BilayertK7A` | real | `0.0` | ham.F90: HamHopF2G2sParameters; ham.F90: HamHopping |
+| `Intralayer.BilayertK8A` | `BilayertK8A` | real | `0.0` | ham.F90: HamHopF2G2sParameters; ham.F90: HamHopping |
 | `Intralayer.DeactivateASubLattice` | `deactivateASubLattice` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
 | `Intralayer.DeactivateBSubLattice` | `deactivateBSubLattice` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
 | `Intralayer.DeactivateIntersublattice` | `deactivateIntersublattice` | logical | `.false.` | ham.F90: HamHopping |
@@ -277,30 +277,30 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Intralayer.KoshinoIntralayer` | `KoshinoIntralayer` | logical | `.false.` | ham.F90: HamHopping |
 | `Intralayer.MayouIntralayer` | `MayouIntralayer` | logical | `.false.` | ham.F90: HamHopping |
 | `Intralayer.RemoveF2G2Flag` | `removeF2G2Flag` | logical | `.false.` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.0542` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.081055` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.21264` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.2228` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.2354` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.24498` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.24523` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.24562` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.1329` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.15399` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.1877` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.19334` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.23442` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `-0.0` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `-0.05350` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `0.0` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.0429` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.04892` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.0566` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.0633` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.065654` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.06618` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.06624` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.07326` | ham.F90: HamHopping |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.0542` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.081055` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.21264` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.2228` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.2354` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.24498` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.24523` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.24562` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.1329` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.15399` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.1877` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.19334` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.23442` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `-0.0` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `-0.05350` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `0.0` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.0429` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.04892` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.0566` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.0633` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.065654` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.06618` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.06624` | ham.F90: HamHopF2G2sParameters |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.07326` | ham.F90: HamHopF2G2sParameters |
 | `Intralayer.T2Value` | `t2Value` | real | `0.0083` | ham.F90: HamHopping |
 | `Intralayer.UseOldGrapheneF2G2` | `useOldGrapheneF2G2` | logical | `.false.` | ham.F90: HamHopping |
 | `Kubo.Calc` |  | logical | `.true.` | calc.F90: CalcSelect |
@@ -388,7 +388,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Moire.KekuleAngle` | `MoireKekuleAngle` | real | `30.0` | ham.F90: HamOnSiteMoirePotential |
 | `Moire.KekuleEpsFactor` | `MoireKekuleEpsFactor` |  | `sqrt(3.0)` | ham.F90: HamOnSiteMoirePotential |
 | `Moire.LatticePercent` | `Latticepercent` | real | `-0.018181818181818` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Moire.LatticePercentFactor` | `LatticepercentFactor` | real | `1.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
+| `Moire.LatticePercentFactor` | `LatticepercentFactor` | real | `1.0` | ham.F90: HamHopSecondMoire; ham.F90: HamOnSiteMoirePotential |
 | `Moire.LayerShift1` | `MoireLayerShift1` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
 | `Moire.LayerShift2` | `MoireLayerShift2` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
 | `Moire.NoH0AndHZ` | `MoireNoH0AndHZ` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
