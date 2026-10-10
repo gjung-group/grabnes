@@ -693,272 +693,7 @@ subroutine HamOnSite()
 #ifdef DEBUG
    print*, "onsite, B, N, C1, C2", e0_B, e0_N, e0_C1, e0_C2
 #endif /* DEBUG */
-   !$OMP PARALLEL DO
-   do i=1,nAt
-      if (Species(i)==3) then
-         H0(i) = e0_B
-      else if (Species(i)==4) then
-         H0(i) = e0_N
-      ! we dont enter this clause for most single layer F2G2 systems not sure why i am specifying it
-      else if (e0_C1 .ne. 0.0_dp .or. e0_C2 .ne. 0.0) then
-         if (fourLayers) then
-             if (Species(i)==1 .and. (layerIndex(i).eq.1 .or. layerIndex(i).eq.3)) then
-                H0(i) = e0_C1
-             else if (Species(i)==2 .and. (layerIndex(i).eq.1 .or. layerIndex(i).eq.3)) then
-                H0(i) = e0_C2
-             else if (Species(i)==1 .and. (layerIndex(i).eq.2 .or. layerIndex(i).eq.4)) then
-                H0(i) = e0_C2
-             else if (Species(i)==2 .and. (layerIndex(i).eq.2 .or. layerIndex(i).eq.4)) then
-                H0(i) = e0_C1
-             end if
-         else if (threeLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. fiveLayersSandwiched &
-               .or. sixLayersSandwiched .or. sevenLayersSandwiched .or. eightLayersSandwiched .or. tenLayersSandwiched &
-               .or. twentyLayersSandwiched) then
-             if ((layerIndex(i).eq.1 .or. layerIndex(i).eq.2) .and. (.not. middleTwist)) then
-                if (Species(i)==1 .and. (layerIndex(i).eq.1)) then
-                   H0(i) = e0_C1
-                else if (Species(i)==2 .and. (layerIndex(i).eq.1)) then
-                   H0(i) = e0_C2
-                else if (Species(i)==1 .and. (layerIndex(i).eq.2)) then
-                   H0(i) = e0_C2
-                else if (Species(i)==2 .and. (layerIndex(i).eq.2)) then
-                   H0(i) = e0_C1
-                end if
-             else
-                H0(i) = (e0_C1+e0_C2)/2.0_dp ! Is this what we want for the N>2-layer systems?
-             end if
-         else if (GBNtwoLayers) then
-              ! add F2G2 model onsite parameters for G, B and N atoms
-              if (layerIndex(i) .eq. 1) then ! graphene layer
-                if (Species(i).eq.1) then
-                   H0(i) = e0_C1
-                else if (Species(i).eq.2) then
-                   H0(i) = e0_C2
-                end if
-              else if (layerIndex(i) .eq. 2) then ! BN layer
-                cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-              end if
-            !else ! add dx, dy-dependent values using first order harmonic approximation (see summary by Jiaqi)
-         else if (t3BG) then
-              if (Species(i)==1 .and. (layerIndex(i).eq.1 .or. layerIndex(i).eq.3 .or. layerIndex(i).eq.5)) then
-                H0(i) = e0_C1
-             else if (Species(i)==2 .and. (layerIndex(i).eq.1 .or. layerIndex(i).eq.3 .or. layerIndex(i).eq.5)) then
-                H0(i) = e0_C2
-             else if (Species(i)==1 .and. (layerIndex(i).eq.2 .or. layerIndex(i).eq.4 .or. layerIndex(i).eq.6)) then
-                H0(i) = e0_C2
-             else if (Species(i)==2 .and. (layerIndex(i).eq.2 .or. layerIndex(i).eq.4 .or. layerIndex(i).eq.6)) then
-                H0(i) = e0_C1
-            end if
-         else if (t2GBN) then
-              if (layerIndex(i) .eq. 1) then ! bottom substrate hBN
-                cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-              else if (layerIndex(i) .eq. 2) then ! middle graphene layer
-                if (Species(i).eq.1) then
-                   H0(i) = e0_C1
-                else if (Species(i).eq.2) then
-                   H0(i) = e0_C2
-                end if
-              else if (layerIndex(i) .eq. 3) then ! top graphene layer
-                if (Species(i).eq.1) then
-                   H0(i) = e0_C1
-                else if (Species(i).eq.2) then
-                   H0(i) = e0_C2
-                end if
-              end if
-         else if (encapsulatedThreeLayers) then
-              ! add F2G2 model onsite parameters for G, B and N atoms
-              if (layerIndex(i) .eq. 2) then ! graphene layer
-                if (Species(i).eq.1) then
-                   H0(i) = e0_C1
-                else if (Species(i).eq.2) then
-                   H0(i) = e0_C2
-                end if
-              else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 3) then ! BN layer
-                cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-              end if
-            !else ! add dx, dy-dependent values using first order harmonic approximation (see summary by Jiaqi)
-         else if (encapsulatedFourLayers) then
-             if (useLayerSpecificOnsiteEnergyTerms) then
-                 if (layerIndex(i) .eq. 2) then
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1_LB
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2_LB
-                   end if
-                 else if (layerIndex(i) .eq. 3) then
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1_LT
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2_LT
-                   end if
-                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 4) then ! BN layer
-                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-                 end if
-             else
-                 if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3) then ! graphene layer
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2
-                   end if
-                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 4) then ! BN layer
-                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-                 end if
-             end if
-         else if (encapsulatedFiveLayers) then
-              if (useLayerSpecificOnsiteEnergyTerms) then
-                 if (layerIndex(i) .eq. 2) then
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1_LB
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2_LB
-                   end if
-                 else if (layerIndex(i) .eq. 4) then
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1_LT
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2_LT
-                   end if
-                 else if (layerIndex(i) .eq. 3) then ! graphene layer
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2
-                   end if
-                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 5) then ! BN layer
-                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-                 end if
-              else
-                 if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4) then ! graphene layer
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2
-                   end if
-                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 5) then ! BN layer
-                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-                 end if
-              end if
-         else if (encapsulatedSixLayers) then
-              if (useLayerSpecificOnsiteEnergyTerms) then
-                 if (layerIndex(i) .eq. 2) then
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1_LB
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2_LB
-                   end if
-                 else if (layerIndex(i) .eq. 5) then
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1_LT
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2_LT
-                   end if
-                 else if (layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4) then ! graphene layer
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2
-                   end if
-                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 6) then ! BN layer
-                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-                 end if
-              else
-                 ! graphene layer
-                 if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4 .or. layerIndex(i) .eq. 5) then
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2
-                   end if
-                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 6) then ! BN layer
-                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-                 end if
-              end if
-         else if (encapsulatedSevenLayers) then
-              if (useLayerSpecificOnsiteEnergyTerms) then
-                 if (layerIndex(i) .eq. 2) then
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1_LB
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2_LB
-                   end if
-                 else if (layerIndex(i) .eq. 6) then
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1_LT
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2_LT
-                   end if
-                 else if (layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4 .or. layerIndex(i) .eq. 5 ) then ! graphene layer
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2
-                   end if
-                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 7) then ! BN layer
-                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-                 end if
-              else
-                 ! graphene layer
-                 if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4 .or. layerIndex(i) .eq. 5 &
-                       .or. layerIndex(i).eq. 6) then
-                   if (Species(i).eq.1) then
-                      H0(i) = e0_C1
-                   else if (Species(i).eq.2) then
-                      H0(i) = e0_C2
-                   end if
-                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 7) then ! BN layer
-                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-                 end if
-              end if
-         else if (t3GWithBN) then
-              ! add F2G2 model onsite parameters for G, B and N atoms
-              if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4) then ! graphene layer
-                if (Species(i).eq.1) then
-                   H0(i) = e0_C1
-                else if (Species(i).eq.2) then
-                   H0(i) = e0_C2
-                end if
-              else if (layerIndex(i) .eq. 1) then ! BN layer
-                cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-              end if
-            !else ! add dx, dy-dependent values using first order harmonic approximation (see summary by Jiaqi)
-         else if (BNt2GBN) then
-              ! add F2G2 model onsite parameters for G, B and N atoms
-              if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3) then ! graphene layer
-                if (Species(i).eq.1) then
-                   H0(i) = e0_C1
-                else if (Species(i).eq.2) then
-                   H0(i) = e0_C2
-                end if
-              else if (layerIndex(i) .eq. 1 .or. layerIndex(i).eq. 4) then ! BN layer
-                cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
-              end if
-            !else ! add dx, dy-dependent values using first order harmonic approximation (see summary by Jiaqi)
-         else if (BNBNtwoLayers) then ! checked
-              ! add F2G2 model parameters for BN and BN
-            cycle ! already assigned 40 lines higher
-         else if (forceBilayerF2G2Intralayer) then
-            if (Species(i)==1 .and. (layerIndex(i).eq.1)) then
-               H0(i) = e0_C1
-            else if (Species(i)==2 .and. (layerIndex(i).eq.1)) then
-               H0(i) = e0_C2
-            else if (Species(i)==1 .and. (layerIndex(i).eq.2)) then
-               H0(i) = e0_C2
-            else if (Species(i)==2 .and. (layerIndex(i).eq.2)) then
-               H0(i) = e0_C1
-            end if
-         else if (twoLayers) then
-            if (Species(i).eq.1) then
-               H0(i) = e0_C1
-            else if (Species(i).eq.2) then
-               H0(i) = e0_C2
-            end if
-         end if
-      else
-         H0(i) = e0_C
-      end if
-   end do
-   !$OMP END PARALLEL DO
+   call HamOnSiteSpeciesEnergies()
    if (nspin==2) then
       call MIO_Allocate(Ho,[inode1],[inode2],'Ho','ham')
       Ho = H0
@@ -969,7 +704,1020 @@ subroutine HamOnSite()
    call MIO_InputParameter('TBG.DiagPRB',tBGDiagPRB,.false.)
    call MIO_InputParameter('BNBN.Diag',BNBNDiag,.false.)
    call MIO_InputParameter('Moire.LatticePercent',eps,-0.018181818181818_dp)
+   if (l) call HamOnSiteMoirePotential()
+   call MIO_InputParameter('Moire.BilayerElectricField',u,.false.)
+   call MIO_InputParameter('Moire.BilayerElectricShift',ElectricShift,0.150_dp)
+   call MIO_InputParameter('Moire.BilayerElectricFieldInvert',invertE,.false.)
+   call MIO_InputParameter('Structure.CellSize',n,55)
+   invertEposX = (n*sCell*aG)/2.0
+   ElectricShift = ElectricShift/g0
+  call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
+  call MIO_InputParameter('Stack.FourLayersSandwiched',fourLayersSandwiched,.false.)
+  call MIO_InputParameter('Stack.HelicalTwistedMBM',helicalTwistedMBM,.false.)
+  call MIO_InputParameter('Stack.FiveLayersSandwiched',fiveLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.SixLayersSandwiched',sixLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.SevenLayersSandwiched',sevenLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.EightLayersSandwiched',eightLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.TenLayersSandwiched',tenLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.TwentyLayersSandwiched',twentyLayersSandwiched,.false.)
+   if (u) call HamOnSiteLayerPotential()
+   call MIO_InputParameter('Trilayer.FanZhang',FanZhang,.false.)
+   if (FanZhang) call HamOnSiteTrilayerFanZhang()
+
+   call MIO_InputParameter('Potential.AddSublatticeMassterm',u,.false.)
+   call MIO_InputParameter('Potential.OnlyBottomLayerMassTerm',onlyBottomLayerMassTerm,.false.)
+   call MIO_InputParameter('Potential.SublatticeMassterm',massterm,0.150_dp)
+   massterm = massterm/g0
+   if (u) call HamOnSiteSublatticeMass()
+
+   call MIO_InputParameter('Potential.AddOnsiteEnergyShift',u,.false.)
+   call MIO_InputParameter('Potential.OnsiteEnergyShift',onsiteEnergyShift,0.150_dp)
+   onsiteEnergyShift = onsiteEnergyShift/g0
+   if (u) then
+      call MIO_Print('Adding an onsite energy shift','ham')
+      !$OMP PARALLEL DO PRIVATE(i)
+      do i=1,nAt
+         H0(i) = H0(i) + onsiteEnergyShift
+      end do
+      !$OMP END PARALLEL DO
+   end if
+
+   call MIO_InputParameter('Strain.Bubbles',l,.false.)
    if (l) then
+      call MIO_InputParameter('Disorder.OnsiteShift',onsiteShift,0.1_dp)
+      call MIO_InputParameter('Disorder.CheckerDivider',checkerDivider,10)
+      call MIO_InputParameter('Disorder.CheckerDensity',checkerDensity,0.1_dp)
+      allocate(checkerActivate(checkerDivider,checkerDivider))
+      activatedCheckers = 0
+      call RandSeedFromInput()
+   20 do j = 1,checkerDivider
+         do k = 1,checkerDivider
+            checkerActivate(j,k) = .false.
+            call random_number(rand)
+            if(rand.le.checkerDensity) then
+                checkerActivate(j,k) = .true.
+                activatedCheckers = activatedCheckers + 1
+                if (dble(activatedCheckers)/dble(checkerDivider*checkerDivider)+0.01_dp.ge.checkerDensity) then
+                   GO TO 10
+                end if
+            end if
+         end do
+      end do
+      IF (dble(activatedCheckers)/dble(checkerDivider*checkerDivider)-0.01_dp.lt.checkerDensity) GO TO 20
+   10 CONTINUE
+      if (.not. frac) call AtomsSetFrac()
+      !$OMP PARALLEL DO PRIVATE(i)
+      do i = in1,in2
+         if (checkerActivate(CEILING(Rat(1,i)*checkerDivider),CEILING(Rat(2,i)*checkerDivider)).eqv.(.true.)) then
+               H0(i) = H0(i) + onsiteShift
+         else
+               H0(i) = H0(i)
+         end if
+      end do
+      !$OMP END PARALLEL DO
+   end if
+
+   ! PNP
+   call MIO_InputParameter('Potential.PNP',l,.false.)
+   if (l) call HamOnSitePNP()
+
+   call MIO_InputParameter('Potential.PNPKink',l,.false.)
+   if (l) call HamOnSitePNPKink()
+
+   ! changes for sinus function
+   call MIO_InputParameter('Potential.SinusModulation',l,.false.)
+   if (l) then
+      call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      if (frac) call AtomsSetCart()
+      !$OMP PARALLEL DO PRIVATE(i)
+      do i = in1,in2
+        H0(i) = H0(i) + sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))
+      end do
+      !$OMP END PARALLEL DO
+   end if
+   ! end changes for sinus function
+
+   ! changes for sinus function
+
+   call MIO_InputParameter('Potential.SinusModulationUsingPeriod',sinusModulationUsingPeriod,.false.)
+   if (sinusModulationUsingPeriod) then
+      call MIO_InputParameter('Potential.SinusModulationPeriod',sinusModulationPeriod,135.0_dp)
+      call MIO_InputParameter('Potential.SinusModulationAddMassTerm',sinusModulationAddMassTerm,.false.)
+      call MIO_InputParameter('Potential.SinusFactor',sinusFactor,0.01_dp)
+      call MIO_InputParameter('Potential.SinusMassTermFactor',sinusFactor2,0.01_dp)
+      if (frac) call AtomsSetCart()
+      !$OMP PARALLEL DO PRIVATE(i)
+      do i = 1,nAt
+        if (sinusModulationAddMassTerm) then
+            H0(i) = H0(i) + sinusFactor2*sin(2.0_dp*pi*Rat(1,i)/(sinusModulationPeriod))*(-1.0_dp)**Species(i)
+        else
+            H0(i) = H0(i) + sinusFactor*sin(2.0_dp*pi*Rat(1,i)/(sinusModulationPeriod))
+        end if
+      end do
+      !$OMP END PARALLEL DO
+   end if
+   ! end changes for sinus function
+
+   ! changes for sinus function
+
+   call MIO_InputParameter('Potential.SinusModulationUsingPeriodYDirection',sinusModulationUsingPeriodY,.false.)
+   if (sinusModulationUsingPeriodY) then
+      call MIO_InputParameter('Potential.SinusModulationPeriod',sinusModulationPeriod,135.0_dp)
+      call MIO_InputParameter('Potential.SinusModulationAddMassTerm',sinusModulationAddMassTerm,.false.)
+      call MIO_InputParameter('Potential.SinusFactor',sinusFactor,0.01_dp)
+      call MIO_InputParameter('Potential.SinusMassTermFactor',sinusFactor2,0.01_dp)
+      if (frac) call AtomsSetCart()
+      !$OMP PARALLEL DO PRIVATE(i)
+      do i = 1,nAt
+        if (sinusModulationAddMassTerm) then
+            H0(i) = H0(i) + sinusFactor2*sin(2.0_dp*pi*Rat(2,i)/(sinusModulationPeriod))*(-1.0_dp)**Species(i)
+        else
+          H0(i) = H0(i) + sinusFactor*sin(2.0_dp*pi*Rat(2,i)/(sinusModulationPeriod))
+        end if
+      end do
+      !$OMP END PARALLEL DO
+   end if
+   ! end changes for sinus function
+
+   ! changes for cosinus function
+
+   call MIO_InputParameter('Potential.CosinusModulationUsingPeriod',cosinusModulationUsingPeriod,.false.)
+   if (cosinusModulationUsingPeriod) then
+      call MIO_InputParameter('Potential.CosinusModulationPeriod',cosinusModulationPeriod,135.0_dp)
+      call MIO_InputParameter('Potential.CosinusModulationAddMassTerm',cosinusModulationAddMassTerm,.false.)
+      call MIO_InputParameter('Potential.CosinusFactor',cosinusFactor,0.01_dp)
+      call MIO_InputParameter('Potential.CosinusMassTermFactor',cosinusFactor2,0.01_dp)
+      if (frac) call AtomsSetCart()
+      !$OMP PARALLEL DO PRIVATE(i)
+      do i = 1,nAt
+        if (cosinusModulationAddMassTerm) then
+            H0(i) = H0(i) + cosinusFactor2*cos(2.0_dp*pi*Rat(1,i)/(cosinusModulationPeriod))*(-1.0_dp)**Species(i)
+        else
+          H0(i) = H0(i) + cosinusFactor*cos(2.0_dp*pi*Rat(1,i)/(cosinusModulationPeriod))
+        end if
+      end do
+      !$OMP END PARALLEL DO
+   end if
+   ! end changes for sinus function
+
+   ! changes for cosinus function
+
+   call MIO_InputParameter('Potential.CosinusModulationUsingPeriodYDirection',cosinusModulationUsingPeriodY,.false.)
+   if (cosinusModulationUsingPeriodY) then
+      call MIO_InputParameter('Potential.CosinusModulationPeriod',cosinusModulationPeriod,135.0_dp)
+      call MIO_InputParameter('Potential.CosinusModulationAddMassTerm',cosinusModulationAddMassTerm,.false.)
+      call MIO_InputParameter('Potential.CosinusFactor',cosinusFactor,0.01_dp)
+      call MIO_InputParameter('Potential.CosinusMassTermFactor',cosinusFactor2,0.01_dp)
+      if (frac) call AtomsSetCart()
+      !$OMP PARALLEL DO PRIVATE(i)
+      do i = 1,nAt
+        if (cosinusModulationAddMassTerm) then
+            H0(i) = H0(i) + cosinusFactor2*cos(2.0_dp*pi*Rat(2,i)/(cosinusModulationPeriod))*(-1.0_dp)**Species(i)
+        else
+          H0(i) = H0(i) + cosinusFactor*cos(2.0_dp*pi*Rat(2,i)/(cosinusModulationPeriod))
+        end if
+      end do
+      !$OMP END PARALLEL DO
+   end if
+   ! end changes for sinus function
+
+   ! square function
+   call MIO_InputParameter('Potential.SquareFunction',l,.false.)
+   if (l) call HamOnSiteSquareFunction()
+   ! square function
+
+   ! square function 2
+   call MIO_InputParameter('Potential.SquareFunction2',l,.false.)
+   if (l) call HamOnSiteSquareFunction2()
+   ! square function 2
+
+   ! zterm1d
+   call MIO_InputParameter('Potential.Zterm1D',l,.false.)
+   if (l) call HamOnSiteZterm1D()
+
+   call MIO_InputParameter('Potential.Zterm1DKink',l,.false.)   ! only works for 2 periods
+   if (l) call HamOnSiteZterm1DKink()
+
+   ! zterm1d
+   ! squarechecker
+ call MIO_InputParameter('Potential.SquareChecker2219',l,.false.)
+      if (l) call HamOnSiteSquareChecker()
+
+   ! squarechecker
+   call MIO_InputParameter('Disorder.SublatticeDisorder',l,.false.)
+   if (l) then
+      call RandSeedFromInput()
+      call MIO_InputParameter('Disorder.SublattAmp',A,2.0_dp)
+      call MIO_InputParameter('Disorder.SublattPct',pct,0.1_dp)
+      call MIO_Print('Sublattice disorder','ham')
+      call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
+      call MIO_Print('')
+      do i=inode1,inode2
+         call random_number(rand)
+         if(rand.le.(pct*2.0_dp) .and. Species(i).eq.2) then  ! factor 2 to compensate for the sublattice restriction
+             H0(i) = H0(i) + A
+         end if
+      end do
+   end if
+
+   call MIO_InputParameter('Disorder.Anderson',l,.false.)
+   if (l) then
+      call RandSeedFromInput()
+      call MIO_InputParameter('Disorder.AndersonAmp',A,1.0_dp)
+      call MIO_Print('Anderson disorder','ham')
+      call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
+      call MIO_Print('')
+      do i=inode1,inode2
+         call random_number(rand)
+         H0(i) = H0(i) + (rand-0.5_dp)*A
+      end do
+   end if
+   call MIO_InputParameter('Disorder.DeltaDisorder',l,.false.)
+   if (l) call HamOnSiteDeltaDisorder()
+   call MIO_InputParameter('Disorder.GaussDisorder',l,.false.)
+   if (l) then
+      call GaussPot(H0)
+   end if
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+   if (Zterm .or. PZterm) then
+      call MIO_Allocate(Ho,[inode1],[inode2],'Ho','ham')
+      Ho = H0
+   end if
+
+   call MIO_InputParameter('Potential.FourLayerOnsiteShifts',l,.false.)
+   call MIO_InputParameter('Stack.FourLayerShift1',layerShift1,0.0_dp)
+   call MIO_InputParameter('Stack.FourLayerShift2',layerShift2,0.0_dp)
+   call MIO_InputParameter('Stack.FourLayerShift3',layerShift3,0.0_dp)
+   call MIO_InputParameter('Stack.FourLayerShift4',layerShift4,0.0_dp)
+   layerShift1 = layerShift1/g0
+   layerShift2 = layerShift2/g0
+   layerShift3 = layerShift3/g0
+   layerShift4 = layerShift4/g0
+   if (l) then
+      !$OMP PARALLEL DO PRIVATE(i)
+      do i = 1,nAt
+           if (layerIndex(i).eq.1) then
+              H0(i) = H0(i) + layershift1
+           else if (layerIndex(i).eq.2) then
+              H0(i) = H0(i) + layershift2
+           else if (layerIndex(i).eq.3) then
+              H0(i) = H0(i) + layershift3
+           else if (layerIndex(i).eq.4) then
+              H0(i) = H0(i) + layershift4
+           end if
+      end do
+      !$OMP END PARALLEL DO
+   end if
+
+   ! Trigonal (C3-symmetric) CDW modulation, applied at the end, after all other onsite
+   ! modifications.  UN-GATED 2026-09-22: this block previously sat inside
+   ! `if (helicalTwistedMBM)`, which also steers layer-stacking branches and so could not be
+   ! switched on for an ordinary 2-layer system.  The block only modifies H0, so it is now
+   ! gated on its own flag.  OPT-IN: helicalTwistedMBM_CDW defaults .false., which reproduces
+   ! the previous output byte-for-byte for every existing input.
+   ! Note the modulation is in FRACTIONAL coordinates, so it sits at the reciprocal vectors
+   ! of the SIMULATION CELL: on an NxN supercell of a moire cell it is an N-fold superlattice
+   ! potential.  CDWAmplitude is in eV (divided by g0 below); CDWPeriod is NOT used.
+   call MIO_InputParameter('Potential.HelicalTwistedMBM_CDW',helicalTwistedMBM_CDW,.false.)
+   if (helicalTwistedMBM_CDW) call HamOnSiteTrigonalCDW()
+
+   ! ------------------------------------------------------------------------
+   ! moireCDW: a general commensurate superlattice (charge-density-wave)
+   ! potential, applied last, after every other onsite term.
+   !
+   ! OPT-IN: moireCDW defaults .false. and reproduces the previous output
+   ! byte-for-byte for every existing input.
+   !
+   !          * (1/nQ) * sum_q cos( 2*pi*(h_q*f1 + k_q*f2)/D + phi )
+   !
+   ! f1,f2 are the fractional coordinates of the INPUT (pre-supercell) cell,
+   ! so the wavevectors are q = (h,k)/D in units of that cell's reciprocal
+   ! lattice.  D = moireCDW.Denominator.  The potential's unit cell therefore
+   ! contains D_eff input cells, where D_eff is the index of
+   ! { R : q.R in 2*pi*Z for all q } -- for the intended cases:
+   !
+   !   D=1, Q={(1,0),(0,1),(1,1)}  -> C3 potential on the input cell
+   !                                  (reproduces helicalTwistedMBM_CDW)
+   !   D=2, Q={(1,0),(0,2),(1,2)}  -> cell doubled along a1: on a cell that
+   !                                  is 2x2 moire cells this gives M=8 moire
+   !                                  cells per potential cell, which is what
+   !                                  a gap at n/n0 = +-1/2 requires while the
+   !                                  valley (time-reversal) pairing is intact.
+   !
+   ! BOTH amplitudes are ADDED (unlike sinusModulationAddMassTerm, where the
+   ! mass term REPLACES the scalar term).  Both are in eV and are divided by
+   ! g0 here, so the printed value is the physical one.
+   !
+   ! The simulation supercell must be a multiple of D along the a1 direction,
+   ! otherwise the potential is not periodic and the run is aborted.
+   ! ------------------------------------------------------------------------
+   call MIO_InputParameter('Moire.CDW',moireCDW,.false.)
+   if (moireCDW) call HamOnSiteMoireCDW()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSite',1)
+#endif /* DEBUG */
+
+contains
+
+!> Density-wave potential at wave vectors of the reciprocal lattice of the cell (Moire.CDW) (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteMoireCDW()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteMoireCDW',0)
+#endif /* DEBUG */
+
+      call MIO_InputParameter('moireCDW.Amplitude',cdwScalar,0.0_dp)
+      call MIO_InputParameter('moireCDW.MassAmplitude',cdwMass,0.0_dp)
+      call MIO_InputParameter('moireCDW.Phase',cdwPhase,0.0_dp)
+      call MIO_InputParameter('moireCDW.Denominator',Dcdw,1)
+      if (Dcdw < 1) call MIO_Kill('moireCDW.Denominator must be >= 1','ham','HamOnSite')
+      if (.not. MIO_InputFindBlock('moireCDW.Qvectors',nQcdw)) then
+         call MIO_Kill('moireCDW requires a moireCDW.Qvectors block','ham','HamOnSite')
+      end if
+      allocate(Qcdw(2,nQcdw))
+      call MIO_InputBlock('moireCDW.Qvectors',Qcdw)
+
+      ! commensurability of the simulation supercell with the potential
+      call MIO_InputParameter('Structure.SuperCellX',scX,1)
+      call MIO_InputParameter('Structure.SuperCellY',scY,1)
+      if (scX == scY) then
+         scX = sCell
+         scY = sCell
+      end if
+      ! periodicity under the supercell vectors scX*a1 and scY*a2 requires
+      ! h*scX/D and k*scY/D to be integers for every q
+      do iq=1,nQcdw
+         if (mod(Qcdw(1,iq)*scX,Dcdw) /= 0 .or. mod(Qcdw(2,iq)*scY,Dcdw) /= 0) then
+            call MIO_Print('moireCDW: q = ('//trim(num2str(real(Qcdw(1,iq),dp),0))//','// &
+                 trim(num2str(real(Qcdw(2,iq),dp),0))//')/'// &
+                 trim(num2str(real(Dcdw,dp),0))//' is not periodic in this supercell','ham')
+            call MIO_Kill('moireCDW: q vector incommensurate with the supercell', &
+                          'ham','HamOnSite')
+         end if
+      end do
+
+      cdwScalar = cdwScalar/g0
+      cdwMass   = cdwMass/g0
+      if (.not. frac) call AtomsSetFrac()
+
+      call MIO_Print('moireCDW: commensurate superlattice potential','ham')
+      call MIO_Print('  scalar amplitude: '//trim(num2str(cdwScalar*g0,5))//' eV','ham')
+      call MIO_Print('  mass   amplitude: '//trim(num2str(cdwMass*g0,5))//' eV','ham')
+      call MIO_Print('  denominator D:    '//trim(num2str(real(Dcdw,dp),0)),'ham')
+      call MIO_Print('  number of q:      '//trim(num2str(real(nQcdw,dp),0)),'ham')
+      do iq=1,nQcdw
+         call MIO_Print('    q = ('//trim(num2str(real(Qcdw(1,iq),dp),0))//','// &
+              trim(num2str(real(Qcdw(2,iq),dp),0))//')/'//trim(num2str(real(Dcdw,dp),0)),'ham')
+      end do
+
+      !$OMP PARALLEL DO PRIVATE(i,iq,hq,kq,argq,Vq)
+      do i=1,nAt
+         ! >>> unset markers
+         argq = hamUnset
+         vq = hamUnset
+         ! <<< unset markers
+         Vq = 0.0_dp
+         do iq=1,nQcdw
+            hq = Qcdw(1,iq)
+            kq = Qcdw(2,iq)
+            argq = twopi*( hq*scX*Rat(1,i) + kq*scY*Rat(2,i) )/real(Dcdw,dp) + cdwPhase
+            Vq = Vq + cos(argq)
+         end do
+         Vq = Vq/real(nQcdw,dp)
+         H0(i) = H0(i) + ( cdwScalar + cdwMass*(-1.0_dp)**Species(i) )*Vq
+      end do
+      !$OMP END PARALLEL DO
+
+      call MIO_Print('  moireCDW: H0 of the first 5 atoms after modulation:','ham')
+      do i=1,min(5,nAt)
+         call MIO_Print('    atom '//trim(num2str(real(i,dp),0))//': H0='// &
+              trim(num2str(H0(i)*g0,8))//' eV, f=('//trim(num2str(Rat(1,i),5))//','// &
+              trim(num2str(Rat(2,i),5))//')','ham')
+      end do
+      deallocate(Qcdw)
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteMoireCDW',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteMoireCDW
+
+!> Trigonal density-wave potential written in fractional coordinates (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteTrigonalCDW()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteTrigonalCDW',0)
+#endif /* DEBUG */
+
+         call MIO_Print('Adding CDW modulation for helical twisted MBM system','ham')
+         call MIO_InputParameter('Potential.CDWAmplitude',CDWAmplitude,0.01_dp)
+         CDWAmplitude = CDWAmplitude/g0
+         call MIO_InputParameter('Potential.CDWPeriod',CDWPeriod,1.0_dp)
+         call MIO_InputParameter('Potential.CDWUseMassTerm',l,.false.)
+         if (.not. frac) call AtomsSetFrac()
+         call MIO_Print('  Using fractional coordinates for CDW modulation (Rat in fractional units)','ham')
+         call MIO_Print('  CDW period: '//trim(num2str(CDWPeriod,5))//' (in fractional units, 1.0 = full simulation cell)','ham')
+         call MIO_Print('  CDW amplitude: '//trim(num2str(CDWAmplitude*g0,5))//' eV','ham')
+         if (l) then
+            call MIO_Print('  CDW using sublattice-dependent mass term (opens spatially varying gap)','ham')
+            !$OMP PARALLEL DO PRIVATE(i)
+            do i=1,nAt
+               H0(i) = H0(i) + (-1.0_dp)**Species(i) * (1.0_dp/3.0_dp) * CDWAmplitude * &
+        ( cos(twopi*sCell*Rat(1,i)) + &
+          cos(twopi*sCell*Rat(2,i)) + &
+          cos(twopi*sCell*(Rat(1,i)+Rat(2,i))) )
+            end do
+            !$OMP END PARALLEL DO
+         else
+            call MIO_Print('  CDW using uniform energy shift (no gap opening)','ham')
+            !$OMP PARALLEL DO PRIVATE(i)
+            do i=1,nAt
+               H0(i) = H0(i) + (1.0_dp/3.0_dp) * CDWAmplitude * &
+        ( cos(twopi*sCell*Rat(1,i)) + &
+          cos(twopi*sCell*Rat(2,i)) + &
+          cos(twopi*sCell*(Rat(1,i)+Rat(2,i))) )
+            end do
+            !$OMP END PARALLEL DO
+         end if
+         ! Debug: print first few H0 values to verify modulation
+         call MIO_Print('  CDW: Sample H0 values after modulation (first 5 atoms):','ham')
+         do i=1,min(5,nAt)
+            call MIO_Print('    Atom '//trim(num2str(real(i,dp),0))//': H0='//trim(num2str(H0(i)*g0,8))//' eV, x=' &
+                  //trim(num2str(Rat(1,i),5))//' y='//trim(num2str(Rat(2,i),5)),'ham')
+         end do
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteTrigonalCDW',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteTrigonalCDW
+
+!> On-site disorder of delta type (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteDeltaDisorder()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteDeltaDisorder',0)
+#endif /* DEBUG */
+
+      call RandSeedFromInput()
+      call MIO_InputParameter('Disorder.DeltaAmp',A,1.0_dp)
+      call MIO_Print('delta disorder','ham')
+      call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
+      call MIO_Print('')
+      call MIO_InputParameter('Disorder.DeltaSkewFactor',AA,1.0_dp)
+      call MIO_Print('delta disorder','ham')
+      call MIO_Print('  skewFactor: '//trim(num2str(AA,4)),'ham')
+      call MIO_Print('')
+      tot = 0.0_dp
+      tot2 = 0.0_dp
+      tot3 = 0.0_dp
+      do i=inode1,inode2
+         call random_number(rand)
+         call randomInRange(rand,rand2,-1.0_dp,1.0_dp/AA)
+         if (rand2<0) then
+             call random_number(rand)
+             call randomInRange(rand,rand2,-1.0_dp/AA,0.0_dp)
+         else
+             call random_number(rand)
+             call randomInRange(rand,rand2,0.0_dp,1.0_dp)
+         end if
+         randomPot = rand2
+         randomPot2 = rand2**2.0_dp
+         randomPot3 = rand2**3.0_dp
+         tot = tot + randomPot
+         tot2 = tot2 + randomPot2
+         tot3 = tot3 + randomPot3
+         H0(i) = H0(i) + randomPot*A
+      end do
+      call MIO_Print('delta disorder','ham')
+      nImp = inode2
+      call MIO_Print('  mean: '//trim(num2str((tot/nImp),9)),'ham')
+      call MIO_Print('  variance: '//trim(num2str((tot2/nImp),9)),'ham')
+      call MIO_Print('  skewness: '//trim(num2str((tot3/nImp),9)),'ham')
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteDeltaDisorder',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteDeltaDisorder
+
+!> Checkerboard potential (SquareChecker2219) (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteSquareChecker()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteSquareChecker',0)
+#endif /* DEBUG */
+
+
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      call MIO_InputParameter('Potential.AmplitudeOfSquare',A,1.0_dp)
+      if (frac) call AtomsSetCart()
+
+      !$OMP PARALLEL DO PRIVATE(i,H)
+
+      do i = in1,in2
+      ! >>> unset markers
+      h = hamUnset
+      ! <<< unset markers
+
+        H = sin(22*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))*sin(19*4.0_dp*pi*Rat(2,i)/(sqrt(3.0_dp)*n*sCell*aG))
+
+         if (H.GT.0) then
+
+           H0(i) = H0(i) - (-1.0_dp)**Species(i)*A
+
+         else
+
+           H0(i) = H0(i) + (-1.0_dp)**Species(i)*A
+
+         end if
+
+      end do
+
+      !$OMP END PARALLEL DO
+
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteSquareChecker',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteSquareChecker
+
+!> One-dimensional layer-antisymmetric potential with a kink (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteZterm1DKink()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteZterm1DKink',0)
+#endif /* DEBUG */
+
+      if (frac) call AtomsSetCart()
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      call MIO_InputParameter('Potential.Zterm1DAmp',Amp3,0.01_dp)
+      call MIO_InputParameter('Potential.Zterm1DDelta',delta,10.0_dp)
+      limit0 = 0.0_dp
+      limit1 = (n*sCell*aG)*1.0_dp/4.0_dp
+      limit2 = (n*sCell*aG)*2.0_dp/4.0_dp
+      limit3 = (n*sCell*aG)*3.0_dp/4.0_dp
+      limit4 = (n*sCell*aG)
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        if (Rat(1,i).lt.limit2) then
+          H = Amp3 * tanh((Rat(1,i)-limit1)/delta)
+        else if ((Rat(1,i).gt.limit2).and.(Rat(1,i).lt.limit4)) then
+          H = - Amp3 * tanh((Rat(1,i)-limit3)/delta)
+        else if ((Rat(1,i).gt.limit4)) then
+          H = Amp3 * tanh((Rat(1,i)-(limit4+limit1))/delta)
+        end if
+        H0(i) = H0(i) + (-1.0_dp)**Species(i)*H
+      end do
+      !$OMP END PARALLEL DO
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteZterm1DKink',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteZterm1DKink
+
+!> One-dimensional layer-antisymmetric potential (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteZterm1D()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteZterm1D',0)
+#endif /* DEBUG */
+
+      if (frac) call AtomsSetCart()
+      call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      call MIO_InputParameter('Potential.AmplitudeOfSquare3',Amp3,0.01_dp)
+
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))
+         if (H.GT.0) then
+           H0(i) = H0(i) - (-1.0_dp)**Species(i)*Amp3
+         else
+           H0(i) = H0(i) + (-1.0_dp)**Species(i)*Amp3
+         end if
+      end do
+      !$OMP END PARALLEL DO
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteZterm1D',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteZterm1D
+
+!> Square-wave potential, second form (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteSquareFunction2()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteSquareFunction2',0)
+#endif /* DEBUG */
+
+      call MIO_InputParameter('Potential.NumberOfWidthHoneycomb',NOWH,1)
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      call MIO_InputParameter('Potential.AmplitudeOfSquare2',Amp2,0.01_dp)
+      call MIO_InputParameter('Potential.PhaseOfSquareX',P1,0.0_dp)
+      call MIO_InputParameter('Potential.PhaseOfSquareY',P2,0.0_dp)
+      if (frac) call AtomsSetCart()
+
+      call MIO_InputParameter('Potential.TwoDimension',l,.false.)
+      if (l) then
+        call MIO_InputParameter('Potential.AddZTerm',l,.false.)
+           if (l) then
+
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        H = sin(2.0_dp*pi*Rat(1,i)/(2.0_dp*aG*NOWH)+P1)*sin(2.0_dp*pi*Rat(2,i)*sqrt(3.0_dp)/(4.0_dp*aG*NOWH)+P2)
+         if (H.GT.0) then
+           H0(i) = H0(i) - (-1.0_dp)**Species(i)*Amp2
+         else
+           H0(i) = H0(i) + (-1.0_dp)**Species(i)*Amp2
+         end if
+      end do
+      !$OMP END PARALLEL DO
+
+      else
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        H = sin(2.0_dp*pi*Rat(1,i)/(2.0_dp*aG*NOWH)+P1)*sin(2.0_dp*pi*Rat(2,i)*sqrt(3.0_dp)/(4.0_dp*aG*NOWH)+P2)
+         if (H.GT.0) then
+           H0(i) = H0(i) + Amp2
+         else
+           H0(i) = H0(i)
+         end if
+      end do
+      !$OMP END PARALLEL DO
+        end if
+
+      else
+      call MIO_InputParameter('Potential.ArmChairShape',l,.false.)
+      if (l) then
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        H = sin(2.0_dp*pi*Rat(1,i)/(2.0_dp*aG*NOWH)+P1)
+         if (H.GT.0) then
+           H0(i) = H0(i) + Amp2
+         else
+           H0(i) = H0(i)
+         end if
+      end do
+      !$OMP END PARALLEL DO
+
+      else
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        H = sin(2.0_dp*pi*Rat(2,i)*sqrt(3.0_dp)/(4.0_dp*aG*NOWH)+P2)
+         if (H.GT.0) then
+           H0(i) = H0(i) + Amp2
+         else
+           H0(i) = H0(i)
+         end if
+      end do
+      !$OMP END PARALLEL DO
+      end if
+      end if
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteSquareFunction2',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteSquareFunction2
+
+!> Square-wave potential (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteSquareFunction()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteSquareFunction',0)
+#endif /* DEBUG */
+
+      call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      call MIO_InputParameter('Potential.AmplitudeOfSquare',A,1.0_dp)
+      if (frac) call AtomsSetCart()
+
+      call MIO_InputParameter('Potential.TwoDimensional',l,.false.)
+      if (l) then
+
+        call MIO_InputParameter('Potential.AddZTerm',l,.false.)
+           if (l) then
+
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))*sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(2,i)/(n*sCell*aG))
+         if (H.GT.0) then
+           H0(i) = H0(i) - (-1.0_dp)**Species(i)*A
+         else
+           H0(i) = H0(i) + (-1.0_dp)**Species(i)*A
+         end if
+      end do
+      !$OMP END PARALLEL DO
+
+      else
+
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))*sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(2,i)/(n*sCell*aG))
+         if (H.GT.0) then
+           H0(i) = H0(i) + A
+         else
+           H0(i) = H0(i)
+         end if
+      end do
+      !$OMP END PARALLEL DO
+        end if
+
+      else
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))
+         if (H.GT.0) then
+           H0(i) = H0(i) + A
+         else
+           H0(i) = H0(i)
+         end if
+      end do
+      !$OMP END PARALLEL DO
+      end if
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteSquareFunction',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteSquareFunction
+
+!> p-n-p potential with a kink (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSitePNPKink()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSitePNPKink',0)
+#endif /* DEBUG */
+
+      if (frac) call AtomsSetCart()
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      call MIO_InputParameter('Potential.PNPAmp',PNPAmp,0.01_dp)
+      call MIO_InputParameter('Potential.PNPDelta',delta,10.0_dp)
+      limit0 = 0.0_dp
+      limit1 = (n*sCell*aG)*1.0_dp/4.0_dp
+      limit2 = (n*sCell*aG)*2.0_dp/4.0_dp
+      limit3 = (n*sCell*aG)*3.0_dp/4.0_dp
+      limit4 = (n*sCell*aG)
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        if (Rat(1,i).lt.limit2) then
+          H = PNPAmp * tanh((Rat(1,i)-limit1)/delta)
+        else if ((Rat(1,i).gt.limit2).and.(Rat(1,i).lt.limit4)) then
+          H = - PNPAmp * tanh((Rat(1,i)-limit3)/delta)
+        else if ((Rat(1,i).gt.limit4)) then
+          H = PNPAmp * tanh((Rat(1,i)-(limit4+limit1))/delta)
+        end if
+        H0(i) = H0(i) + H
+      end do
+      !$OMP END PARALLEL DO
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSitePNPKink',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSitePNPKink
+
+!> p-n-p potential (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSitePNP()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSitePNP',0)
+#endif /* DEBUG */
+
+      if (frac) call AtomsSetCart()
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      call MIO_InputParameter('Potential.PNPAmp',PNPAmp,0.01_dp)
+      PNPLeft = (n*sCell*aG)/6.0_dp * 2.0_dp
+      PNPRight = (n*sCell*aG)/6.0_dp * 4.0_dp
+      !$OMP PARALLEL DO PRIVATE(i,H)
+      do i = in1,in2
+        ! >>> unset markers
+        h = hamUnset
+        ! <<< unset markers
+        if (Rat(1,i).lt.PNPLeft) then
+           H0(i) = H0(i) - PNPAmp
+        else if (Rat(1,i).ge.PNPLeft .and. Rat(1,i).le.PNPRight) then
+           H0(i) = H0(i) + PNPAmp
+        else if (Rat(1,i).ge.(PNPLeft+(n*Scell*aG)) .and. Rat(1,i).le.(PNPRight+(n*Scell*aG))) then
+           H0(i) = H0(i) + PNPAmp
+        else if (Rat(1,i).gt.PNPRight) then
+           H0(i) = H0(i) - PNPAmp
+        else
+           call MIO_Kill('PNP Inconsistency','ham','HamOnSite')
+        end if
+      end do
+      !$OMP END PARALLEL DO
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSitePNP',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSitePNP
+
+!> Sublattice mass term (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteSublatticeMass()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteSublatticeMass',0)
+#endif /* DEBUG */
+
+      if (onlyBottomLayerMassTerm) then
+          call MIO_Print('Adding a massterm between sublattices, but only for the bottom layer, i.e. layerIndex == 1','ham')
+      else
+          call MIO_Print('Adding a massterm between sublattices','ham')
+      end if
+      !$OMP PARALLEL DO PRIVATE(i)
+      do i=1,nAt
+         if (onlyBottomLayerMassTerm) then
+             if (layerIndex(i)==1) then
+                 H0(i) = H0(i) + (-1.0_dp)**Species(i)*massterm/2.0_dp
+             end if
+         else
+             H0(i) = H0(i) + (-1.0_dp)**Species(i)*massterm/2.0_dp
+         end if
+      end do
+      !$OMP END PARALLEL DO
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteSublatticeMass',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteSublatticeMass
+
+!> On-site terms of the Fan Zhang trilayer model (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteTrilayerFanZhang()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteTrilayerFanZhang',0)
+#endif /* DEBUG */
+
+      do i=1,nAt
+       call MIO_InputParameter('Trilayer.U1',u1,0.0_dp)
+       call MIO_InputParameter('Trilayer.U2',u2,0.0_dp)
+       call MIO_InputParameter('Trilayer.U3',u3,0.0_dp)
+       call MIO_InputParameter('Trilayer.Delta',trDelta,0.0_dp)
+       u1 = u1/g0
+       u2 = u2/g0
+       u3 = u3/g0
+       trDelta = trDelta/g0
+       if (layerIndex(i).eq.1) then
+          H0(i) = H0(i) + u1 + trDelta
+       else if (layerIndex(i).eq.2) then
+          H0(i) = H0(i) + u2
+       else if (layerIndex(i).eq.3) then
+          H0(i) = H0(i) + u3
+       end if
+      end do
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteTrilayerFanZhang',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteTrilayerFanZhang
+
+!> Potential difference between the layers (electric field, per-layer shifts) (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteLayerPotential()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteLayerPotential',0)
+#endif /* DEBUG */
+
+      call MIO_Print('Adding a energy shift beteen both layers in the bilayer graphene','ham')
+      if (frac) call AtomsSetCart()
+      !$OMP PARALLEL DO PRIVATE(i, EFactor)
+      do i=1,nAt
+         if (invertE) then
+            if (Rat(1,i).gt.invertEposX) then
+                Efactor = -1
+            else
+                Efactor = 1
+            end if
+         else
+            Efactor = 1
+         end if
+         if (fourLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. BNt2GBN) then
+            if (layerIndex(i).eq.1) then
+               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
+            else if (layerIndex(i).eq.2) then
+               H0(i) = H0(i) - ElectricShift*Efactor/6.0_dp
+            else if (layerIndex(i).eq.3) then
+               H0(i) = H0(i) + ElectricShift*Efactor/6.0_dp
+            else if (layerIndex(i).eq.4) then
+               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
+            end if
+         else if (threeLayers) then
+            if (layerIndex(i).eq.1) then
+               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
+            else if (layerIndex(i).eq.3) then
+               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
+            else
+               H0(i) = H0(i)
+            end if
+         else if (fiveLayersSandwiched) then
+            if (layerIndex(i).eq.1) then
+               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
+            else if (layerIndex(i).eq.2) then
+               H0(i) = H0(i) - ElectricShift*Efactor/4.0_dp
+            else if (layerIndex(i).eq.4) then
+               H0(i) = H0(i) + ElectricShift*Efactor/4.0_dp
+            else if (layerIndex(i).eq.5) then
+               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
+            else
+               H0(i) = H0(i)
+            end if
+         else if (sixLayersSandwiched) then
+            if (layerIndex(i).eq.1) then
+               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
+            else if (layerIndex(i).eq.2) then
+               H0(i) = H0(i) - ElectricShift*Efactor*0.3_dp
+            else if (layerIndex(i).eq.3) then
+               H0(i) = H0(i) - ElectricShift*Efactor*0.1_dp
+            else if (layerIndex(i).eq.4) then
+               H0(i) = H0(i) + ElectricShift*Efactor*0.1_dp
+            else if (layerIndex(i).eq.5) then
+               H0(i) = H0(i) + ElectricShift*Efactor*0.3_dp
+            else if (layerIndex(i).eq.6) then
+               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
+            end if
+         else if (t3BG) then
+            if (layerIndex(i).eq.1) then
+               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
+            else if (layerIndex(i).eq.2) then
+               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp + ElectricShift*Efactor/5.0_dp
+            else if (layerIndex(i).eq.3) then
+               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp + ElectricShift*Efactor*2.0_dp/5.0_dp
+            else if (layerIndex(i).eq.4) then
+               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp - ElectricShift*Efactor*2.0_dp/5.0_dp
+            else if (layerIndex(i).eq.5) then
+               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp - ElectricShift*Efactor/5.0_dp
+            else if (layerIndex(i).eq.6) then
+               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
+            end if
+         else if (twentyLayersSandwiched) then
+            do iii=1,20
+               if (layerIndex(i).eq.iii) then
+                  H0(i) = H0(i) + (ElectricShift*Efactor*(-0.5 + (iii-1)*1.0_dp/(20.0_dp-1.0_dp)))
+               end if
+            end do
+         else
+            if (layerIndex(i).eq.1) then
+               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
+            else
+               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
+            end if
+         end if
+      end do
+      !$OMP END PARALLEL DO
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteLayerPotential',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteLayerPotential
+
+!> On-site terms of the moire potential models (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteMoirePotential()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteMoirePotential',0)
+#endif /* DEBUG */
+
       call MIO_InputParameter('Moire.Sachs',l,.false.)
       if (l) then
          call MIO_Print('Moire potential model [Sachs et al. PRB 84, 195414 (2011)]','ham')
@@ -2268,841 +3016,292 @@ subroutine HamOnSite()
          end do
          !$OMP END PARALLEL DO
       end if
-   end if
-   call MIO_InputParameter('Moire.BilayerElectricField',u,.false.)
-   call MIO_InputParameter('Moire.BilayerElectricShift',ElectricShift,0.150_dp)
-   call MIO_InputParameter('Moire.BilayerElectricFieldInvert',invertE,.false.)
-   call MIO_InputParameter('Structure.CellSize',n,55)
-   invertEposX = (n*sCell*aG)/2.0
-   ElectricShift = ElectricShift/g0
-  call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
-  call MIO_InputParameter('Stack.FourLayersSandwiched',fourLayersSandwiched,.false.)
-  call MIO_InputParameter('Stack.HelicalTwistedMBM',helicalTwistedMBM,.false.)
-  call MIO_InputParameter('Stack.FiveLayersSandwiched',fiveLayersSandwiched,.false.)
-   call MIO_InputParameter('Stack.SixLayersSandwiched',sixLayersSandwiched,.false.)
-   call MIO_InputParameter('Stack.SevenLayersSandwiched',sevenLayersSandwiched,.false.)
-   call MIO_InputParameter('Stack.EightLayersSandwiched',eightLayersSandwiched,.false.)
-   call MIO_InputParameter('Stack.TenLayersSandwiched',tenLayersSandwiched,.false.)
-   call MIO_InputParameter('Stack.TwentyLayersSandwiched',twentyLayersSandwiched,.false.)
-   if (u) then
-      call MIO_Print('Adding a energy shift beteen both layers in the bilayer graphene','ham')
-      if (frac) call AtomsSetCart()
-      !$OMP PARALLEL DO PRIVATE(i, EFactor)
-      do i=1,nAt
-         if (invertE) then
-            if (Rat(1,i).gt.invertEposX) then
-                Efactor = -1
-            else
-                Efactor = 1
-            end if
-         else
-            Efactor = 1
-         end if
-         if (fourLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. BNt2GBN) then
-            if (layerIndex(i).eq.1) then
-               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
-            else if (layerIndex(i).eq.2) then
-               H0(i) = H0(i) - ElectricShift*Efactor/6.0_dp
-            else if (layerIndex(i).eq.3) then
-               H0(i) = H0(i) + ElectricShift*Efactor/6.0_dp
-            else if (layerIndex(i).eq.4) then
-               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
-            end if
-         else if (threeLayers) then
-            if (layerIndex(i).eq.1) then
-               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
-            else if (layerIndex(i).eq.3) then
-               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
-            else
-               H0(i) = H0(i)
-            end if
-         else if (fiveLayersSandwiched) then
-            if (layerIndex(i).eq.1) then
-               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
-            else if (layerIndex(i).eq.2) then
-               H0(i) = H0(i) - ElectricShift*Efactor/4.0_dp
-            else if (layerIndex(i).eq.4) then
-               H0(i) = H0(i) + ElectricShift*Efactor/4.0_dp
-            else if (layerIndex(i).eq.5) then
-               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
-            else
-               H0(i) = H0(i)
-            end if
-         else if (sixLayersSandwiched) then
-            if (layerIndex(i).eq.1) then
-               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
-            else if (layerIndex(i).eq.2) then
-               H0(i) = H0(i) - ElectricShift*Efactor*0.3_dp
-            else if (layerIndex(i).eq.3) then
-               H0(i) = H0(i) - ElectricShift*Efactor*0.1_dp
-            else if (layerIndex(i).eq.4) then
-               H0(i) = H0(i) + ElectricShift*Efactor*0.1_dp
-            else if (layerIndex(i).eq.5) then
-               H0(i) = H0(i) + ElectricShift*Efactor*0.3_dp
-            else if (layerIndex(i).eq.6) then
-               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
-            end if
-         else if (t3BG) then
-            if (layerIndex(i).eq.1) then
-               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
-            else if (layerIndex(i).eq.2) then
-               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp + ElectricShift*Efactor/5.0_dp
-            else if (layerIndex(i).eq.3) then
-               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp + ElectricShift*Efactor*2.0_dp/5.0_dp
-            else if (layerIndex(i).eq.4) then
-               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp - ElectricShift*Efactor*2.0_dp/5.0_dp
-            else if (layerIndex(i).eq.5) then
-               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp - ElectricShift*Efactor/5.0_dp
-            else if (layerIndex(i).eq.6) then
-               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
-            end if
-         else if (twentyLayersSandwiched) then
-            do iii=1,20
-               if (layerIndex(i).eq.iii) then
-                  H0(i) = H0(i) + (ElectricShift*Efactor*(-0.5 + (iii-1)*1.0_dp/(20.0_dp-1.0_dp)))
-               end if
-            end do
-         else
-            if (layerIndex(i).eq.1) then
-               H0(i) = H0(i) - ElectricShift*Efactor/2.0_dp
-            else
-               H0(i) = H0(i) + ElectricShift*Efactor/2.0_dp
-            end if
-         end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-   call MIO_InputParameter('Trilayer.FanZhang',FanZhang,.false.)
-   if (FanZhang) then
-      do i=1,nAt
-       call MIO_InputParameter('Trilayer.U1',u1,0.0_dp)
-       call MIO_InputParameter('Trilayer.U2',u2,0.0_dp)
-       call MIO_InputParameter('Trilayer.U3',u3,0.0_dp)
-       call MIO_InputParameter('Trilayer.Delta',trDelta,0.0_dp)
-       u1 = u1/g0
-       u2 = u2/g0
-       u3 = u3/g0
-       trDelta = trDelta/g0
-       if (layerIndex(i).eq.1) then
-          H0(i) = H0(i) + u1 + trDelta
-       else if (layerIndex(i).eq.2) then
-          H0(i) = H0(i) + u2
-       else if (layerIndex(i).eq.3) then
-          H0(i) = H0(i) + u3
-       end if
-      end do
-   end if
-
-   call MIO_InputParameter('Potential.AddSublatticeMassterm',u,.false.)
-   call MIO_InputParameter('Potential.OnlyBottomLayerMassTerm',onlyBottomLayerMassTerm,.false.)
-   call MIO_InputParameter('Potential.SublatticeMassterm',massterm,0.150_dp)
-   massterm = massterm/g0
-   if (u) then
-      if (onlyBottomLayerMassTerm) then
-          call MIO_Print('Adding a massterm between sublattices, but only for the bottom layer, i.e. layerIndex == 1','ham')
-      else
-          call MIO_Print('Adding a massterm between sublattices','ham')
-      end if
-      !$OMP PARALLEL DO PRIVATE(i)
-      do i=1,nAt
-         if (onlyBottomLayerMassTerm) then
-             if (layerIndex(i)==1) then
-                 H0(i) = H0(i) + (-1.0_dp)**Species(i)*massterm/2.0_dp
-             end if
-         else
-             H0(i) = H0(i) + (-1.0_dp)**Species(i)*massterm/2.0_dp
-         end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-
-   call MIO_InputParameter('Potential.AddOnsiteEnergyShift',u,.false.)
-   call MIO_InputParameter('Potential.OnsiteEnergyShift',onsiteEnergyShift,0.150_dp)
-   onsiteEnergyShift = onsiteEnergyShift/g0
-   if (u) then
-      call MIO_Print('Adding an onsite energy shift','ham')
-      !$OMP PARALLEL DO PRIVATE(i)
-      do i=1,nAt
-         H0(i) = H0(i) + onsiteEnergyShift
-      end do
-      !$OMP END PARALLEL DO
-   end if
-
-   call MIO_InputParameter('Strain.Bubbles',l,.false.)
-   if (l) then
-      call MIO_InputParameter('Disorder.OnsiteShift',onsiteShift,0.1_dp)
-      call MIO_InputParameter('Disorder.CheckerDivider',checkerDivider,10)
-      call MIO_InputParameter('Disorder.CheckerDensity',checkerDensity,0.1_dp)
-      allocate(checkerActivate(checkerDivider,checkerDivider))
-      activatedCheckers = 0
-      call RandSeedFromInput()
-   20 do j = 1,checkerDivider
-         do k = 1,checkerDivider
-            checkerActivate(j,k) = .false.
-            call random_number(rand)
-            if(rand.le.checkerDensity) then
-                checkerActivate(j,k) = .true.
-                activatedCheckers = activatedCheckers + 1
-                if (dble(activatedCheckers)/dble(checkerDivider*checkerDivider)+0.01_dp.ge.checkerDensity) then
-                   GO TO 10
-                end if
-            end if
-         end do
-      end do
-      IF (dble(activatedCheckers)/dble(checkerDivider*checkerDivider)-0.01_dp.lt.checkerDensity) GO TO 20
-   10 CONTINUE
-      if (.not. frac) call AtomsSetFrac()
-      !$OMP PARALLEL DO PRIVATE(i)
-      do i = in1,in2
-         if (checkerActivate(CEILING(Rat(1,i)*checkerDivider),CEILING(Rat(2,i)*checkerDivider)).eqv.(.true.)) then
-               H0(i) = H0(i) + onsiteShift
-         else
-               H0(i) = H0(i)
-         end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-
-   ! PNP
-   call MIO_InputParameter('Potential.PNP',l,.false.)
-   if (l) then
-      if (frac) call AtomsSetCart()
-      call MIO_InputParameter('Structure.CellSize',n,50)
-      call MIO_InputParameter('Potential.PNPAmp',PNPAmp,0.01_dp)
-      PNPLeft = (n*sCell*aG)/6.0_dp * 2.0_dp
-      PNPRight = (n*sCell*aG)/6.0_dp * 4.0_dp
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        if (Rat(1,i).lt.PNPLeft) then
-           H0(i) = H0(i) - PNPAmp
-        else if (Rat(1,i).ge.PNPLeft .and. Rat(1,i).le.PNPRight) then
-           H0(i) = H0(i) + PNPAmp
-        else if (Rat(1,i).ge.(PNPLeft+(n*Scell*aG)) .and. Rat(1,i).le.(PNPRight+(n*Scell*aG))) then
-           H0(i) = H0(i) + PNPAmp
-        else if (Rat(1,i).gt.PNPRight) then
-           H0(i) = H0(i) - PNPAmp
-        else
-           call MIO_Kill('PNP Inconsistency','ham','HamOnSite')
-        end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-
-   call MIO_InputParameter('Potential.PNPKink',l,.false.)
-   if (l) then
-      if (frac) call AtomsSetCart()
-      call MIO_InputParameter('Structure.CellSize',n,50)
-      call MIO_InputParameter('Potential.PNPAmp',PNPAmp,0.01_dp)
-      call MIO_InputParameter('Potential.PNPDelta',delta,10.0_dp)
-      limit0 = 0.0_dp
-      limit1 = (n*sCell*aG)*1.0_dp/4.0_dp
-      limit2 = (n*sCell*aG)*2.0_dp/4.0_dp
-      limit3 = (n*sCell*aG)*3.0_dp/4.0_dp
-      limit4 = (n*sCell*aG)
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        if (Rat(1,i).lt.limit2) then
-          H = PNPAmp * tanh((Rat(1,i)-limit1)/delta)
-        else if ((Rat(1,i).gt.limit2).and.(Rat(1,i).lt.limit4)) then
-          H = - PNPAmp * tanh((Rat(1,i)-limit3)/delta)
-        else if ((Rat(1,i).gt.limit4)) then
-          H = PNPAmp * tanh((Rat(1,i)-(limit4+limit1))/delta)
-        end if
-        H0(i) = H0(i) + H
-      end do
-      !$OMP END PARALLEL DO
-   end if
-
-   ! changes for sinus function
-   call MIO_InputParameter('Potential.SinusModulation',l,.false.)
-   if (l) then
-      call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
-      call MIO_InputParameter('Structure.CellSize',n,50)
-      if (frac) call AtomsSetCart()
-      !$OMP PARALLEL DO PRIVATE(i)
-      do i = in1,in2
-        H0(i) = H0(i) + sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))
-      end do
-      !$OMP END PARALLEL DO
-   end if
-   ! end changes for sinus function
-
-   ! changes for sinus function
-
-   call MIO_InputParameter('Potential.SinusModulationUsingPeriod',sinusModulationUsingPeriod,.false.)
-   if (sinusModulationUsingPeriod) then
-      call MIO_InputParameter('Potential.SinusModulationPeriod',sinusModulationPeriod,135.0_dp)
-      call MIO_InputParameter('Potential.SinusModulationAddMassTerm',sinusModulationAddMassTerm,.false.)
-      call MIO_InputParameter('Potential.SinusFactor',sinusFactor,0.01_dp)
-      call MIO_InputParameter('Potential.SinusMassTermFactor',sinusFactor2,0.01_dp)
-      if (frac) call AtomsSetCart()
-      !$OMP PARALLEL DO PRIVATE(i)
-      do i = 1,nAt
-        if (sinusModulationAddMassTerm) then
-            H0(i) = H0(i) + sinusFactor2*sin(2.0_dp*pi*Rat(1,i)/(sinusModulationPeriod))*(-1.0_dp)**Species(i)
-        else
-            H0(i) = H0(i) + sinusFactor*sin(2.0_dp*pi*Rat(1,i)/(sinusModulationPeriod))
-        end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-   ! end changes for sinus function
-
-   ! changes for sinus function
-
-   call MIO_InputParameter('Potential.SinusModulationUsingPeriodYDirection',sinusModulationUsingPeriodY,.false.)
-   if (sinusModulationUsingPeriodY) then
-      call MIO_InputParameter('Potential.SinusModulationPeriod',sinusModulationPeriod,135.0_dp)
-      call MIO_InputParameter('Potential.SinusModulationAddMassTerm',sinusModulationAddMassTerm,.false.)
-      call MIO_InputParameter('Potential.SinusFactor',sinusFactor,0.01_dp)
-      call MIO_InputParameter('Potential.SinusMassTermFactor',sinusFactor2,0.01_dp)
-      if (frac) call AtomsSetCart()
-      !$OMP PARALLEL DO PRIVATE(i)
-      do i = 1,nAt
-        if (sinusModulationAddMassTerm) then
-            H0(i) = H0(i) + sinusFactor2*sin(2.0_dp*pi*Rat(2,i)/(sinusModulationPeriod))*(-1.0_dp)**Species(i)
-        else
-          H0(i) = H0(i) + sinusFactor*sin(2.0_dp*pi*Rat(2,i)/(sinusModulationPeriod))
-        end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-   ! end changes for sinus function
-
-   ! changes for cosinus function
-
-   call MIO_InputParameter('Potential.CosinusModulationUsingPeriod',cosinusModulationUsingPeriod,.false.)
-   if (cosinusModulationUsingPeriod) then
-      call MIO_InputParameter('Potential.CosinusModulationPeriod',cosinusModulationPeriod,135.0_dp)
-      call MIO_InputParameter('Potential.CosinusModulationAddMassTerm',cosinusModulationAddMassTerm,.false.)
-      call MIO_InputParameter('Potential.CosinusFactor',cosinusFactor,0.01_dp)
-      call MIO_InputParameter('Potential.CosinusMassTermFactor',cosinusFactor2,0.01_dp)
-      if (frac) call AtomsSetCart()
-      !$OMP PARALLEL DO PRIVATE(i)
-      do i = 1,nAt
-        if (cosinusModulationAddMassTerm) then
-            H0(i) = H0(i) + cosinusFactor2*cos(2.0_dp*pi*Rat(1,i)/(cosinusModulationPeriod))*(-1.0_dp)**Species(i)
-        else
-          H0(i) = H0(i) + cosinusFactor*cos(2.0_dp*pi*Rat(1,i)/(cosinusModulationPeriod))
-        end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-   ! end changes for sinus function
-
-   ! changes for cosinus function
-
-   call MIO_InputParameter('Potential.CosinusModulationUsingPeriodYDirection',cosinusModulationUsingPeriodY,.false.)
-   if (cosinusModulationUsingPeriodY) then
-      call MIO_InputParameter('Potential.CosinusModulationPeriod',cosinusModulationPeriod,135.0_dp)
-      call MIO_InputParameter('Potential.CosinusModulationAddMassTerm',cosinusModulationAddMassTerm,.false.)
-      call MIO_InputParameter('Potential.CosinusFactor',cosinusFactor,0.01_dp)
-      call MIO_InputParameter('Potential.CosinusMassTermFactor',cosinusFactor2,0.01_dp)
-      if (frac) call AtomsSetCart()
-      !$OMP PARALLEL DO PRIVATE(i)
-      do i = 1,nAt
-        if (cosinusModulationAddMassTerm) then
-            H0(i) = H0(i) + cosinusFactor2*cos(2.0_dp*pi*Rat(2,i)/(cosinusModulationPeriod))*(-1.0_dp)**Species(i)
-        else
-          H0(i) = H0(i) + cosinusFactor*cos(2.0_dp*pi*Rat(2,i)/(cosinusModulationPeriod))
-        end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-   ! end changes for sinus function
-
-   ! square function
-   call MIO_InputParameter('Potential.SquareFunction',l,.false.)
-   if (l) then
-      call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
-      call MIO_InputParameter('Structure.CellSize',n,50)
-      call MIO_InputParameter('Potential.AmplitudeOfSquare',A,1.0_dp)
-      if (frac) call AtomsSetCart()
-
-      call MIO_InputParameter('Potential.TwoDimensional',l,.false.)
-      if (l) then
-
-        call MIO_InputParameter('Potential.AddZTerm',l,.false.)
-           if (l) then
-
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))*sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(2,i)/(n*sCell*aG))
-         if (H.GT.0) then
-           H0(i) = H0(i) - (-1.0_dp)**Species(i)*A
-         else
-           H0(i) = H0(i) + (-1.0_dp)**Species(i)*A
-         end if
-      end do
-      !$OMP END PARALLEL DO
-
-      else
-
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))*sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(2,i)/(n*sCell*aG))
-         if (H.GT.0) then
-           H0(i) = H0(i) + A
-         else
-           H0(i) = H0(i)
-         end if
-      end do
-      !$OMP END PARALLEL DO
-        end if
-
-      else
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))
-         if (H.GT.0) then
-           H0(i) = H0(i) + A
-         else
-           H0(i) = H0(i)
-         end if
-      end do
-      !$OMP END PARALLEL DO
-      end if
-   end if
-   ! square function
-
-   ! square function 2
-   call MIO_InputParameter('Potential.SquareFunction2',l,.false.)
-   if (l) then
-      call MIO_InputParameter('Potential.NumberOfWidthHoneycomb',NOWH,1)
-      call MIO_InputParameter('Structure.CellSize',n,50)
-      call MIO_InputParameter('Potential.AmplitudeOfSquare2',Amp2,0.01_dp)
-      call MIO_InputParameter('Potential.PhaseOfSquareX',P1,0.0_dp)
-      call MIO_InputParameter('Potential.PhaseOfSquareY',P2,0.0_dp)
-      if (frac) call AtomsSetCart()
-
-      call MIO_InputParameter('Potential.TwoDimension',l,.false.)
-      if (l) then
-        call MIO_InputParameter('Potential.AddZTerm',l,.false.)
-           if (l) then
-
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        H = sin(2.0_dp*pi*Rat(1,i)/(2.0_dp*aG*NOWH)+P1)*sin(2.0_dp*pi*Rat(2,i)*sqrt(3.0_dp)/(4.0_dp*aG*NOWH)+P2)
-         if (H.GT.0) then
-           H0(i) = H0(i) - (-1.0_dp)**Species(i)*Amp2
-         else
-           H0(i) = H0(i) + (-1.0_dp)**Species(i)*Amp2
-         end if
-      end do
-      !$OMP END PARALLEL DO
-
-      else
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        H = sin(2.0_dp*pi*Rat(1,i)/(2.0_dp*aG*NOWH)+P1)*sin(2.0_dp*pi*Rat(2,i)*sqrt(3.0_dp)/(4.0_dp*aG*NOWH)+P2)
-         if (H.GT.0) then
-           H0(i) = H0(i) + Amp2
-         else
-           H0(i) = H0(i)
-         end if
-      end do
-      !$OMP END PARALLEL DO
-        end if
-
-      else
-      call MIO_InputParameter('Potential.ArmChairShape',l,.false.)
-      if (l) then
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        H = sin(2.0_dp*pi*Rat(1,i)/(2.0_dp*aG*NOWH)+P1)
-         if (H.GT.0) then
-           H0(i) = H0(i) + Amp2
-         else
-           H0(i) = H0(i)
-         end if
-      end do
-      !$OMP END PARALLEL DO
-
-      else
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        H = sin(2.0_dp*pi*Rat(2,i)*sqrt(3.0_dp)/(4.0_dp*aG*NOWH)+P2)
-         if (H.GT.0) then
-           H0(i) = H0(i) + Amp2
-         else
-           H0(i) = H0(i)
-         end if
-      end do
-      !$OMP END PARALLEL DO
-      end if
-      end if
-   end if
-   ! square function 2
-
-   ! zterm1d
-   call MIO_InputParameter('Potential.Zterm1D',l,.false.)
-   if (l) then
-      if (frac) call AtomsSetCart()
-      call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
-      call MIO_InputParameter('Structure.CellSize',n,50)
-      call MIO_InputParameter('Potential.AmplitudeOfSquare3',Amp3,0.01_dp)
-
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        H = sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))
-         if (H.GT.0) then
-           H0(i) = H0(i) - (-1.0_dp)**Species(i)*Amp3
-         else
-           H0(i) = H0(i) + (-1.0_dp)**Species(i)*Amp3
-         end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-
-   call MIO_InputParameter('Potential.Zterm1DKink',l,.false.)   ! only works for 2 periods
-   if (l) then
-      if (frac) call AtomsSetCart()
-      call MIO_InputParameter('Structure.CellSize',n,50)
-      call MIO_InputParameter('Potential.Zterm1DAmp',Amp3,0.01_dp)
-      call MIO_InputParameter('Potential.Zterm1DDelta',delta,10.0_dp)
-      limit0 = 0.0_dp
-      limit1 = (n*sCell*aG)*1.0_dp/4.0_dp
-      limit2 = (n*sCell*aG)*2.0_dp/4.0_dp
-      limit3 = (n*sCell*aG)*3.0_dp/4.0_dp
-      limit4 = (n*sCell*aG)
-      !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
-        ! >>> unset markers
-        h = hamUnset
-        ! <<< unset markers
-        if (Rat(1,i).lt.limit2) then
-          H = Amp3 * tanh((Rat(1,i)-limit1)/delta)
-        else if ((Rat(1,i).gt.limit2).and.(Rat(1,i).lt.limit4)) then
-          H = - Amp3 * tanh((Rat(1,i)-limit3)/delta)
-        else if ((Rat(1,i).gt.limit4)) then
-          H = Amp3 * tanh((Rat(1,i)-(limit4+limit1))/delta)
-        end if
-        H0(i) = H0(i) + (-1.0_dp)**Species(i)*H
-      end do
-      !$OMP END PARALLEL DO
-   end if
-
-   ! zterm1d
-   ! squarechecker
- call MIO_InputParameter('Potential.SquareChecker2219',l,.false.)
-      if (l) then
-
-      call MIO_InputParameter('Structure.CellSize',n,50)
-      call MIO_InputParameter('Potential.AmplitudeOfSquare',A,1.0_dp)
-      if (frac) call AtomsSetCart()
-
-      !$OMP PARALLEL DO PRIVATE(i,H)
-
-      do i = in1,in2
-      ! >>> unset markers
-      h = hamUnset
-      ! <<< unset markers
-
-        H = sin(22*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))*sin(19*4.0_dp*pi*Rat(2,i)/(sqrt(3.0_dp)*n*sCell*aG))
-
-         if (H.GT.0) then
-
-           H0(i) = H0(i) - (-1.0_dp)**Species(i)*A
-
-         else
-
-           H0(i) = H0(i) + (-1.0_dp)**Species(i)*A
-
-         end if
-
-      end do
-
-      !$OMP END PARALLEL DO
-
-end if
-
-   ! squarechecker
-   call MIO_InputParameter('Disorder.SublatticeDisorder',l,.false.)
-   if (l) then
-      call RandSeedFromInput()
-      call MIO_InputParameter('Disorder.SublattAmp',A,2.0_dp)
-      call MIO_InputParameter('Disorder.SublattPct',pct,0.1_dp)
-      call MIO_Print('Sublattice disorder','ham')
-      call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
-      call MIO_Print('')
-      do i=inode1,inode2
-         call random_number(rand)
-         if(rand.le.(pct*2.0_dp) .and. Species(i).eq.2) then  ! factor 2 to compensate for the sublattice restriction
-             H0(i) = H0(i) + A
-         end if
-      end do
-   end if
-
-   call MIO_InputParameter('Disorder.Anderson',l,.false.)
-   if (l) then
-      call RandSeedFromInput()
-      call MIO_InputParameter('Disorder.AndersonAmp',A,1.0_dp)
-      call MIO_Print('Anderson disorder','ham')
-      call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
-      call MIO_Print('')
-      do i=inode1,inode2
-         call random_number(rand)
-         H0(i) = H0(i) + (rand-0.5_dp)*A
-      end do
-   end if
-   call MIO_InputParameter('Disorder.DeltaDisorder',l,.false.)
-   if (l) then
-      call RandSeedFromInput()
-      call MIO_InputParameter('Disorder.DeltaAmp',A,1.0_dp)
-      call MIO_Print('delta disorder','ham')
-      call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
-      call MIO_Print('')
-      call MIO_InputParameter('Disorder.DeltaSkewFactor',AA,1.0_dp)
-      call MIO_Print('delta disorder','ham')
-      call MIO_Print('  skewFactor: '//trim(num2str(AA,4)),'ham')
-      call MIO_Print('')
-      tot = 0.0_dp
-      tot2 = 0.0_dp
-      tot3 = 0.0_dp
-      do i=inode1,inode2
-         call random_number(rand)
-         call randomInRange(rand,rand2,-1.0_dp,1.0_dp/AA)
-         if (rand2<0) then
-             call random_number(rand)
-             call randomInRange(rand,rand2,-1.0_dp/AA,0.0_dp)
-         else
-             call random_number(rand)
-             call randomInRange(rand,rand2,0.0_dp,1.0_dp)
-         end if
-         randomPot = rand2
-         randomPot2 = rand2**2.0_dp
-         randomPot3 = rand2**3.0_dp
-         tot = tot + randomPot
-         tot2 = tot2 + randomPot2
-         tot3 = tot3 + randomPot3
-         H0(i) = H0(i) + randomPot*A
-      end do
-      call MIO_Print('delta disorder','ham')
-      nImp = inode2
-      call MIO_Print('  mean: '//trim(num2str((tot/nImp),9)),'ham')
-      call MIO_Print('  variance: '//trim(num2str((tot2/nImp),9)),'ham')
-      call MIO_Print('  skewness: '//trim(num2str((tot3/nImp),9)),'ham')
-   end if
-   call MIO_InputParameter('Disorder.GaussDisorder',l,.false.)
-   if (l) then
-      call GaussPot(H0)
-   end if
-   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
-   if (Zterm .or. PZterm) then
-      call MIO_Allocate(Ho,[inode1],[inode2],'Ho','ham')
-      Ho = H0
-   end if
-
-   call MIO_InputParameter('Potential.FourLayerOnsiteShifts',l,.false.)
-   call MIO_InputParameter('Stack.FourLayerShift1',layerShift1,0.0_dp)
-   call MIO_InputParameter('Stack.FourLayerShift2',layerShift2,0.0_dp)
-   call MIO_InputParameter('Stack.FourLayerShift3',layerShift3,0.0_dp)
-   call MIO_InputParameter('Stack.FourLayerShift4',layerShift4,0.0_dp)
-   layerShift1 = layerShift1/g0
-   layerShift2 = layerShift2/g0
-   layerShift3 = layerShift3/g0
-   layerShift4 = layerShift4/g0
-   if (l) then
-      !$OMP PARALLEL DO PRIVATE(i)
-      do i = 1,nAt
-           if (layerIndex(i).eq.1) then
-              H0(i) = H0(i) + layershift1
-           else if (layerIndex(i).eq.2) then
-              H0(i) = H0(i) + layershift2
-           else if (layerIndex(i).eq.3) then
-              H0(i) = H0(i) + layershift3
-           else if (layerIndex(i).eq.4) then
-              H0(i) = H0(i) + layershift4
-           end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-
-   ! Trigonal (C3-symmetric) CDW modulation, applied at the end, after all other onsite
-   ! modifications.  UN-GATED 2026-09-22: this block previously sat inside
-   ! `if (helicalTwistedMBM)`, which also steers layer-stacking branches and so could not be
-   ! switched on for an ordinary 2-layer system.  The block only modifies H0, so it is now
-   ! gated on its own flag.  OPT-IN: helicalTwistedMBM_CDW defaults .false., which reproduces
-   ! the previous output byte-for-byte for every existing input.
-   ! Note the modulation is in FRACTIONAL coordinates, so it sits at the reciprocal vectors
-   ! of the SIMULATION CELL: on an NxN supercell of a moire cell it is an N-fold superlattice
-   ! potential.  CDWAmplitude is in eV (divided by g0 below); CDWPeriod is NOT used.
-   call MIO_InputParameter('Potential.HelicalTwistedMBM_CDW',helicalTwistedMBM_CDW,.false.)
-   if (helicalTwistedMBM_CDW) then
-         call MIO_Print('Adding CDW modulation for helical twisted MBM system','ham')
-         call MIO_InputParameter('Potential.CDWAmplitude',CDWAmplitude,0.01_dp)
-         CDWAmplitude = CDWAmplitude/g0
-         call MIO_InputParameter('Potential.CDWPeriod',CDWPeriod,1.0_dp)
-         call MIO_InputParameter('Potential.CDWUseMassTerm',l,.false.)
-         if (.not. frac) call AtomsSetFrac()
-         call MIO_Print('  Using fractional coordinates for CDW modulation (Rat in fractional units)','ham')
-         call MIO_Print('  CDW period: '//trim(num2str(CDWPeriod,5))//' (in fractional units, 1.0 = full simulation cell)','ham')
-         call MIO_Print('  CDW amplitude: '//trim(num2str(CDWAmplitude*g0,5))//' eV','ham')
-         if (l) then
-            call MIO_Print('  CDW using sublattice-dependent mass term (opens spatially varying gap)','ham')
-            !$OMP PARALLEL DO PRIVATE(i)
-            do i=1,nAt
-               H0(i) = H0(i) + (-1.0_dp)**Species(i) * (1.0_dp/3.0_dp) * CDWAmplitude * &
-        ( cos(twopi*sCell*Rat(1,i)) + &
-          cos(twopi*sCell*Rat(2,i)) + &
-          cos(twopi*sCell*(Rat(1,i)+Rat(2,i))) )
-            end do
-            !$OMP END PARALLEL DO
-         else
-            call MIO_Print('  CDW using uniform energy shift (no gap opening)','ham')
-            !$OMP PARALLEL DO PRIVATE(i)
-            do i=1,nAt
-               H0(i) = H0(i) + (1.0_dp/3.0_dp) * CDWAmplitude * &
-        ( cos(twopi*sCell*Rat(1,i)) + &
-          cos(twopi*sCell*Rat(2,i)) + &
-          cos(twopi*sCell*(Rat(1,i)+Rat(2,i))) )
-            end do
-            !$OMP END PARALLEL DO
-         end if
-         ! Debug: print first few H0 values to verify modulation
-         call MIO_Print('  CDW: Sample H0 values after modulation (first 5 atoms):','ham')
-         do i=1,min(5,nAt)
-            call MIO_Print('    Atom '//trim(num2str(real(i,dp),0))//': H0='//trim(num2str(H0(i)*g0,8))//' eV, x=' &
-                  //trim(num2str(Rat(1,i),5))//' y='//trim(num2str(Rat(2,i),5)),'ham')
-         end do
-   end if
-
-   ! ------------------------------------------------------------------------
-   ! moireCDW: a general commensurate superlattice (charge-density-wave)
-   ! potential, applied last, after every other onsite term.
-   !
-   ! OPT-IN: moireCDW defaults .false. and reproduces the previous output
-   ! byte-for-byte for every existing input.
-   !
-   !          * (1/nQ) * sum_q cos( 2*pi*(h_q*f1 + k_q*f2)/D + phi )
-   !
-   ! f1,f2 are the fractional coordinates of the INPUT (pre-supercell) cell,
-   ! so the wavevectors are q = (h,k)/D in units of that cell's reciprocal
-   ! lattice.  D = moireCDW.Denominator.  The potential's unit cell therefore
-   ! contains D_eff input cells, where D_eff is the index of
-   ! { R : q.R in 2*pi*Z for all q } -- for the intended cases:
-   !
-   !   D=1, Q={(1,0),(0,1),(1,1)}  -> C3 potential on the input cell
-   !                                  (reproduces helicalTwistedMBM_CDW)
-   !   D=2, Q={(1,0),(0,2),(1,2)}  -> cell doubled along a1: on a cell that
-   !                                  is 2x2 moire cells this gives M=8 moire
-   !                                  cells per potential cell, which is what
-   !                                  a gap at n/n0 = +-1/2 requires while the
-   !                                  valley (time-reversal) pairing is intact.
-   !
-   ! BOTH amplitudes are ADDED (unlike sinusModulationAddMassTerm, where the
-   ! mass term REPLACES the scalar term).  Both are in eV and are divided by
-   ! g0 here, so the printed value is the physical one.
-   !
-   ! The simulation supercell must be a multiple of D along the a1 direction,
-   ! otherwise the potential is not periodic and the run is aborted.
-   ! ------------------------------------------------------------------------
-   call MIO_InputParameter('Moire.CDW',moireCDW,.false.)
-   if (moireCDW) then
-      call MIO_InputParameter('moireCDW.Amplitude',cdwScalar,0.0_dp)
-      call MIO_InputParameter('moireCDW.MassAmplitude',cdwMass,0.0_dp)
-      call MIO_InputParameter('moireCDW.Phase',cdwPhase,0.0_dp)
-      call MIO_InputParameter('moireCDW.Denominator',Dcdw,1)
-      if (Dcdw < 1) call MIO_Kill('moireCDW.Denominator must be >= 1','ham','HamOnSite')
-      if (.not. MIO_InputFindBlock('moireCDW.Qvectors',nQcdw)) then
-         call MIO_Kill('moireCDW requires a moireCDW.Qvectors block','ham','HamOnSite')
-      end if
-      allocate(Qcdw(2,nQcdw))
-      call MIO_InputBlock('moireCDW.Qvectors',Qcdw)
-
-      ! commensurability of the simulation supercell with the potential
-      call MIO_InputParameter('Structure.SuperCellX',scX,1)
-      call MIO_InputParameter('Structure.SuperCellY',scY,1)
-      if (scX == scY) then
-         scX = sCell
-         scY = sCell
-      end if
-      ! periodicity under the supercell vectors scX*a1 and scY*a2 requires
-      ! h*scX/D and k*scY/D to be integers for every q
-      do iq=1,nQcdw
-         if (mod(Qcdw(1,iq)*scX,Dcdw) /= 0 .or. mod(Qcdw(2,iq)*scY,Dcdw) /= 0) then
-            call MIO_Print('moireCDW: q = ('//trim(num2str(real(Qcdw(1,iq),dp),0))//','// &
-                 trim(num2str(real(Qcdw(2,iq),dp),0))//')/'// &
-                 trim(num2str(real(Dcdw,dp),0))//' is not periodic in this supercell','ham')
-            call MIO_Kill('moireCDW: q vector incommensurate with the supercell', &
-                          'ham','HamOnSite')
-         end if
-      end do
-
-      cdwScalar = cdwScalar/g0
-      cdwMass   = cdwMass/g0
-      if (.not. frac) call AtomsSetFrac()
-
-      call MIO_Print('moireCDW: commensurate superlattice potential','ham')
-      call MIO_Print('  scalar amplitude: '//trim(num2str(cdwScalar*g0,5))//' eV','ham')
-      call MIO_Print('  mass   amplitude: '//trim(num2str(cdwMass*g0,5))//' eV','ham')
-      call MIO_Print('  denominator D:    '//trim(num2str(real(Dcdw,dp),0)),'ham')
-      call MIO_Print('  number of q:      '//trim(num2str(real(nQcdw,dp),0)),'ham')
-      do iq=1,nQcdw
-         call MIO_Print('    q = ('//trim(num2str(real(Qcdw(1,iq),dp),0))//','// &
-              trim(num2str(real(Qcdw(2,iq),dp),0))//')/'//trim(num2str(real(Dcdw,dp),0)),'ham')
-      end do
-
-      !$OMP PARALLEL DO PRIVATE(i,iq,hq,kq,argq,Vq)
-      do i=1,nAt
-         ! >>> unset markers
-         argq = hamUnset
-         vq = hamUnset
-         ! <<< unset markers
-         Vq = 0.0_dp
-         do iq=1,nQcdw
-            hq = Qcdw(1,iq)
-            kq = Qcdw(2,iq)
-            argq = twopi*( hq*scX*Rat(1,i) + kq*scY*Rat(2,i) )/real(Dcdw,dp) + cdwPhase
-            Vq = Vq + cos(argq)
-         end do
-         Vq = Vq/real(nQcdw,dp)
-         H0(i) = H0(i) + ( cdwScalar + cdwMass*(-1.0_dp)**Species(i) )*Vq
-      end do
-      !$OMP END PARALLEL DO
-
-      call MIO_Print('  moireCDW: H0 of the first 5 atoms after modulation:','ham')
-      do i=1,min(5,nAt)
-         call MIO_Print('    atom '//trim(num2str(real(i,dp),0))//': H0='// &
-              trim(num2str(H0(i)*g0,8))//' eV, f=('//trim(num2str(Rat(1,i),5))//','// &
-              trim(num2str(Rat(2,i),5))//')','ham')
-      end do
-      deallocate(Qcdw)
-   end if
 
 #ifdef DEBUG
-   call MIO_Debug('HamOnSite',1)
+   call MIO_Debug('HamOnSiteMoirePotential',1)
 #endif /* DEBUG */
+
+end subroutine HamOnSiteMoirePotential
+
+!> On-site energy of every atom from its species and layer (internal procedure of HamOnSite: it uses the variables of that routine)
+subroutine HamOnSiteSpeciesEnergies()
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteSpeciesEnergies',0)
+#endif /* DEBUG */
+
+   !$OMP PARALLEL DO
+   do i=1,nAt
+      if (Species(i)==3) then
+         H0(i) = e0_B
+      else if (Species(i)==4) then
+         H0(i) = e0_N
+      ! we dont enter this clause for most single layer F2G2 systems not sure why i am specifying it
+      else if (e0_C1 .ne. 0.0_dp .or. e0_C2 .ne. 0.0) then
+         if (fourLayers) then
+             if (Species(i)==1 .and. (layerIndex(i).eq.1 .or. layerIndex(i).eq.3)) then
+                H0(i) = e0_C1
+             else if (Species(i)==2 .and. (layerIndex(i).eq.1 .or. layerIndex(i).eq.3)) then
+                H0(i) = e0_C2
+             else if (Species(i)==1 .and. (layerIndex(i).eq.2 .or. layerIndex(i).eq.4)) then
+                H0(i) = e0_C2
+             else if (Species(i)==2 .and. (layerIndex(i).eq.2 .or. layerIndex(i).eq.4)) then
+                H0(i) = e0_C1
+             end if
+         else if (threeLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. fiveLayersSandwiched &
+               .or. sixLayersSandwiched .or. sevenLayersSandwiched .or. eightLayersSandwiched .or. tenLayersSandwiched &
+               .or. twentyLayersSandwiched) then
+             if ((layerIndex(i).eq.1 .or. layerIndex(i).eq.2) .and. (.not. middleTwist)) then
+                if (Species(i)==1 .and. (layerIndex(i).eq.1)) then
+                   H0(i) = e0_C1
+                else if (Species(i)==2 .and. (layerIndex(i).eq.1)) then
+                   H0(i) = e0_C2
+                else if (Species(i)==1 .and. (layerIndex(i).eq.2)) then
+                   H0(i) = e0_C2
+                else if (Species(i)==2 .and. (layerIndex(i).eq.2)) then
+                   H0(i) = e0_C1
+                end if
+             else
+                H0(i) = (e0_C1+e0_C2)/2.0_dp ! Is this what we want for the N>2-layer systems?
+             end if
+         else if (GBNtwoLayers) then
+              ! add F2G2 model onsite parameters for G, B and N atoms
+              if (layerIndex(i) .eq. 1) then ! graphene layer
+                if (Species(i).eq.1) then
+                   H0(i) = e0_C1
+                else if (Species(i).eq.2) then
+                   H0(i) = e0_C2
+                end if
+              else if (layerIndex(i) .eq. 2) then ! BN layer
+                cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+              end if
+            !else ! add dx, dy-dependent values using first order harmonic approximation (see summary by Jiaqi)
+         else if (t3BG) then
+              if (Species(i)==1 .and. (layerIndex(i).eq.1 .or. layerIndex(i).eq.3 .or. layerIndex(i).eq.5)) then
+                H0(i) = e0_C1
+             else if (Species(i)==2 .and. (layerIndex(i).eq.1 .or. layerIndex(i).eq.3 .or. layerIndex(i).eq.5)) then
+                H0(i) = e0_C2
+             else if (Species(i)==1 .and. (layerIndex(i).eq.2 .or. layerIndex(i).eq.4 .or. layerIndex(i).eq.6)) then
+                H0(i) = e0_C2
+             else if (Species(i)==2 .and. (layerIndex(i).eq.2 .or. layerIndex(i).eq.4 .or. layerIndex(i).eq.6)) then
+                H0(i) = e0_C1
+            end if
+         else if (t2GBN) then
+              if (layerIndex(i) .eq. 1) then ! bottom substrate hBN
+                cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+              else if (layerIndex(i) .eq. 2) then ! middle graphene layer
+                if (Species(i).eq.1) then
+                   H0(i) = e0_C1
+                else if (Species(i).eq.2) then
+                   H0(i) = e0_C2
+                end if
+              else if (layerIndex(i) .eq. 3) then ! top graphene layer
+                if (Species(i).eq.1) then
+                   H0(i) = e0_C1
+                else if (Species(i).eq.2) then
+                   H0(i) = e0_C2
+                end if
+              end if
+         else if (encapsulatedThreeLayers) then
+              ! add F2G2 model onsite parameters for G, B and N atoms
+              if (layerIndex(i) .eq. 2) then ! graphene layer
+                if (Species(i).eq.1) then
+                   H0(i) = e0_C1
+                else if (Species(i).eq.2) then
+                   H0(i) = e0_C2
+                end if
+              else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 3) then ! BN layer
+                cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+              end if
+            !else ! add dx, dy-dependent values using first order harmonic approximation (see summary by Jiaqi)
+         else if (encapsulatedFourLayers) then
+             if (useLayerSpecificOnsiteEnergyTerms) then
+                 if (layerIndex(i) .eq. 2) then
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1_LB
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2_LB
+                   end if
+                 else if (layerIndex(i) .eq. 3) then
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1_LT
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2_LT
+                   end if
+                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 4) then ! BN layer
+                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+                 end if
+             else
+                 if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3) then ! graphene layer
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2
+                   end if
+                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 4) then ! BN layer
+                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+                 end if
+             end if
+         else if (encapsulatedFiveLayers) then
+              if (useLayerSpecificOnsiteEnergyTerms) then
+                 if (layerIndex(i) .eq. 2) then
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1_LB
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2_LB
+                   end if
+                 else if (layerIndex(i) .eq. 4) then
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1_LT
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2_LT
+                   end if
+                 else if (layerIndex(i) .eq. 3) then ! graphene layer
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2
+                   end if
+                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 5) then ! BN layer
+                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+                 end if
+              else
+                 if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4) then ! graphene layer
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2
+                   end if
+                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 5) then ! BN layer
+                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+                 end if
+              end if
+         else if (encapsulatedSixLayers) then
+              if (useLayerSpecificOnsiteEnergyTerms) then
+                 if (layerIndex(i) .eq. 2) then
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1_LB
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2_LB
+                   end if
+                 else if (layerIndex(i) .eq. 5) then
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1_LT
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2_LT
+                   end if
+                 else if (layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4) then ! graphene layer
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2
+                   end if
+                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 6) then ! BN layer
+                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+                 end if
+              else
+                 ! graphene layer
+                 if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4 .or. layerIndex(i) .eq. 5) then
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2
+                   end if
+                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 6) then ! BN layer
+                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+                 end if
+              end if
+         else if (encapsulatedSevenLayers) then
+              if (useLayerSpecificOnsiteEnergyTerms) then
+                 if (layerIndex(i) .eq. 2) then
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1_LB
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2_LB
+                   end if
+                 else if (layerIndex(i) .eq. 6) then
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1_LT
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2_LT
+                   end if
+                 else if (layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4 .or. layerIndex(i) .eq. 5 ) then ! graphene layer
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2
+                   end if
+                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 7) then ! BN layer
+                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+                 end if
+              else
+                 ! graphene layer
+                 if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4 .or. layerIndex(i) .eq. 5 &
+                       .or. layerIndex(i).eq. 6) then
+                   if (Species(i).eq.1) then
+                      H0(i) = e0_C1
+                   else if (Species(i).eq.2) then
+                      H0(i) = e0_C2
+                   end if
+                 else if (layerIndex(i) .eq. 1 .or. layerIndex(i) .eq. 7) then ! BN layer
+                   cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+                 end if
+              end if
+         else if (t3GWithBN) then
+              ! add F2G2 model onsite parameters for G, B and N atoms
+              if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3 .or. layerIndex(i) .eq. 4) then ! graphene layer
+                if (Species(i).eq.1) then
+                   H0(i) = e0_C1
+                else if (Species(i).eq.2) then
+                   H0(i) = e0_C2
+                end if
+              else if (layerIndex(i) .eq. 1) then ! BN layer
+                cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+              end if
+            !else ! add dx, dy-dependent values using first order harmonic approximation (see summary by Jiaqi)
+         else if (BNt2GBN) then
+              ! add F2G2 model onsite parameters for G, B and N atoms
+              if (layerIndex(i) .eq. 2 .or. layerIndex(i) .eq. 3) then ! graphene layer
+                if (Species(i).eq.1) then
+                   H0(i) = e0_C1
+                else if (Species(i).eq.2) then
+                   H0(i) = e0_C2
+                end if
+              else if (layerIndex(i) .eq. 1 .or. layerIndex(i).eq. 4) then ! BN layer
+                cycle ! already assigned 40 lines higher (search for e0_B and e0_N)
+              end if
+            !else ! add dx, dy-dependent values using first order harmonic approximation (see summary by Jiaqi)
+         else if (BNBNtwoLayers) then ! checked
+              ! add F2G2 model parameters for BN and BN
+            cycle ! already assigned 40 lines higher
+         else if (forceBilayerF2G2Intralayer) then
+            if (Species(i)==1 .and. (layerIndex(i).eq.1)) then
+               H0(i) = e0_C1
+            else if (Species(i)==2 .and. (layerIndex(i).eq.1)) then
+               H0(i) = e0_C2
+            else if (Species(i)==1 .and. (layerIndex(i).eq.2)) then
+               H0(i) = e0_C2
+            else if (Species(i)==2 .and. (layerIndex(i).eq.2)) then
+               H0(i) = e0_C1
+            end if
+         else if (twoLayers) then
+            if (Species(i).eq.1) then
+               H0(i) = e0_C1
+            else if (Species(i).eq.2) then
+               H0(i) = e0_C2
+            end if
+         end if
+      else
+         H0(i) = e0_C
+      end if
+   end do
+   !$OMP END PARALLEL DO
+
+#ifdef DEBUG
+   call MIO_Debug('HamOnSiteSpeciesEnergies',1)
+#endif /* DEBUG */
+
+end subroutine HamOnSiteSpeciesEnergies
 
 end subroutine HamOnSite
 
@@ -4696,45 +4895,7 @@ subroutine HamHopping
    ! bond length in a rigid reference structure with the same atom order (xyz, 4 header lines); realStrain keeps
    ! the 3-D length of the actual bond. Implemented for GBNtwoLayers, single MPI rank.
    call MIO_InputParameter('Strain.ShellsFromRigidPositions',shellsFromRigid,.false.)
-   if (shellsFromRigid) then
-      call MIO_InputParameter('Strain.ShellsRigidFile',shellRigidFile,'generateInit.xyz')
-      call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
-      if (.not. GBNtwoLayers) call MIO_Kill('shellsFromRigidPositions is implemented for GBNtwoLayers only','ham','HamHopping')
-      if (sCell /= 1) call MIO_Kill('shellsFromRigidPositions needs SuperCell 1','ham','HamHopping')
-#ifdef MPI
-      if (nProc > 1) call MIO_Kill('shellsFromRigidPositions needs a single MPI rank','ham','HamHopping')
-#endif /* MPI */
-      if (frac) call AtomsSetCart()
-      if (allocated(RshellRig)) deallocate(RshellRig)
-      allocate(RshellRig(3,nAt))
-      open(97,FILE=trim(shellRigidFile),STATUS='old')
-      do i=1,3
-         read(97,*)
-      end do
-      read(97,*) nshellDiff
-      if (nshellDiff /= nAt) call MIO_Kill('shellsRigidFile: atom count differs from the structure','ham','HamHopping')
-      do i=1,nAt
-         read(97,*) shellSpc, (RshellRig(j,i),j=1,3)
-      end do
-      close(97)
-      nshellDiff = 0
-      dshellMax = 0.0_dp
-      do i=1,nAt
-         do j=1,Nneigh(i)
-            if (layerIndex(i).eq.layerIndex(NList(j,i))) then
-               d = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
-               if (d < 5.0_dp) then
-                  dsel = HamRigidBondXY(i, NList(j,i), NeighD(:,j,i))
-                  dshellMax = max(dshellMax, abs(dsel - d))
-                  if (abs(dsel - d) > 0.05_dp*dsel) nshellDiff = nshellDiff + 1
-               end if
-            end if
-         end do
-      end do
-      call MIO_Print('shellsFromRigidPositions: intralayer shells from '//trim(shellRigidFile) &
-            //'; max |rigid - in-plane| bond = '// &
-           trim(num2str(dshellMax,4))//' A, bonds differing by > 5 % : '//trim(num2str(nshellDiff)),'ham')
-   end if
+   if (shellsFromRigid) call HamHopShellsFromRigid()
 
    counter1 = 0
    hopp = 0.0_dp
@@ -10436,7 +10597,536 @@ subroutine HamHopping
    end if
 
    call MIO_InputParameter('Strain.RandomStrain',randomStrain,.false.)
-   if (randomStrain) then
+   if (randomStrain) call HamHopRandomStrain()
+
+   ! Based on PHYSICAL REVIEW B 80, 045401 2009
+   call MIO_InputParameter('Strain.RealStrain',realStrain,.false.)
+   call MIO_InputParameter('Strain.OnlyFirstNeighborRealStrain',onlyFirstNeighborRealStrain,.false.)
+   ! Decay exponent of t = t0 exp(-beta (d/d0 - 1)). Default 3.37 reproduces every existing input exactly;
+   ! other values are for counterfactual scans of the strain gauge-field strength.
+   call MIO_InputParameter('Strain.RealStrainBeta',realStrainBeta,3.37_dp)
+   if (realStrain) call HamHopRealStrain()
+
+   call MIO_InputParameter('Strain.PeriodicStrain',periodicStrain,.false.)
+   if (periodicStrain) call HamHopPeriodicStrain()
+
+   call MIO_InputParameter('Strain.RealisticBubbles',realisticBubbles,.false.)
+   if (realisticBubbles) call HamHopRealisticBubbles()
+
+   if (realisticBubbles) then
+      call MIO_Deallocate(indxImp,'indxImp','gauss')
+      call MIO_Deallocate(bubbleCenterX,'bubbleCenterX','gauss')
+      call MIO_Deallocate(bubbleCenterY,'bubbleCenterY','gauss')
+      call MIO_Deallocate(epsxy,'epsxy','ham')
+      call MIO_Deallocate(epsxx,'epsxx','ham')
+      call MIO_Deallocate(epsyy,'epsyy','ham')
+      call MIO_Deallocate(onsiteShift,'onsiteShift','ham')
+   end if
+
+   if (magfield) call HamHopMagneticField()
+
+   call MIO_InputParameter('Haldane.NNN',l,.false.)
+   if (l) call HamHopHaldane()
+
+   call HamCheckFinite()
+   call HamCheckHermiticity()
+
+   call MIO_InputParameter('Output.WriteDataFiles',w,.false.)
+   if (w) then
+      ! One record holds every hopping of an atom; the default record length
+      ! (maxlinel) is too short for that.
+      call file%Open(name=trim(prefix)//'.'//'s.mag',serial=.true.,recl=64*maxNeigh)
+      u = file%GetUnit()
+      do i=1,nAt
+         write(u,*) (hopp(j,i),j=1,Nneigh(i))
+      end do
+      call file%Close()
+   end if
+   call MIO_InputParameter('Output.WriteDataFiles',l,.false.)
+   if (l) call HamHopWriteTables()
+
+   ! Zeeman effect is now applied in diag.F90 via ApplySOCtoHamiltonian routine
+   ! This allows proper spin-channel-aware application for spin-polarized calculations
+
+   if (magfield) then
+      ! Landau level calculations (Peierls phase) go here
+      ! (Currently empty - all Landau level code was moved elsewhere)
+   end if
+
+#ifdef TIMER
+   call MIO_TimerStop('ham')
+#endif /* TIMER */
+#ifdef DEBUG
+   call MIO_Debug('HamHopping',1)
+#endif /* DEBUG */
+
+contains
+
+!> Write the Hamiltonian tables (on-site energies, hoppings, neighbor data) to files (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopWriteTables()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopWriteTables',0)
+#endif /* DEBUG */
+
+      call file%Open(name=trim(prefix)//'.'//'e',serial=.true.)
+      u = file%GetUnit()
+      do i=1,nAt
+         write(u,*) H0(i), Species(i), layerIndex(i)
+      end do
+      call file%Close()
+      call file%Open(name=trim(prefix)//'.'//'HABreal',serial=.true.)
+      u = file%GetUnit()
+      if (associated(HABreal)) then
+         do i=1,min(nAt,size(HABreal))
+            write(u,*) HABreal(i)
+         end do
+      end if
+      call file%Close()
+      call file%Open(name=trim(prefix)//'.'//'HABimag',serial=.true.)
+      u = file%GetUnit()
+      if (associated(HABimag)) then
+         do i=1,min(nAt,size(HABimag))
+            write(u,*) HABimag(i)
+         end do
+      end if
+      call file%Close()
+      call file%Open(name=trim(prefix)//'.'//'pos',serial=.true.)
+      u = file%GetUnit()
+      do i=1,nAt
+         write(u,*) (Rat(j,i), j=1,3)
+      end do
+      call file%Close()
+      call file%Open(name=trim(prefix)//'.'//'cell',serial=.true.)
+      u = file%GetUnit()
+      do i=1,3
+         write(u,*) (ucell(j,i), j=1,3)
+      end do
+      do i=1,3
+         write(u,*) (rcell(j,i), j=1,3)
+      end do
+      call file%Close()
+      call file%Open(name=trim(prefix)//'.'//'bottom.e',serial=.true.)
+      u = file%GetUnit()
+      do i=1,nAt
+         write(u,*) H0Bottom(i), Species(i)
+      end do
+      call file%Close()
+      call MIO_InputParameter('Moire.AddSecondMoire',zz,.false.)
+      if (zz) then
+          call file%Open(name=trim(prefix)//'.'//'top.e',serial=.true.)
+          u = file%GetUnit()
+          do i=1,nAt
+             write(u,*) H0Top(i), Species(i)
+          end do
+          call file%Close()
+      end if
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopWriteTables',1)
+#endif /* DEBUG */
+
+end subroutine HamHopWriteTables
+
+!> Haldane term: complex second-neighbor hopping (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopHaldane()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopHaldane',0)
+#endif /* DEBUG */
+
+      if (frac) call AtomsSetCart()
+      call MIO_InputParameter('Haldane.SpecifyFlux',l,.false.)
+      call MIO_InputParameter('Haldane.SpecifyPhase',ll,.false.)
+      call MIO_InputParameter('Haldane.SpecifyRange',lll,.false.)
+      call MIO_InputParameter('Haldane.PaperOrientation',paperOrientation,.false.)
+      call MIO_InputParameter('Haldane.T2Complex',t2Complex,0.0_dp)
+      call MIO_InputParameter('Haldane.T2',t2, 0.0_dp)
+      call MIO_InputParameter('Haldane.OppositePhase',HaldaneOppositePhase,.false.)
+      ! Note: HaldaneBothLayers is deprecated. Use HaldaneLayerControl and HaldaneLayers instead.
+      ! For backward compatibility, we still check if it's set, but it's ignored if HaldaneLayerControl is enabled.
+      call MIO_InputParameter('Haldane.BothLayers',HaldaneBothLayers_deprecated,.false.)
+      if (HaldaneBothLayers_deprecated .and. .not. HaldaneLayerControl) then
+         call MIO_Print('WARNING: HaldaneBothLayers is deprecated. Use HaldaneLayerControl and HaldaneLayers instead.','ham')
+         call MIO_Print('  For backward compatibility, applying Haldane to all layers.','ham')
+      end if
+      if (l) then
+          call MIO_InputParameter('Haldane.Flux',flux,0.0_dp)
+          call MIO_InputParameter('Haldane.SetFluxQ',l,.false.)
+          if (l) then
+             HaldanePhase = 2.0_dp*pi*flux/1.0471975512_dp
+          else
+             HaldanePhase = 2.0_dp*pi*flux/fluxq
+          end if
+      else if (ll) then
+          call MIO_InputParameter('Haldane.Phase',HaldanePhase,0.0_dp)
+      else if (lll) then
+          HaldanePhase = HaldanePhase
+      end if
+      if (HaldaneOppositePhase) then
+        HaldanePhase = -HaldanePhase
+      end if
+      call MIO_Print('Haldane phase = '//trim(num2str(HaldanePhase,6))//' rad, T2 = '//trim(num2str(t2,6))// &
+        ' eV, expected gap = '//trim(num2str(2.0_dp*sqrt(3.0_dp)*3.0_dp*t2*sin(HaldanePhase),6))// &
+        ' eV (PRL 106, 236804)','ham')
+      !$OMP PARALLEL DO PRIVATE(d)
+      do i=1,nAt
+         ! >>> unset markers
+         d = hamUnset
+         ! <<< unset markers
+         ! Check if Haldane should be applied to this layer
+         if (.not. HaldaneEnabledForLayer(layerIndex(i))) then
+            cycle
+         else
+            do j=1,Nneigh(i)
+               if (layerIndex(NList(j,i)).eq.layerIndex(i)) then
+                  d = sqrt(dot_product(NeighD(1:2,j,i),NeighD(1:2,j,i)))
+                  if ((d-0.1).lt.aG .and. (d+0.1).gt.aG) then
+                    if (paperOrientation) then
+                         if (Species(i).eq.1) then   ! ---  B sublattice (see convention in my notes)
+                            if ((NeighD(1,j,i) .gt. 0.1_dp .and. abs(NeighD(2,j,i)) .lt. 0.01_dp) .or. &
+                                (NeighD(2,j,i) .lt. -0.1_dp .and. NeighD(1,j,i) .lt. -0.1_dp) .or. &
+                                (NeighD(2,j,i) .gt. 0.1_dp .and. NeighD(1,j,i) .lt. 0.1_dp)) then
+                                    hopp(j,i) = hopp(j,i)*exp(cmplx_i*HaldanePhase)
+                            else
+                                    hopp(j,i) = hopp(j,i)*exp(-cmplx_i*HaldanePhase)
+                            end if
+                         else if (Species(i).eq.2) then   ! ---  A sublattice
+                            if ((NeighD(1,j,i) .lt. -0.1_dp .and. abs(NeighD(2,j,i)) .lt. 0.01_dp) .or. &
+                                (NeighD(2,j,i) .gt. 0.1_dp .and. NeighD(1,j,i) .gt. 0.1_dp) .or. &
+                                (NeighD(2,j,i) .lt. -0.1_dp .and. NeighD(1,j,i) .gt. -0.1_dp)) then
+                                    hopp(j,i) = hopp(j,i)*exp(cmplx_i*HaldanePhase)
+                            else
+                                    hopp(j,i) = hopp(j,i)*exp(-cmplx_i*HaldanePhase)
+                            end if
+                         end if
+                     else ! when 60 degree rotaton compared to PRL paper
+                         if (Species(i).eq.2) then   ! ---  B sublattice (see convention in my notes)
+                            if ((NeighD(2,j,i) .gt. 0.1_dp .and. abs(NeighD(1,j,i)) .lt. 0.01_dp) .or. &
+                                (NeighD(1,j,i) .lt. -0.1_dp .and. NeighD(2,j,i) .lt. -0.1_dp) .or. &
+                                (NeighD(1,j,i) .gt. 0.1_dp .and. NeighD(2,j,i) .lt. -0.1_dp)) then
+                                    hopp(j,i) = hopp(j,i) + t2 * exp(cmplx_i*HaldanePhase)
+                            else
+                                    hopp(j,i) = hopp(j,i) + t2 * exp(-cmplx_i*HaldanePhase)
+                            end if
+                         else if (Species(i).eq.1) then   ! ---  A sublattice
+                            if ((NeighD(2,j,i) .lt. -0.1_dp .and. abs(NeighD(1,j,i)) .lt. 0.01_dp) .or. &
+                                (NeighD(1,j,i) .gt. 0.1_dp .and. NeighD(2,j,i) .gt. 0.1_dp) .or. &
+                                (NeighD(1,j,i) .lt. -0.1_dp .and. NeighD(2,j,i) .gt. 0.1_dp)) then
+                                    hopp(j,i) = hopp(j,i) + t2*exp(cmplx_i*HaldanePhase)
+                            else
+                                    hopp(j,i) = hopp(j,i)+ t2*exp(-cmplx_i*HaldanePhase)
+                            end if
+                         end if
+                     end if
+                  end if
+               end if
+            end do
+         end if
+      end do
+      !$OMP END PARALLEL DO
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopHaldane',1)
+#endif /* DEBUG */
+
+end subroutine HamHopHaldane
+
+!> Magnetic field: Peierls phase on every hopping (periodic gauge) (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopMagneticField()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopMagneticField',0)
+#endif /* DEBUG */
+
+      if (Frank) then
+         if (frac) call AtomsSetCart()
+         do i=1,nAt
+            do j=1,Nneigh(i)
+               diffx = neighD(1,j,i)
+               diffy = neighD(2,j,i)
+               if (abs(diffy).lt.0.1d0 .and. diffx .gt. 0.1_dp) then
+                   lllll = 1
+                   nnnnn = 3
+               else if (abs(diffy).lt.0.1d0 .and. diffx .lt. -0.1_dp) then
+                   lllll = 3
+                   nnnnn = 1
+               else if (diffy.gt.0.1d0 .and. diffx .lt. -0.1_dp) then
+                   lllll = 1
+                   nnnnn = 2
+               else if (diffy.lt.-0.1d0 .and. diffx .gt. 0.1_dp) then
+                   lllll = 2
+                   nnnnn = 1
+               else if (diffy.lt.-0.1d0 .and. diffx .lt. -0.1_dp) then
+                   lllll = 1
+                   nnnnn = 2
+               else if (diffy.lt.0.1d0 .and. diffx .gt. 0.1_dp) then
+                   lllll = 2
+                   nnnnn = 1
+               else if (diffy.gt.0.1d0 .and. diffx .gt. 0.1_dp) then
+                   lllll = 3
+                   nnnnn = 4
+               else if (diffy.lt.-0.1d0 .and. diffx .lt. -0.1_dp) then
+                   lllll = 4
+                   nnnnn = 3
+               else if (diffy.lt.-0.1d0 .and. diffx .gt. 0.1_dp) then
+                   lllll = 3
+                   nnnnn = 4
+               else if (diffy.lt.0.1d0 .and. diffx .lt. -0.1_dp) then
+                   lllll = 3
+                   nnnnn = 4
+               end if
+               n2 = ucell(2,2)/aG ! n2 = N_y
+               n1 = ucell(1,1)/(3.0_dp*aG/sqrt(3.0_dp))/2.0_dp  ! n1 = Nx/2
+               if (lllll .eq. 1 .and. nnnnn .eq. 3) mmphi = -1.d0 / n2 * (j-1)
+               if (lllll .eq. 1 .and. nnnnn .eq. 2 .and. diffy .ge. 0.d0) mmphi = -1.d0 / n1 * (i-1)
+               if (lllll .eq. 1 .and. nnnnn .eq. 2 .and. diffy .lt. 0.d0) mmphi = 0.d0
+               if (lllll .eq. 2 .and. nnnnn .eq. 1 .and. diffy .ge. 0.d0) mmphi = 0.d0
+               if (lllll .eq. 2 .and. nnnnn .eq. 1 .and. diffy .lt. 0.d0) mmphi = 1.d0 / n1 * (i-1)
+               if (lllll .eq. 2 .and. nnnnn .eq. 0) mmphi= 1.d0 / n2 * (j-1)
+               if (lllll .eq. 3 .and. nnnnn .eq. 0 .and. diffy .ge. 0.d0) mmphi= 0.d0
+               if (lllll .eq. 3 .and. nnnnn .eq. 0 .and. diffy .lt. 0.d0) mmphi= 1.d0 / n1 * (i-1)+1.d0/ n1 / 2.d0
+               if (lllll .eq. 3 .and. nnnnn .eq. 1) mmphi= 1.d0 / n2 * (j-1)
+               if (lllll .eq. 4 .and. nnnnn .eq. 2) mmphi= -1.d0 / n2 * (j-1)
+               if (lllll .eq. 4 .and. nnnnn .eq. 3 .and. diffy .ge. 0.d0) mmphi= -1.d0 / n1 * (i-1)-1.d0/ n1 / 2.d0
+               if (lllll .eq. 4 .and. nnnnn .eq. 3 .and. diffy .lt. 0.d0) mmphi= 0.d0
+#ifdef DEBUG
+               print*, mB, n2, n1
+               print*, "Magnetic field using Franks approach: ", dble(mB) / dble(n2) / dble(n1) * 39471.80806616257_dp, "T"
+#endif /* DEBUG */
+               phase = -mmphi*2.0_dp*pi*mB
+               hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
+            end do
+         end do
+      else
+         aCC = aG/sqrt(3.0_dp)
+         if (frac) call AtomsSetCart()
+         do i=1,nAt
+            do j=1,Nneigh(i)
+               !if (abs(neighCell(1,j,i)).gt.1 .or. abs(neighCell(2,j,i)).gt.1) print*, i, neighCell(1,j,i), neighCell(2,j,i)
+               v1 = Rat(:,i) + Rat(:,NList(j,i))
+               ! neighCell(1...) contains n1-m1, neighCell(2...) contains n2-m2 (see Cresti's notes)
+               v2 = neighCell(1,j,i)*ucell(:,1) + neighCell(2,j,i)*ucell(:,2)
+               v2 = CrossProd(v1,v2)
+               v1 = CrossProd(Rat(:,i),Rat(:,NList(j,i))) + v2 ! Implementation of third expersion in Cresti's notes
+               phase = flux*v1(3)/1.0d20
+               hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
+            end do
+         end do
+      end if
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopMagneticField',1)
+#endif /* DEBUG */
+
+end subroutine HamHopMagneticField
+
+!> Strain and on-site shift of bubbles placed at random (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopRealisticBubbles()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopRealisticBubbles',0)
+#endif /* DEBUG */
+
+      call MIO_InputParameter('Strain.BigBubble',bigBubble,.false.)
+      call MIO_InputParameter('Strain.ManyBubbles',manyBubbles,.false.)
+      call MIO_InputParameter('Strain.BubbleInPlaneStrain',bubbleInPlaneStrain,.false.)
+      if (bigBubble) then
+         call MIO_Print('We add a single bubble','ham')
+         if (.not. frac) call AtomsSetFrac()
+         minDiffBubbleX = 0.01_dp
+         minDiffBubbleY = 0.01_dp
+         totImp = 1
+         call MIO_Allocate(indxImp,totImp,'indxImp','gauss')
+         call MIO_Allocate(bubbleCenterX,totImp,'bubbleCenterX','gauss')
+         call MIO_Allocate(bubbleCenterY,totImp,'bubbleCenterY','gauss')
+         do i=inode1,inode2
+            diffBubbleX = abs(Rat(1,i) - 0.5d0)
+            diffBubbleY = abs(Rat(2,i) - 0.5d0)
+            if (diffBubbleX.lt.minDiffBubbleX .and. diffBubbleY.lt.minDiffBubbleY) then
+                minDiffBubbleX = diffBubbleX
+                minDiffBubbleY = diffBubbleY
+                indxImp(1) = i
+            end if
+         end do
+         if (frac) call AtomsSetCart()
+         bubbleCenterX(1) = Rat(1,indxImp(1))
+         bubbleCenterY(1) = Rat(2,indxImp(1))
+         indexOfBigBubbleCenter = indxImp(1)
+      else if (manyBubbles) then
+         call MIO_Print('We add a lot of bubbles','ham')
+         call MIO_InputParameter('Strain.BubblePercentage',per,10.0_dp)
+         per = per/100.0_dp
+         call MIO_Allocate(def,[inode1],[inode2],'def','gauss')
+         def = .false.
+         totImp = 0
+
+         call random_seed(size = kk)
+         allocate(seed(kk))
+         call system_clock(COUNT=clock)
+         seed = clock + 37 * (/ (i - 1, i = 1, kk) /)
+         call random_seed(PUT = seed)
+         deallocate(seed)
+
+         nImp = nint((inode2-inode1+1)*per)
+         do i=1,nImp
+            do
+               call random_number(rand)
+               j = nint(rand*(inode2-inode1)) + inode1
+               !if (j>in2 .or. j<in1) write(*,*) 'Gauss err, j:', j
+               if (def(j) .eqv. .false.) then
+                  def(j) = .true.
+                  totImp = totImp + 1
+                  exit
+               end if
+            end do
+         end do
+
+         per = totImp*100.0_dp/nAt
+         call MIO_Print('')
+         call MIO_Print('  final percentage          : '//trim(num2str(per,3))//'%')
+         call MIO_Print('  total number of impurities: '//trim(num2str(totImp)))
+         call MIO_Allocate(indxImp,totImp,'indxImp','gauss')
+         call MIO_Allocate(bubbleCenterX,totImp,'bubbleCenterX','gauss')
+         call MIO_Allocate(bubbleCenterY,totImp,'bubbleCenterY','gauss')
+         nImp = 0
+         if (frac) call AtomsSetCart()
+         do i=inode1,inode2
+            if (def(i)) then
+               nImp = nImp + 1
+               indxImp(nImp) = i
+               bubbleCenterX(nImp) = Rat(1,indxImp(nImp))
+               bubbleCenterY(nImp) = Rat(2,indxImp(nImp))
+            end if
+         end do
+         call MIO_InputParameter('Strain.BubbleGaussian',bubbleGauss,.false.)
+         if (bubbleGauss) then
+            call GaussPotDefinedPositions(H0)
+         end if
+      end if
+
+      call MIO_Allocate(epsxy,[1,inode1],[maxNeigh,inode2],'epsxy','ham')
+      call MIO_Allocate(epsxx,[1,inode1],[maxNeigh,inode2],'epsxx','ham')
+      call MIO_Allocate(epsyy,[1,inode1],[maxNeigh,inode2],'epsyy','ham')
+      call MIO_InputParameter('Strain.BubbleSigmaR',bubbleSigmaR,1.42_dp)
+      bubbleSigmaR2 = bubbleSigmaR**2.0d0
+      call MIO_InputParameter('Strain.BubbleC',bubbleC,1.42_dp)
+
+      call MIO_InputParameter('Strain.BubbleShift',bubbleShift,0.07_dp)
+      call MIO_InputParameter('Strain.BubbleRadius',bubbleRadius,100.0_dp)
+      call MIO_Allocate(onsiteShift,nAt,'onsiteShift','ham')
+
+      if (totImp > 0) then
+         if (.not. associated(indxImp)) then
+            call MIO_Kill('realisticBubbles is not supported at present: the list of bubble centres it '// &
+              'uses is never filled.','ham','HamHopping')
+         else if (size(indxImp) < totImp) then
+            call MIO_Kill('realisticBubbles is not supported at present: the list of bubble centres it '// &
+              'uses is never filled.','ham','HamHopping')
+         end if
+      end if
+      do ii=1,totImp
+        !$OMP PARALLEL DO PRIVATE(dx,dy,dist2,bubbleR,bubbleTheta,dlij)
+        do i=1,nAt
+          ! >>> unset markers
+          dx = hamUnset
+          dy = hamUnset
+          dist2 = hamUnset
+          bubbler = hamUnset
+          bubbletheta = hamUnset
+          dlij = hamUnset
+          ! <<< unset markers
+          !do ic1=-1,1; do ic2=-1,1
+           dx = (Rat(1,indxImp(ii)) - Rat(1,i))! + ic1*ucell(1,1) + ic2*ucell(1,2)
+           dy = (Rat(2,indxImp(ii)) - Rat(2,i))! + ic1*ucell(2,1) + ic2*ucell(2,2)
+           dist2 = dx**2.0d0 + dy**2.0d0 !(the correlation function is in x only
+           if (dist2.lt.bubbleSigmaR2) then
+             onsiteShift(i) = bubbleShift
+           else
+             onsiteShift(i) = 0.0d0
+           end if
+           H0(i) = H0(i) + onsiteShift(i)
+           do j=1,Nneigh(i)
+             !!        !fprimex(i) = NeighD(3,j,i)/(aG/2.0_dp)
+             !!        fprimex(i) = (Rat(3,NList(j,i)) - Rat(3,i))/(aG/2.0_dp)
+             !!    !else
+             !!    !    fprimex(i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/2.0_dp)
+             !!    end if
+             !!end if
+             !!        fprimey(i) = (Rat(3,NList(j,i)) - Rat(3,i))/(aG/sqrt(3.0_dp))
+             !!    else
+             !!        fprimey(i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/sqrt(3.0_dp))
+             !!    end if
+             !!end if
+             bubbleR = sqrt((Rat(1,i)-bubbleCenterX(ii))**2.0d0 + (Rat(2,i)-bubbleCenterY(ii))**2.0d0)
+             bubbleTheta = atan2(Rat(2,i)-bubbleCenterY(ii),Rat(1,i)-bubbleCenterX(ii))
+             if (bubbleInPlaneStrain) then
+                if (bubbleR.gt.bubbleRadius) then
+                  epsxx(j,i) = bubbleC*2.0d0 * bubbleR *  sin(bubbleTheta) &
+                      * exp(-(bubbleR-bubbleRadius)**2.0d0/(2.0d0*bubbleSigmaR**2.0d0))
+                  epsyy(j,i) = -bubbleC*2.0d0 * bubbleR * sin(bubbleTheta) &
+                      * exp(-(bubbleR-bubbleRadius)**2.0d0/(2.0d0*bubbleSigmaR**2.0d0))
+                  epsxy(j,i) = bubbleC*2.0d0 * bubbleR *  cos(bubbleTheta) &
+                      * exp(-(bubbleR-bubbleRadius)**2.0d0/(2.0d0*bubbleSigmaR**2.0d0))
+                else
+                  epsxx(j,i) = bubbleC*2.0d0 * bubbleR *  sin(bubbleTheta)
+                  epsyy(j,i) = -bubbleC*2.0d0 * bubbleR * sin(bubbleTheta)
+                  epsxy(j,i) = bubbleC*2.0d0 * bubbleR *  cos(bubbleTheta)
+                end if
+             else
+                epsxx(j,i) = bubbleC**2.0d0 * bubbleR**2.0d0 &
+                  * exp(-2.0d0*bubbleR**2.0d0/(2.0d0*bubbleSigmaR**2.0d0)) * cos(bubbleTheta)**2.0d0/(2.0d0*bubbleSigmaR**4.0d0)
+                epsyy(j,i) = bubbleC**2.0d0 * bubbleR**2.0d0 &
+                  * exp(-2.0d0*bubbleR**2.0d0/(2.0d0*bubbleSigmaR**2.0d0)) * sin(bubbleTheta)**2.0d0/(2.0d0*bubbleSigmaR**4.0d0)
+                epsxy(j,i) = bubbleC**2.0d0 * bubbleR**2.0d0 &
+                  * exp(-2.0d0*bubbleR**2.0d0/(2.0d0*bubbleSigmaR**2.0d0)) &
+                                   * cos(bubbleTheta)*sin(bubbleTheta)/(2.0d0*bubbleSigmaR**4.0d0)
+             end if
+                dlij = 1.0_dp/(aG/sqrt(3.0_dp)) * (epsxx(j,i) * NeighD(1,j,i)**2.0_dp &
+                       + epsyy(j,i) * NeighD(2,j,i)**2.0_dp + 2.0_dp * epsxy(j,i) * NeighD(1,j,i)*NeighD(2,j,i))
+                 hopp(j,i) = hopp(j,i) * exp(-3.37_dp*((dlij + aG/sqrt(3.0_dp))/(aG/sqrt(3.0_dp))-1.0_dp))
+           end do
+        end do
+        !$OMP END PARALLEL DO
+      end do
+
+      !   !$OMP PARALLEL DO PRIVATE(dlij)
+      !        !if (NeighD(3,j,i) .lt. 0.01_dp) then
+      !          !dlij = NINT(10**6 * 1.0_dp/(aG/sqrt(3.0_dp)) * (epsxx(i) * NeighD(1,j,i)**2.0_dp + epsyy(i) * NeighD(2,j,i)**2.0_dp + 2.0_dp * epsxy(i) * NeighD(1,j,i)*NeighD(2,j,i))) * 10**(-6)
+      !          !print*, dlij
+      !          !if (abs(real(hopp(j,i)))<0.001) then
+      !          !    hopp(j,i) = exp(-3.37_dp*((dlij + aG/sqrt(3.0_dp))/(aG/sqrt(3.0_dp))-1.0_dp))-1.0_dp
+      !          !else
+      !          !end if
+      !        !end if
+      !   !$OMP END PARALLEL DO
+
+      call MIO_InputParameter('Output.WriteDataFiles',l,.false.)
+      if (l) then
+         open(1,FILE='e')
+         do i=1,nAt
+            write(1,*) H0(i)
+         end do
+         close(1)
+      end if
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopRealisticBubbles',1)
+#endif /* DEBUG */
+
+end subroutine HamHopRealisticBubbles
+
+!> Periodic strain: modulation of the hoppings with the period of the moire (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopPeriodicStrain()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopPeriodicStrain',0)
+#endif /* DEBUG */
+
+      call MIO_InputParameter('Strain.PeriodicStrainU0',u0,0.1_dp)
+      call MIO_InputParameter('Strain.PeriodicStrainPeriod',nPeriod,1)
+      call MIO_InputParameter('Structure.SuperCell',sCell,1)
+      LMoire = norm(ucell(:,1))/sCell
       if (frac) call AtomsSetCart()
       call MIO_Allocate(epsxy,[1,inode1],[maxNeigh,inode2],'epsxy','ham')
       call MIO_Allocate(epsxx,[1,inode1],[maxNeigh,inode2],'epsxx','ham')
@@ -10446,24 +11136,17 @@ subroutine HamHopping
       !$OMP PARALLEL DO
       do i=1,nAt
          do j=1,Nneigh(i)
-           if (NeighD(3,j,i) .lt. 0.01_dp) then
-             !        !fprimex(i) = NeighD(3,j,i)/(aG/2.0_dp)
-             !    !else
-             !    !    fprimex(i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/2.0_dp)
              if (NeighD(1,j,i) > 0.0_dp) then
-                 fprimex(j,i) = (Rat(3,NList(j,i)) - Rat(3,i))/(aG/2.0_dp)
+                 epsxx(j,i) = -u0 * 2.0_dp * pi / LMoire * cos(2.0_dp * pi * nPeriod * Rat(1,i) / LMoire)
              else
-                 fprimex(j,i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/2.0_dp)
+                 epsxx(j,i) = -u0 * 2.0_dp * pi / LMoire * cos(2.0_dp * pi * nPeriod * Rat(1,NList(j,i)) / LMoire)
              end if
              if (NeighD(2,j,i) > 0.0_dp) then
-                  fprimey(j,i) = (Rat(3,NList(j,i)) - Rat(3,i))/(aG/sqrt(3.0_dp))
+                 epsyy(j,i) = -u0 * 2.0_dp * pi / LMoire * cos(2.0_dp * pi * nPeriod * Rat(2,i) / LMoire)
              else
-                  fprimey(j,i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/sqrt(3.0_dp))
+                 epsyy(j,i) = -u0 * 2.0_dp * pi / LMoire * cos(2.0_dp * pi * nPeriod * Rat(2,NList(j,i)) / LMoire)
              end if
-             epsxx(j,i) = 0.5_dp * fprimex(j,i)**2.0_dp
-             epsyy(j,i) = 0.5_dp * fprimey(j,i)**2.0_dp
-             epsxy(j,i) = 0.5_dp * fprimex(j,i)*fprimey(j,i)
-           end if
+             epsxy(j,i) = 0.0_dp
          end do
       end do
       !$OMP END PARALLEL DO
@@ -10481,15 +11164,20 @@ subroutine HamHopping
          end do
       end do
       !$OMP END PARALLEL DO
-   end if
 
-   ! Based on PHYSICAL REVIEW B 80, 045401 2009
-   call MIO_InputParameter('Strain.RealStrain',realStrain,.false.)
-   call MIO_InputParameter('Strain.OnlyFirstNeighborRealStrain',onlyFirstNeighborRealStrain,.false.)
-   ! Decay exponent of t = t0 exp(-beta (d/d0 - 1)). Default 3.37 reproduces every existing input exactly;
-   ! other values are for counterfactual scans of the strain gauge-field strength.
-   call MIO_InputParameter('Strain.RealStrainBeta',realStrainBeta,3.37_dp)
-   if (realStrain) then
+#ifdef DEBUG
+   call MIO_Debug('HamHopPeriodicStrain',1)
+#endif /* DEBUG */
+
+end subroutine HamHopPeriodicStrain
+
+!> Strain from the actual bond lengths: every intralayer hopping scaled by exp(-beta (d/d_ref - 1)) (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopRealStrain()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopRealStrain',0)
+#endif /* DEBUG */
+
       call MIO_Print('realStrain: t = t0 exp(-beta (d/d0 - 1)), beta = '//trim(num2str(realStrainBeta,4)),'ham')
       call MIO_InputParameter('Strain.RealStrainReferenceLatticeConstant',aGR,aG) !
       accR = aGR/sqrt(3.0_dp)
@@ -10806,14 +11494,20 @@ subroutine HamHopping
            'used the reference distance of the previous neighbour). The structure is strained or corrugated beyond '// &
            'the shell windows: check it, and consider shellsFromRigidPositions.','ham')
       end if
-   end if
 
-   call MIO_InputParameter('Strain.PeriodicStrain',periodicStrain,.false.)
-   if (periodicStrain) then
-      call MIO_InputParameter('Strain.PeriodicStrainU0',u0,0.1_dp)
-      call MIO_InputParameter('Strain.PeriodicStrainPeriod',nPeriod,1)
-      call MIO_InputParameter('Structure.SuperCell',sCell,1)
-      LMoire = norm(ucell(:,1))/sCell
+#ifdef DEBUG
+   call MIO_Debug('HamHopRealStrain',1)
+#endif /* DEBUG */
+
+end subroutine HamHopRealStrain
+
+!> Random strain (refused at present) (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopRandomStrain()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopRandomStrain',0)
+#endif /* DEBUG */
+
       if (frac) call AtomsSetCart()
       call MIO_Allocate(epsxy,[1,inode1],[maxNeigh,inode2],'epsxy','ham')
       call MIO_Allocate(epsxx,[1,inode1],[maxNeigh,inode2],'epsxx','ham')
@@ -10823,17 +11517,24 @@ subroutine HamHopping
       !$OMP PARALLEL DO
       do i=1,nAt
          do j=1,Nneigh(i)
+           if (NeighD(3,j,i) .lt. 0.01_dp) then
+             !        !fprimex(i) = NeighD(3,j,i)/(aG/2.0_dp)
+             !    !else
+             !    !    fprimex(i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/2.0_dp)
              if (NeighD(1,j,i) > 0.0_dp) then
-                 epsxx(j,i) = -u0 * 2.0_dp * pi / LMoire * cos(2.0_dp * pi * nPeriod * Rat(1,i) / LMoire)
+                 fprimex(j,i) = (Rat(3,NList(j,i)) - Rat(3,i))/(aG/2.0_dp)
              else
-                 epsxx(j,i) = -u0 * 2.0_dp * pi / LMoire * cos(2.0_dp * pi * nPeriod * Rat(1,NList(j,i)) / LMoire)
+                 fprimex(j,i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/2.0_dp)
              end if
              if (NeighD(2,j,i) > 0.0_dp) then
-                 epsyy(j,i) = -u0 * 2.0_dp * pi / LMoire * cos(2.0_dp * pi * nPeriod * Rat(2,i) / LMoire)
+                  fprimey(j,i) = (Rat(3,NList(j,i)) - Rat(3,i))/(aG/sqrt(3.0_dp))
              else
-                 epsyy(j,i) = -u0 * 2.0_dp * pi / LMoire * cos(2.0_dp * pi * nPeriod * Rat(2,NList(j,i)) / LMoire)
+                  fprimey(j,i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/sqrt(3.0_dp))
              end if
-             epsxy(j,i) = 0.0_dp
+             epsxx(j,i) = 0.5_dp * fprimex(j,i)**2.0_dp
+             epsyy(j,i) = 0.5_dp * fprimey(j,i)**2.0_dp
+             epsxy(j,i) = 0.5_dp * fprimex(j,i)*fprimey(j,i)
+           end if
          end do
       end do
       !$OMP END PARALLEL DO
@@ -10851,459 +11552,63 @@ subroutine HamHopping
          end do
       end do
       !$OMP END PARALLEL DO
-   end if
 
-   call MIO_InputParameter('Strain.RealisticBubbles',realisticBubbles,.false.)
-   if (realisticBubbles) then
-      call MIO_InputParameter('Strain.BigBubble',bigBubble,.false.)
-      call MIO_InputParameter('Strain.ManyBubbles',manyBubbles,.false.)
-      call MIO_InputParameter('Strain.BubbleInPlaneStrain',bubbleInPlaneStrain,.false.)
-      if (bigBubble) then
-         call MIO_Print('We add a single bubble','ham')
-         if (.not. frac) call AtomsSetFrac()
-         minDiffBubbleX = 0.01_dp
-         minDiffBubbleY = 0.01_dp
-         totImp = 1
-         call MIO_Allocate(indxImp,totImp,'indxImp','gauss')
-         call MIO_Allocate(bubbleCenterX,totImp,'bubbleCenterX','gauss')
-         call MIO_Allocate(bubbleCenterY,totImp,'bubbleCenterY','gauss')
-         do i=inode1,inode2
-            diffBubbleX = abs(Rat(1,i) - 0.5d0)
-            diffBubbleY = abs(Rat(2,i) - 0.5d0)
-            if (diffBubbleX.lt.minDiffBubbleX .and. diffBubbleY.lt.minDiffBubbleY) then
-                minDiffBubbleX = diffBubbleX
-                minDiffBubbleY = diffBubbleY
-                indxImp(1) = i
-            end if
-         end do
-         if (frac) call AtomsSetCart()
-         bubbleCenterX(1) = Rat(1,indxImp(1))
-         bubbleCenterY(1) = Rat(2,indxImp(1))
-         indexOfBigBubbleCenter = indxImp(1)
-      else if (manyBubbles) then
-         call MIO_Print('We add a lot of bubbles','ham')
-         call MIO_InputParameter('Strain.BubblePercentage',per,10.0_dp)
-         per = per/100.0_dp
-         call MIO_Allocate(def,[inode1],[inode2],'def','gauss')
-         def = .false.
-         totImp = 0
-
-         call random_seed(size = kk)
-         allocate(seed(kk))
-         call system_clock(COUNT=clock)
-         seed = clock + 37 * (/ (i - 1, i = 1, kk) /)
-         call random_seed(PUT = seed)
-         deallocate(seed)
-
-         nImp = nint((inode2-inode1+1)*per)
-         do i=1,nImp
-            do
-               call random_number(rand)
-               j = nint(rand*(inode2-inode1)) + inode1
-               !if (j>in2 .or. j<in1) write(*,*) 'Gauss err, j:', j
-               if (def(j) .eqv. .false.) then
-                  def(j) = .true.
-                  totImp = totImp + 1
-                  exit
-               end if
-            end do
-         end do
-
-         per = totImp*100.0_dp/nAt
-         call MIO_Print('')
-         call MIO_Print('  final percentage          : '//trim(num2str(per,3))//'%')
-         call MIO_Print('  total number of impurities: '//trim(num2str(totImp)))
-         call MIO_Allocate(indxImp,totImp,'indxImp','gauss')
-         call MIO_Allocate(bubbleCenterX,totImp,'bubbleCenterX','gauss')
-         call MIO_Allocate(bubbleCenterY,totImp,'bubbleCenterY','gauss')
-         nImp = 0
-         if (frac) call AtomsSetCart()
-         do i=inode1,inode2
-            if (def(i)) then
-               nImp = nImp + 1
-               indxImp(nImp) = i
-               bubbleCenterX(nImp) = Rat(1,indxImp(nImp))
-               bubbleCenterY(nImp) = Rat(2,indxImp(nImp))
-            end if
-         end do
-         call MIO_InputParameter('Strain.BubbleGaussian',bubbleGauss,.false.)
-         if (bubbleGauss) then
-            call GaussPotDefinedPositions(H0)
-         end if
-      end if
-
-      call MIO_Allocate(epsxy,[1,inode1],[maxNeigh,inode2],'epsxy','ham')
-      call MIO_Allocate(epsxx,[1,inode1],[maxNeigh,inode2],'epsxx','ham')
-      call MIO_Allocate(epsyy,[1,inode1],[maxNeigh,inode2],'epsyy','ham')
-      call MIO_InputParameter('Strain.BubbleSigmaR',bubbleSigmaR,1.42_dp)
-      bubbleSigmaR2 = bubbleSigmaR**2.0d0
-      call MIO_InputParameter('Strain.BubbleC',bubbleC,1.42_dp)
-
-      call MIO_InputParameter('Strain.BubbleShift',bubbleShift,0.07_dp)
-      call MIO_InputParameter('Strain.BubbleRadius',bubbleRadius,100.0_dp)
-      call MIO_Allocate(onsiteShift,nAt,'onsiteShift','ham')
-
-      if (totImp > 0) then
-         if (.not. associated(indxImp)) then
-            call MIO_Kill('realisticBubbles is not supported at present: the list of bubble centres it '// &
-              'uses is never filled.','ham','HamHopping')
-         else if (size(indxImp) < totImp) then
-            call MIO_Kill('realisticBubbles is not supported at present: the list of bubble centres it '// &
-              'uses is never filled.','ham','HamHopping')
-         end if
-      end if
-      do ii=1,totImp
-        !$OMP PARALLEL DO PRIVATE(dx,dy,dist2,bubbleR,bubbleTheta,dlij)
-        do i=1,nAt
-          ! >>> unset markers
-          dx = hamUnset
-          dy = hamUnset
-          dist2 = hamUnset
-          bubbler = hamUnset
-          bubbletheta = hamUnset
-          dlij = hamUnset
-          ! <<< unset markers
-          !do ic1=-1,1; do ic2=-1,1
-           dx = (Rat(1,indxImp(ii)) - Rat(1,i))! + ic1*ucell(1,1) + ic2*ucell(1,2)
-           dy = (Rat(2,indxImp(ii)) - Rat(2,i))! + ic1*ucell(2,1) + ic2*ucell(2,2)
-           dist2 = dx**2.0d0 + dy**2.0d0 !(the correlation function is in x only
-           if (dist2.lt.bubbleSigmaR2) then
-             onsiteShift(i) = bubbleShift
-           else
-             onsiteShift(i) = 0.0d0
-           end if
-           H0(i) = H0(i) + onsiteShift(i)
-           do j=1,Nneigh(i)
-             !!        !fprimex(i) = NeighD(3,j,i)/(aG/2.0_dp)
-             !!        fprimex(i) = (Rat(3,NList(j,i)) - Rat(3,i))/(aG/2.0_dp)
-             !!    !else
-             !!    !    fprimex(i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/2.0_dp)
-             !!    end if
-             !!end if
-             !!        fprimey(i) = (Rat(3,NList(j,i)) - Rat(3,i))/(aG/sqrt(3.0_dp))
-             !!    else
-             !!        fprimey(i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/sqrt(3.0_dp))
-             !!    end if
-             !!end if
-             bubbleR = sqrt((Rat(1,i)-bubbleCenterX(ii))**2.0d0 + (Rat(2,i)-bubbleCenterY(ii))**2.0d0)
-             bubbleTheta = atan2(Rat(2,i)-bubbleCenterY(ii),Rat(1,i)-bubbleCenterX(ii))
-             if (bubbleInPlaneStrain) then
-                if (bubbleR.gt.bubbleRadius) then
-                  epsxx(j,i) = bubbleC*2.0d0 * bubbleR *  sin(bubbleTheta) &
-                      * exp(-(bubbleR-bubbleRadius)**2.0d0/(2.0d0*bubbleSigmaR**2.0d0))
-                  epsyy(j,i) = -bubbleC*2.0d0 * bubbleR * sin(bubbleTheta) &
-                      * exp(-(bubbleR-bubbleRadius)**2.0d0/(2.0d0*bubbleSigmaR**2.0d0))
-                  epsxy(j,i) = bubbleC*2.0d0 * bubbleR *  cos(bubbleTheta) &
-                      * exp(-(bubbleR-bubbleRadius)**2.0d0/(2.0d0*bubbleSigmaR**2.0d0))
-                else
-                  epsxx(j,i) = bubbleC*2.0d0 * bubbleR *  sin(bubbleTheta)
-                  epsyy(j,i) = -bubbleC*2.0d0 * bubbleR * sin(bubbleTheta)
-                  epsxy(j,i) = bubbleC*2.0d0 * bubbleR *  cos(bubbleTheta)
-                end if
-             else
-                epsxx(j,i) = bubbleC**2.0d0 * bubbleR**2.0d0 &
-                  * exp(-2.0d0*bubbleR**2.0d0/(2.0d0*bubbleSigmaR**2.0d0)) * cos(bubbleTheta)**2.0d0/(2.0d0*bubbleSigmaR**4.0d0)
-                epsyy(j,i) = bubbleC**2.0d0 * bubbleR**2.0d0 &
-                  * exp(-2.0d0*bubbleR**2.0d0/(2.0d0*bubbleSigmaR**2.0d0)) * sin(bubbleTheta)**2.0d0/(2.0d0*bubbleSigmaR**4.0d0)
-                epsxy(j,i) = bubbleC**2.0d0 * bubbleR**2.0d0 &
-                  * exp(-2.0d0*bubbleR**2.0d0/(2.0d0*bubbleSigmaR**2.0d0)) &
-                                   * cos(bubbleTheta)*sin(bubbleTheta)/(2.0d0*bubbleSigmaR**4.0d0)
-             end if
-                dlij = 1.0_dp/(aG/sqrt(3.0_dp)) * (epsxx(j,i) * NeighD(1,j,i)**2.0_dp &
-                       + epsyy(j,i) * NeighD(2,j,i)**2.0_dp + 2.0_dp * epsxy(j,i) * NeighD(1,j,i)*NeighD(2,j,i))
-                 hopp(j,i) = hopp(j,i) * exp(-3.37_dp*((dlij + aG/sqrt(3.0_dp))/(aG/sqrt(3.0_dp))-1.0_dp))
-           end do
-        end do
-        !$OMP END PARALLEL DO
-      end do
-
-      !   !$OMP PARALLEL DO PRIVATE(dlij)
-      !        !if (NeighD(3,j,i) .lt. 0.01_dp) then
-      !          !dlij = NINT(10**6 * 1.0_dp/(aG/sqrt(3.0_dp)) * (epsxx(i) * NeighD(1,j,i)**2.0_dp + epsyy(i) * NeighD(2,j,i)**2.0_dp + 2.0_dp * epsxy(i) * NeighD(1,j,i)*NeighD(2,j,i))) * 10**(-6)
-      !          !print*, dlij
-      !          !if (abs(real(hopp(j,i)))<0.001) then
-      !          !    hopp(j,i) = exp(-3.37_dp*((dlij + aG/sqrt(3.0_dp))/(aG/sqrt(3.0_dp))-1.0_dp))-1.0_dp
-      !          !else
-      !          !end if
-      !        !end if
-      !   !$OMP END PARALLEL DO
-
-      call MIO_InputParameter('Output.WriteDataFiles',l,.false.)
-      if (l) then
-         open(1,FILE='e')
-         do i=1,nAt
-            write(1,*) H0(i)
-         end do
-         close(1)
-      end if
-   end if
-
-   if (realisticBubbles) then
-      call MIO_Deallocate(indxImp,'indxImp','gauss')
-      call MIO_Deallocate(bubbleCenterX,'bubbleCenterX','gauss')
-      call MIO_Deallocate(bubbleCenterY,'bubbleCenterY','gauss')
-      call MIO_Deallocate(epsxy,'epsxy','ham')
-      call MIO_Deallocate(epsxx,'epsxx','ham')
-      call MIO_Deallocate(epsyy,'epsyy','ham')
-      call MIO_Deallocate(onsiteShift,'onsiteShift','ham')
-   end if
-
-   if (magfield) then
-      if (Frank) then
-         if (frac) call AtomsSetCart()
-         do i=1,nAt
-            do j=1,Nneigh(i)
-               diffx = neighD(1,j,i)
-               diffy = neighD(2,j,i)
-               if (abs(diffy).lt.0.1d0 .and. diffx .gt. 0.1_dp) then
-                   lllll = 1
-                   nnnnn = 3
-               else if (abs(diffy).lt.0.1d0 .and. diffx .lt. -0.1_dp) then
-                   lllll = 3
-                   nnnnn = 1
-               else if (diffy.gt.0.1d0 .and. diffx .lt. -0.1_dp) then
-                   lllll = 1
-                   nnnnn = 2
-               else if (diffy.lt.-0.1d0 .and. diffx .gt. 0.1_dp) then
-                   lllll = 2
-                   nnnnn = 1
-               else if (diffy.lt.-0.1d0 .and. diffx .lt. -0.1_dp) then
-                   lllll = 1
-                   nnnnn = 2
-               else if (diffy.lt.0.1d0 .and. diffx .gt. 0.1_dp) then
-                   lllll = 2
-                   nnnnn = 1
-               else if (diffy.gt.0.1d0 .and. diffx .gt. 0.1_dp) then
-                   lllll = 3
-                   nnnnn = 4
-               else if (diffy.lt.-0.1d0 .and. diffx .lt. -0.1_dp) then
-                   lllll = 4
-                   nnnnn = 3
-               else if (diffy.lt.-0.1d0 .and. diffx .gt. 0.1_dp) then
-                   lllll = 3
-                   nnnnn = 4
-               else if (diffy.lt.0.1d0 .and. diffx .lt. -0.1_dp) then
-                   lllll = 3
-                   nnnnn = 4
-               end if
-               n2 = ucell(2,2)/aG ! n2 = N_y
-               n1 = ucell(1,1)/(3.0_dp*aG/sqrt(3.0_dp))/2.0_dp  ! n1 = Nx/2
-               if (lllll .eq. 1 .and. nnnnn .eq. 3) mmphi = -1.d0 / n2 * (j-1)
-               if (lllll .eq. 1 .and. nnnnn .eq. 2 .and. diffy .ge. 0.d0) mmphi = -1.d0 / n1 * (i-1)
-               if (lllll .eq. 1 .and. nnnnn .eq. 2 .and. diffy .lt. 0.d0) mmphi = 0.d0
-               if (lllll .eq. 2 .and. nnnnn .eq. 1 .and. diffy .ge. 0.d0) mmphi = 0.d0
-               if (lllll .eq. 2 .and. nnnnn .eq. 1 .and. diffy .lt. 0.d0) mmphi = 1.d0 / n1 * (i-1)
-               if (lllll .eq. 2 .and. nnnnn .eq. 0) mmphi= 1.d0 / n2 * (j-1)
-               if (lllll .eq. 3 .and. nnnnn .eq. 0 .and. diffy .ge. 0.d0) mmphi= 0.d0
-               if (lllll .eq. 3 .and. nnnnn .eq. 0 .and. diffy .lt. 0.d0) mmphi= 1.d0 / n1 * (i-1)+1.d0/ n1 / 2.d0
-               if (lllll .eq. 3 .and. nnnnn .eq. 1) mmphi= 1.d0 / n2 * (j-1)
-               if (lllll .eq. 4 .and. nnnnn .eq. 2) mmphi= -1.d0 / n2 * (j-1)
-               if (lllll .eq. 4 .and. nnnnn .eq. 3 .and. diffy .ge. 0.d0) mmphi= -1.d0 / n1 * (i-1)-1.d0/ n1 / 2.d0
-               if (lllll .eq. 4 .and. nnnnn .eq. 3 .and. diffy .lt. 0.d0) mmphi= 0.d0
 #ifdef DEBUG
-               print*, mB, n2, n1
-               print*, "Magnetic field using Franks approach: ", dble(mB) / dble(n2) / dble(n1) * 39471.80806616257_dp, "T"
+   call MIO_Debug('HamHopRandomStrain',1)
 #endif /* DEBUG */
-               phase = -mmphi*2.0_dp*pi*mB
-               hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
-            end do
-         end do
-      else
-         aCC = aG/sqrt(3.0_dp)
-         if (frac) call AtomsSetCart()
-         do i=1,nAt
-            do j=1,Nneigh(i)
-               !if (abs(neighCell(1,j,i)).gt.1 .or. abs(neighCell(2,j,i)).gt.1) print*, i, neighCell(1,j,i), neighCell(2,j,i)
-               v1 = Rat(:,i) + Rat(:,NList(j,i))
-               ! neighCell(1...) contains n1-m1, neighCell(2...) contains n2-m2 (see Cresti's notes)
-               v2 = neighCell(1,j,i)*ucell(:,1) + neighCell(2,j,i)*ucell(:,2)
-               v2 = CrossProd(v1,v2)
-               v1 = CrossProd(Rat(:,i),Rat(:,NList(j,i))) + v2 ! Implementation of third expersion in Cresti's notes
-               phase = flux*v1(3)/1.0d20
-               hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
-            end do
-         end do
-      end if
-   end if
 
-   call MIO_InputParameter('Haldane.NNN',l,.false.)
-   if (l) then
+end subroutine HamHopRandomStrain
+
+!> Read the rigid reference structure that assigns the neighbor shell of every intralayer bond (internal procedure of HamHopping: it uses the variables of that routine)
+subroutine HamHopShellsFromRigid()
+
+#ifdef DEBUG
+   call MIO_Debug('HamHopShellsFromRigid',0)
+#endif /* DEBUG */
+
+      call MIO_InputParameter('Strain.ShellsRigidFile',shellRigidFile,'generateInit.xyz')
+      call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
+      if (.not. GBNtwoLayers) call MIO_Kill('shellsFromRigidPositions is implemented for GBNtwoLayers only','ham','HamHopping')
+      if (sCell /= 1) call MIO_Kill('shellsFromRigidPositions needs SuperCell 1','ham','HamHopping')
+#ifdef MPI
+      if (nProc > 1) call MIO_Kill('shellsFromRigidPositions needs a single MPI rank','ham','HamHopping')
+#endif /* MPI */
       if (frac) call AtomsSetCart()
-      call MIO_InputParameter('Haldane.SpecifyFlux',l,.false.)
-      call MIO_InputParameter('Haldane.SpecifyPhase',ll,.false.)
-      call MIO_InputParameter('Haldane.SpecifyRange',lll,.false.)
-      call MIO_InputParameter('Haldane.PaperOrientation',paperOrientation,.false.)
-      call MIO_InputParameter('Haldane.T2Complex',t2Complex,0.0_dp)
-      call MIO_InputParameter('Haldane.T2',t2, 0.0_dp)
-      call MIO_InputParameter('Haldane.OppositePhase',HaldaneOppositePhase,.false.)
-      ! Note: HaldaneBothLayers is deprecated. Use HaldaneLayerControl and HaldaneLayers instead.
-      ! For backward compatibility, we still check if it's set, but it's ignored if HaldaneLayerControl is enabled.
-      call MIO_InputParameter('Haldane.BothLayers',HaldaneBothLayers_deprecated,.false.)
-      if (HaldaneBothLayers_deprecated .and. .not. HaldaneLayerControl) then
-         call MIO_Print('WARNING: HaldaneBothLayers is deprecated. Use HaldaneLayerControl and HaldaneLayers instead.','ham')
-         call MIO_Print('  For backward compatibility, applying Haldane to all layers.','ham')
-      end if
-      if (l) then
-          call MIO_InputParameter('Haldane.Flux',flux,0.0_dp)
-          call MIO_InputParameter('Haldane.SetFluxQ',l,.false.)
-          if (l) then
-             HaldanePhase = 2.0_dp*pi*flux/1.0471975512_dp
-          else
-             HaldanePhase = 2.0_dp*pi*flux/fluxq
-          end if
-      else if (ll) then
-          call MIO_InputParameter('Haldane.Phase',HaldanePhase,0.0_dp)
-      else if (lll) then
-          HaldanePhase = HaldanePhase
-      end if
-      if (HaldaneOppositePhase) then
-        HaldanePhase = -HaldanePhase
-      end if
-      call MIO_Print('Haldane phase = '//trim(num2str(HaldanePhase,6))//' rad, T2 = '//trim(num2str(t2,6))// &
-        ' eV, expected gap = '//trim(num2str(2.0_dp*sqrt(3.0_dp)*3.0_dp*t2*sin(HaldanePhase),6))// &
-        ' eV (PRL 106, 236804)','ham')
-      !$OMP PARALLEL DO PRIVATE(d)
+      if (allocated(RshellRig)) deallocate(RshellRig)
+      allocate(RshellRig(3,nAt))
+      open(97,FILE=trim(shellRigidFile),STATUS='old')
+      do i=1,3
+         read(97,*)
+      end do
+      read(97,*) nshellDiff
+      if (nshellDiff /= nAt) call MIO_Kill('shellsRigidFile: atom count differs from the structure','ham','HamHopping')
       do i=1,nAt
-         ! >>> unset markers
-         d = hamUnset
-         ! <<< unset markers
-         ! Check if Haldane should be applied to this layer
-         if (.not. HaldaneEnabledForLayer(layerIndex(i))) then
-            cycle
-         else
-            do j=1,Nneigh(i)
-               if (layerIndex(NList(j,i)).eq.layerIndex(i)) then
-                  d = sqrt(dot_product(NeighD(1:2,j,i),NeighD(1:2,j,i)))
-                  if ((d-0.1).lt.aG .and. (d+0.1).gt.aG) then
-                    if (paperOrientation) then
-                         if (Species(i).eq.1) then   ! ---  B sublattice (see convention in my notes)
-                            if ((NeighD(1,j,i) .gt. 0.1_dp .and. abs(NeighD(2,j,i)) .lt. 0.01_dp) .or. &
-                                (NeighD(2,j,i) .lt. -0.1_dp .and. NeighD(1,j,i) .lt. -0.1_dp) .or. &
-                                (NeighD(2,j,i) .gt. 0.1_dp .and. NeighD(1,j,i) .lt. 0.1_dp)) then
-                                    hopp(j,i) = hopp(j,i)*exp(cmplx_i*HaldanePhase)
-                            else
-                                    hopp(j,i) = hopp(j,i)*exp(-cmplx_i*HaldanePhase)
-                            end if
-                         else if (Species(i).eq.2) then   ! ---  A sublattice
-                            if ((NeighD(1,j,i) .lt. -0.1_dp .and. abs(NeighD(2,j,i)) .lt. 0.01_dp) .or. &
-                                (NeighD(2,j,i) .gt. 0.1_dp .and. NeighD(1,j,i) .gt. 0.1_dp) .or. &
-                                (NeighD(2,j,i) .lt. -0.1_dp .and. NeighD(1,j,i) .gt. -0.1_dp)) then
-                                    hopp(j,i) = hopp(j,i)*exp(cmplx_i*HaldanePhase)
-                            else
-                                    hopp(j,i) = hopp(j,i)*exp(-cmplx_i*HaldanePhase)
-                            end if
-                         end if
-                     else ! when 60 degree rotaton compared to PRL paper
-                         if (Species(i).eq.2) then   ! ---  B sublattice (see convention in my notes)
-                            if ((NeighD(2,j,i) .gt. 0.1_dp .and. abs(NeighD(1,j,i)) .lt. 0.01_dp) .or. &
-                                (NeighD(1,j,i) .lt. -0.1_dp .and. NeighD(2,j,i) .lt. -0.1_dp) .or. &
-                                (NeighD(1,j,i) .gt. 0.1_dp .and. NeighD(2,j,i) .lt. -0.1_dp)) then
-                                    hopp(j,i) = hopp(j,i) + t2 * exp(cmplx_i*HaldanePhase)
-                            else
-                                    hopp(j,i) = hopp(j,i) + t2 * exp(-cmplx_i*HaldanePhase)
-                            end if
-                         else if (Species(i).eq.1) then   ! ---  A sublattice
-                            if ((NeighD(2,j,i) .lt. -0.1_dp .and. abs(NeighD(1,j,i)) .lt. 0.01_dp) .or. &
-                                (NeighD(1,j,i) .gt. 0.1_dp .and. NeighD(2,j,i) .gt. 0.1_dp) .or. &
-                                (NeighD(1,j,i) .lt. -0.1_dp .and. NeighD(2,j,i) .gt. 0.1_dp)) then
-                                    hopp(j,i) = hopp(j,i) + t2*exp(cmplx_i*HaldanePhase)
-                            else
-                                    hopp(j,i) = hopp(j,i)+ t2*exp(-cmplx_i*HaldanePhase)
-                            end if
-                         end if
-                     end if
-                  end if
+         read(97,*) shellSpc, (RshellRig(j,i),j=1,3)
+      end do
+      close(97)
+      nshellDiff = 0
+      dshellMax = 0.0_dp
+      do i=1,nAt
+         do j=1,Nneigh(i)
+            if (layerIndex(i).eq.layerIndex(NList(j,i))) then
+               d = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
+               if (d < 5.0_dp) then
+                  dsel = HamRigidBondXY(i, NList(j,i), NeighD(:,j,i))
+                  dshellMax = max(dshellMax, abs(dsel - d))
+                  if (abs(dsel - d) > 0.05_dp*dsel) nshellDiff = nshellDiff + 1
                end if
-            end do
-         end if
-      end do
-      !$OMP END PARALLEL DO
-   end if
-
-   call HamCheckFinite()
-   call HamCheckHermiticity()
-
-   call MIO_InputParameter('Output.WriteDataFiles',w,.false.)
-   if (w) then
-      ! One record holds every hopping of an atom; the default record length
-      ! (maxlinel) is too short for that.
-      call file%Open(name=trim(prefix)//'.'//'s.mag',serial=.true.,recl=64*maxNeigh)
-      u = file%GetUnit()
-      do i=1,nAt
-         write(u,*) (hopp(j,i),j=1,Nneigh(i))
-      end do
-      call file%Close()
-   end if
-   call MIO_InputParameter('Output.WriteDataFiles',l,.false.)
-   if (l) then
-      call file%Open(name=trim(prefix)//'.'//'e',serial=.true.)
-      u = file%GetUnit()
-      do i=1,nAt
-         write(u,*) H0(i), Species(i), layerIndex(i)
-      end do
-      call file%Close()
-      call file%Open(name=trim(prefix)//'.'//'HABreal',serial=.true.)
-      u = file%GetUnit()
-      if (associated(HABreal)) then
-         do i=1,min(nAt,size(HABreal))
-            write(u,*) HABreal(i)
+            end if
          end do
-      end if
-      call file%Close()
-      call file%Open(name=trim(prefix)//'.'//'HABimag',serial=.true.)
-      u = file%GetUnit()
-      if (associated(HABimag)) then
-         do i=1,min(nAt,size(HABimag))
-            write(u,*) HABimag(i)
-         end do
-      end if
-      call file%Close()
-      call file%Open(name=trim(prefix)//'.'//'pos',serial=.true.)
-      u = file%GetUnit()
-      do i=1,nAt
-         write(u,*) (Rat(j,i), j=1,3)
       end do
-      call file%Close()
-      call file%Open(name=trim(prefix)//'.'//'cell',serial=.true.)
-      u = file%GetUnit()
-      do i=1,3
-         write(u,*) (ucell(j,i), j=1,3)
-      end do
-      do i=1,3
-         write(u,*) (rcell(j,i), j=1,3)
-      end do
-      call file%Close()
-      call file%Open(name=trim(prefix)//'.'//'bottom.e',serial=.true.)
-      u = file%GetUnit()
-      do i=1,nAt
-         write(u,*) H0Bottom(i), Species(i)
-      end do
-      call file%Close()
-      call MIO_InputParameter('Moire.AddSecondMoire',zz,.false.)
-      if (zz) then
-          call file%Open(name=trim(prefix)//'.'//'top.e',serial=.true.)
-          u = file%GetUnit()
-          do i=1,nAt
-             write(u,*) H0Top(i), Species(i)
-          end do
-          call file%Close()
-      end if
-   end if
+      call MIO_Print('shellsFromRigidPositions: intralayer shells from '//trim(shellRigidFile) &
+            //'; max |rigid - in-plane| bond = '// &
+           trim(num2str(dshellMax,4))//' A, bonds differing by > 5 % : '//trim(num2str(nshellDiff)),'ham')
 
-   ! Zeeman effect is now applied in diag.F90 via ApplySOCtoHamiltonian routine
-   ! This allows proper spin-channel-aware application for spin-polarized calculations
-
-   if (magfield) then
-      ! Landau level calculations (Peierls phase) go here
-      ! (Currently empty - all Landau level code was moved elsewhere)
-   end if
-
-#ifdef TIMER
-   call MIO_TimerStop('ham')
-#endif /* TIMER */
 #ifdef DEBUG
-   call MIO_Debug('HamHopping',1)
+   call MIO_Debug('HamHopShellsFromRigid',1)
 #endif /* DEBUG */
+
+end subroutine HamHopShellsFromRigid
 
 end subroutine HamHopping
 
