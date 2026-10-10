@@ -262,7 +262,7 @@ subroutine AtomsPos()
              layerIndex(i) = 1
           end do
           !$OMP END PARALLEL DO
-          call MIO_InputParameter('distanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
+          call MIO_InputParameter('Moire.DistanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
           if (distanceDependentEffectiveModel) then
              call MIO_Allocate(interlayerDistances,nAt*sCell*sCell,'interlayerDistances','atoms')
              do i=1,nAt
@@ -540,7 +540,7 @@ subroutine AtomsPos()
       call MIO_InputParameter('Structure.CellSize',m(1),50)
       call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
       call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
-      call MIO_InputParameter('twistedBilayerAngle',BLAngle,0.0_dp) ! Ref. PRB 76, 73103
+      call MIO_InputParameter('Structure.TwistedBilayerAngle',BLAngle,0.0_dp) ! Ref. PRB 76, 73103
       call MIO_InputParameter('Structure.BilayerShiftFactor',shiftFactor,0) ! Ref. PRB 76, 73103
       m(1) = m(1)*sCell
       m(2) = 0

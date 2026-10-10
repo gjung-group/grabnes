@@ -16,23 +16,12 @@ name (if both are given, the present name is used and the solver prints a warnin
 
 | Key | Former name | Type | Default | Read in |
 | --- | --- | --- | --- | --- |
-| `addDisplacements` |  | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `AmplitudeOfSquare` |  | real | `1.0` | ham.F90: HamOnSite |
-| `AmplitudeOfSquare2` |  | real | `0.01` | ham.F90: HamOnSite |
-| `AmplitudeOfSquare3` |  | real | `0.01` | ham.F90: HamOnSite |
 | `Bands.AroundGrapheneK` |  | logical | `.false.` | calc.F90: CalcDiag |
 | `Bands.GrapheneUnitCell` |  | logical | `.false.` | calc.F90: CalcDiag |
 | `Bands.NumPoints` |  | integer | `100` | diag.F90: DiagBands; diag.F90: DiagBandsAroundK; diag.F90: DiagBandsG; ... (5 places) |
 | `Bands.SparseNeig` |  | integer | `100` | diag.F90: DiagBands |
 | `Bands.UseDifferentLatticeVectors` |  | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagBandsRashba; diag.F90: DiagChern |
 | `Bands.UseSameNumberOfPoints` |  | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagChern |
-| `BfactorC0` |  | real | `3.1` | ham.F90: HamOnSite |
-| `BfactorCab` |  | real | `3.3` | ham.F90: HamHopping |
-| `BfactorCz` |  | real | `3.1` | ham.F90: HamOnSite |
-| `bigKVecX` |  | real | `0.0` | calc.F90: CalcTunn |
-| `bigKVecY` |  | real | `0.0` | calc.F90: CalcTunn |
-| `bigKVecZ` |  | real | `0.0` | calc.F90: CalcTunn |
-| `BmagZeeman` |  | real | `0.0` | magf.F90: MagfValue |
 | `BNBN.Diag` | `BNBNDiag` | logical | `.false.` | ham.F90: HamOnSite |
 | `BNBN.UseDisplacementFile` | `BNBNuseDisplacementFile` | logical | `.false.` | ham.F90: HamOnSite |
 | `Calculate.3DBands` |  | logical | `.false.` | calc.F90: CalcDiag |
@@ -45,8 +34,6 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Calculate.Spectral` |  | logical | `.false.` | calc.F90: CalcDiag |
 | `Calculate.SpectralEnergyCut` |  | logical | `.false.` | calc.F90: CalcDiag |
 | `Calculate.SpectralEnergyCutNickDale` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `CApAp0` |  | real | `0.0` | ham.F90: HamOnSite |
-| `CBpBp0` |  | real | `0.0` | ham.F90: HamOnSite |
 | `Diag.3DBandsGridX` |  | integer | `10` | calc.F90: CalcDiag |
 | `Diag.3DBandsGridY` |  | integer | `10` | calc.F90: CalcDiag |
 | `Diag.Calc` |  | logical | `.false.` | calc.F90: CalcSelect |
@@ -74,6 +61,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Diag.GWeightsBandMin` |  | integer | `1` | calc.F90: CalcDiag |
 | `Diag.GWeightsHam` |  | logical | `.false.` | calc.F90: CalcDiag |
 | `Diag.GWeightsTop` |  | integer | `8` | calc.F90: CalcDiag |
+| `Diag.KGrid` | `KGrid` |  | `[1,1,1]` | diag.F90: Diag3DBands; diag.F90: DiagChern; diag.F90: DiagDOS; ... (8 places) |
 | `Diag.LayerWeights` |  | logical | `.false.` | calc.F90: CalcDiag |
 | `Diag.LayerWeightsBandMax` |  | integer | `0` | calc.F90: CalcDiag |
 | `Diag.LayerWeightsBandMin` |  | integer | `0` | calc.F90: CalcDiag |
@@ -111,24 +99,12 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Disorder.SublattAmp` | `SublattAmp` | real | `2.0` | ham.F90: HamOnSite |
 | `Disorder.SublatticeDisorder` | `SublatticeDisorder` | logical | `.false.` | ham.F90: HamOnSite |
 | `Disorder.SublattPct` | `SublattPct` | real | `0.1` | ham.F90: HamOnSite |
-| `distanceDependentEffectiveModel` |  | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `dontUseInplaneMoire` |  | logical | `.false.` | ham.F90: HamOnSite |
 | `DOS.Emax` |  | real | `10.0` | diag.F90: Diag3DBands; diag.F90: DiagDOS; diag.F90: DiagPDOS |
 | `DOS.Emin` |  | real | `-10.0` | diag.F90: Diag3DBands; diag.F90: DiagDOS; diag.F90: DiagPDOS |
-| `EdgeHopping` |  | logical | `.false.` | interface.F90: InterfacePot1 |
-| `EdgeHoppingAmp` |  | real | `0.2` | interface.F90: InterfacePot1 |
-| `EdgeHoppingDamp` |  | real | `0.65` | interface.F90: InterfacePot1 |
 | `GBN.Angle` | `GBNAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `GBN.OffDiag` | `GBNOffDiag` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping |
 | `GBN.UseDisplacementFile` | `GBNuseDisplacementFile` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
 | `GBN.UseHarmonicApprox` | `GBNuseHarmonicApprox` | logical | `.false.` | ham.F90: HamOnSite |
-| `GlobalPhiL1` |  | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `GlobalPhiL2` |  | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `GlobalPhiL2a` |  | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `GlobalPhiL2b` |  | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `GlobalPhiL3` |  | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `GlobalTwist` |  | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `GlobalTwist2` |  | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Haldane.BothLayers` | `HaldaneBothLayers` | logical | `.false.` | ham.F90: HamHopping |
 | `Haldane.Flux` | `HaldaneFlux` | real | `0.0` | ham.F90: HamHopping |
 | `Haldane.LayerControl` | `HaldaneLayerControl` | logical | `.false.` | ham.F90: HamInit |
@@ -145,19 +121,45 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `HaldPhase.FinalInteger` |  | integer | `0` | magf.F90: HaldPhaseInit |
 | `HaldPhase.InitialInteger` |  | integer | `0` | magf.F90: HaldPhaseInit |
 | `HaldPhase.Step` |  | integer | `1` | magf.F90: HaldPhaseInit |
+| `Hopping.tA1A1_1` | `tA1A1_1` | real | `-0.2238` | ham.F90: HamHopping |
+| `Hopping.tA1A1_2` | `tA1A1_2` | real | `-0.0446` | ham.F90: HamHopping |
+| `Hopping.tA1A2` | `tA1A2` | real | `-0.0883` | ham.F90: HamHopping |
+| `Hopping.tA1A2_2` | `tA1A2_2` | real | `0.0277` | ham.F90: HamHopping |
+| `Hopping.tA1A3` | `tA1A3` | real | `-0.00541` | ham.F90: HamHopping |
+| `Hopping.tA1A3_2` | `tA1A3_2` | real | `0.0009` | ham.F90: HamHopping |
+| `Hopping.tA1B2` | `tA1B2` | real | `-0.1418` | ham.F90: HamHopping |
+| `Hopping.tA1B2_2` | `tA1B2_2` | real | `0.0755` | ham.F90: HamHopping |
+| `Hopping.tA1B3` | `tA1B3` | real | `-0.007551` | ham.F90: HamHopping |
+| `Hopping.tA1B3_1` | `tA1B3_1` | real | `-0.001738` | ham.F90: HamHopping |
+| `Hopping.tA1B3_2` | `tA1B3_2` | real | `0.001772` | ham.F90: HamHopping |
+| `Hopping.tA2A2_1` | `tA2A2_1` | real | `-0.2264` | ham.F90: HamHopping |
+| `Hopping.tA2A2_2` | `tA2A2_2` | real | `-0.044` | ham.F90: HamHopping |
+| `Hopping.tB1A2` | `tB1A2` | real | `-0.3372` | ham.F90: HamHopping |
+| `Hopping.tB1A2_1` | `tB1A2_1` | real | `0.00786` | ham.F90: HamHopping |
+| `Hopping.tB1A2_2` | `tB1A2_2` | real | `0.00078` | ham.F90: HamHopping |
+| `Hopping.tB1A3` | `tB1A3` | real | `-0.00853` | ham.F90: HamHopping |
+| `Hopping.tB1A3_2` | `tB1A3_2` | real | `0.0028` | ham.F90: HamHopping |
+| `Hopping.tB1B1_1` | `tB1B1_1` | real | `-0.2269` | ham.F90: HamHopping |
+| `Hopping.tB1B1_2` | `tB1B1_2` | real | `-0.04606` | ham.F90: HamHopping |
+| `Hopping.tB1B2` | `tB1B2` | real | `-0.08965` | ham.F90: HamHopping |
+| `Hopping.tB1B2_2` | `tB1B2_2` | real | `0.0275` | ham.F90: HamHopping |
 | `Hubbard.AFOrdering` | `AFOrdering` | logical | `.true.` | scf.F90: SCFGetCharge |
 | `Hubbard.AFOrderingLayer` | `AFOrderingLayer` | logical | `.true.` | scf.F90: SCFGetCharge |
 | `Hubbard.EnableSCF` | `EnableSCF` | logical | `.true.` | calc.F90: CalcDiag |
 | `Hubbard.FOrderingLayer` | `FOrderingLayer` | logical | `.true.` | scf.F90: SCFGetCharge |
+| `Hubbard.MOCharge` | `MOCharge` | real | `0.0` | scf.F90: SCFGetCharge |
 | `Hubbard.SCFMaxIterations` | `SCFMaxIterations` | integer | `100` | scf.F90: SCFGetCharge |
 | `Hubbard.SCFMix` | `SCFMix` | real | `0.5` | scf.F90: SCFGetCharge |
 | `Hubbard.SCFTolerance` | `SCFTolerance` | real | `0.0001` | scf.F90: SCFGetCharge |
 | `Hubbard.U_B` | `HubbardU_B` | real | `3.0` | tbpar.f90: TBInit |
 | `Hubbard.U_C` | `HubbardU_C` | real | `3.0` | tbpar.f90: TBInit |
 | `Hubbard.U_N` | `HubbardU_N` | real | `3.0` | tbpar.f90: TBInit |
-| `HybridPercentage` |  | real | `1.0` | hybrid.F90: HybridGen |
-| `HybridRadius` |  | real | `10.0` | hybrid.F90: HybridGen |
-| `HybridRandomSites` |  | logical | `.false.` | hybrid.F90: HybridGen |
+| `Hybrid.Percentage` | `HybridPercentage` | real | `1.0` | hybrid.F90: HybridGen |
+| `Hybrid.Radius` | `HybridRadius` | real | `10.0` | hybrid.F90: HybridGen |
+| `Hybrid.RandomSites` | `HybridRandomSites` | logical | `.false.` | hybrid.F90: HybridGen |
+| `Interface.EdgeHopping` | `EdgeHopping` | logical | `.false.` | interface.F90: InterfacePot1 |
+| `Interface.EdgeHoppingAmp` | `EdgeHoppingAmp` | real | `0.2` | interface.F90: InterfacePot1 |
+| `Interface.EdgeHoppingDamp` | `EdgeHoppingDamp` | real | `0.65` | interface.F90: InterfacePot1 |
 | `Interlayer.AddExponentialDecayForDihedral` | `addExponentialDecayForDihedral` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.AddPressureDependence` | `addPressureDependence` | logical | `.true.` | ham.F90: HamHopping |
 | `Interlayer.AddSecondLayerInteractions` | `addSecondLayerInteractions` | logical | `.false.` | neigh.F90: fastNNnotsquareBulkSmall |
@@ -169,12 +171,14 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Interlayer.CAA0` | `CAA0` | real | `3.332` | ham.F90: HamOnSite |
 | `Interlayer.CApAp` | `CApAp` | real | `-0.005703` | ham.F90: HamOnSite |
 | `Interlayer.CApAp` | `CApAp` | real | `0.00110` | ham.F90: HamOnSite |
+| `Interlayer.CApAp0` | `CApAp0` | real | `0.0` | ham.F90: HamOnSite |
 | `Interlayer.CBB` | `CBB` | real | `0.00110` | ham.F90: HamOnSite |
 | `Interlayer.CBB` | `CBB` | real | `0.004826` | ham.F90: HamOnSite |
 | `Interlayer.CBB0` | `CBB0` | real | `-1.493` | ham.F90: HamOnSite |
 | `Interlayer.CBB0` | `CBB0` | real | `0.0` | ham.F90: HamOnSite |
 | `Interlayer.CBpBp` | `CBpBp` | real | `-0.003596` | ham.F90: HamOnSite |
 | `Interlayer.CBpBp` | `CBpBp` | real | `0.00110` | ham.F90: HamOnSite |
+| `Interlayer.CBpBp0` | `CBpBp0` | real | `0.0` | ham.F90: HamOnSite |
 | `Interlayer.ChangeLatticeParameterForSrivaniModel` | `changeLatticeParameterForSrivaniModel` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.CorrugatedInterlayerTwoCenter` | `corrugatedInterlayerTwoCenter` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.CouplingFactor` | `couplingFactor` | real | `1.0` | ham.F90: HamHopping |
@@ -207,7 +211,9 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Interlayer.InterfaceClambda` | `InterfaceClambda` | integer | `1` | interface.F90: InterfacePot1 |
 | `Interlayer.InterfaceClambda_B` | `InterfaceClambda_B` | integer | `1` | interface.F90: InterfacePot1 |
 | `Interlayer.InterfaceClambda_N` | `InterfaceClambda_N` | integer | `1` | interface.F90: InterfacePot1 |
+| `Interlayer.KaxirasCutoff` | `KaxirasCutoff` | real | `1.0` | ham.F90: HamHopping |
 | `Interlayer.KoshinoSR` | `KoshinoSR` | logical | `.false.` | ham.F90: HamHopping |
+| `Interlayer.MinDelta` | `minDelta` | real | `1.0` | ham.F90: HamHopping |
 | `Interlayer.NewFittingFunctions` | `newFittingFunctions` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.OldParameterSet` | `oldParameterSet` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.OnlyV0` | `onlyV0` | logical | `.false.` | ham.F90: HamHopping |
@@ -230,6 +236,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Interlayer.SublatticeDependent` | `sublatticeDependent` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.SublatticeIndependent` | `sublatticeIndependent` | logical | `.false.` | ham.F90: HamHopping |
 | `Interlayer.SwitchV3Sign` | `switchV3Sign` | logical | `.false.` | ham.F90: HamHopping |
+| `Interlayer.TwistedBLtbt` | `twistedBLtbt` | real | `0.113` | ham.F90: HamHopping |
 | `Interlayer.TypeOfBL` | `TypeOfBL` | string | `'None'` | ham.F90: HamHopping |
 | `Interlayer.TypeOfSL` | `TypeOfSL` | string | `'None'` | ham.F90: HamHopping |
 | `Interlayer.UseBNGKaxiras` | `useBNGKaxiras` | logical | `.false.` | ham.F90: HamHopping |
@@ -294,19 +301,19 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.06618` | ham.F90: HamHopping |
 | `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.06624` | ham.F90: HamHopping |
 | `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.07326` | ham.F90: HamHopping |
+| `Intralayer.T2Value` | `t2Value` | real | `0.0083` | ham.F90: HamHopping |
 | `Intralayer.UseOldGrapheneF2G2` | `useOldGrapheneF2G2` | logical | `.false.` | ham.F90: HamHopping |
-| `KaxirasCutoff` |  | real | `1.0` | ham.F90: HamHopping |
-| `KGrid` |  |  | `[1,1,1]` | diag.F90: Diag3DBands; diag.F90: DiagChern; diag.F90: DiagDOS; ... (8 places) |
-| `KGridCut` |  | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut_v2 |
-| `KGridCutX` |  | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
-| `KGridCutY` |  | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
-| `KGridLowerGridHalf` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
 | `Kubo.Calc` |  | logical | `.true.` | calc.F90: CalcSelect |
 | `Kubo.EnergyMax` | `EnergyMax` | real | `4.0` | calc.F90: CalcKubo |
 | `Kubo.EnergyMin` | `EnergyMin` | real | `-4.0` | calc.F90: CalcKubo |
 | `Kubo.Epsilon` | `Epsilon` | real | `0.001` | diag.F90: DiagHamChern |
 | `Kubo.Epsilon` | `Epsilon` | real | `0.01` | calc.F90: CalcKubo; diag.F90: Diag3DBands; diag.F90: DiagDOS; ... (11 places) |
+| `Kubo.NumberOfBNAtoms1` | `numberOfBNAtoms1` | integer | `5832` | calc.F90: CalcKubo |
+| `Kubo.NumberOfBNAtoms2` | `numberOfBNAtoms2` | integer | `5832` | calc.F90: CalcKubo |
+| `Kubo.NumberOfCAtoms` | `numberOfCAtoms` | integer | `6050` | calc.F90: CalcKubo |
 | `Kubo.NumberofEnergyPoints` | `NumberofEnergyPoints` | integer | `1000` | calc.F90: CalcKubo; diag.F90: Diag3DBands; diag.F90: DiagDOS; ... (11 places) |
+| `Kubo.NumberOfLayers` | `numberOfLayers` | integer | `2` | calc.F90: CalcKubo; diag.F90: DiagPDOS |
+| `Kubo.NumberofPolynomials` | `NumberofPolynomials` | integer | `100` | calc.F90: CalcKubo |
 | `Kubo.NumberofTimeSteps` | `NumberofTimeSteps` | integer | `500` | calc.F90: CalcKubo |
 | `Kubo.PDOS` | `PDOS` | logical | `.false.` | calc.F90: CalcKubo |
 | `Kubo.PDOSAtomList` | `PDOSAtomList` | logical | `.false.` | calc.F90: CalcKubo |
@@ -329,12 +336,12 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Kubo.PDOSymax` | `PDOSymax` | real | `5.0` | calc.F90: CalcKubo |
 | `Kubo.PDOSymin` | `PDOSymin` | real | `0.0` | calc.F90: CalcKubo |
 | `Kubo.RecursionNumber` | `RecursionNumber` | integer | `700` | calc.F90: CalcKubo |
+| `Kubo.SeedSet` | `SeedSet` | integer | `1235` | kubo.F90: KuboInitWFLayerAndSpeciesDOS; kubo.F90: KuboInitWFLayerDOS |
 | `Kubo.SeedValue` | `seedValue` | integer | `123456` | kubo.F90: KuboInitWF; random.F90: RandSeedFromInput |
 | `Kubo.SetSeed` | `setSeed` | logical | `.false.` | kubo.F90: KuboInitWF; random.F90: RandSeedFromInput |
+| `Kubo.TimeEvolutionInYDirection` | `timeEvolutionInYDirection` | logical | `.false.` | kubosubs.F90: KuboEvol |
 | `Kubo.TimeStep` | `TimeStep` | real | `5.0` | calc.F90: CalcKubo |
-| `Latticepercent` |  | real | `-0.018181818181818` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `LatticepercentFactor` |  | real | `1.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `MagField` |  | real | `0.0` | magf.F90: MagfInit |
+| `Kubo.WriteNumberofSteps` | `WriteNumberofSteps` | integer | `10` | calc.F90: CalcKubo |
 | `MagField.FinalB` |  | real | `0.0` | magf.F90: MagfInit |
 | `MagField.FinalInteger` |  | integer | `0` | magf.F90: MagfInit |
 | `MagField.FrankMagneticField` | `FrankMagneticField` | logical | `.false.` | calc.F90: CalcSelect; ham.F90: HamHopping |
@@ -344,10 +351,11 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `MagField.Integer` |  | integer | `1` | ham.F90: HamHopping |
 | `MagField.IntegerStep` |  | integer | `1` | magf.F90: MagfInit |
 | `MagField.Step` |  | real | `1.0` | magf.F90: MagfInit |
-| `minDelta` |  | real | `1.0` | ham.F90: HamHopping |
-| `minZ` |  | real | `1.0` | ham.F90: HamOnSite |
-| `MOCharge` |  | real | `0.0` | scf.F90: SCFGetCharge |
+| `MagField.Value` | `MagField` | real | `0.0` | magf.F90: MagfInit |
 | `Moire.AddSecondMoire` | `MoireAddSecondMoire` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Moire.BfactorC0` | `BfactorC0` | real | `3.1` | ham.F90: HamOnSite |
+| `Moire.BfactorCab` | `BfactorCab` | real | `3.3` | ham.F90: HamHopping |
+| `Moire.BfactorCz` | `BfactorCz` | real | `3.1` | ham.F90: HamOnSite |
 | `Moire.BilayerBottomAngle` | `MoireBilayerBottomAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Moire.BilayerBottomXMax` | `MoireBilayerBottomXMax` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
 | `Moire.BilayerBottomXMin` | `MoireBilayerBottomXMin` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
@@ -370,6 +378,8 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Moire.BLShiftRange` | `moireBLShiftRange` | logical | `.false.` | moireBLShift.F90: moireBLShiftInit; moireBLShift.F90: moireBLShiftValue |
 | `Moire.BLShiftRangeSteps` | `moireBLShiftRangeSteps` | integer | `10` | moireBLShift.F90: moireBLShiftInit |
 | `Moire.CDW` | `moireCDW` | logical | `.false.` | ham.F90: HamOnSite |
+| `Moire.DistanceDependentEffectiveModel` | `distanceDependentEffectiveModel` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Moire.DontUseInplaneMoire` | `dontUseInplaneMoire` | logical | `.false.` | ham.F90: HamOnSite |
 | `Moire.FirstMoireMassFactor` | `MoireFirstMoireMassFactor` | real | `1.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Moire.H0AndHZ` | `MoireH0AndHZ` | logical | `.false.` | ham.F90: HamOnSite |
 | `Moire.HeightAmp` | `MoireHeightAmp` | real | `0.1` | ham.F90: HamInit |
@@ -377,6 +387,8 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Moire.Kekule` | `MoireKekule` | logical | `.false.` | ham.F90: HamOnSite |
 | `Moire.KekuleAngle` | `MoireKekuleAngle` | real | `30.0` | ham.F90: HamOnSite |
 | `Moire.KekuleEpsFactor` | `MoireKekuleEpsFactor` |  | `sqrt(3.0)` | ham.F90: HamOnSite |
+| `Moire.LatticePercent` | `Latticepercent` | real | `-0.018181818181818` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Moire.LatticePercentFactor` | `LatticepercentFactor` | real | `1.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Moire.LayerShift1` | `MoireLayerShift1` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Moire.LayerShift2` | `MoireLayerShift2` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Moire.NoH0AndHZ` | `MoireNoH0AndHZ` | logical | `.false.` | ham.F90: HamOnSite |
@@ -404,11 +416,13 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Moire.PotPhiabG` | `MoirePotPhiabG` | real | `3.5` | ham.F90: HamHopping |
 | `Moire.PotPhiz` | `MoirePotPhiz` | real | `0.147131255943122` | ham.F90: HamOnSite |
 | `Moire.PreFactor` | `MoirePreFactor` | real | `1.0` | ham.F90: HamOnSite |
+| `Moire.RemoveTopMoireInL2` | `removeTopMoireInL2` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Moire.Sachs` | `MoireSachs` | logical | `.false.` | ham.F90: HamOnSite |
 | `Moire.SecondMoireMassFactor` | `MoireSecondMoireMassFactor` | real | `1.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Moire.SecondMoireRotateFirst` | `MoireSecondMoireRotateFirst` | logical | `.true.` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Moire.Strain` | `MoireStrain` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamInit |
 | `Moire.StrainFactor` | `MoireStrainFactor` | real | `3.37` | ham.F90: HamInit |
+| `Moire.SwitchHzjj` | `switchHzjj` | logical | `.false.` | ham.F90: HamOnSite |
 | `Moire.SymmA` | `MoireSymmA` | real | `0.01` | ham.F90: HamOnSite |
 | `Moire.SymmB` | `MoireSymmB` | real | `0.01` | ham.F90: HamOnSite |
 | `Moire.SymmetricPot` | `MoireSymmetricPot` | logical | `.false.` | ham.F90: HamOnSite |
@@ -432,6 +446,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Neigh.CompareAll.UltraSmall` |  | logical | `.false.` | neigh.F90: NeighList |
 | `Neigh.CutAtNN3` |  | logical | `.false.` | ham.F90: HamInit |
 | `Neigh.Distance` |  |  | `alatt/sqrt(3.0)` | neigh.F90: NeighListOld |
+| `Neigh.ExpectedNumber` | `neighborExpectedNumber` | integer | `3` | neigh.F90: NeighList |
 | `Neigh.fastNN` |  | logical | `.false.` | ham.F90: HamInit |
 | `Neigh.fastNNnotsquare` |  | logical | `.true.` | ham.F90: HamInit |
 | `Neigh.fastNNnotsquareNotRectangle` |  | logical | `.false.` | ham.F90: HamInit |
@@ -440,28 +455,20 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Neigh.LayerNeighbors` |  | integer | `0` | ham.F90: HamInit |
 | `Neigh.LayerNeighbors` |  | integer | `1` | neigh.F90: NeighList |
 | `Neigh.LayerNeighbors` |  | integer | `2` | neigh.F90: NeighList |
+| `Neigh.Only000Cell` | `only000Cell` | logical | `.false.` | neigh.F90: fastNNnotsquareSmall |
 | `Neigh.Print` |  | logical | `.false.` | neigh.F90: NeighList; neigh.F90: NeighListOld |
-| `neighborExpectedNumber` |  | integer | `3` | neigh.F90: NeighList |
-| `neighborSafetyCheck` |  | logical | `.false.` | neigh.F90: NeighList |
-| `numberOfBNAtoms1` |  | integer | `5832` | calc.F90: CalcKubo |
-| `numberOfBNAtoms2` |  | integer | `5832` | calc.F90: CalcKubo |
-| `numberOfCAtoms` |  | integer | `6050` | calc.F90: CalcKubo |
-| `numberOfLayers` |  | integer | `2` | calc.F90: CalcKubo; diag.F90: DiagPDOS |
-| `numberOfMoires` |  | integer | `1` | calc.F90: CalcTunn |
-| `NumberofPolynomials` |  | integer | `100` | calc.F90: CalcKubo |
-| `NumberOfWidthHoneycomb` |  | integer | `1` | ham.F90: HamOnSite |
-| `only000Cell` |  | logical | `.false.` | neigh.F90: fastNNnotsquareSmall |
+| `Neigh.ReadDetails` | `readNeighborDetails` | logical | `.false.` | neigh.F90: NeighReadDataFiles |
+| `Neigh.SafetyCheck` | `neighborSafetyCheck` | logical | `.false.` | neigh.F90: NeighList |
 | `Output.KeepWaveFunction` | `keepWaveFunction` | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagChern |
 | `Output.PrintBubble` | `printBubble` | logical | `.false.` | ham.F90: HamInit |
 | `Output.ReadDataFiles` | `ReadDataFiles` | logical | `.false.` | calc.F90: CalcSelect; ham.F90: HamInit; neigh.F90: fastNNnotsquare; ... (6 places) |
 | `Output.WriteDataFiles` | `WriteDataFiles` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamInit; ham.F90: HamOnSite; ... (8 places) |
-| `periodicStrainPeriod` |  | integer | `1` | ham.F90: HamHopping |
-| `periodicStrainu0` |  | real | `0.1` | ham.F90: HamHopping |
-| `PhaseOfSquareX` |  | real | `0.0` | ham.F90: HamOnSite |
-| `PhaseOfSquareY` |  | real | `0.0` | ham.F90: HamOnSite |
 | `Potential.AddOnsiteEnergyShift` | `addOnsiteEnergyShift` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.AddSublatticeMassterm` | `addSublatticeMassterm` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.AddZTerm` | `AddZTerm` | logical | `.false.` | ham.F90: HamOnSite |
+| `Potential.AmplitudeOfSquare` | `AmplitudeOfSquare` | real | `1.0` | ham.F90: HamOnSite |
+| `Potential.AmplitudeOfSquare2` | `AmplitudeOfSquare2` | real | `0.01` | ham.F90: HamOnSite |
+| `Potential.AmplitudeOfSquare3` | `AmplitudeOfSquare3` | real | `0.01` | ham.F90: HamOnSite |
 | `Potential.ArmChairShape` | `ArmChairShape` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.CDWAmplitude` | `CDWAmplitude` | real | `0.01` | ham.F90: HamOnSite |
 | `Potential.CDWPeriod` | `CDWPeriod` | real | `1.0` | ham.F90: HamOnSite |
@@ -474,8 +481,12 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Potential.CosinusModulationUsingPeriodYDirection` | `cosinusModulationUsingPeriodYDirection` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.FourLayerOnsiteShifts` | `fourLayerOnsiteShifts` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.HelicalTwistedMBM_CDW` | `helicalTwistedMBM_CDW` | logical | `.false.` | ham.F90: HamOnSite |
+| `Potential.MinZ` | `minZ` | real | `1.0` | ham.F90: HamOnSite |
+| `Potential.NumberOfWidthHoneycomb` | `NumberOfWidthHoneycomb` | integer | `1` | ham.F90: HamOnSite |
 | `Potential.OnlyBottomLayerMassTerm` | `onlyBottomLayerMassTerm` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.OnsiteEnergyShift` | `onsiteEnergyShift` | real | `0.150` | ham.F90: HamOnSite |
+| `Potential.PhaseOfSquareX` | `PhaseOfSquareX` | real | `0.0` | ham.F90: HamOnSite |
+| `Potential.PhaseOfSquareY` | `PhaseOfSquareY` | real | `0.0` | ham.F90: HamOnSite |
 | `Potential.PNP` | `PNP` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.PNPAmp` | `PNPAmp` | real | `0.01` | ham.F90: HamOnSite |
 | `Potential.PNPDelta` | `PNPDelta` | real | `10.0` | calc.F90: CalcKubo; ham.F90: HamOnSite |
@@ -491,6 +502,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Potential.SquareChecker2219` | `SquareChecker2219` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.SquareFunction` | `SquareFunction` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.SquareFunction2` | `SquareFunction2` | logical | `.false.` | ham.F90: HamOnSite |
+| `Potential.SublatticeBasis` | `sublatticeBasis` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.SublatticeMassterm` | `sublatticeMassterm` | real | `0.150` | ham.F90: HamOnSite |
 | `Potential.TwoDimension` | `TwoDimension` | logical | `.false.` | ham.F90: HamOnSite |
 | `Potential.TwoDimensional` | `TwoDimensional` | logical | `.false.` | ham.F90: HamOnSite |
@@ -499,16 +511,11 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Potential.Zterm1DAmp` | `Zterm1DAmp` | real | `0.01` | ham.F90: HamOnSite |
 | `Potential.Zterm1DDelta` | `Zterm1DDelta` | real | `10.0` | ham.F90: HamOnSite |
 | `Potential.Zterm1DKink` | `Zterm1DKink` | logical | `.false.` | ham.F90: HamOnSite |
-| `PseudoZeemanFactor` |  | real | `0.00016` | ham.F90: HamInit |
-| `RandomTest` |  | logical | `.false.` | random_old.F90: RandInit |
-| `RandomTestNumber` |  | integer | `100` | random_old.F90: RandInit |
-| `readNeighborDetails` |  | logical | `.false.` | neigh.F90: NeighReadDataFiles |
-| `removeTopMoireInL2` |  | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `rotationAngle` |  | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Random.Test` | `RandomTest` | logical | `.false.` | random_old.F90: RandInit |
+| `Random.TestNumber` | `RandomTestNumber` | integer | `100` | random_old.F90: RandInit |
 | `Run.Description` | `Description` | string | `''` | grabnes_start.F90: GrabnesStart |
 | `Run.Prefix` | `Prefix` | string | `'grabnes'` | grabnes_start.F90: GrabnesStart |
 | `Run.TypeOfSystem` | `TypeOfSystem` | string | `'Graphene'` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamHopping; ... (12 places) |
-| `SeedSet` |  | integer | `1235` | kubo.F90: KuboInitWFLayerAndSpeciesDOS; kubo.F90: KuboInitWFLayerDOS |
 | `SOC.Intrinsic` | `IntrinsicSOCterm` | logical | `.false.` | ham.F90: HamInit |
 | `SOC.Ising` | `IsingSOCterm` | logical | `.false.` | ham.F90: HamInit |
 | `SOC.LambdaI` | `LambdaI` | real | `0.0` | ham.F90: HamInit |
@@ -526,6 +533,10 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Spectral.energyGridResolution` |  | real | `0.005` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
 | `Spectral.FoldByOne` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
 | `Spectral.GaussianConvolution` |  | logical | `.false.` | diag.F90: DiagSpectralFunction; diag.F90: DiagSpectralFunctionKGrid; diag.F90: DiagSpectralFunctionKGridInequivalent; ... (7 places) |
+| `Spectral.KGridCut` | `KGridCut` | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut_v2 |
+| `Spectral.KGridCutX` | `KGridCutX` | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
+| `Spectral.KGridCutY` | `KGridCutY` | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
+| `Spectral.KGridLowerGridHalf` | `KGridLowerGridHalf` | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
 | `Spectral.Lee` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalent_v2 |
 | `Spectral.Nishi` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
 | `Spectral.numberOfTS` |  | integer | `1` | diag.F90: DiagSpectralWeightNishi |
@@ -574,6 +585,13 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Stack.FourLayersZ4` | `fourLayersZ4` | real | `6.6` | atoms.F90: AtomsPos |
 | `Stack.GBNtwoLayers` | `GBNtwoLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Stack.GBNtwoLayersF2G2s` | `GBNtwoLayersF2G2s` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Stack.GlobalPhiL1` | `GlobalPhiL1` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Stack.GlobalPhiL2` | `GlobalPhiL2` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Stack.GlobalPhiL2a` | `GlobalPhiL2a` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Stack.GlobalPhiL2b` | `GlobalPhiL2b` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Stack.GlobalPhiL3` | `GlobalPhiL3` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Stack.GlobalTwist` | `GlobalTwist` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Stack.GlobalTwist2` | `GlobalTwist2` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Stack.HelicalTwistedMBM` | `helicalTwistedMBM` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Stack.MiddleTwist` | `middleTwist` |  | `.not. forceBilayerF2G2Intralayer` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Stack.NonBulkSmall` | `nonBulkSmall` | logical | `.false.` | ham.F90: HamInit |
@@ -656,6 +674,8 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Strain.ManyBubbles` | `manyBubbles` | logical | `.false.` | ham.F90: HamHopping |
 | `Strain.OnlyFirstNeighborRealStrain` | `onlyFirstNeighborRealStrain` | logical | `.false.` | ham.F90: HamHopping |
 | `Strain.PeriodicStrain` | `periodicStrain` | logical | `.false.` | ham.F90: HamHopping |
+| `Strain.PeriodicStrainPeriod` | `periodicStrainPeriod` | integer | `1` | ham.F90: HamHopping |
+| `Strain.PeriodicStrainU0` | `periodicStrainu0` | real | `0.1` | ham.F90: HamHopping |
 | `Strain.RandomStrain` | `RandomStrain` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamInit |
 | `Strain.RealisticBubbles` | `realisticBubbles` | logical | `.false.` | ham.F90: HamHopping |
 | `Strain.RealStrain` | `realStrain` | logical | `.false.` | ham.F90: HamHopping |
@@ -665,7 +685,8 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Strain.ShellsFromRigidPositions` | `shellsFromRigidPositions` | logical | `.false.` | ham.F90: HamHopping |
 | `Strain.ShellsRigidFile` | `shellsRigidFile` | string | `'generateInit.xyz'` | ham.F90: HamHopping |
 | `Strain.StrainedMoire` | `strainedMoire` | logical | `.false.` | ham.F90: HamHopping |
-| `strainedMoireMaxDisplacement` |  | real | `0.5` | ham.F90: HamHopping |
+| `Strain.StrainedMoireMaxDisplacement` | `strainedMoireMaxDisplacement` | real | `0.5` | ham.F90: HamHopping |
+| `Structure.AddDisplacements` | `addDisplacements` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Structure.AtomsOrderDeactivated` | `AtomsOrderDeactivated` | logical | `.true.` | atoms.F90: AtomsOrder |
 | `Structure.BasedOnMoireCellParameters` | `basedOnMoireCellParameters`, `basedOnMoireCellParamters` | logical | `.false.` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamHopping; ... (4 places) |
 | `Structure.BernalReadXYZ` | `BernalReadXYZ` | logical | `.false.` | ham.F90: HamHopping |
@@ -695,6 +716,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Structure.ReadRigidXYZ` | `readRigidXYZ` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Structure.RibbonType` | `RibbonType` | string | `'Zigzag'` | atoms.F90: AtomsPos; cell.F90: CellGet |
 | `Structure.RigidPositions` | `rigidPositions` | string | `'generateInit.xyz'` | atoms.F90: AtomsPos |
+| `Structure.RotationAngle` | `rotationAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Structure.SingleLayerXYZ` | `singleLayerXYZ` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Structure.SublatticeFile` | `SublatticeFile` | string | `'sublatticesSorted.dat'` | atoms.F90: AtomsPos |
 | `Structure.SuperCell` | `SuperCell` | integer | `1` | cell.F90: CellGet; hybrid.F90: HybridGen; neigh.F90: fastNNnotsquareSmall |
@@ -704,25 +726,10 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Structure.SuperCellY` | `SuperCellY` | integer | `1` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamOnSite |
 | `Structure.TrilayerAddShift` | `TrilayerAddShift` | logical | `.false.` | atoms.F90: AtomsPos |
 | `Structure.TrilayerShiftFactor` | `TrilayerShiftFactor` | integer | `0` | atoms.F90: AtomsPos |
+| `Structure.TwistedBilayerAngle` | `twistedBilayerAngle` | real | `0.0` | atoms.F90: AtomsPos |
 | `Structure.TwistedBLAddShift` | `twistedBLAddShift` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping |
 | `Structure.UseSublatticeFile` | `useSublatticeFile` | logical | `.true.` | atoms.F90: AtomsPos |
 | `Structure.XYZFile` | `XYZFile` |  | `trim(prefix)//'.xyz'` | atoms.F90: AtomsPos; cell.F90: CellGet |
-| `sublatticeBasis` |  | logical | `.false.` | ham.F90: HamOnSite |
-| `switchHzjj` |  | logical | `.false.` | ham.F90: HamOnSite |
-| `t2Value` |  | real | `0.0083` | ham.F90: HamHopping |
-| `tA1A1_1` |  | real | `-0.2238` | ham.F90: HamHopping |
-| `tA1A1_2` |  | real | `-0.0446` | ham.F90: HamHopping |
-| `tA1A2` |  | real | `-0.0883` | ham.F90: HamHopping |
-| `tA1A2_2` |  | real | `0.0277` | ham.F90: HamHopping |
-| `tA1A3` |  | real | `-0.00541` | ham.F90: HamHopping |
-| `tA1A3_2` |  | real | `0.0009` | ham.F90: HamHopping |
-| `tA1B2` |  | real | `-0.1418` | ham.F90: HamHopping |
-| `tA1B2_2` |  | real | `0.0755` | ham.F90: HamHopping |
-| `tA1B3` |  | real | `-0.007551` | ham.F90: HamHopping |
-| `tA1B3_1` |  | real | `-0.001738` | ham.F90: HamHopping |
-| `tA1B3_2` |  | real | `0.001772` | ham.F90: HamHopping |
-| `tA2A2_1` |  | real | `-0.2264` | ham.F90: HamHopping |
-| `tA2A2_2` |  | real | `-0.044` | ham.F90: HamHopping |
 | `TAPW.aG` |  | real | `2.46019` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagH0TAPW_withBlockH |
 | `TAPW.Use` | `useTAPW` | logical | `.false.` | diag.F90: DiagBands |
 | `TAPW.UseDenseMatrix` | `useDenseMatrixTAPW` | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagH0TAPW |
@@ -742,15 +749,6 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `TB.OnSiteC2_LB` |  | real | `0.0` | tbpar.f90: TBInit |
 | `TB.OnSiteC2_LT` |  | real | `0.0` | tbpar.f90: TBInit |
 | `TB.OnSiteN` |  | real | `-1.89` | tbpar.f90: TBInit |
-| `tB1A2` |  | real | `-0.3372` | ham.F90: HamHopping |
-| `tB1A2_1` |  | real | `0.00786` | ham.F90: HamHopping |
-| `tB1A2_2` |  | real | `0.00078` | ham.F90: HamHopping |
-| `tB1A3` |  | real | `-0.00853` | ham.F90: HamHopping |
-| `tB1A3_2` |  | real | `0.0028` | ham.F90: HamHopping |
-| `tB1B1_1` |  | real | `-0.2269` | ham.F90: HamHopping |
-| `tB1B1_2` |  | real | `-0.04606` | ham.F90: HamHopping |
-| `tB1B2` |  | real | `-0.08965` | ham.F90: HamHopping |
-| `tB1B2_2` |  | real | `0.0275` | ham.F90: HamHopping |
 | `TBG.Angle` | `tBGAngle` | real | `0.0` | ham.F90: HamHopping |
 | `TBG.Diag` | `tBGDiag` | logical | `.false.` | ham.F90: HamOnSite |
 | `TBG.DiagPRB` | `tBGDiagPRB` | logical | `.false.` | ham.F90: HamOnSite |
@@ -758,24 +756,26 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `TBG.OffDiagPRB` | `tBGOffDiagPRB` | logical | `.false.` | ham.F90: HamHopping |
 | `TBG.SwitchDxDy` | `tBGSwitchDxDy` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `TBG.UseDisplacementFile` | `tBGuseDisplacementFile` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `timeEvolutionInYDirection` |  | logical | `.false.` | kubosubs.F90: KuboEvol |
-| `TrilayerDelta` |  | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `TrilayerFanZhang` |  | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `TrilayerGamma2` |  | real | `0.0` | ham.F90: HamHopping |
-| `TrilayerGamma3` |  | real | `0.0` | ham.F90: HamHopping |
-| `TrilayerGamma4` |  | real | `0.0` | ham.F90: HamHopping |
-| `Trilayeru1` |  | real | `0.0` | ham.F90: HamOnSite |
-| `Trilayeru2` |  | real | `0.0` | ham.F90: HamOnSite |
-| `Trilayeru3` |  | real | `0.0` | ham.F90: HamOnSite |
+| `Trilayer.Delta` | `TrilayerDelta` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Trilayer.FanZhang` | `TrilayerFanZhang` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
+| `Trilayer.Gamma2` | `TrilayerGamma2` | real | `0.0` | ham.F90: HamHopping |
+| `Trilayer.Gamma3` | `TrilayerGamma3` | real | `0.0` | ham.F90: HamHopping |
+| `Trilayer.Gamma4` | `TrilayerGamma4` | real | `0.0` | ham.F90: HamHopping |
+| `Trilayer.U1` | `Trilayeru1` | real | `0.0` | ham.F90: HamOnSite |
+| `Trilayer.U2` | `Trilayeru2` | real | `0.0` | ham.F90: HamOnSite |
+| `Trilayer.U3` | `Trilayeru3` | real | `0.0` | ham.F90: HamOnSite |
+| `Tunn.BigKVecX` | `bigKVecX` | real | `0.0` | calc.F90: CalcTunn |
+| `Tunn.BigKVecY` | `bigKVecY` | real | `0.0` | calc.F90: CalcTunn |
+| `Tunn.BigKVecZ` | `bigKVecZ` | real | `0.0` | calc.F90: CalcTunn |
 | `Tunn.Calc` |  | logical | `.false.` | calc.F90: CalcSelect |
-| `twistedBilayerAngle` |  | real | `0.0` | atoms.F90: AtomsPos |
-| `twistedBLtbt` |  | real | `0.113` | ham.F90: HamHopping |
-| `WriteNumberofSteps` |  | integer | `10` | calc.F90: CalcKubo |
+| `Tunn.NumberOfMoires` | `numberOfMoires` | integer | `1` | calc.F90: CalcTunn |
+| `Zeeman.Bmag` | `BmagZeeman` | real | `0.0` | magf.F90: MagfValue |
+| `Zeeman.Factor` | `ZeemanFactor` | real | `0.00033` | ham.F90: HamInit |
+| `Zeeman.PseudoFactor` | `PseudoZeemanFactor` | real | `0.00016` | ham.F90: HamInit |
 | `Zeeman.PseudoTerm` | `PseudoZeemanTerm` | logical | `.false.` | diag.F90: DiagBands; ham.F90: HamInit |
 | `Zeeman.Spin` | `Spin` | integer | `1` | ham.F90: HamInit |
 | `Zeeman.SpinPolarized` | `SpinPolarized` | logical | `.false.` | ham.F90: HamInit |
 | `Zeeman.Term` | `ZeemanTerm` | logical | `.false.` | diag.F90: DiagBands; ham.F90: HamInit |
-| `ZeemanFactor` |  | real | `0.00033` | ham.F90: HamInit |
 
 ## Blocks
 

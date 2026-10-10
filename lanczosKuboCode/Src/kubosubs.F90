@@ -460,7 +460,7 @@ subroutine KuboEvol(Psi,ZUPsi,Psin,Psinm1,XpnPsi,XpnPsim1,c,H0,hopp,NList,NeighD
    end do
    !$OMP END PARALLEL DO
    call KuboUpdate(Psinm1,tempZ)
-   call MIO_InputParameter('timeEvolutionInYDirection',l,.false.)
+   call MIO_InputParameter('Kubo.TimeEvolutionInYDirection',l,.false.)
    !$OMP PARALLEL DO PRIVATE(cnum,cnum2)
    do i=1,nAt
       cnum = (H0(i)-ac)*Psinm1(i)

@@ -93,9 +93,9 @@ subroutine InterfacePot1()
    end do
    NcellInt(1) = ceiling(rmaxInt/ucell(1,1))
    NcellInt(2) = ceiling(rmaxInt/ucell(2,2))
-   call MIO_InputParameter('EdgeHopping',edgeHopp,.false.)
-   call MIO_InputParameter('EdgeHoppingAmp',Ampeh,0.2_dp)
-   call MIO_InputParameter('EdgeHoppingDamp',dampeh,0.65_dp)
+   call MIO_InputParameter('Interface.EdgeHopping',edgeHopp,.false.)
+   call MIO_InputParameter('Interface.EdgeHoppingAmp',Ampeh,0.2_dp)
+   call MIO_InputParameter('Interface.EdgeHoppingDamp',dampeh,0.65_dp)
 
 #ifdef DEBUG
    call MIO_Debug('InterfacePot1',1)

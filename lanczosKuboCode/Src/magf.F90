@@ -33,8 +33,8 @@ subroutine MagfInit()
    call MIO_TimerCount('magf')
 #endif /* TIMER */
 
-   if (MIO_InputSearchLabel('MagField',line,id)) then
-      call MIO_InputParameter('MagField',Bmag,0.0_dp)
+   if (MIO_InputSearchLabel('MagField.Value',line,id)) then
+      call MIO_InputParameter('MagField.Value',Bmag,0.0_dp)
       mBi = nint(area*1.0d-20*Bmag/(fluxq))
       mBf = mBi
       call MIO_Print('Magnetic field '//trim(num2str(Bmag,5))//' T, flux index '//trim(num2str(mBf)),'magf')
@@ -103,7 +103,7 @@ subroutine MagfValue(mB)
 #endif /* TIMER */
 
    ! Read Zeeman magnetic field parameter (separate from Landau level Bmag)
-   call MIO_InputParameter('BmagZeeman',BmagZeeman,0.0_dp)
+   call MIO_InputParameter('Zeeman.Bmag',BmagZeeman,0.0_dp)
 
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (magfield) then

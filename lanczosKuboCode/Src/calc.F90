@@ -157,10 +157,10 @@ subroutine CalcKubo()
    call MIO_InputParameter('Kubo.RecursionNumber',nRecurs,700)
    call MIO_InputParameter('Kubo.NumberofTimeSteps',nT,500)
    call MIO_InputParameter('Kubo.TimeStep',dT,5.0_dp)
-   call MIO_InputParameter('NumberofPolynomials',nPol,100)
+   call MIO_InputParameter('Kubo.NumberofPolynomials',nPol,100)
    call MIO_InputParameter('Kubo.NumberofEnergyPoints',nEn,1000)
    call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
-   call MIO_InputParameter('WriteNumberofSteps',nWr,10)
+   call MIO_InputParameter('Kubo.WriteNumberofSteps',nWr,10)
    call MIO_InputParameter('Kubo.EnergyMin',Emin,-4.0_dp)
    call MIO_InputParameter('Kubo.EnergyMax',Emax,4.0_dp)
    eps = eps/g0
@@ -208,10 +208,10 @@ subroutine CalcKubo()
         call MIO_InputParameter('Kubo.PDOSAtomList',PDOSAtomList,.false.)
         call MIO_InputParameter('Kubo.PDOSByNumber',PDOSByNumber,.false.)
         call MIO_InputParameter('Kubo.PDOSIgnoreLayer1and4',PDOSIgnoreLayer1and4,.false.)
-        call MIO_InputParameter('numberOfLayers',numberOfLayers,2)
-        call MIO_InputParameter('numberOfBNAtoms1',numberOfBNAtoms1,5832)
-        call MIO_InputParameter('numberOfBNAtoms2',numberOfBNAtoms2,5832)
-        call MIO_InputParameter('numberOfCAtoms',numberOfCAtoms,6050)
+        call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
+        call MIO_InputParameter('Kubo.NumberOfBNAtoms1',numberOfBNAtoms1,5832)
+        call MIO_InputParameter('Kubo.NumberOfBNAtoms2',numberOfBNAtoms2,5832)
+        call MIO_InputParameter('Kubo.NumberOfCAtoms',numberOfCAtoms,6050)
         call MIO_InputParameter('Stack.EncapsulatedFourLayers',encapsulatedFourLayers,.false.)
         call MIO_InputParameter('Stack.EncapsulatedSixLayers',encapsulatedSixLayers,.false.)
         call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
@@ -537,9 +537,9 @@ subroutine CalcTunn()
 #endif /* DEBUG */
 
    if (frac) call AtomsSetCart()
-   call MIO_InputParameter('bigKVecX',bigKVecX,0.0_dp) ! give the coordinates of K like for the k-path, one by one
-   call MIO_InputParameter('bigKVecY',bigKVecY,0.0_dp)
-   call MIO_InputParameter('bigKVecZ',bigKVecZ,0.0_dp)
+   call MIO_InputParameter('Tunn.BigKVecX',bigKVecX,0.0_dp) ! give the coordinates of K like for the k-path, one by one
+   call MIO_InputParameter('Tunn.BigKVecY',bigKVecY,0.0_dp)
+   call MIO_InputParameter('Tunn.BigKVecZ',bigKVecZ,0.0_dp)
 #ifdef DEBUG
    print*, bigKVecX
    print*, bigKVecY
@@ -550,7 +550,7 @@ subroutine CalcTunn()
 #ifdef DEBUG
    print*, "bigKVec: ", bigKVec
 #endif /* DEBUG */
-   call MIO_InputParameter('numberOfMoires',numberOfMoires,1)
+   call MIO_InputParameter('Tunn.NumberOfMoires',numberOfMoires,1)
    call file1%Open(name=trim(prefix)//'.'//'TunnAAR',serial=.true.)
    u1 = file1%GetUnit()
    call file2%Open(name=trim(prefix)//'.'//'TunnAAI',serial=.true.)

@@ -42,11 +42,11 @@ subroutine HybridGen(nAt,Rat,Species,in1,in2)
    seed = clock + 37 * (/ (i - 1, i = 1, n) /)
    call random_seed(PUT = seed)
    deallocate(seed)
-   call MIO_InputParameter('HybridRadius',r,10.0_dp)
+   call MIO_InputParameter('Hybrid.Radius',r,10.0_dp)
    n = nint(2.0_dp*r/(sqrt(3.0_dp)*aG))
    r = sqrt(3.0_dp)*aG*n/2.0_dp
    call MIO_Print('Radius: '//trim(num2str(r,4))//' Ang','hybrid')
-   call MIO_InputParameter('HybridPercentage',per,1.0_dp)
+   call MIO_InputParameter('Hybrid.Percentage',per,1.0_dp)
    per = per/100.0_dp
    n = nint(area*per/(pi*r**2))
    call MIO_Print('Number of hexagonal islands: '//trim(num2str(n)),'hybrid')
@@ -71,7 +71,7 @@ loop: do
          exit loop
       end do loop
    end do
-   call MIO_InputParameter('HybridRandomSites',l,.false.)
+   call MIO_InputParameter('Hybrid.RandomSites',l,.false.)
    if (l) then
       call MIO_Allocate(site,n,'site','hybrid')
       do i=1,n

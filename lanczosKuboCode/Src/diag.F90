@@ -202,7 +202,7 @@ subroutine DiagDOS()
 #endif /* TIMER */
 
    call MIO_Print('Calculating DOS by diagonalization','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
    call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
@@ -370,7 +370,7 @@ subroutine DiagPDOS()
 #endif /* TIMER */
 
    call MIO_Print('Calculating PDOS by diagonalization','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
    call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
@@ -417,7 +417,7 @@ subroutine DiagPDOS()
       end do
       !$OMP END PARALLEL DO
    end do
-   call MIO_InputParameter('numberOfLayers',numberOfLayers,2)
+   call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
    do PDOSLayerIndex=1,numberOfLayers
       flnm = trim(prefix)//'.diag.DOS.Layer'//trim(num2str(PDOSLayerIndex))
       call file%Open(name=flnm,serial=.true.)
@@ -534,7 +534,7 @@ subroutine Diag3DBands()
 #endif /* TIMER */
 
    call MIO_Print('Calculating 3D Bands by diagonalization','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
    call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
@@ -1492,7 +1492,7 @@ subroutine DiagChern()
       !   !print*, "1: ", path(:,ip)
       !   !if (MoireBS) then
       !   !   !print*, "theta=", theta
-      !   !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
+      !   !   call MIO_InputParameter('Structure.TwistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
       !   !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
       !   !end if
       !   !print*, "2: ", path(:,ip)
@@ -1502,7 +1502,7 @@ subroutine DiagChern()
       !      !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
 
       call MIO_Print('Calculating Chern number by diagonalization','diag')
-      call MIO_InputParameter('KGrid',nk,[1,1,1])
+      call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
       ptsTot = nk(1)*nk(2)*nk(3)
       call MIO_Allocate(Kgrid,[3,ptsTot],'Kgrid','diag')
       ik = 0
@@ -3613,8 +3613,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
    call MIO_Print('Calculating Spectral function around K1 (2/3,1/3)','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('KGridCut',gridCut,0.1_dp)
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
    ptot = nk(1)*nk(2)*nk(3)
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
@@ -3647,7 +3647,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
 
       !   !if (MoireBS) then
       !   !   !print*, "theta=", theta
-      !   !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
+      !   !   call MIO_InputParameter('Structure.TwistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
       !   !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
       !   !end if
       call MIO_Allocate(Kpts,[3,ptot],'Kpts','diag')
@@ -4093,8 +4093,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
    call MIO_Print('Calculating Spectral function around K1 (2/3,1/3)','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('KGridCut',gridCut,0.1_dp)
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
    ptot = nk(1)*nk(2)*nk(3)
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
@@ -4127,7 +4127,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
 
       !   !if (MoireBS) then
       !   !   !print*, "theta=", theta
-      !   !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
+      !   !   call MIO_InputParameter('Structure.TwistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
       !   !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
       !   !end if
       call MIO_Allocate(Kpts,[3,ptot],'Kpts','diag')
@@ -4583,11 +4583,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
    call MIO_Print('Calculating Spectral function around K1 (2/3,1/3)','diag')
-   call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('KGridCut',gridCut,0.1_dp)
-   call MIO_InputParameter('KGridCutX',gridCutX,0.1_dp)
-   call MIO_InputParameter('KGridCutY',gridCutY,0.1_dp)
-   call MIO_InputParameter('KGridLowerGridHalf',lowerGridHalf,.false.)
+   call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+   call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
+   call MIO_InputParameter('Spectral.KGridCutX',gridCutX,0.1_dp)
+   call MIO_InputParameter('Spectral.KGridCutY',gridCutY,0.1_dp)
+   call MIO_InputParameter('Spectral.KGridLowerGridHalf',lowerGridHalf,.false.)
    ptot = nk(1)*nk(2)*nk(3)
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
@@ -4623,7 +4623,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
 
       !   !if (MoireBS) then
       !   !   !print*, "theta=", theta
-      !   !   call MIO_InputParameter('twistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
+      !   !   call MIO_InputParameter('Structure.TwistedBilayerAngle',theta,0.0_dp) ! Ref. PRB 76, 73103
       !   !   path(:,ip) = path(:,ip)*theta/180.0_dp*pi
       !   !end if
       call MIO_Allocate(Kpts,[3,ptot],'Kpts','diag')

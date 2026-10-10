@@ -161,7 +161,7 @@ subroutine KuboInitWFLayerDOS(Psi,layerNumber,numberOfLayers,numberOfAtomsInLaye
    call random_seed(size = n)
    allocate(seed(n))
    call system_clock(COUNT=clock)
-   call MIO_InputParameter('SeedSet',SetSeed,1235)
+   call MIO_InputParameter('Kubo.SeedSet',SetSeed,1235)
    call MIO_Print('Seed of the random-phase state: '//trim(num2str(SetSeed)),'kubo')
    seed = SetSeed
    call random_seed(PUT = seed)
@@ -222,7 +222,7 @@ subroutine KuboInitWFLayerAndSpeciesDOS(Psi,layerNumber,speciesNumber,numberOfLa
    call random_seed(size = n)
    allocate(seed(n))
    call system_clock(COUNT=clock)
-   call MIO_InputParameter('SeedSet',SetSeed,1235)
+   call MIO_InputParameter('Kubo.SeedSet',SetSeed,1235)
    call MIO_Print('Seed of the random-phase state: '//trim(num2str(SetSeed)),'kubo')
    seed = SetSeed
    call random_seed(PUT = seed)

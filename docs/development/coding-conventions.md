@@ -85,8 +85,8 @@ October 2026 showed to be necessary.
   `Bands.NumPoints`, `Spectral.WeiKu`. The section names the part of the code
   that reads the key (usually the module), so that related keys sort together
   and a key says where it belongs.
-- Before October 2026 only 135 of the 722 keys followed this form; 485 more
-  were renamed then (see "Renaming keys" below) and about 100 remain.
+- Before October 2026 only 135 of the 722 keys followed this form; the other
+  585 were renamed then (see "Renaming keys" below).
 - New keys follow the `Section.Name` form. The existing keys keep working: see
   "Renaming keys" below.
 
@@ -154,9 +154,9 @@ Each rule answers a defect that was found (see
 
 ## Renaming keys without breaking inputs
 
-485 of the keys without a section were given the `Section.Name` form in
+The 585 keys without a section were given the `Section.Name` form in
 October 2026 (`Strain.RealStrain`, `Stack.MiddleTwist`, `Structure.SuperCell`,
-...); about 100 are still to be named. Existing input files are not affected:
+...). Existing input files are not affected:
 
 1. `lanczosKuboCode/Src/MIO/input_aliases.inc` maps every present name to its
    former name(s). The solver asks for the present name; the input library

@@ -35,8 +35,8 @@ subroutine GrabnesStart(success)
       prefix = sysname
    end if
    call MIO_Print('')
-   !call MIO_InputParameter('RandomTest',rtest,.false.)
-   !call MIO_InputParameter('RandomTestNumber',ntest,100)
+   !call MIO_InputParameter('Random.Test',rtest,.false.)
+   !call MIO_InputParameter('Random.TestNumber',ntest,100)
    !if (rtest) then
    !!$OMP PARALLEL
    !   call RandSeed(rng,nThread)

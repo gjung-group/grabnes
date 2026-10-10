@@ -427,7 +427,7 @@ subroutine NeighReadDataFiles()
    end do
    close(1)
 
-   call MIO_InputParameter('readNeighborDetails',readNeighborDetails,.false.)
+   call MIO_InputParameter('Neigh.ReadDetails',readNeighborDetails,.false.)
    if (readNeighborDetails) then
       open(21,FILE='neighCell.dat',STATUS='old')
       open(22,FILE='neighD.dat',STATUS='old')
@@ -787,8 +787,8 @@ subroutine NeighList()
       end do
       !$OMP END PARALLEL
    end if
-   call MIO_InputParameter('neighborSafetyCheck',l,.false.)
-   call MIO_InputParameter('neighborExpectedNumber',expectedNumber,3)
+   call MIO_InputParameter('Neigh.SafetyCheck',l,.false.)
+   call MIO_InputParameter('Neigh.ExpectedNumber',expectedNumber,3)
    if (l) then
       call MIO_Print('Performing some safetycheck','neigh')
       if (frac) call AtomsSetCart()
@@ -1505,7 +1505,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
 !are the real space directions of the translational symmetry.`
 
       call MIO_InputParameter('Structure.SuperCell',sCell,1)
-      call MIO_InputParameter('only000Cell',only000Cell,.false.)
+      call MIO_InputParameter('Neigh.Only000Cell',only000Cell,.false.)
          do i=1,nAt
             do j=1,Nneigh(i) ! different from ultraSmall because here we already know the neighbors
                if (only000Cell) then

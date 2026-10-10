@@ -145,6 +145,8 @@ describes every check; measured results for both compilers are in
 - [`docs/development/`](docs/development/): validation report, functionality
   status, release-readiness checklist, licensing audit, and development log;
   [`docs/development/README.md`](docs/development/README.md) is the index.
+- [`docs/user-guide/input-file.md`](docs/user-guide/input-file.md): format of the input file, names of the
+  keys (the names used before October 2026 keep working), and the messages the solver prints about it.
 - [`docs/user-guide/input-keys.md`](docs/user-guide/input-keys.md): every input key with its type,
   default, and the routine that reads it (generated from the source).
 - [`docs/user-guide/`](docs/user-guide/) and [`docs/theory/`](docs/theory/):
