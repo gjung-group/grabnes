@@ -194,10 +194,10 @@ subroutine HamInit()
    call MIO_TimerCount('ham')
 #endif /* TIMER */
 
-   call MIO_InputParameter('ZeemanTerm',Zterm,.false.)
-   call MIO_InputParameter('PseudoZeemanTerm',PZterm,.false.)
+   call MIO_InputParameter('Zeeman.Term',Zterm,.false.)
+   call MIO_InputParameter('Zeeman.PseudoTerm',PZterm,.false.)
    if (Zterm) then
-      call MIO_InputParameter('Spin',spin,1)
+      call MIO_InputParameter('Zeeman.Spin',spin,1)
       if (spin==2) then
          spin=-1
       else if (spin/=1 .and. spin/=-1) then
@@ -211,7 +211,7 @@ subroutine HamInit()
       call MIO_InputParameter('PseudoZeemanFactor',gPZeeman,0.00016_dp)
       gPZeeman = gPZeeman/g0
    end if
-   call MIO_InputParameter('SpinPolarized',l,.false.)
+   call MIO_InputParameter('Zeeman.SpinPolarized',l,.false.)
    if (l) then
       nspin = 2
    else
@@ -219,36 +219,36 @@ subroutine HamInit()
    end if
 
    ! Read SOC term flags and parameters
-   call MIO_InputParameter('IntrinsicSOCterm',IntrinsicSOCterm,.false.)
+   call MIO_InputParameter('SOC.Intrinsic',IntrinsicSOCterm,.false.)
    if (IntrinsicSOCterm) then
-      call MIO_InputParameter('LambdaI',lambdaI,0.0_dp)
+      call MIO_InputParameter('SOC.LambdaI',lambdaI,0.0_dp)
       lambdaI = lambdaI / g0  ! Normalize by g0 for consistency with other SOC terms
       call MIO_Print('Intrinsic SOC enabled with λI = '//trim(num2str(lambdaI)),'ham')
    end if
 
-   call MIO_InputParameter('IsingSOCterm',IsingSOCterm,.false.)
+   call MIO_InputParameter('SOC.Ising',IsingSOCterm,.false.)
    if (IsingSOCterm) then
-      call MIO_InputParameter('LambdaIsing',lambdaIsing,0.0_dp)
+      call MIO_InputParameter('SOC.LambdaIsing',lambdaIsing,0.0_dp)
       lambdaIsing = lambdaIsing / g0  ! Normalize by g0 for consistency with other SOC terms
       call MIO_Print('Ising SOC enabled with λIsing = '//trim(num2str(lambdaIsing)),'ham')
    end if
 
-   call MIO_InputParameter('RashbaSOCterm',RashbaSOCterm,.false.)
+   call MIO_InputParameter('SOC.Rashba',RashbaSOCterm,.false.)
    if (RashbaSOCterm) then
-      call MIO_InputParameter('LambdaR',lambdaR,0.0_dp)
+      call MIO_InputParameter('SOC.LambdaR',lambdaR,0.0_dp)
       lambdaR = lambdaR / g0  ! Normalize by g0 for consistency with other SOC terms
       call MIO_Print('Rashba SOC enabled with λR = '//trim(num2str(lambdaR)),'ham')
    end if
 
-   call MIO_InputParameter('PIASOCterm',PIASOCterm,.false.)
+   call MIO_InputParameter('SOC.PIA',PIASOCterm,.false.)
    if (PIASOCterm) then
-      call MIO_InputParameter('LambdaPIA',lambdaPIA,0.0_dp)
+      call MIO_InputParameter('SOC.LambdaPIA',lambdaPIA,0.0_dp)
       lambdaPIA = lambdaPIA / g0  ! Normalize by g0 for consistency with other SOC terms
       call MIO_Print('Pseudo-inversion asymmetry enabled with λPIA = '//trim(num2str(lambdaPIA)),'ham')
    end if
 
    ! Layer-specific SOC control
-   call MIO_InputParameter('SOCLayerControl',SOCLayerControl,.false.)
+   call MIO_InputParameter('SOC.LayerControl',SOCLayerControl,.false.)
    if (SOCLayerControl) then
       ! Use new variable-length input parameter function
       call MIO_InputParameterVariable('SOCLayers', tempSOCLayers, nSOCLayersRead, maxSOCLayers)
@@ -283,7 +283,7 @@ subroutine HamInit()
    end if
 
    ! Layer-specific Haldane control
-   call MIO_InputParameter('HaldaneLayerControl',HaldaneLayerControl,.false.)
+   call MIO_InputParameter('Haldane.LayerControl',HaldaneLayerControl,.false.)
    if (HaldaneLayerControl) then
       ! Use new variable-length input parameter function
       call MIO_InputParameterVariable('HaldaneLayers', tempHaldaneLayers, nHaldaneLayersRead, maxHaldaneLayers)
@@ -369,7 +369,7 @@ subroutine HamInit()
       call MIO_Print('Intralayer neighbours: '//trim(num2str(nShells))//' shell(s), in-plane radius '// &
         trim(num2str(sqrt(cutoff2),4))//' Ang','ham')
       if (intraRadius > 0.0_dp) call MIO_Print('Intralayer radius set by Neigh.IntralayerRadius','ham')
-      call MIO_InputParameter('F2G2Model',F2G2Model,.true.)
+      call MIO_InputParameter('Intralayer.F2G2Model',F2G2Model,.true.)
       modelShells = 8
       if (F2G2Model) modelShells = 5
       if (nShells < modelShells) then
@@ -378,10 +378,10 @@ subroutine HamInit()
            '); raise TB.NeighLevels to include them','ham')
       end if
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,0)
-      call MIO_InputParameter('Bulk',bulk,.false.)
-      call MIO_InputParameter('BulkSmall',bulksmall,.false.)
-      call MIO_InputParameter('nonBulkSmall',small,.false.)
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Stack.Bulk',bulk,.false.)
+      call MIO_InputParameter('Stack.BulkSmall',bulksmall,.false.)
+      call MIO_InputParameter('Stack.NonBulkSmall',small,.false.)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       if (outplaneNeigh/=0) then
          call MIO_Print('There are out of plane neighbors','ham')
          call MIO_InputParameter('Neigh.LayerDistFactor',distFact,1.0_dp) ! to increase the cutoff for outerlayer neighbors
@@ -420,7 +420,7 @@ subroutine HamInit()
           cutoff2 = (aG**2 + aCC**2) * 1.2_dp**2
       end if
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,0)
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       if (outplaneNeigh/=0) then
          call MIO_Print('There are out of plane neighbors','ham')
          call MIO_InputParameter('Neigh.LayerDistFactor',distFact,1.0_dp) ! to increase the cutoff for outerlayer neighbors
@@ -440,7 +440,7 @@ subroutine HamInit()
    else
       call NeighList()
    end if
-   call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
+   call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call MIO_Print('Reading in the (non-remormalized by g0) onsite energies from generate.e','ham')
       call MIO_Allocate(H0,[inode1],[inode2],'H0','ham')
@@ -455,23 +455,23 @@ subroutine HamInit()
    end if
    call MIO_Allocate(hopp,[1,inode1],[maxNeigh,inode2],'hopp','ham')
    hopp = 0.0_dp
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
-   call MIO_InputParameter('MoireStrain',moireStrain,.false.)
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Moire.Strain',moireStrain,.false.)
    if (moireStrain) then
-      call MIO_InputParameter('MoireStrainFactor',strFactor,3.37_dp)
-      call MIO_InputParameter('MoireHeightAmp',hStr,0.1_dp)
+      call MIO_InputParameter('Moire.StrainFactor',strFactor,3.37_dp)
+      call MIO_InputParameter('Moire.HeightAmp',hStr,0.1_dp)
       call MIO_Print('Hopping modified by moire strain','ham')
       call MIO_Print('Factor: '//trim(num2str(strFactor,2)),'ham')
       call MIO_Print('')
       dCC = aG/sqrt(3.0_dp)
    end if
-   call MIO_InputParameter('RandomStrain',randomStrain,.false.)
+   call MIO_InputParameter('Strain.RandomStrain',randomStrain,.false.)
    if (randomStrain) then
      call MIO_Kill('RandomStrain is not supported at present: the routine it calls (GaussHeight) uses a '// &
        'work array that is never allocated.','ham','HamInit')
      if (frac) call AtomsSetCart()
      call GaussHeight()
-     call MIO_InputParameter('WriteDataFiles',prnt,.false.)
+     call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
      if (prnt) then
         open(1,FILE='z')
         do i=1,nAt
@@ -480,12 +480,12 @@ subroutine HamInit()
         close(1)
      end if
    end if
-   call MIO_InputParameter('printBubble',printBubble,.false.)
+   call MIO_InputParameter('Output.PrintBubble',printBubble,.false.)
    if (printBubble) then
      call MIO_Kill('printBubble is not supported: it is a diagnostic with a hard-coded atom index (3328).', &
        'ham','HamInit')
-     call MIO_InputParameter('bubbleSigmaR',sigma,1.0_dp)
-     call MIO_InputParameter('bubbleHeight',w,1.0_dp)
+     call MIO_InputParameter('Strain.BubbleSigmaR',sigma,1.0_dp)
+     call MIO_InputParameter('Strain.BubbleHeight',w,1.0_dp)
      if (frac) call AtomsSetCart()
      do i=1,nAt
          dx = Rat(1,3328) - Rat(1,i)
@@ -657,38 +657,38 @@ subroutine HamOnSite()
    H0 = 0.0_dp
    H0Bottom = 0.0_dp
    H0Top = 0.0_dp
-   call MIO_InputParameter('GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
-   call MIO_InputParameter('GBNtwoLayers',GBNtwoLayers,.false.)
-   call MIO_InputParameter('BNBNtwoLayers',BNBNtwoLayers,.false.)
-   call MIO_InputParameter('t2GBN',t2GBN,.false.)
-   call MIO_InputParameter('t2BG',t2BG,.false.)
-   call MIO_InputParameter('t3BG',t3BG,.false.)
-   call MIO_InputParameter('encapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
-   call MIO_InputParameter('encapsulatedFourLayers',encapsulatedFourLayers,.false.)
-   call MIO_InputParameter('encapsulatedFiveLayers',encapsulatedFiveLayers,.false.)
-   call MIO_InputParameter('encapsulatedSixLayers',encapsulatedSixLayers,.false.)
-   call MIO_InputParameter('encapsulatedSevenLayers',encapsulatedSevenLayers,.false.)
-   call MIO_InputParameter('useLayerSpecificOnsiteEnergyTerms',useLayerSpecificOnsiteEnergyTerms,.false.)
-   call MIO_InputParameter('t3GwithBN',t3GwithBN,.false.)
-   call MIO_InputParameter('BNt2GBN',BNt2GBN,.false.)
+   call MIO_InputParameter('Stack.GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
+   call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
+   call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
+   call MIO_InputParameter('Stack.T2GBN',t2GBN,.false.)
+   call MIO_InputParameter('Stack.T2BG',t2BG,.false.)
+   call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
+   call MIO_InputParameter('Stack.EncapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
+   call MIO_InputParameter('Stack.EncapsulatedFourLayers',encapsulatedFourLayers,.false.)
+   call MIO_InputParameter('Stack.EncapsulatedFiveLayers',encapsulatedFiveLayers,.false.)
+   call MIO_InputParameter('Stack.EncapsulatedSixLayers',encapsulatedSixLayers,.false.)
+   call MIO_InputParameter('Stack.EncapsulatedSevenLayers',encapsulatedSevenLayers,.false.)
+   call MIO_InputParameter('Potential.UseLayerSpecificOnsiteEnergyTerms',useLayerSpecificOnsiteEnergyTerms,.false.)
+   call MIO_InputParameter('Stack.T3GwithBN',t3GwithBN,.false.)
+   call MIO_InputParameter('Stack.BNt2GBN',BNt2GBN,.false.)
   call MIO_InputParameter('dontUseInplaneMoire',dontUseInplaneMoire,.false.)
-  call MIO_InputParameter('twoLayers',twoLayers,.false.)
-  call MIO_InputParameter('threeLayers',threeLayers,.false.)
-  call MIO_InputParameter('fourLayersSandwiched',fourLayersSandwiched,.false.)
-  call MIO_InputParameter('helicalTwistedMBM',helicalTwistedMBM,.false.)
-  call MIO_InputParameter('fiveLayersSandwiched',fiveLayersSandwiched,.false.)
-   call MIO_InputParameter('sixLayersSandwiched',sixLayersSandwiched,.false.)
-   call MIO_InputParameter('sevenLayersSandwiched',sevenLayersSandwiched,.false.)
-   call MIO_InputParameter('eightLayersSandwiched',eightLayersSandwiched,.false.)
-   call MIO_InputParameter('tenLayersSandwiched',tenLayersSandwiched,.false.)
-   call MIO_InputParameter('twentyLayersSandwiched',twentyLayersSandwiched,.false.)
-   call MIO_InputParameter('forceBilayerF2G2Intralayer',forceBilayerF2G2Intralayer,.false.)
+  call MIO_InputParameter('Stack.TwoLayers',twoLayers,.false.)
+  call MIO_InputParameter('Stack.ThreeLayers',threeLayers,.false.)
+  call MIO_InputParameter('Stack.FourLayersSandwiched',fourLayersSandwiched,.false.)
+  call MIO_InputParameter('Stack.HelicalTwistedMBM',helicalTwistedMBM,.false.)
+  call MIO_InputParameter('Stack.FiveLayersSandwiched',fiveLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.SixLayersSandwiched',sixLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.SevenLayersSandwiched',sevenLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.EightLayersSandwiched',eightLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.TenLayersSandwiched',tenLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.TwentyLayersSandwiched',twentyLayersSandwiched,.false.)
+   call MIO_InputParameter('Intralayer.ForceBilayerF2G2Intralayer',forceBilayerF2G2Intralayer,.false.)
    ! middleTwist: single-layer F2G2 parameters in every layer of the multilayer
    ! stacks. It is the default unless the Bernal-bilayer parameters are requested
    ! with forceBilayerF2G2Intralayer (same rule in HamHopping).
-   call MIO_InputParameter('middleTwist',middleTwist,.not. forceBilayerF2G2Intralayer)
-   call MIO_InputParameter('fourLayers',fourLayers,.false.)
-   call MIO_InputParameter('readRigidXYZ',readRigidXYZ,.false.)
+   call MIO_InputParameter('Stack.MiddleTwist',middleTwist,.not. forceBilayerF2G2Intralayer)
+   call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
+   call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
    print*, "onsite, B, N, C1, C2", e0_B, e0_N, e0_C1, e0_C2
    !$OMP PARALLEL DO
    do i=1,nAt
@@ -960,39 +960,39 @@ subroutine HamOnSite()
       call MIO_Allocate(Ho,[inode1],[inode2],'Ho','ham')
       Ho = H0
    end if
-   call MIO_InputParameter('MoirePotential',l,.false.)
-   call MIO_InputParameter('MoirePreFactor',moirePreFactor,1.0_dp)
-   call MIO_InputParameter('tBGDiag',tBGDiag,.false.)
-   call MIO_InputParameter('tBGDiagPRB',tBGDiagPRB,.false.)
-   call MIO_InputParameter('BNBNDiag',BNBNDiag,.false.)
+   call MIO_InputParameter('Moire.Potential',l,.false.)
+   call MIO_InputParameter('Moire.PreFactor',moirePreFactor,1.0_dp)
+   call MIO_InputParameter('TBG.Diag',tBGDiag,.false.)
+   call MIO_InputParameter('TBG.DiagPRB',tBGDiagPRB,.false.)
+   call MIO_InputParameter('BNBN.Diag',BNBNDiag,.false.)
    call MIO_InputParameter('Latticepercent',eps,-0.018181818181818_dp)
    if (l) then
-      call MIO_InputParameter('MoireSachs',l,.false.)
+      call MIO_InputParameter('Moire.Sachs',l,.false.)
       if (l) then
          call MIO_Print('Moire potential model [Sachs et al. PRB 84, 195414 (2011)]','ham')
-         call MIO_InputParameter('MoirePotA',A,0.0186_dp)
-         call MIO_InputParameter('MoirePotB',B,0.042_dp)
-         call MIO_InputParameter('MoirePotC',C,0.0_dp)
+         call MIO_InputParameter('Moire.PotA',A,0.0186_dp)
+         call MIO_InputParameter('Moire.PotB',B,0.042_dp)
+         call MIO_InputParameter('Moire.PotC',C,0.0_dp)
       end if
 ! --- New parameters for the moire pattern ---
-      call MIO_InputParameter('MoireJeil',l,.false.)
+      call MIO_InputParameter('Moire.Jeil',l,.false.)
       if (l) then
          call MIO_Print('Moire potential model [Jeil Jung, PRB 89, 205414 (2014)]','ham')
-         call MIO_InputParameter('MoirePrefactor',moirePreFactor,1.0_dp)
-         call MIO_InputParameter('MoirePotC0',C0,-0.01013_dp)
+         call MIO_InputParameter('Moire.PreFactor',moirePreFactor,1.0_dp)
+         call MIO_InputParameter('Moire.PotC0',C0,-0.01013_dp)
          C0 = C0/g0*moirePreFactor
-         call MIO_InputParameter('MoirePotCz',Cz,-0.00901_dp)
+         call MIO_InputParameter('Moire.PotCz',Cz,-0.00901_dp)
          Cz = Cz/g0*moirePrefactor
-         call MIO_InputParameter('MoirePotCab',Cab,0.01134_dp)
+         call MIO_InputParameter('Moire.PotCab',Cab,0.01134_dp)
          Cab = Cab/g0*moirePrefactor
-         call MIO_InputParameter('MoirePotPhi0',Phi0,1.510233401750693_dp)
-         call MIO_InputParameter('MoirePotPhiz',Phiz,0.147131255943122_dp)
-         call MIO_InputParameter('MoirePotPhiab',Phiab,0.342084533390889_dp)
+         call MIO_InputParameter('Moire.PotPhi0',Phi0,1.510233401750693_dp)
+         call MIO_InputParameter('Moire.PotPhiz',Phiz,0.147131255943122_dp)
+         call MIO_InputParameter('Moire.PotPhiab',Phiab,0.342084533390889_dp)
 
          call MIO_InputParameter('distanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
          call MIO_InputParameter('BfactorC0',BfactorC0,3.1_dp)
          call MIO_InputParameter('BfactorCz',BfactorCz,3.1_dp)
-         call MIO_InputParameter('InterlayerDistance',z0,3.35_dp)
+         call MIO_InputParameter('Structure.InterlayerDistance',z0,3.35_dp)
          call MIO_InputParameter('sublatticeBasis',sublatticeBasis,.false.)
          call MIO_InputParameter('addDisplacements',addDisplacements,.false.)
          if (addDisplacements) then
@@ -1005,25 +1005,25 @@ subroutine HamOnSite()
 ! --- ---
 
       if (.not. frac) call AtomsSetFrac()
-      call MIO_InputParameter('MoireTrilayer',l,.false.)
-      call MIO_InputParameter('GBNtwoLayers',GBNtwoLayers,.false.)
-      call MIO_InputParameter('BNBNtwoLayers',BNBNtwoLayers,.false.)
-      call MIO_InputParameter('t2GBN',t2GBN,.false.)
-      call MIO_InputParameter('t2BG',t2BG,.false.)
-      call MIO_InputParameter('t3BG',t3BG,.false.)
-      call MIO_InputParameter('encapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
-      call MIO_InputParameter('encapsulatedFourLayers',encapsulatedFourLayers,.false.)
-      call MIO_InputParameter('encapsulatedFiveLayers',encapsulatedFiveLayers,.false.)
-      call MIO_InputParameter('encapsulatedSixLayers',encapsulatedSixLayers,.false.)
-      call MIO_InputParameter('encapsulatedSevenLayers',encapsulatedSevenLayers,.false.)
+      call MIO_InputParameter('Moire.Trilayer',l,.false.)
+      call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
+      call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
+      call MIO_InputParameter('Stack.T2GBN',t2GBN,.false.)
+      call MIO_InputParameter('Stack.T2BG',t2BG,.false.)
+      call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
+      call MIO_InputParameter('Stack.EncapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
+      call MIO_InputParameter('Stack.EncapsulatedFourLayers',encapsulatedFourLayers,.false.)
+      call MIO_InputParameter('Stack.EncapsulatedFiveLayers',encapsulatedFiveLayers,.false.)
+      call MIO_InputParameter('Stack.EncapsulatedSixLayers',encapsulatedSixLayers,.false.)
+      call MIO_InputParameter('Stack.EncapsulatedSevenLayers',encapsulatedSevenLayers,.false.)
       call MIO_InputParameter('removeTopMoireInL2',removeTopMoireInL2,.false.)
-      call MIO_InputParameter('t3GWithBN',t3GWithBN,.false.)
-      call MIO_InputParameter('BNt2GBN',BNt2GBN,.false.)
-      call MIO_InputParameter('GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
-      call MIO_InputParameter('GBNuseDisplacementFile',GBNuseDisplacementFile,.false.)
-      call MIO_InputParameter('tBGuseDisplacementFile',tBGuseDisplacementFile,.false.)
-      call MIO_InputParameter('BNBNuseDisplacementFile',BNBNuseDisplacementFile,.false.)
-      call MIO_InputParameter('GBNuseHarmonicApprox',GBNuseHarmonicApprox,.false.)
+      call MIO_InputParameter('Stack.T3GwithBN',t3GWithBN,.false.)
+      call MIO_InputParameter('Stack.BNt2GBN',BNt2GBN,.false.)
+      call MIO_InputParameter('Stack.GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
+      call MIO_InputParameter('GBN.UseDisplacementFile',GBNuseDisplacementFile,.false.)
+      call MIO_InputParameter('TBG.UseDisplacementFile',tBGuseDisplacementFile,.false.)
+      call MIO_InputParameter('BNBN.UseDisplacementFile',BNBNuseDisplacementFile,.false.)
+      call MIO_InputParameter('GBN.UseHarmonicApprox',GBNuseHarmonicApprox,.false.)
       ! For GBNtwoLayers with GBNuseHarmonicApprox, automatically disable tBGDiag and BNBNDiag
       ! to ensure the harmonic approximation path is taken instead
       if (GBNtwoLayers .and. GBNuseHarmonicApprox) then
@@ -1036,7 +1036,7 @@ subroutine HamOnSite()
             BNBNDiag = .false.
          end if
       end if
-      call MIO_InputParameter('GBNAngle',GBNAngle,0.0_dp)
+      call MIO_InputParameter('GBN.Angle',GBNAngle,0.0_dp)
       call MIO_InputParameter('GlobalTwist',Globalang,0.0_dp)
       call MIO_InputParameter('GlobalTwist2',Globalang2,0.0_dp)
       call MIO_InputParameter('GlobalPhiL1',GlobalPhiL1,0.0_dp)
@@ -1045,7 +1045,7 @@ subroutine HamOnSite()
       call MIO_InputParameter('GlobalPhiL2b',GlobalPhiL2b,0.0_dp)
       call MIO_InputParameter('GlobalPhiL3',GlobalPhiL3,0.0_dp)
       call MIO_InputParameter('rotationAngle',rotationAngle,0.0_dp)
-      call MIO_InputParameter('tBGSwitchDxDy',tBGSwitchDxDy,.false.)
+      call MIO_InputParameter('TBG.SwitchDxDy',tBGSwitchDxDy,.false.)
       ! Initialize global variables to avoid using uninitialized values
       CAA_global = 0.0_dp
       CBB_global = 0.0_dp
@@ -1061,82 +1061,82 @@ subroutine HamOnSite()
       PhiBpBp_global = 0.0_dp
       if (tBGDiag) then
          if (tBGDiagPRB) then
-             call MIO_InputParameter('CAA',CAA_global,0.00110_dp)
+             call MIO_InputParameter('Interlayer.CAA',CAA_global,0.00110_dp)
              CAA_global = CAA_global/g0
-             call MIO_InputParameter('CBB',CBB_global,0.00110_dp)
+             call MIO_InputParameter('Interlayer.CBB',CBB_global,0.00110_dp)
              CBB_global = CBB_global/g0
-             call MIO_InputParameter('CAA0',CAA0_global,0.0_dp)
+             call MIO_InputParameter('Interlayer.CAA0',CAA0_global,0.0_dp)
              CAA0_global = CAA0_global/g0
-             call MIO_InputParameter('CBB0',CBB0_global,0.0_dp)
+             call MIO_InputParameter('Interlayer.CBB0',CBB0_global,0.0_dp)
              CBB0_global = CBB0_global/g0
-             call MIO_InputParameter('CApAp',CApAp_global,0.00110_dp)
+             call MIO_InputParameter('Interlayer.CApAp',CApAp_global,0.00110_dp)
              CApAp_global = CApAp_global/g0
-             call MIO_InputParameter('CBpBp',CBpBp_global,0.00110_dp)
+             call MIO_InputParameter('Interlayer.CBpBp',CBpBp_global,0.00110_dp)
              CBpBp_global = CBpBp_global/g0
              call MIO_InputParameter('CApAp0',CApAp0_global,0.0_dp)
              CApAp0_global = CApAp0_global/g0
              call MIO_InputParameter('CBpBp0',CBpBp0_global,0.0_dp)
              CBpBp0_global = CBpBp0_global/g0
-             call MIO_InputParameter('PhiAA',PhiAA_global,82.54_dp)
+             call MIO_InputParameter('Interlayer.PhiAA',PhiAA_global,82.54_dp)
              PhiAA_global = PhiAA_global*pi/180.0_dp
-             call MIO_InputParameter('PhiBB',PhiBB_global,-82.54_dp)
+             call MIO_InputParameter('Interlayer.PhiBB',PhiBB_global,-82.54_dp)
              PhiBB_global = PhiBB_global*pi/180.0_dp
-             call MIO_InputParameter('PhiApAp',PhiApAp_global,-82.54_dp)
+             call MIO_InputParameter('Interlayer.PhiApAp',PhiApAp_global,-82.54_dp)
              PhiApAp_global = PhiApAp_global*pi/180.0_dp
-             call MIO_InputParameter('PhiBpBp',PhiBpBp_global,82.54_dp)
+             call MIO_InputParameter('Interlayer.PhiBpBp',PhiBpBp_global,82.54_dp)
              PhiBpBp_global = PhiBpBp_global*pi/180.0_dp
          else
              call MIO_Print('we are going to calculate interlayer-distance-dependent tBG intralayer  moire parametrization inside the loop using Srivani parametrization','ham')
          end if
       else if (BNBNDiag) then
-             call MIO_InputParameter('CAA',CAA_global,0.00110_dp)
+             call MIO_InputParameter('Interlayer.CAA',CAA_global,0.00110_dp)
              CAA_global = CAA_global/g0
-             call MIO_InputParameter('CBB',CBB_global,0.00110_dp)
+             call MIO_InputParameter('Interlayer.CBB',CBB_global,0.00110_dp)
              CBB_global = CBB_global/g0
-             call MIO_InputParameter('CAA0',CAA0_global,0.0_dp)
+             call MIO_InputParameter('Interlayer.CAA0',CAA0_global,0.0_dp)
              CAA0_global = CAA0_global/g0
-             call MIO_InputParameter('CBB0',CBB0_global,0.0_dp)
+             call MIO_InputParameter('Interlayer.CBB0',CBB0_global,0.0_dp)
              CBB0_global = CBB0_global/g0
-             call MIO_InputParameter('CApAp',CApAp_global,0.00110_dp)
+             call MIO_InputParameter('Interlayer.CApAp',CApAp_global,0.00110_dp)
              CApAp_global = CApAp_global/g0
-             call MIO_InputParameter('CBpBp',CBpBp_global,0.00110_dp)
+             call MIO_InputParameter('Interlayer.CBpBp',CBpBp_global,0.00110_dp)
              CBpBp_global = CBpBp_global/g0
              call MIO_InputParameter('CApAp0',CApAp0_global,0.0_dp)
              CApAp0_global = CApAp0_global/g0
              call MIO_InputParameter('CBpBp0',CBpBp0_global,0.0_dp)
              CBpBp0_global = CBpBp0_global/g0
-             call MIO_InputParameter('PhiAA',PhiAA_global,82.54_dp)
+             call MIO_InputParameter('Interlayer.PhiAA',PhiAA_global,82.54_dp)
              PhiAA_global = PhiAA_global*pi/180.0_dp
-             call MIO_InputParameter('PhiBB',PhiBB_global,-82.54_dp)
+             call MIO_InputParameter('Interlayer.PhiBB',PhiBB_global,-82.54_dp)
              PhiBB_global = PhiBB_global*pi/180.0_dp
-             call MIO_InputParameter('PhiApAp',PhiApAp_global,-82.54_dp)
+             call MIO_InputParameter('Interlayer.PhiApAp',PhiApAp_global,-82.54_dp)
              PhiApAp_global = PhiApAp_global*pi/180.0_dp
-             call MIO_InputParameter('PhiBpBp',PhiBpBp_global,82.54_dp)
+             call MIO_InputParameter('Interlayer.PhiBpBp',PhiBpBp_global,82.54_dp)
              PhiBpBp_global = PhiBpBp_global*pi/180.0_dp
       else
-         call MIO_InputParameter('CAA',CAA,0.005733_dp)
+         call MIO_InputParameter('Interlayer.CAA',CAA,0.005733_dp)
          CAA = CAA/g0
-         call MIO_InputParameter('CBB',CBB,0.004826_dp)
+         call MIO_InputParameter('Interlayer.CBB',CBB,0.004826_dp)
          CBB = CBB/g0
-         call MIO_InputParameter('CAA0',CAA0,3.332_dp)
+         call MIO_InputParameter('Interlayer.CAA0',CAA0,3.332_dp)
          CAA0 = CAA0/g0
-         call MIO_InputParameter('CBB0',CBB0,-1.493_dp)
+         call MIO_InputParameter('Interlayer.CBB0',CBB0,-1.493_dp)
          CBB0 = CBB0/g0
-         call MIO_InputParameter('CApAp',CApAp,-0.005703_dp)
+         call MIO_InputParameter('Interlayer.CApAp',CApAp,-0.005703_dp)
          CApAp = CApAp/g0
-         call MIO_InputParameter('CBpBp',CBpBp,-0.003596_dp)
+         call MIO_InputParameter('Interlayer.CBpBp',CBpBp,-0.003596_dp)
          CBpBp = CBpBp/g0
          call MIO_InputParameter('CApAp0',CApAp0,0.0_dp)
          CApAp0 = CApAp0/g0
          call MIO_InputParameter('CBpBp0',CBpBp0,0.0_dp)
          CBpBp0 = CBpBp0/g0
-         call MIO_InputParameter('PhiAA',PhiAA,90.0_dp)
+         call MIO_InputParameter('Interlayer.PhiAA',PhiAA,90.0_dp)
          PhiAA = PhiAA*pi/180.0_dp
-         call MIO_InputParameter('PhiBB',PhiBB,65.49_dp)
+         call MIO_InputParameter('Interlayer.PhiBB',PhiBB,65.49_dp)
          PhiBB = PhiBB*pi/180.0_dp
-         call MIO_InputParameter('PhiApAp',PhiApAp,87.51_dp)
+         call MIO_InputParameter('Interlayer.PhiApAp',PhiApAp,87.51_dp)
          PhiApAp = PhiApAp*pi/180.0_dp
-         call MIO_InputParameter('PhiBpBp',PhiBpBp,65.06_dp)
+         call MIO_InputParameter('Interlayer.PhiBpBp',PhiBpBp,65.06_dp)
          PhiBpBp = PhiBpBp*pi/180.0_dp
       end if
       GBNAngle = GBNAngle*pi/180.0_dp
@@ -1147,7 +1147,7 @@ subroutine HamOnSite()
       GlobalPhiL2a = GlobalPhiL2a*pi/180.0_dp
       GlobalPhiL2b = GlobalPhiL2b*pi/180.0_dp
       GlobalPhiL3 = GlobalPhiL3*pi/180.0_dp
-      call MIO_InputParameter('WriteDataFiles',writeData,.false.)
+      call MIO_InputParameter('Output.WriteDataFiles',writeData,.false.)
       if (writeData) then
          open(588,FILE='Hjj1')
          open(589,FILE='Hjj2')
@@ -1783,14 +1783,14 @@ subroutine HamOnSite()
 
       else if (l) then
          call MIO_Print('Moire Trilayer','ham')
-         call MIO_InputParameter('MoirePotA1',A1,A)
-         call MIO_InputParameter('MoirePotB1',B1,B)
-         call MIO_InputParameter('MoirePotA2',A2,A)
-         call MIO_InputParameter('MoirePotB2',B2,B)
-         call MIO_InputParameter('MoireTrin1',n1,0)
-         call MIO_InputParameter('MoireTrim1',m1,0)
-         call MIO_InputParameter('MoireTrin2',n2,0)
-         call MIO_InputParameter('MoireTrim2',m2,0)
+         call MIO_InputParameter('Moire.PotA1',A1,A)
+         call MIO_InputParameter('Moire.PotB1',B1,B)
+         call MIO_InputParameter('Moire.PotA2',A2,A)
+         call MIO_InputParameter('Moire.PotB2',B2,B)
+         call MIO_InputParameter('Moire.Trin1',n1,0)
+         call MIO_InputParameter('Moire.Trim1',m1,0)
+         call MIO_InputParameter('Moire.Trin2',n2,0)
+         call MIO_InputParameter('Moire.Trim2',m2,0)
          call MIO_Print('  A1: '//trim(num2str(A1,4)),'ham')
          call MIO_Print('  B1: '//trim(num2str(B1,4)),'ham')
          call MIO_Print('  A2: '//trim(num2str(A2,4)),'ham')
@@ -1813,7 +1813,7 @@ subroutine HamOnSite()
          end do
          !$OMP END PARALLEL DO
       else
-         call MIO_InputParameter('MoireSachs',l,.false.)
+         call MIO_InputParameter('Moire.Sachs',l,.false.)
          if (l) then
            call MIO_Print('Actually adding the Sachs potential...','ham')
            call MIO_Print('  A: '//trim(num2str(A,4)),'ham')
@@ -1829,31 +1829,31 @@ subroutine HamOnSite()
            end do
            !$OMP END PARALLEL DO
          end if
-         call MIO_InputParameter('MoireJeil',l,.false.)
-         call MIO_InputParameter('singleLayerXYZ',singleLayerXYZ,.false.)
+         call MIO_InputParameter('Moire.Jeil',l,.false.)
+         call MIO_InputParameter('Structure.SingleLayerXYZ',singleLayerXYZ,.false.)
          if (l) then
            call MIO_Print('Actually adding the Jeil potential...','ham')
-           call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+           call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
            call MIO_InputParameter('TrilayerFanZhang',FanZhang,.false.)
            if (MIO_StringComp(str,'MoireEncapsulatedBilayer') &
                  .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') &
                  .or. (MIO_StringComp(str,'ReadXYZ') .and. .not.(singleLayerXYZ))) then
              call MIO_Print('Working on MoireEncapsulatedBilayer or MoireEncapsulatedBilayerBasedOnMoireCell or ReadXYZ but not a single layer','ham')
-             call MIO_InputParameter('MoireOnlyH0',l,.false.)
-             call MIO_InputParameter('MoireOnlyHZ',w,.false.)
-             call MIO_InputParameter('MoireNoH0AndHZ',v,.false.)
-             call MIO_InputParameter('MoireH0AndHZ',u,.false.)
+             call MIO_InputParameter('Moire.OnlyH0',l,.false.)
+             call MIO_InputParameter('Moire.OnlyHZ',w,.false.)
+             call MIO_InputParameter('Moire.NoH0AndHZ',v,.false.)
+             call MIO_InputParameter('Moire.H0AndHZ',u,.false.)
              if (.not. (l .or. w .or. v .or. u)) then
                 call MIO_Kill('The moire potential needs one of MoireH0AndHZ, MoireOnlyH0, MoireOnlyHZ or '// &
                   'MoireNoH0AndHZ set to .true. to say which on-site terms are applied; without any of them the '// &
                   'terms were never set. MoireH0AndHZ .true. applies both.','ham','HamOnSite')
              end if
-             call MIO_InputParameter('MoireBilayerTopAngle',MoireBilayerTopAngle,0.0_dp)
+             call MIO_InputParameter('Moire.BilayerTopAngle',MoireBilayerTopAngle,0.0_dp)
              MoireBilayerTopAngleGrad = MoireBilayerTopAngle*pi/180.0_dp
-             call MIO_InputParameter('MoireBilayerBottomAngle',MoireBilayerBottomAngle,0.0_dp)
+             call MIO_InputParameter('Moire.BilayerBottomAngle',MoireBilayerBottomAngle,0.0_dp)
              MoireBilayerBottomAngleGrad = MoireBilayerBottomAngle*pi/180.0_dp
-             call MIO_InputParameter('MoireBLDeactivateUpperLayer',deactivateUpperLayer,.false.)
-             call MIO_InputParameter('MoiretDBLDeactivateUpperLayers',deactivateUpperLayers,.false.)
+             call MIO_InputParameter('Moire.BLDeactivateUpperLayer',deactivateUpperLayer,.false.)
+             call MIO_InputParameter('Moire.TDBLDeactivateUpperLayers',deactivateUpperLayers,.false.)
              if (frac) call AtomsSetCart()
              !$OMP PARALLEL DO PRIVATE(i,dx,dy,Hzjj,H0jj,C0d,Czd)
              do i=1,nAt
@@ -1978,43 +1978,43 @@ subroutine HamOnSite()
            !        ! add onsite energies
            else
              call MIO_Print('Working on ANY moire system not satisfying MoireEncapsulatedBilayer or MoireEncapsulatedBilayerBasedOnMoireCell or ReadXYZ but not a single layer','ham')
-             call MIO_InputParameter('MoireOnlyH0',l,.false.)
-             call MIO_InputParameter('MoireOnlyHZ',w,.false.)
-             call MIO_InputParameter('MoireNoH0AndHZ',v,.false.)
-             call MIO_InputParameter('MoireH0AndHZ',u,.false.)
+             call MIO_InputParameter('Moire.OnlyH0',l,.false.)
+             call MIO_InputParameter('Moire.OnlyHZ',w,.false.)
+             call MIO_InputParameter('Moire.NoH0AndHZ',v,.false.)
+             call MIO_InputParameter('Moire.H0AndHZ',u,.false.)
              if (.not. (l .or. w .or. v .or. u)) then
                 call MIO_Kill('The moire potential needs one of MoireH0AndHZ, MoireOnlyH0, MoireOnlyHZ or '// &
                   'MoireNoH0AndHZ set to .true. to say which on-site terms are applied; without any of them the '// &
                   'terms were never set. MoireH0AndHZ .true. applies both.','ham','HamOnSite')
              end if
-             call MIO_InputParameter('MoireKekule',z,.false.)
-             call MIO_InputParameter('MoireAddSecondMoire',zz,.false.)
+             call MIO_InputParameter('Moire.Kekule',z,.false.)
+             call MIO_InputParameter('Moire.AddSecondMoire',zz,.false.)
              call MIO_InputParameter('LatticepercentFactor',epsFactor,1.0_dp)
-             call MIO_InputParameter('basedOnMoireCellParameters',ll,.false.)
+             call MIO_InputParameter('Structure.BasedOnMoireCellParameters',ll,.false.)
              call MIO_InputParameter('switchHzjj',switchHzjj,.false.)
 
              if (ll) then
                  twistAngleGrad = -phiForEffectiveModel*pi/180.0_dp
                  twistAngleGrad2 = phiForEffectiveModel*pi/180.0_dp
-                 call MIO_InputParameter('MoireCellParameters',nnn,[0,0,0,0])
+                 call MIO_InputParameter('Structure.MoireCellParameters',nnn,[0,0,0,0])
              else
-                 call MIO_InputParameter('MoireTwistAngle',twistAngle,0.0_dp)
-                 call MIO_InputParameter('MoireTwistAngle2',twistAngle2,0.0_dp)
+                 call MIO_InputParameter('Moire.TwistAngle',twistAngle,0.0_dp)
+                 call MIO_InputParameter('Moire.TwistAngle2',twistAngle2,0.0_dp)
                  twistAngleGrad = twistAngle*pi/180.0_dp
                  twistAngleGrad2 = twistAngle2*pi/180.0_dp
              end if
-             call MIO_InputParameter('MoireTwisted',twisted,.false.)
-             call MIO_InputParameter('MoireTwisted2',twisted2,.false.)
-             call MIO_InputParameter('deactivateASubLattice',deactivateASubLattice,.false.)
-             call MIO_InputParameter('deactivateBSubLattice',deactivateBSubLattice,.false.)
-             call MIO_InputParameter('MoireLayerShift1',shift1,0.0_dp)
-             call MIO_InputParameter('MoireLayerShift2',shift2,0.0_dp)
+             call MIO_InputParameter('Moire.Twisted',twisted,.false.)
+             call MIO_InputParameter('Moire.Twisted2',twisted2,.false.)
+             call MIO_InputParameter('Intralayer.DeactivateASubLattice',deactivateASubLattice,.false.)
+             call MIO_InputParameter('Intralayer.DeactivateBSubLattice',deactivateBSubLattice,.false.)
+             call MIO_InputParameter('Moire.LayerShift1',shift1,0.0_dp)
+             call MIO_InputParameter('Moire.LayerShift2',shift2,0.0_dp)
              phi2M= atan((1.0_dp+eps)*sin(twistAngleGrad2)/((1.0_dp+eps)*cos(twistAngleGrad2)-1.0_dp))
              shift2_x = shift2*cos(phi2M)
              shift2_y = shift2*sin(phi2M)
-             call MIO_InputParameter('MoireSecondMoireRotateFirst',rotateFirst,.true.)
-             call MIO_InputParameter('MoireSecondMoireMassFactor',sign2,1.0_dp)
-             call MIO_InputParameter('MoireFirstMoireMassFactor',sign1,1.0_dp)
+             call MIO_InputParameter('Moire.SecondMoireRotateFirst',rotateFirst,.true.)
+             call MIO_InputParameter('Moire.SecondMoireMassFactor',sign2,1.0_dp)
+             call MIO_InputParameter('Moire.FirstMoireMassFactor',sign1,1.0_dp)
              call MIO_InputParameter('minZ',minZ,1.0_dp)
              if (frac) call AtomsSetCart()
              !$OMP PARALLEL DO PRIVATE(i,dx,dy,Hzjj,H0jj,C0d,Czd)
@@ -2205,10 +2205,10 @@ subroutine HamOnSite()
              end if
              if (z) then
                 if (frac) call AtomsSetCart()
-                call MIO_InputParameter('MoirePotC',C,0.0_dp)
-                call MIO_InputParameter('MoireKekuleAngle',KekuleAngle,30.0_dp)
+                call MIO_InputParameter('Moire.PotC',C,0.0_dp)
+                call MIO_InputParameter('Moire.KekuleAngle',KekuleAngle,30.0_dp)
                 KekuleAngleGrad = KekuleAngle*pi/180.0_dp
-                call MIO_InputParameter('MoireKekuleEpsFactor',KekuleEpsFactor,sqrt(3.0_dp))
+                call MIO_InputParameter('Moire.KekuleEpsFactor',KekuleEpsFactor,sqrt(3.0_dp))
                 !$OMP PARALLEL DO PRIVATE(i,dx,dy,dxPrime,dyPrime,Hkjj,C0d,Czd)
                 do i=1,nAt
                   ! >>> unset markers
@@ -2249,10 +2249,10 @@ subroutine HamOnSite()
          end if
          call MIO_Print('')
       end if
-      call MIO_InputParameter('MoireSymmetricPot',l,.false.)
+      call MIO_InputParameter('Moire.SymmetricPot',l,.false.)
       if (l) then
-         call MIO_InputParameter('MoireSymmA',A,0.01_dp)
-         call MIO_InputParameter('MoireSymmB',B,0.01_dp)
+         call MIO_InputParameter('Moire.SymmA',A,0.01_dp)
+         call MIO_InputParameter('Moire.SymmB',B,0.01_dp)
          call MIO_print('Symmetric part:')
          call MIO_Print('  A: '//trim(num2str(A,4)),'ham')
          call MIO_Print('  B: '//trim(num2str(B,4)),'ham')
@@ -2266,21 +2266,21 @@ subroutine HamOnSite()
          !$OMP END PARALLEL DO
       end if
    end if
-   call MIO_InputParameter('MoireBilayerElectricField',u,.false.)
-   call MIO_InputParameter('MoireBilayerElectricShift',ElectricShift,0.150_dp)
-   call MIO_InputParameter('MoireBilayerElectricFieldInvert',invertE,.false.)
-   call MIO_InputParameter('CellSize',n,55)
+   call MIO_InputParameter('Moire.BilayerElectricField',u,.false.)
+   call MIO_InputParameter('Moire.BilayerElectricShift',ElectricShift,0.150_dp)
+   call MIO_InputParameter('Moire.BilayerElectricFieldInvert',invertE,.false.)
+   call MIO_InputParameter('Structure.CellSize',n,55)
    invertEposX = (n*sCell*aG)/2.0
    ElectricShift = ElectricShift/g0
-  call MIO_InputParameter('fourLayers',fourLayers,.false.)
-  call MIO_InputParameter('fourLayersSandwiched',fourLayersSandwiched,.false.)
-  call MIO_InputParameter('helicalTwistedMBM',helicalTwistedMBM,.false.)
-  call MIO_InputParameter('fiveLayersSandwiched',fiveLayersSandwiched,.false.)
-   call MIO_InputParameter('sixLayersSandwiched',sixLayersSandwiched,.false.)
-   call MIO_InputParameter('sevenLayersSandwiched',sevenLayersSandwiched,.false.)
-   call MIO_InputParameter('eightLayersSandwiched',eightLayersSandwiched,.false.)
-   call MIO_InputParameter('tenLayersSandwiched',tenLayersSandwiched,.false.)
-   call MIO_InputParameter('twentyLayersSandwiched',twentyLayersSandwiched,.false.)
+  call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
+  call MIO_InputParameter('Stack.FourLayersSandwiched',fourLayersSandwiched,.false.)
+  call MIO_InputParameter('Stack.HelicalTwistedMBM',helicalTwistedMBM,.false.)
+  call MIO_InputParameter('Stack.FiveLayersSandwiched',fiveLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.SixLayersSandwiched',sixLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.SevenLayersSandwiched',sevenLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.EightLayersSandwiched',eightLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.TenLayersSandwiched',tenLayersSandwiched,.false.)
+   call MIO_InputParameter('Stack.TwentyLayersSandwiched',twentyLayersSandwiched,.false.)
    if (u) then
       call MIO_Print('Adding a energy shift beteen both layers in the bilayer graphene','ham')
       if (frac) call AtomsSetCart()
@@ -2390,9 +2390,9 @@ subroutine HamOnSite()
       end do
    end if
 
-   call MIO_InputParameter('addSublatticeMassterm',u,.false.)
-   call MIO_InputParameter('onlyBottomLayerMassTerm',onlyBottomLayerMassTerm,.false.)
-   call MIO_InputParameter('sublatticeMassterm',massterm,0.150_dp)
+   call MIO_InputParameter('Potential.AddSublatticeMassterm',u,.false.)
+   call MIO_InputParameter('Potential.OnlyBottomLayerMassTerm',onlyBottomLayerMassTerm,.false.)
+   call MIO_InputParameter('Potential.SublatticeMassterm',massterm,0.150_dp)
    massterm = massterm/g0
    if (u) then
       if (onlyBottomLayerMassTerm) then
@@ -2413,8 +2413,8 @@ subroutine HamOnSite()
       !$OMP END PARALLEL DO
    end if
 
-   call MIO_InputParameter('addOnsiteEnergyShift',u,.false.)
-   call MIO_InputParameter('onsiteEnergyShift',onsiteEnergyShift,0.150_dp)
+   call MIO_InputParameter('Potential.AddOnsiteEnergyShift',u,.false.)
+   call MIO_InputParameter('Potential.OnsiteEnergyShift',onsiteEnergyShift,0.150_dp)
    onsiteEnergyShift = onsiteEnergyShift/g0
    if (u) then
       call MIO_Print('Adding an onsite energy shift','ham')
@@ -2425,11 +2425,11 @@ subroutine HamOnSite()
       !$OMP END PARALLEL DO
    end if
 
-   call MIO_InputParameter('Bubbles',l,.false.)
+   call MIO_InputParameter('Strain.Bubbles',l,.false.)
    if (l) then
-      call MIO_InputParameter('onsiteShift',onsiteShift,0.1_dp)
-      call MIO_InputParameter('checkerDivider',checkerDivider,10)
-      call MIO_InputParameter('checkerDensity',checkerDensity,0.1_dp)
+      call MIO_InputParameter('Disorder.OnsiteShift',onsiteShift,0.1_dp)
+      call MIO_InputParameter('Disorder.CheckerDivider',checkerDivider,10)
+      call MIO_InputParameter('Disorder.CheckerDensity',checkerDensity,0.1_dp)
       allocate(checkerActivate(checkerDivider,checkerDivider))
       activatedCheckers = 0
       call RandSeedFromInput()
@@ -2461,11 +2461,11 @@ subroutine HamOnSite()
    end if
 
    ! PNP
-   call MIO_InputParameter('PNP',l,.false.)
+   call MIO_InputParameter('Potential.PNP',l,.false.)
    if (l) then
       if (frac) call AtomsSetCart()
-      call MIO_InputParameter('CellSize',n,50)
-      call MIO_InputParameter('PNPAmp',PNPAmp,0.01_dp)
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      call MIO_InputParameter('Potential.PNPAmp',PNPAmp,0.01_dp)
       PNPLeft = (n*sCell*aG)/6.0_dp * 2.0_dp
       PNPRight = (n*sCell*aG)/6.0_dp * 4.0_dp
       !$OMP PARALLEL DO PRIVATE(i,H)
@@ -2488,12 +2488,12 @@ subroutine HamOnSite()
       !$OMP END PARALLEL DO
    end if
 
-   call MIO_InputParameter('PNPKink',l,.false.)
+   call MIO_InputParameter('Potential.PNPKink',l,.false.)
    if (l) then
       if (frac) call AtomsSetCart()
-      call MIO_InputParameter('CellSize',n,50)
-      call MIO_InputParameter('PNPAmp',PNPAmp,0.01_dp)
-      call MIO_InputParameter('PNPDelta',delta,10.0_dp)
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      call MIO_InputParameter('Potential.PNPAmp',PNPAmp,0.01_dp)
+      call MIO_InputParameter('Potential.PNPDelta',delta,10.0_dp)
       limit0 = 0.0_dp
       limit1 = (n*sCell*aG)*1.0_dp/4.0_dp
       limit2 = (n*sCell*aG)*2.0_dp/4.0_dp
@@ -2517,10 +2517,10 @@ subroutine HamOnSite()
    end if
 
    ! changes for sinus function
-   call MIO_InputParameter('sinusModulation',l,.false.)
+   call MIO_InputParameter('Potential.SinusModulation',l,.false.)
    if (l) then
-      call MIO_InputParameter('sinusNumberOfPeriod',sinusNumberOfPeriod,1)
-      call MIO_InputParameter('CellSize',n,50)
+      call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
+      call MIO_InputParameter('Structure.CellSize',n,50)
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i)
       do i = in1,in2
@@ -2532,12 +2532,12 @@ subroutine HamOnSite()
 
    ! changes for sinus function
 
-   call MIO_InputParameter('sinusModulationUsingPeriod',sinusModulationUsingPeriod,.false.)
+   call MIO_InputParameter('Potential.SinusModulationUsingPeriod',sinusModulationUsingPeriod,.false.)
    if (sinusModulationUsingPeriod) then
-      call MIO_InputParameter('sinusModulationPeriod',sinusModulationPeriod,135.0_dp)
-      call MIO_InputParameter('sinusModulationAddMassTerm',sinusModulationAddMassTerm,.false.)
-      call MIO_InputParameter('sinusFactor',sinusFactor,0.01_dp)
-      call MIO_InputParameter('sinusMassTermFactor',sinusFactor2,0.01_dp)
+      call MIO_InputParameter('Potential.SinusModulationPeriod',sinusModulationPeriod,135.0_dp)
+      call MIO_InputParameter('Potential.SinusModulationAddMassTerm',sinusModulationAddMassTerm,.false.)
+      call MIO_InputParameter('Potential.SinusFactor',sinusFactor,0.01_dp)
+      call MIO_InputParameter('Potential.SinusMassTermFactor',sinusFactor2,0.01_dp)
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i)
       do i = 1,nAt
@@ -2553,12 +2553,12 @@ subroutine HamOnSite()
 
    ! changes for sinus function
 
-   call MIO_InputParameter('sinusModulationUsingPeriodYDirection',sinusModulationUsingPeriodY,.false.)
+   call MIO_InputParameter('Potential.SinusModulationUsingPeriodYDirection',sinusModulationUsingPeriodY,.false.)
    if (sinusModulationUsingPeriodY) then
-      call MIO_InputParameter('sinusModulationPeriod',sinusModulationPeriod,135.0_dp)
-      call MIO_InputParameter('sinusModulationAddMassTerm',sinusModulationAddMassTerm,.false.)
-      call MIO_InputParameter('sinusFactor',sinusFactor,0.01_dp)
-      call MIO_InputParameter('sinusMassTermFactor',sinusFactor2,0.01_dp)
+      call MIO_InputParameter('Potential.SinusModulationPeriod',sinusModulationPeriod,135.0_dp)
+      call MIO_InputParameter('Potential.SinusModulationAddMassTerm',sinusModulationAddMassTerm,.false.)
+      call MIO_InputParameter('Potential.SinusFactor',sinusFactor,0.01_dp)
+      call MIO_InputParameter('Potential.SinusMassTermFactor',sinusFactor2,0.01_dp)
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i)
       do i = 1,nAt
@@ -2574,12 +2574,12 @@ subroutine HamOnSite()
 
    ! changes for cosinus function
 
-   call MIO_InputParameter('cosinusModulationUsingPeriod',cosinusModulationUsingPeriod,.false.)
+   call MIO_InputParameter('Potential.CosinusModulationUsingPeriod',cosinusModulationUsingPeriod,.false.)
    if (cosinusModulationUsingPeriod) then
-      call MIO_InputParameter('cosinusModulationPeriod',cosinusModulationPeriod,135.0_dp)
-      call MIO_InputParameter('cosinusModulationAddMassTerm',cosinusModulationAddMassTerm,.false.)
-      call MIO_InputParameter('cosinusFactor',cosinusFactor,0.01_dp)
-      call MIO_InputParameter('cosinusMassTermFactor',cosinusFactor2,0.01_dp)
+      call MIO_InputParameter('Potential.CosinusModulationPeriod',cosinusModulationPeriod,135.0_dp)
+      call MIO_InputParameter('Potential.CosinusModulationAddMassTerm',cosinusModulationAddMassTerm,.false.)
+      call MIO_InputParameter('Potential.CosinusFactor',cosinusFactor,0.01_dp)
+      call MIO_InputParameter('Potential.CosinusMassTermFactor',cosinusFactor2,0.01_dp)
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i)
       do i = 1,nAt
@@ -2595,12 +2595,12 @@ subroutine HamOnSite()
 
    ! changes for cosinus function
 
-   call MIO_InputParameter('cosinusModulationUsingPeriodYDirection',cosinusModulationUsingPeriodY,.false.)
+   call MIO_InputParameter('Potential.CosinusModulationUsingPeriodYDirection',cosinusModulationUsingPeriodY,.false.)
    if (cosinusModulationUsingPeriodY) then
-      call MIO_InputParameter('cosinusModulationPeriod',cosinusModulationPeriod,135.0_dp)
-      call MIO_InputParameter('cosinusModulationAddMassTerm',cosinusModulationAddMassTerm,.false.)
-      call MIO_InputParameter('cosinusFactor',cosinusFactor,0.01_dp)
-      call MIO_InputParameter('cosinusMassTermFactor',cosinusFactor2,0.01_dp)
+      call MIO_InputParameter('Potential.CosinusModulationPeriod',cosinusModulationPeriod,135.0_dp)
+      call MIO_InputParameter('Potential.CosinusModulationAddMassTerm',cosinusModulationAddMassTerm,.false.)
+      call MIO_InputParameter('Potential.CosinusFactor',cosinusFactor,0.01_dp)
+      call MIO_InputParameter('Potential.CosinusMassTermFactor',cosinusFactor2,0.01_dp)
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i)
       do i = 1,nAt
@@ -2615,17 +2615,17 @@ subroutine HamOnSite()
    ! end changes for sinus function
 
    ! square function
-   call MIO_InputParameter('SquareFunction',l,.false.)
+   call MIO_InputParameter('Potential.SquareFunction',l,.false.)
    if (l) then
-      call MIO_InputParameter('sinusNumberOfPeriod',sinusNumberOfPeriod,1)
-      call MIO_InputParameter('CellSize',n,50)
+      call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
+      call MIO_InputParameter('Structure.CellSize',n,50)
       call MIO_InputParameter('AmplitudeOfSquare',A,1.0_dp)
       if (frac) call AtomsSetCart()
 
-      call MIO_InputParameter('TwoDimensional',l,.false.)
+      call MIO_InputParameter('Potential.TwoDimensional',l,.false.)
       if (l) then
 
-        call MIO_InputParameter('AddZTerm',l,.false.)
+        call MIO_InputParameter('Potential.AddZTerm',l,.false.)
            if (l) then
 
       !$OMP PARALLEL DO PRIVATE(i,H)
@@ -2678,18 +2678,18 @@ subroutine HamOnSite()
    ! square function
 
    ! square function 2
-   call MIO_InputParameter('SquareFunction2',l,.false.)
+   call MIO_InputParameter('Potential.SquareFunction2',l,.false.)
    if (l) then
       call MIO_InputParameter('NumberOfWidthHoneycomb',NOWH,1)
-      call MIO_InputParameter('CellSize',n,50)
+      call MIO_InputParameter('Structure.CellSize',n,50)
       call MIO_InputParameter('AmplitudeOfSquare2',Amp2,0.01_dp)
       call MIO_InputParameter('PhaseOfSquareX',P1,0.0_dp)
       call MIO_InputParameter('PhaseOfSquareY',P2,0.0_dp)
       if (frac) call AtomsSetCart()
 
-      call MIO_InputParameter('TwoDimension',l,.false.)
+      call MIO_InputParameter('Potential.TwoDimension',l,.false.)
       if (l) then
-        call MIO_InputParameter('AddZTerm',l,.false.)
+        call MIO_InputParameter('Potential.AddZTerm',l,.false.)
            if (l) then
 
       !$OMP PARALLEL DO PRIVATE(i,H)
@@ -2723,7 +2723,7 @@ subroutine HamOnSite()
         end if
 
       else
-      call MIO_InputParameter('ArmChairShape',l,.false.)
+      call MIO_InputParameter('Potential.ArmChairShape',l,.false.)
       if (l) then
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = in1,in2
@@ -2759,11 +2759,11 @@ subroutine HamOnSite()
    ! square function 2
 
    ! zterm1d
-   call MIO_InputParameter('Zterm1D',l,.false.)
+   call MIO_InputParameter('Potential.Zterm1D',l,.false.)
    if (l) then
       if (frac) call AtomsSetCart()
-      call MIO_InputParameter('sinusNumberOfPeriod',sinusNumberOfPeriod,1)
-      call MIO_InputParameter('CellSize',n,50)
+      call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
+      call MIO_InputParameter('Structure.CellSize',n,50)
       call MIO_InputParameter('AmplitudeOfSquare3',Amp3,0.01_dp)
 
       !$OMP PARALLEL DO PRIVATE(i,H)
@@ -2781,12 +2781,12 @@ subroutine HamOnSite()
       !$OMP END PARALLEL DO
    end if
 
-   call MIO_InputParameter('Zterm1DKink',l,.false.)   ! only works for 2 periods
+   call MIO_InputParameter('Potential.Zterm1DKink',l,.false.)   ! only works for 2 periods
    if (l) then
       if (frac) call AtomsSetCart()
-      call MIO_InputParameter('CellSize',n,50)
-      call MIO_InputParameter('Zterm1DAmp',Amp3,0.01_dp)
-      call MIO_InputParameter('Zterm1DDelta',delta,10.0_dp)
+      call MIO_InputParameter('Structure.CellSize',n,50)
+      call MIO_InputParameter('Potential.Zterm1DAmp',Amp3,0.01_dp)
+      call MIO_InputParameter('Potential.Zterm1DDelta',delta,10.0_dp)
       limit0 = 0.0_dp
       limit1 = (n*sCell*aG)*1.0_dp/4.0_dp
       limit2 = (n*sCell*aG)*2.0_dp/4.0_dp
@@ -2811,10 +2811,10 @@ subroutine HamOnSite()
 
    ! zterm1d
    ! squarechecker
- call MIO_InputParameter('SquareChecker2219',l,.false.)
+ call MIO_InputParameter('Potential.SquareChecker2219',l,.false.)
       if (l) then
 
-      call MIO_InputParameter('CellSize',n,50)
+      call MIO_InputParameter('Structure.CellSize',n,50)
       call MIO_InputParameter('AmplitudeOfSquare',A,1.0_dp)
       if (frac) call AtomsSetCart()
 
@@ -2844,11 +2844,11 @@ subroutine HamOnSite()
 end if
 
    ! squarechecker
-   call MIO_InputParameter('SublatticeDisorder',l,.false.)
+   call MIO_InputParameter('Disorder.SublatticeDisorder',l,.false.)
    if (l) then
       call RandSeedFromInput()
-      call MIO_InputParameter('SublattAmp',A,2.0_dp)
-      call MIO_InputParameter('SublattPct',pct,0.1_dp)
+      call MIO_InputParameter('Disorder.SublattAmp',A,2.0_dp)
+      call MIO_InputParameter('Disorder.SublattPct',pct,0.1_dp)
       call MIO_Print('Sublattice disorder','ham')
       call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
       call MIO_Print('')
@@ -2860,10 +2860,10 @@ end if
       end do
    end if
 
-   call MIO_InputParameter('Anderson',l,.false.)
+   call MIO_InputParameter('Disorder.Anderson',l,.false.)
    if (l) then
       call RandSeedFromInput()
-      call MIO_InputParameter('AndersonAmp',A,1.0_dp)
+      call MIO_InputParameter('Disorder.AndersonAmp',A,1.0_dp)
       call MIO_Print('Anderson disorder','ham')
       call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
       call MIO_Print('')
@@ -2872,14 +2872,14 @@ end if
          H0(i) = H0(i) + (rand-0.5_dp)*A
       end do
    end if
-   call MIO_InputParameter('deltaDisorder',l,.false.)
+   call MIO_InputParameter('Disorder.DeltaDisorder',l,.false.)
    if (l) then
       call RandSeedFromInput()
-      call MIO_InputParameter('deltaAmp',A,1.0_dp)
+      call MIO_InputParameter('Disorder.DeltaAmp',A,1.0_dp)
       call MIO_Print('delta disorder','ham')
       call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
       call MIO_Print('')
-      call MIO_InputParameter('deltaSkewFactor',AA,1.0_dp)
+      call MIO_InputParameter('Disorder.DeltaSkewFactor',AA,1.0_dp)
       call MIO_Print('delta disorder','ham')
       call MIO_Print('  skewFactor: '//trim(num2str(AA,4)),'ham')
       call MIO_Print('')
@@ -2910,21 +2910,21 @@ end if
       call MIO_Print('  variance: '//trim(num2str((tot2/nImp),9)),'ham')
       call MIO_Print('  skewness: '//trim(num2str((tot3/nImp),9)),'ham')
    end if
-   call MIO_InputParameter('GaussDisorder',l,.false.)
+   call MIO_InputParameter('Disorder.GaussDisorder',l,.false.)
    if (l) then
       call GaussPot(H0)
    end if
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (Zterm .or. PZterm) then
       call MIO_Allocate(Ho,[inode1],[inode2],'Ho','ham')
       Ho = H0
    end if
 
-   call MIO_InputParameter('fourLayerOnsiteShifts',l,.false.)
-   call MIO_InputParameter('fourLayerShift1',layerShift1,0.0_dp)
-   call MIO_InputParameter('fourLayerShift2',layerShift2,0.0_dp)
-   call MIO_InputParameter('fourLayerShift3',layerShift3,0.0_dp)
-   call MIO_InputParameter('fourLayerShift4',layerShift4,0.0_dp)
+   call MIO_InputParameter('Potential.FourLayerOnsiteShifts',l,.false.)
+   call MIO_InputParameter('Stack.FourLayerShift1',layerShift1,0.0_dp)
+   call MIO_InputParameter('Stack.FourLayerShift2',layerShift2,0.0_dp)
+   call MIO_InputParameter('Stack.FourLayerShift3',layerShift3,0.0_dp)
+   call MIO_InputParameter('Stack.FourLayerShift4',layerShift4,0.0_dp)
    layerShift1 = layerShift1/g0
    layerShift2 = layerShift2/g0
    layerShift3 = layerShift3/g0
@@ -2954,13 +2954,13 @@ end if
    ! Note the modulation is in FRACTIONAL coordinates, so it sits at the reciprocal vectors
    ! of the SIMULATION CELL: on an NxN supercell of a moire cell it is an N-fold superlattice
    ! potential.  CDWAmplitude is in eV (divided by g0 below); CDWPeriod is NOT used.
-   call MIO_InputParameter('helicalTwistedMBM_CDW',helicalTwistedMBM_CDW,.false.)
+   call MIO_InputParameter('Potential.HelicalTwistedMBM_CDW',helicalTwistedMBM_CDW,.false.)
    if (helicalTwistedMBM_CDW) then
          call MIO_Print('Adding CDW modulation for helical twisted MBM system','ham')
-         call MIO_InputParameter('CDWAmplitude',CDWAmplitude,0.01_dp)
+         call MIO_InputParameter('Potential.CDWAmplitude',CDWAmplitude,0.01_dp)
          CDWAmplitude = CDWAmplitude/g0
-         call MIO_InputParameter('CDWPeriod',CDWPeriod,1.0_dp)
-         call MIO_InputParameter('CDWUseMassTerm',l,.false.)
+         call MIO_InputParameter('Potential.CDWPeriod',CDWPeriod,1.0_dp)
+         call MIO_InputParameter('Potential.CDWUseMassTerm',l,.false.)
          if (.not. frac) call AtomsSetFrac()
          call MIO_Print('  Using fractional coordinates for CDW modulation (Rat in fractional units)','ham')
          call MIO_Print('  CDW period: '//trim(num2str(CDWPeriod,5))//' (in fractional units, 1.0 = full simulation cell)','ham')
@@ -3024,7 +3024,7 @@ end if
    ! The simulation supercell must be a multiple of D along the a1 direction,
    ! otherwise the potential is not periodic and the run is aborted.
    ! ------------------------------------------------------------------------
-   call MIO_InputParameter('moireCDW',moireCDW,.false.)
+   call MIO_InputParameter('Moire.CDW',moireCDW,.false.)
    if (moireCDW) then
       call MIO_InputParameter('moireCDW.Amplitude',cdwScalar,0.0_dp)
       call MIO_InputParameter('moireCDW.MassAmplitude',cdwMass,0.0_dp)
@@ -3038,8 +3038,8 @@ end if
       call MIO_InputBlock('moireCDW.Qvectors',Qcdw)
 
       ! commensurability of the simulation supercell with the potential
-      call MIO_InputParameter('SuperCellX',scX,1)
-      call MIO_InputParameter('SuperCellY',scY,1)
+      call MIO_InputParameter('Structure.SuperCellX',scX,1)
+      call MIO_InputParameter('Structure.SuperCellY',scY,1)
       if (scX == scY) then
          scX = sCell
          scY = sCell
@@ -3375,14 +3375,14 @@ subroutine HamCheckHermiticity()
    integer :: i, j, m, j2, npairs, nmissing
    real(dp) :: asym, maxAsym
 
-   call MIO_InputParameter('MoireOffDiag',moireOD,.false.)
-   call MIO_InputParameter('tBGOffDiag',tbgOD,.false.)
-   call MIO_InputParameter('GBNOffDiag',gbnOD,.false.)
-   call MIO_InputParameter('HaldaneNNN',haldane,.false.)
-   call MIO_InputParameter('HaldaneSpecifyPhase',haldanePhase,.false.)
+   call MIO_InputParameter('Moire.OffDiag',moireOD,.false.)
+   call MIO_InputParameter('TBG.OffDiag',tbgOD,.false.)
+   call MIO_InputParameter('GBN.OffDiag',gbnOD,.false.)
+   call MIO_InputParameter('Haldane.NNN',haldane,.false.)
+   call MIO_InputParameter('Haldane.SpecifyPhase',haldanePhase,.false.)
    haldanePhase = haldane .and. haldanePhase
    if (.not. (moireOD .or. tbgOD .or. gbnOD .or. haldanePhase)) return
-   call MIO_InputParameter('MoireOffDiagMidpoint',moireMid,.false.)
+   call MIO_InputParameter('Moire.OffDiagMidpoint',moireMid,.false.)
 
    maxAsym = 0.0_dp
    npairs = 0
@@ -4688,10 +4688,10 @@ subroutine HamHopping
    ! misassigns shells on a strongly corrugated sheet (a steep bond projects short). Opt-in: from the in-plane
    ! bond length in a rigid reference structure with the same atom order (xyz, 4 header lines); realStrain keeps
    ! the 3-D length of the actual bond. Implemented for GBNtwoLayers, single MPI rank.
-   call MIO_InputParameter('shellsFromRigidPositions',shellsFromRigid,.false.)
+   call MIO_InputParameter('Strain.ShellsFromRigidPositions',shellsFromRigid,.false.)
    if (shellsFromRigid) then
-      call MIO_InputParameter('shellsRigidFile',shellRigidFile,'generateInit.xyz')
-      call MIO_InputParameter('GBNtwoLayers',GBNtwoLayers,.false.)
+      call MIO_InputParameter('Strain.ShellsRigidFile',shellRigidFile,'generateInit.xyz')
+      call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
       if (.not. GBNtwoLayers) call MIO_Kill('shellsFromRigidPositions is implemented for GBNtwoLayers only','ham','HamHopping')
       if (sCell /= 1) call MIO_Kill('shellsFromRigidPositions needs SuperCell 1','ham','HamHopping')
 #ifdef MPI
@@ -4733,8 +4733,8 @@ subroutine HamHopping
    hopp = 0.0_dp
    numberOfInterlayerHoppings = 0
    flux = Bmag*pi/fluxq
-   call MIO_InputParameter('MoireStrain',moireStrain,.false.)
-   call MIO_InputParameter('FrankMagneticField',Frank,.false.)
+   call MIO_InputParameter('Moire.Strain',moireStrain,.false.)
+   call MIO_InputParameter('MagField.FrankMagneticField',Frank,.false.)
    call MIO_InputParameter('MagField.Integer',mB,1)
    if (moireStrain) then
       if (.not. frac) call AtomsSetFrac()
@@ -4766,7 +4766,7 @@ subroutine HamHopping
          numberOfHBA1 = 0
          numberOfHBA2 = 0
 
-         call MIO_InputParameter('changeLatticeParameterForSrivaniModel',changeLatticeParameterForSrivaniModel,.false.)
+         call MIO_InputParameter('Interlayer.ChangeLatticeParameterForSrivaniModel',changeLatticeParameterForSrivaniModel,.false.)
          if (changeLatticeParameterForSrivaniModel) then
             aGSrivani = 2.4389777651302801_dp
             call MIO_Print('We change aG for the calculation of rbar into 2.43 instead of 2.46 to agree with Srivanis fitting','ham')
@@ -4774,51 +4774,51 @@ subroutine HamHopping
             aGSrivani = aG
          end if
 
-         call MIO_InputParameter('removeF2G2Flag',removeF2G2Flag,.false.)
+         call MIO_InputParameter('Intralayer.RemoveF2G2Flag',removeF2G2Flag,.false.)
          if (removeF2G2Flag) then
             F2G2Model = .false.
          else
-            call MIO_InputParameter('F2G2Model',F2G2Model,.true.)
+            call MIO_InputParameter('Intralayer.F2G2Model',F2G2Model,.true.)
          end if
-         call MIO_InputParameter('threeLayerShort',threeLayerShort,.false.)
-         call MIO_InputParameter('GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
-         call MIO_InputParameter('GBNtwoLayers',GBNtwoLayers,.false.)
-         call MIO_InputParameter('BNBNtwoLayers',BNBNtwoLayers,.false.)
-         call MIO_InputParameter('tBGOffDiag',tBGOffDiag,.false.)
-         call MIO_InputParameter('tBGOffDiagPRB',tBGOffDiagPRB,.false.)
+         call MIO_InputParameter('Stack.ThreeLayerShort',threeLayerShort,.false.)
+         call MIO_InputParameter('Stack.GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
+         call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
+         call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
+         call MIO_InputParameter('TBG.OffDiag',tBGOffDiag,.false.)
+         call MIO_InputParameter('TBG.OffDiagPRB',tBGOffDiagPRB,.false.)
          call MIO_InputParameter('Latticepercent',eps,-0.018181818181818_dp)
-         call MIO_InputParameter('MoirePotCab',Cab,0.01134_dp)
-         call MIO_InputParameter('MoirePotCabBN',CabBN,0.004418_dp)
+         call MIO_InputParameter('Moire.PotCab',Cab,0.01134_dp)
+         call MIO_InputParameter('Moire.PotCabBN',CabBN,0.004418_dp)
          Cab = Cab/g0
          CabBN = CabBN/g0
-         call MIO_InputParameter('BilayerOneParameter',BilayerOneParameter,.false.)
-         call MIO_InputParameter('BilayerThreeParameters',BilayerThreeParameters,.false.)
+         call MIO_InputParameter('Interlayer.BilayerOneParameter',BilayerOneParameter,.false.)
+         call MIO_InputParameter('Intralayer.BilayerThreeParameters',BilayerThreeParameters,.false.)
          call MIO_InputParameter('BfactorCab',BfactorCab,3.3_dp)
-         call MIO_InputParameter('InterlayerDistance',z0,3.35_dp)
+         call MIO_InputParameter('Structure.InterlayerDistance',z0,3.35_dp)
          if (BilayerOneParameter) then
-             call MIO_InputParameter('BilayertAB1',tAB1,0.361_dp)
+             call MIO_InputParameter('Intralayer.BilayertAB1',tAB1,0.361_dp)
              tAB1 = -tAB1/g0 ! Add minus sign to compensate for intrinsic minus sign
          else if (BilayerThreeParameters) then
-             call MIO_InputParameter('BilayertAB1',tAB1,0.361_dp)
+             call MIO_InputParameter('Intralayer.BilayertAB1',tAB1,0.361_dp)
              tAB1 = -tAB1/g0
-             call MIO_InputParameter('BilayertAB3',tAB3,0.283_dp)
+             call MIO_InputParameter('Intralayer.BilayertAB3',tAB3,0.283_dp)
              tAB3 = -tAB3/g0
-             call MIO_InputParameter('BilayertAB4',tAB4,0.138_dp)
+             call MIO_InputParameter('Intralayer.BilayertAB4',tAB4,0.138_dp)
              tAB4 = -tAB4/g0
          else if (F2G2Model) then
-             call MIO_InputParameter('BilayertAA1',tAA1,0.09244_dp)
+             call MIO_InputParameter('Intralayer.BilayertAA1',tAA1,0.09244_dp)
              tAA1 = -tAA1/g0
-             call MIO_InputParameter('BilayertAA3',tAA2,-0.02299_dp)
+             call MIO_InputParameter('Intralayer.BilayertAA3',tAA2,-0.02299_dp)
              tAA2 = -tAA2/g0
-             call MIO_InputParameter('BilayertAB1',tAB1,0.1391_dp)
+             call MIO_InputParameter('Intralayer.BilayertAB1',tAB1,0.1391_dp)
              tAB1 = -tAB1/g0
-             call MIO_InputParameter('BilayertAB3',tAB2,-0.07211_dp)
+             call MIO_InputParameter('Intralayer.BilayertAB3',tAB2,-0.07211_dp)
              tAB2 = -tAB2/g0
-             call MIO_InputParameter('BilayertBA0',tBA0,0.331_dp)
+             call MIO_InputParameter('Intralayer.BilayertBA0',tBA0,0.331_dp)
              tBA0 = -tBA0/g0
-             call MIO_InputParameter('BilayertBA0',tBA2,-0.01016_dp)
+             call MIO_InputParameter('Intralayer.BilayertBA0',tBA2,-0.01016_dp)
              tBA2 = -tBA2/g0
-             call MIO_InputParameter('BilayertBA0',tBA5,0.0001_dp)
+             call MIO_InputParameter('Intralayer.BilayertBA0',tBA5,0.0001_dp)
              tBA5 = -tBA5/g0
          end if
          call MIO_InputParameter('TrilayerFanZhang',FanZhang,.false.)
@@ -4833,66 +4833,66 @@ subroutine HamHopping
              tr3 = tr3/g0
              tr4 = tr4/g0
          end if
-         call MIO_InputParameter('MoirePotPhiab',Phiab,0.342084533390889_dp)
+         call MIO_InputParameter('Moire.PotPhiab',Phiab,0.342084533390889_dp)
          if (tBGOffDiag) then
                PhiabG = 0.0_dp
          else
-            call MIO_InputParameter('MoirePotPhiabG',PhiabG,3.5_dp)
+            call MIO_InputParameter('Moire.PotPhiabG',PhiabG,3.5_dp)
          end if
          PhiabG = PhiabG*pi/180.0_dp
-         call MIO_InputParameter('MoirePotPhiabBN',PhiabBN,26.1_dp)
+         call MIO_InputParameter('Moire.PotPhiabBN',PhiabBN,26.1_dp)
          PhiabBN = PhiabBN*pi/180.0_dp
 
-         call MIO_InputParameter('TypeOfSystem',str,'Graphene')
-         call MIO_InputParameter('TypeOfBL',BilayerModel,'None')
+         call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+         call MIO_InputParameter('Interlayer.TypeOfBL',BilayerModel,'None')
          if (MIO_StringComp(BilayerModel,'Jeil')) then
             call MIO_Kill('TypeOfBL Jeil is not supported at present: its neighbour bookkeeping reads beyond '// &
               'its arrays for every structure tested (tests/regression/model_survey.py). Use another '// &
               'interlayer model, for instance Koshino.','ham','HamHopping')
          end if
          ! then we don't have to change the code and keep the bilayer parts even for the single layer
-         call MIO_InputParameter('TypeOfSL',SinglelayerModel,'None')
-         call MIO_InputParameter('addExponentialDecayForDihedral',addExponentialDecayForDihedral,.false.)
-         call MIO_InputParameter('MoireBilayerTopAngle',MoireBilayerTopAngle,0.0_dp)
+         call MIO_InputParameter('Interlayer.TypeOfSL',SinglelayerModel,'None')
+         call MIO_InputParameter('Interlayer.AddExponentialDecayForDihedral',addExponentialDecayForDihedral,.false.)
+         call MIO_InputParameter('Moire.BilayerTopAngle',MoireBilayerTopAngle,0.0_dp)
          MoireBilayerTopAngleGrad = MoireBilayerTopAngle*pi/180.0_dp
-         call MIO_InputParameter('MoireBilayerBottomAngle',MoireBilayerBottomAngle,0.0_dp)
+         call MIO_InputParameter('Moire.BilayerBottomAngle',MoireBilayerBottomAngle,0.0_dp)
          MoireBilayerBottomAngleGrad = MoireBilayerBottomAngle*pi/180.0_dp
-         call MIO_InputParameter('MoireBLDeactivateUpperLayer',deactivateUpperLayer,.false.)
-         call MIO_InputParameter('MoiretDBLDeactivateUpperLayers',deactivateUpperLayers,.false.)
-         call MIO_InputParameter('MoireTwisted',twisted,.false.)
-         call MIO_InputParameter('MoireTwistAngle',twistAngle,0.0_dp)
+         call MIO_InputParameter('Moire.BLDeactivateUpperLayer',deactivateUpperLayer,.false.)
+         call MIO_InputParameter('Moire.TDBLDeactivateUpperLayers',deactivateUpperLayers,.false.)
+         call MIO_InputParameter('Moire.Twisted',twisted,.false.)
+         call MIO_InputParameter('Moire.TwistAngle',twistAngle,0.0_dp)
          twistAngleGrad = twistAngle*pi/180.0_dp
-         call MIO_InputParameter('MoireAddSecondMoire',zz,.false.)
-         call MIO_InputParameter('basedOnMoireCellParameters',ll,.false.)
-         call MIO_InputParameter('MoireFirstMoireMassFactor',sign1,1.0_dp)
-         call MIO_InputParameter('WriteDataFiles',writeData,.false.)
+         call MIO_InputParameter('Moire.AddSecondMoire',zz,.false.)
+         call MIO_InputParameter('Structure.BasedOnMoireCellParameters',ll,.false.)
+         call MIO_InputParameter('Moire.FirstMoireMassFactor',sign1,1.0_dp)
+         call MIO_InputParameter('Output.WriteDataFiles',writeData,.false.)
          if (writeData) then
             open(587,FILE='HAB')
             open(586,FILE='BfactorExp.dat')
          end if
          if (ll) then
-             call MIO_InputParameter('MoireCellParameters',nnn,[0,0,0,0])
+             call MIO_InputParameter('Structure.MoireCellParameters',nnn,[0,0,0,0])
              ggg = nnn(1)**2 + nnn(2)**2 + nnn(1)*nnn(2)
              delta = sqrt(real(nnn(3)**2 + nnn(4)**2 + nnn(3)*nnn(4))/ggg)
              phiForEffectiveModel = acos((2.0_dp*nnn(1)*nnn(3)+2.0_dp*nnn(2)*nnn(4) + nnn(1)*nnn(4) &
                    + nnn(2)*nnn(3))/(2.0_dp*delta*ggg))
              twistAngleGrad = phiForEffectiveModel
          else
-             call MIO_InputParameter('MoireTwistAngle',twistAngle,0.0_dp)
-             call MIO_InputParameter('MoireTwistAngle2',twistAngle2,0.0_dp)
+             call MIO_InputParameter('Moire.TwistAngle',twistAngle,0.0_dp)
+             call MIO_InputParameter('Moire.TwistAngle2',twistAngle2,0.0_dp)
              twistAngleGrad = twistAngle*pi/180.0_dp
              twistAngleGrad2 = twistAngle2*pi/180.0_dp
          end if
-         call MIO_InputParameter('MoireTwisted2',twisted2,.false.)
-         call MIO_InputParameter('MoireLayerShift1',shift1,0.0_dp)
-         call MIO_InputParameter('MoireLayerShift2',shift2,0.0_dp)
-         call MIO_InputParameter('MoireSecondMoireRotateFirst',rotateFirst,.true.)
+         call MIO_InputParameter('Moire.Twisted2',twisted2,.false.)
+         call MIO_InputParameter('Moire.LayerShift1',shift1,0.0_dp)
+         call MIO_InputParameter('Moire.LayerShift2',shift2,0.0_dp)
+         call MIO_InputParameter('Moire.SecondMoireRotateFirst',rotateFirst,.true.)
          call MIO_InputParameter('minDelta',minDelta,1.0_dp)
          phi2M= atan((1.0_dp+eps)*sin(twistAngleGrad2)/((1.0_dp+eps)*cos(twistAngleGrad2)-1.0_dp))
          shift2_x = shift2*cos(phi2M)
          shift2_y = shift2*sin(phi2M)
 
-         call MIO_InputParameter('MoireCellParameters',n,[0,0,0,0])
+         call MIO_InputParameter('Structure.MoireCellParameters',n,[0,0,0,0])
          gAngle = n(1)**2 + n(2)**2 + n(1)*n(2)
          deltaAngle = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/gAngle)
          twistedBilayerAngle = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*deltaAngle*gAngle))
@@ -4908,60 +4908,60 @@ subroutine HamHopping
          ! Its default therefore follows the intralayer model: 2.7 eV, the
          ! original Moon-Koshino value, with KoshinoIntralayer; 3.5 eV, the
          ! calibration that goes with the F2G2-type intralayer models, otherwise.
-         call MIO_InputParameter('KoshinoIntralayer',KoshinoIntralayer,.false.)
+         call MIO_InputParameter('Intralayer.KoshinoIntralayer',KoshinoIntralayer,.false.)
          if (KoshinoIntralayer) then
-            call MIO_InputParameter('vpppi0',vpppi0,2.7_dp)
+            call MIO_InputParameter('Interlayer.Vpppi0',vpppi0,2.7_dp)
             call MIO_Print('Two-centre Vpppi0 = '//trim(num2str(vpppi0,4))// &
               ' eV (intralayer and interlayer; default 2.7 with KoshinoIntralayer)','ham')
          else
-            call MIO_InputParameter('vpppi0',vpppi0,3.5_dp)
+            call MIO_InputParameter('Interlayer.Vpppi0',vpppi0,3.5_dp)
             if (.not. MIO_StringComp(BilayerModel,'None')) then
                call MIO_Print('Two-centre Vpppi0 = '//trim(num2str(vpppi0,4))// &
                  ' eV (interlayer pi term only; default 3.5 without KoshinoIntralayer)','ham')
             end if
          end if
          vpppi0 = vpppi0/g0
-         call MIO_InputParameter('vppsigma0',vppsigma0,0.48_dp)
-         call MIO_InputParameter('BLdelta',BLdelta,0.184_dp*aG)
+         call MIO_InputParameter('Interlayer.Vppsigma0',vppsigma0,0.48_dp)
+         call MIO_InputParameter('Interlayer.BLdelta',BLdelta,0.184_dp*aG)
          vppsigma0 = -vppsigma0/g0
          ! Optional: interlayer two-center hopping with local p_z orbital axes
          ! (corrugated sheets). Default .false. keeps the legacy global-z
          ! expression with the same operands; radial Vpppi/Vppsigma/BLdelta unchanged.
-         call MIO_InputParameter('corrugatedInterlayerTwoCenter',corrugatedInterlayerTwoCenter,.false.)
+         call MIO_InputParameter('Interlayer.CorrugatedInterlayerTwoCenter',corrugatedInterlayerTwoCenter,.false.)
          ! Mayou
          qpi = aCC*2.218_dp
          lc = 0.265_dp
          rc = 6.14_dp
 
-         call MIO_InputParameter('InterlayerDistance',interlayerdistance,3.22_dp)
+         call MIO_InputParameter('Structure.InterlayerDistance',interlayerdistance,3.35_dp)
          qsigma = interlayerdistance * 2.218_dp
          call MIO_InputParameter('distanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
-         call MIO_InputParameter('F2G2Model',F2G2Model,.true.) ! default true
-         call MIO_InputParameter('useOldGrapheneF2G2',useOldGrapheneF2G2,.false.) ! default true
-         call MIO_InputParameter('deactivateInterlayer',deactivateInterlayer,.false.)
-         call MIO_InputParameter('deactivateInterlayer12',deactivateInterlayer12,.false.)
-         call MIO_InputParameter('deactivateInterlayer23',deactivateInterlayer23,.false.)
-         call MIO_InputParameter('deactivateInterlayer34',deactivateInterlayer34,.false.)
-         call MIO_InputParameter('deactivateInterlayert2GBN1to2',deactivateInterlayert2GBN1to2,.false.)
-         call MIO_InputParameter('deactivateInterlayert2GBN2to3',deactivateInterlayert2GBN2to3,.false.)
-         call MIO_InputParameter('deactivateInterlayert2BG2to3',deactivateInterlayert2BG2to3,.false.)
-         call MIO_InputParameter('deactivateInterlayert3BG1to2',deactivateInterlayert3BG1to2,.false.)
-         call MIO_InputParameter('deactivateInterlayert3BG2to3',deactivateInterlayert3BG2to3,.false.)
-         call MIO_InputParameter('deactivateInterlayert3BG3to4',deactivateInterlayert3BG3to4,.false.)
-         call MIO_InputParameter('deactivateInterlayert3BG4to5',deactivateInterlayert3BG4to5,.false.)
-         call MIO_InputParameter('deactivateInterlayert3BG5to6',deactivateInterlayert3BG5to6,.false.)
-         call MIO_InputParameter('deactivateInterlayerBG',deactivateInterlayerBG,.false.)
-         call MIO_InputParameter('deactivateInterlayerTwisted',deactivateInterlayerTwisted,.false.)
+         call MIO_InputParameter('Intralayer.F2G2Model',F2G2Model,.true.) ! default true
+         call MIO_InputParameter('Intralayer.UseOldGrapheneF2G2',useOldGrapheneF2G2,.false.) ! default true
+         call MIO_InputParameter('Interlayer.DeactivateInterlayer',deactivateInterlayer,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayer12',deactivateInterlayer12,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayer23',deactivateInterlayer23,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayer34',deactivateInterlayer34,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayert2GBN1to2',deactivateInterlayert2GBN1to2,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayert2GBN2to3',deactivateInterlayert2GBN2to3,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayert2BG2to3',deactivateInterlayert2BG2to3,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayert3BG1to2',deactivateInterlayert3BG1to2,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayert3BG2to3',deactivateInterlayert3BG2to3,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayert3BG3to4',deactivateInterlayert3BG3to4,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayert3BG4to5',deactivateInterlayert3BG4to5,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayert3BG5to6',deactivateInterlayert3BG5to6,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayerBG',deactivateInterlayerBG,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateInterlayerTwisted',deactivateInterlayerTwisted,.false.)
 
          call MIO_InputParameter('periodicStrainPeriod',nPeriod,1)
          call MIO_InputParameter('strainedMoireMaxDisplacement',umax,0.5_dp)
-         call MIO_InputParameter('strainedMoire',strainedMoire,.false.)
-         call MIO_InputParameter('SuperCell',sCell,60)
+         call MIO_InputParameter('Strain.StrainedMoire',strainedMoire,.false.)
+         call MIO_InputParameter('Structure.SuperCell',sCell,60)
          LMoire = norm(ucell(:,1))/sCell
 
-         call MIO_InputParameter('twistedBLAddShift',addShift,.false.)
-         call MIO_InputParameter('BernalShift',Bernal,.false.)
-         call MIO_InputParameter('bridgeShift',bridge,.false.)
+         call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
+         call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
+         call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
          if (addShift) then
             if (Bernal) then
                xShift = aG/2.0_dp
@@ -4989,16 +4989,16 @@ subroutine HamHopping
          if (GBNtwoLayersF2G2s) then
             call MIO_Print('defining the GBNtwoLayersF2G2 parameters','ham')
             t1K = g0/g0
-            call MIO_InputParameter('SingleLayert2KSL',t2KSLGfromGBNA,-0.24498_dp)
-            call MIO_InputParameter('SingleLayert2KSL',t2KSLGfromGBNB,-0.24523_dp)
-            call MIO_InputParameter('SingleLayert3K',t3KSLGfromGBN,0.19334_dp)
-            call MIO_InputParameter('SingleLayert4K',t4KSLGfromGBN,-0.0_dp)
-            call MIO_InputParameter('SingleLayert5KSL',t5KSLGfromGBNA,-0.06618_dp)
-            call MIO_InputParameter('SingleLayert5KSL',t5KSLGfromGBNB,-0.06624_dp)
-            call MIO_InputParameter('BilayertK6A',t6KSLGfromGBNA,0.0_dp)
-            call MIO_InputParameter('BilayertK6A',t6KSLGfromGBNB,0.0_dp)
-            call MIO_InputParameter('BilayertK7A',t7KSLGfromGBN,0.0_dp)
-            call MIO_InputParameter('BilayertK8A',t8KSLGfromGBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLGfromGBNA,-0.24498_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLGfromGBNB,-0.24523_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLGfromGBN,0.19334_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLGfromGBN,-0.0_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLGfromGBNA,-0.06618_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLGfromGBNB,-0.06624_dp)
+            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLGfromGBNA,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLGfromGBNB,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK7A',t7KSLGfromGBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK8A',t8KSLGfromGBN,0.0_dp)
             t2KSLGfromGBNA = t2KSLGfromGBNA/g0
             t2KSLGfromGBNB = t2KSLGfromGBNB/g0
             t3KSLGfromGBN = t3KSLGfromGBN/g0
@@ -5009,16 +5009,16 @@ subroutine HamHopping
             t6KSLGfromGBNB = t6KSLGfromGBNB/g0
             t7KSLGfromGBN = t7KSLGfromGBN/g0
             t8KSLGfromGBN = t8KSLGfromGBN/g0
-            call MIO_InputParameter('SingleLayert2KSL',t2KSLBNfromGBNA,-0.081055_dp)
-            call MIO_InputParameter('SingleLayert2KSL',t2KSLBNfromGBNB,-0.24562_dp)
-            call MIO_InputParameter('SingleLayert3K',t3KSLBNfromGBN,0.15399_dp)
-            call MIO_InputParameter('SingleLayert4K',t4KSLBNfromGBN,-0.0_dp)
-            call MIO_InputParameter('SingleLayert5KSL',t5KSLBNfromGBNA,-0.065654_dp)
-            call MIO_InputParameter('SingleLayert5KSL',t5KSLBNfromGBNB,-0.04892_dp)
-            call MIO_InputParameter('BilayertK6A',t6KSLBNfromGBNA,0.0_dp)
-            call MIO_InputParameter('BilayertK6A',t6KSLBNfromGBNB,0.0_dp)
-            call MIO_InputParameter('BilayertK7A',t7KSLBNfromGBN,0.0_dp)
-            call MIO_InputParameter('BilayertK8A',t8KSLBNfromGBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBNfromGBNA,-0.081055_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBNfromGBNB,-0.24562_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLBNfromGBN,0.15399_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLBNfromGBN,-0.0_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBNfromGBNA,-0.065654_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBNfromGBNB,-0.04892_dp)
+            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLBNfromGBNA,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLBNfromGBNB,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK7A',t7KSLBNfromGBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK8A',t8KSLBNfromGBN,0.0_dp)
             t2KSLBNfromGBNA = t2KSLBNfromGBNA/g0
             t2KSLBNfromGBNB = t2KSLBNfromGBNB/g0
             t3KSLBNfromGBN = t3KSLBNfromGBN/g0
@@ -5032,21 +5032,21 @@ subroutine HamHopping
          else if (F2G2Model) then
             t1K = g0/g0
             if (useOldGrapheneF2G2) then
-                call MIO_InputParameter('SingleLayert2KSL',t2KSL,-0.21264_dp)
-                call MIO_InputParameter('SingleLayert3K',t3KSL,0.23442_dp)
-                call MIO_InputParameter('SingleLayert4K',t4KSL,-0.05350_dp)
-                call MIO_InputParameter('SingleLayert5KSL',t5KSL,-0.07326_dp)
-                call MIO_InputParameter('BilayertK6A',t6K,0.0_dp)
-                call MIO_InputParameter('BilayertK7A',t7K,0.0_dp)
-                call MIO_InputParameter('BilayertK8A',t8K,0.0_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSL,-0.21264_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSL,0.23442_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSL,-0.05350_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSL,-0.07326_dp)
+                call MIO_InputParameter('Intralayer.BilayertK6A',t6K,0.0_dp)
+                call MIO_InputParameter('Intralayer.BilayertK7A',t7K,0.0_dp)
+                call MIO_InputParameter('Intralayer.BilayertK8A',t8K,0.0_dp)
             else
-                call MIO_InputParameter('SingleLayert2KSL',t2KSL,-0.2354_dp)
-                call MIO_InputParameter('SingleLayert3K',t3KSL,0.1877_dp)
-                call MIO_InputParameter('SingleLayert4K',t4KSL,0.0_dp)
-                call MIO_InputParameter('SingleLayert5KSL',t5KSL,-0.0633_dp)
-                call MIO_InputParameter('BilayertK6A',t6K,0.0_dp)
-                call MIO_InputParameter('BilayertK7A',t7K,0.0_dp)
-                call MIO_InputParameter('BilayertK8A',t8K,0.0_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSL,-0.2354_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSL,0.1877_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSL,0.0_dp)
+                call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSL,-0.0633_dp)
+                call MIO_InputParameter('Intralayer.BilayertK6A',t6K,0.0_dp)
+                call MIO_InputParameter('Intralayer.BilayertK7A',t7K,0.0_dp)
+                call MIO_InputParameter('Intralayer.BilayertK8A',t8K,0.0_dp)
             end if
             t2KSL = t2KSL/g0
             t3KSL = t3KSL/g0
@@ -5056,15 +5056,15 @@ subroutine HamHopping
             t7K = t7K/g0
             t8K = t8K/g0
             ! BNBN F2G2
-            call MIO_InputParameter('SingleLayert2KSL',t2KSLBN_B,-0.0542_dp)
-            call MIO_InputParameter('SingleLayert2KSL',t2KSLBN_N,-0.2228_dp)
-            call MIO_InputParameter('SingleLayert3K',t3KSLBN,0.1329_dp)
-            call MIO_InputParameter('SingleLayert4K',t4KSLBN,0.0_dp)
-            call MIO_InputParameter('SingleLayert5KSL',t5KSLBN_B,-0.0566_dp)
-            call MIO_InputParameter('SingleLayert5KSL',t5KSLBN_N,-0.0429_dp)
-            call MIO_InputParameter('BilayertK6A',t6KBN,0.0_dp)
-            call MIO_InputParameter('BilayertK7A',t7KBN,0.0_dp)
-            call MIO_InputParameter('BilayertK8A',t8KBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBN_B,-0.0542_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBN_N,-0.2228_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLBN,0.1329_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBN_B,-0.0566_dp)
+            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBN_N,-0.0429_dp)
+            call MIO_InputParameter('Intralayer.BilayertK6A',t6KBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK7A',t7KBN,0.0_dp)
+            call MIO_InputParameter('Intralayer.BilayertK8A',t8KBN,0.0_dp)
             t2KSLBN_B = t2KSLBN_B/g0
             t2KSLBN_N = t2KSLBN_N/g0
             t3KSLBN = t3KSLBN/g0
@@ -5088,18 +5088,18 @@ subroutine HamHopping
             t5KA = t5KSL
             t5KB = t5KSL
          end if
-         call MIO_InputParameter('forceBilayerF2G2Intralayer',forceBilayerF2G2Intralayer,.false.)
+         call MIO_InputParameter('Intralayer.ForceBilayerF2G2Intralayer',forceBilayerF2G2Intralayer,.false.)
          if (forceBilayerF2G2Intralayer) then
              t1K = g0/g0
-             call MIO_InputParameter('Bilayert2KA',t2KA,-0.2235_dp)
-             call MIO_InputParameter('Bilayert2KB',t2KB,-0.2260_dp)
-             call MIO_InputParameter('Bilayert3K',t3K,0.1984_dp)
-             call MIO_InputParameter('Bilayert4K',t4K,0.0_dp)
-             call MIO_InputParameter('Bilayert5KA',t5KA,-0.04016_dp)
-             call MIO_InputParameter('Bilayert5KB',t5KB,-0.0404_dp)
-             call MIO_InputParameter('BilayertK6A',t6K,0.0_dp)
-             call MIO_InputParameter('BilayertK7A',t7K,0.0_dp)
-             call MIO_InputParameter('BilayertK8A',t8K,0.0_dp)
+             call MIO_InputParameter('Intralayer.Bilayert2KA',t2KA,-0.2235_dp)
+             call MIO_InputParameter('Intralayer.Bilayert2KB',t2KB,-0.2260_dp)
+             call MIO_InputParameter('Intralayer.Bilayert3K',t3K,0.1984_dp)
+             call MIO_InputParameter('Intralayer.Bilayert4K',t4K,0.0_dp)
+             call MIO_InputParameter('Intralayer.Bilayert5KA',t5KA,-0.04016_dp)
+             call MIO_InputParameter('Intralayer.Bilayert5KB',t5KB,-0.0404_dp)
+             call MIO_InputParameter('Intralayer.BilayertK6A',t6K,0.0_dp)
+             call MIO_InputParameter('Intralayer.BilayertK7A',t7K,0.0_dp)
+             call MIO_InputParameter('Intralayer.BilayertK8A',t8K,0.0_dp)
              t2KA = t2KA/g0
              t2KB = t2KB/g0
              t3K = t3K/g0
@@ -5110,18 +5110,18 @@ subroutine HamHopping
              t7K = t7K/g0
              t8K = t8K/g0
          end if
-         call MIO_InputParameter('t3BG',t3BG,.false.)
+         call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
          if (t3BG) then
              t1K = g0/g0
-             call MIO_InputParameter('Bilayert2KA',t2KA,-0.2235_dp)
-             call MIO_InputParameter('Bilayert2KB',t2KB,-0.2260_dp)
-             call MIO_InputParameter('Bilayert3K',t3K,0.1984_dp)
-             call MIO_InputParameter('Bilayert4K',t4K,0.0_dp)
-             call MIO_InputParameter('Bilayert5KA',t5KA,-0.04016_dp)
-             call MIO_InputParameter('Bilayert5KB',t5KB,-0.0404_dp)
-             call MIO_InputParameter('BilayertK6A',t6K,0.0_dp)
-             call MIO_InputParameter('BilayertK7A',t7K,0.0_dp)
-             call MIO_InputParameter('BilayertK8A',t8K,0.0_dp)
+             call MIO_InputParameter('Intralayer.Bilayert2KA',t2KA,-0.2235_dp)
+             call MIO_InputParameter('Intralayer.Bilayert2KB',t2KB,-0.2260_dp)
+             call MIO_InputParameter('Intralayer.Bilayert3K',t3K,0.1984_dp)
+             call MIO_InputParameter('Intralayer.Bilayert4K',t4K,0.0_dp)
+             call MIO_InputParameter('Intralayer.Bilayert5KA',t5KA,-0.04016_dp)
+             call MIO_InputParameter('Intralayer.Bilayert5KB',t5KB,-0.0404_dp)
+             call MIO_InputParameter('Intralayer.BilayertK6A',t6K,0.0_dp)
+             call MIO_InputParameter('Intralayer.BilayertK7A',t7K,0.0_dp)
+             call MIO_InputParameter('Intralayer.BilayertK8A',t8K,0.0_dp)
              t2KA = t2KA/g0
              t2KB = t2KB/g0
              t3K = t3K/g0
@@ -5133,7 +5133,7 @@ subroutine HamHopping
              t8K = t8K/g0
          end if
          if (MIO_StringComp(BilayerModel,'BLKaxiras')) then
-            call MIO_InputParameter('useBNGKaxiras',useBNGKaxiras,.false.)
+            call MIO_InputParameter('Interlayer.UseBNGKaxiras',useBNGKaxiras,.false.)
             tAB = 0.29_dp
             if (useBNGKaxiras) then
                 lambda0_CB = 0.3905_dp/g0
@@ -5165,7 +5165,7 @@ subroutine HamHopping
                 t2KN = 0.2276_dp/g0
                 t3K = -0.2163_dp/g0
             else ! just use GG
-                call MIO_InputParameter('addPressureDependence',addPressureDependence,.true.)
+                call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
                 if (addPressureDependence) then
                     !
                     !
@@ -5218,12 +5218,12 @@ subroutine HamHopping
                end if
             end if
          else if (MIO_StringComp(BilayerModel,'BLSrivani')) then
-            call MIO_InputParameter('useBNGSrivani',useBNGSrivani,.false.)
-            call MIO_InputParameter('oppositedxdy',oppositedxdy,.false.)
-            call MIO_InputParameter('sublatticeDependent',sublatticeDependent,.false.)
-            call MIO_InputParameter('useThetaIJ',useThetaIJ,.false.)
-            call MIO_InputParameter('useTheta',useTheta,.false.)
-            call MIO_InputParameter('sublatticeIndependent',sublatticeIndependent,.false.)
+            call MIO_InputParameter('Interlayer.UseBNGSrivani',useBNGSrivani,.false.)
+            call MIO_InputParameter('Interlayer.Oppositedxdy',oppositedxdy,.false.)
+            call MIO_InputParameter('Interlayer.SublatticeDependent',sublatticeDependent,.false.)
+            call MIO_InputParameter('Interlayer.UseThetaIJ',useThetaIJ,.false.)
+            call MIO_InputParameter('Interlayer.UseTheta',useTheta,.false.)
+            call MIO_InputParameter('Interlayer.SublatticeIndependent',sublatticeIndependent,.false.)
             if (useBNGSrivani) then
                 lambda0_CB = 0.3905_dp/g0
                 epsilon0_CB = 1.5426_dp
@@ -5254,9 +5254,9 @@ subroutine HamHopping
                 t2KN = 0.2276_dp/g0
                 t3K = -0.2163_dp/g0
             else
-                call MIO_InputParameter('addPressureDependence',addPressureDependence,.true.)
-                call MIO_InputParameter('oldParameterSet',oldParameterSet,.false.)
-                call MIO_InputParameter('useOnlyVAB',useOnlyVAB,.false.)
+                call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
+                call MIO_InputParameter('Interlayer.OldParameterSet',oldParameterSet,.false.)
+                call MIO_InputParameter('Interlayer.UseOnlyVAB',useOnlyVAB,.false.)
                 if (addPressureDependence) then
                     call MIO_Print('Adding pressure (distance) dependent Srivani parameters','ham')
                     if (oldParameterSet) then
@@ -5444,8 +5444,8 @@ subroutine HamHopping
          call MIO_InputParameter('KaxirasCutoff',KaxirasCutoff,1.0_dp)
          KaxirasCutoff2 = (KaxirasCutoff)**2.0_dp
 
-         call MIO_InputParameter('MoireOffDiag',l,.false.)
-         call MIO_InputParameter('GBNOffDiag',GBNOffDiag,.false.)
+         call MIO_InputParameter('Moire.OffDiag',l,.false.)
+         call MIO_InputParameter('GBN.OffDiag',GBNOffDiag,.false.)
          call MIO_InputParameter('addDisplacements',addDisplacements,.false.)
          if (addDisplacements) then
             if (.not. associated(displacements)) then
@@ -5454,7 +5454,7 @@ subroutine HamHopping
             end if
          end if
          ! Opt-in: evaluate the MoireOffDiag bond term at the bond midpoint (Hermitian H) instead of at atom i
-         call MIO_InputParameter('MoireOffDiagMidpoint',moireMid,.false.)
+         call MIO_InputParameter('Moire.OffDiagMidpoint',moireMid,.false.)
          moireMid = moireMid .and. l
          if (moireMid) then
             if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') &
@@ -5468,36 +5468,36 @@ subroutine HamHopping
             call MIO_Print('MoireOffDiag: bond term evaluated at the bond MIDPOINT (Hermitian; MoireOffDiagMidpoint)','ham')
          end if
 
-         call MIO_InputParameter('singleLayerXYZ',singleLayerXYZ,.false.)
-         call MIO_InputParameter('addPressureDependence',addPressureDependence,.true.)
-         call MIO_InputParameter('switchV3Sign',switchV3Sign,.false.)
-         call MIO_InputParameter('oldParameterSet',oldParameterSet,.false.)
-         call MIO_InputParameter('deactivateV6',deactivateV6,.false.)
-         call MIO_InputParameter('deactivateV3',deactivateV3,.false.)
-         call MIO_InputParameter('KoshinoIntralayer',KoshinoIntralayer,.false.)
-         call MIO_InputParameter('MayouIntralayer',MayouIntralayer,.false.)
-         call MIO_InputParameter('useBNGKaxiras',useBNGKaxiras,.false.)
-         call MIO_InputParameter('twoLayers',twoLayers,.false.)
-         call MIO_InputParameter('oneLayer',oneLayer,.false.)
-         call MIO_InputParameter('GBNtwoLayers',GBNtwoLayers,.false.)
-         call MIO_InputParameter('BNBNtwoLayers',BNBNtwoLayers,.false.)
-         call MIO_InputParameter('encapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
+         call MIO_InputParameter('Structure.SingleLayerXYZ',singleLayerXYZ,.false.)
+         call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
+         call MIO_InputParameter('Interlayer.SwitchV3Sign',switchV3Sign,.false.)
+         call MIO_InputParameter('Interlayer.OldParameterSet',oldParameterSet,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateV6',deactivateV6,.false.)
+         call MIO_InputParameter('Interlayer.DeactivateV3',deactivateV3,.false.)
+         call MIO_InputParameter('Intralayer.KoshinoIntralayer',KoshinoIntralayer,.false.)
+         call MIO_InputParameter('Intralayer.MayouIntralayer',MayouIntralayer,.false.)
+         call MIO_InputParameter('Interlayer.UseBNGKaxiras',useBNGKaxiras,.false.)
+         call MIO_InputParameter('Stack.TwoLayers',twoLayers,.false.)
+         call MIO_InputParameter('Stack.OneLayer',oneLayer,.false.)
+         call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
+         call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
+         call MIO_InputParameter('Stack.EncapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
          call MIO_InputParameter('removeTopMoireInL2',removeTopMoireInL2,.false.)
-         call MIO_InputParameter('encapsulatedFourLayers',encapsulatedFourLayers,.false.)
-         call MIO_InputParameter('encapsulatedFiveLayers',encapsulatedFiveLayers,.false.)
-         call MIO_InputParameter('encapsulatedSixLayers',encapsulatedSixLayers,.false.)
-         call MIO_InputParameter('encapsulatedSevenLayers',encapsulatedSevenLayers,.false.)
-         call MIO_InputParameter('t3GwithBN',t3GwithBN,.false.)
-         call MIO_InputParameter('BNt2GBN',BNt2GBN,.false.)
-         call MIO_InputParameter('t2GBN',t2GBN,.false.)
-         call MIO_InputParameter('encapsulatedFourLayersF2G2',encapsulatedFourLayersF2G2,.false.)
-         call MIO_InputParameter('GBNuseDisplacementFile',GBNuseDisplacementFile,.false.)
-         call MIO_InputParameter('tBGuseDisplacementFile',tBGuseDisplacementFile,.false.)
-         call MIO_InputParameter('BNBNtwoLayers',BNBNtwoLayers,.false.)
-         call MIO_InputParameter('onlyV0',onlyV0,.false.)
-         call MIO_InputParameter('GBNAngle',GBNAngle,0.0_dp)
+         call MIO_InputParameter('Stack.EncapsulatedFourLayers',encapsulatedFourLayers,.false.)
+         call MIO_InputParameter('Stack.EncapsulatedFiveLayers',encapsulatedFiveLayers,.false.)
+         call MIO_InputParameter('Stack.EncapsulatedSixLayers',encapsulatedSixLayers,.false.)
+         call MIO_InputParameter('Stack.EncapsulatedSevenLayers',encapsulatedSevenLayers,.false.)
+         call MIO_InputParameter('Stack.T3GwithBN',t3GwithBN,.false.)
+         call MIO_InputParameter('Stack.BNt2GBN',BNt2GBN,.false.)
+         call MIO_InputParameter('Stack.T2GBN',t2GBN,.false.)
+         call MIO_InputParameter('Stack.EncapsulatedFourLayersF2G2',encapsulatedFourLayersF2G2,.false.)
+         call MIO_InputParameter('GBN.UseDisplacementFile',GBNuseDisplacementFile,.false.)
+         call MIO_InputParameter('TBG.UseDisplacementFile',tBGuseDisplacementFile,.false.)
+         call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
+         call MIO_InputParameter('Interlayer.OnlyV0',onlyV0,.false.)
+         call MIO_InputParameter('GBN.Angle',GBNAngle,0.0_dp)
          GBNAngle = GBNAngle*pi/180.0_dp
-         call MIO_InputParameter('tBGAngle',tBGAngle,0.0_dp)
+         call MIO_InputParameter('TBG.Angle',tBGAngle,0.0_dp)
          tBGAngle = tBGAngle*pi/180.0_dp
          call MIO_InputParameter('rotationAngle',rotationAngle,0.0_dp)
          rotationAngle = rotationAngle*pi/180.0_dp
@@ -5516,19 +5516,19 @@ subroutine HamHopping
              GlobalPhiL2a = GlobalPhiL2a*pi/180.0_dp
              GlobalPhiL2b = GlobalPhiL2b*pi/180.0_dp
              GlobalPhiL3 = GlobalPhiL3*pi/180.0_dp
-         call MIO_InputParameter('threeLayers',threeLayers,.false.)
-         call MIO_InputParameter('fourLayersSandwiched',fourLayersSandwiched,.false.)
-         call MIO_InputParameter('helicalTwistedMBM',helicalTwistedMBM,.false.)
-         call MIO_InputParameter('fiveLayersSandwiched',fiveLayersSandwiched,.false.)
-         call MIO_InputParameter('sixLayersSandwiched',sixLayersSandwiched,.false.)
-         call MIO_InputParameter('sevenLayersSandwiched',sevenLayersSandwiched,.false.)
-         call MIO_InputParameter('eightLayersSandwiched',eightLayersSandwiched,.false.)
-         call MIO_InputParameter('tenLayersSandwiched',tenLayersSandwiched,.false.)
-         call MIO_InputParameter('twentyLayersSandwiched',twentyLayersSandwiched,.false.)
+         call MIO_InputParameter('Stack.ThreeLayers',threeLayers,.false.)
+         call MIO_InputParameter('Stack.FourLayersSandwiched',fourLayersSandwiched,.false.)
+         call MIO_InputParameter('Stack.HelicalTwistedMBM',helicalTwistedMBM,.false.)
+         call MIO_InputParameter('Stack.FiveLayersSandwiched',fiveLayersSandwiched,.false.)
+         call MIO_InputParameter('Stack.SixLayersSandwiched',sixLayersSandwiched,.false.)
+         call MIO_InputParameter('Stack.SevenLayersSandwiched',sevenLayersSandwiched,.false.)
+         call MIO_InputParameter('Stack.EightLayersSandwiched',eightLayersSandwiched,.false.)
+         call MIO_InputParameter('Stack.TenLayersSandwiched',tenLayersSandwiched,.false.)
+         call MIO_InputParameter('Stack.TwentyLayersSandwiched',twentyLayersSandwiched,.false.)
          ! Default .true. unless forceBilayerF2G2Intralayer asks for the Bernal-bilayer
          ! parameters: without either, the layers other than the third used
          ! parameters that were never set.
-         call MIO_InputParameter('middleTwist',middleTwist,.not. forceBilayerF2G2Intralayer)
+         call MIO_InputParameter('Stack.MiddleTwist',middleTwist,.not. forceBilayerF2G2Intralayer)
          if (threeLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. fiveLayersSandwiched .or. &
              sixLayersSandwiched .or. sevenLayersSandwiched .or. eightLayersSandwiched .or. tenLayersSandwiched .or. &
              twentyLayersSandwiched) then
@@ -5546,29 +5546,29 @@ subroutine HamHopping
               'parameters in every layer) or forceBilayerF2G2Intralayer .true. (Bernal-bilayer parameters '// &
               'Bilayert2KA, Bilayert2KB, Bilayert3K, ...).','ham','HamHopping')
          end if
-         call MIO_InputParameter('fourLayers',fourLayers,.false.)
-         call MIO_InputParameter('findThetasGeometrically',findThetasGeometrically,.false.)
-         call MIO_InputParameter('renormalizeHoppingFactorAAp',renormalizeHoppingFactorAAp,1.0_dp)
-         call MIO_InputParameter('renormalizeHoppingFactorBBp',renormalizeHoppingFactorBBp,1.0_dp)
-         call MIO_InputParameter('renormalizeHoppingFactorABp',renormalizeHoppingFactorABp,1.0_dp)
-         call MIO_InputParameter('renormalizeHoppingFactorBAp',renormalizeHoppingFactorBAp,1.0_dp)
-         call MIO_InputParameter('newFittingFunctions',newFittingFunctions,.false.)
-         call MIO_InputParameter('renormalizeCoupling',renormalizeCoupling,.false.)
-         call MIO_InputParameter('couplingFactor',couplingFactor,1.0_dp)
-         call MIO_InputParameter('couplingFactor2',couplingFactor2,1.0_dp)
-         call MIO_InputParameter('differentCouplings',differentCouplings,.false.)
-         call MIO_InputParameter('readRigidXYZ',readRigidXYZ,.false.)
+         call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
+         call MIO_InputParameter('Interlayer.FindThetasGeometrically',findThetasGeometrically,.false.)
+         call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorAAp',renormalizeHoppingFactorAAp,1.0_dp)
+         call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorBBp',renormalizeHoppingFactorBBp,1.0_dp)
+         call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorABp',renormalizeHoppingFactorABp,1.0_dp)
+         call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorBAp',renormalizeHoppingFactorBAp,1.0_dp)
+         call MIO_InputParameter('Interlayer.NewFittingFunctions',newFittingFunctions,.false.)
+         call MIO_InputParameter('Interlayer.RenormalizeCoupling',renormalizeCoupling,.false.)
+         call MIO_InputParameter('Interlayer.CouplingFactor',couplingFactor,1.0_dp)
+         call MIO_InputParameter('Interlayer.CouplingFactor2',couplingFactor2,1.0_dp)
+         call MIO_InputParameter('Interlayer.DifferentCouplings',differentCouplings,.false.)
+         call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
 
-         call MIO_InputParameter('KoshinoSR',KoshinoSR,.false.)
-         call MIO_InputParameter('onlyvppsigma',onlyvppsigma,.false.)
+         call MIO_InputParameter('Interlayer.KoshinoSR',KoshinoSR,.false.)
+         call MIO_InputParameter('Interlayer.Onlyvppsigma',onlyvppsigma,.false.)
 
-         call MIO_InputParameter('Bulk',bulk,.false.)
-         call MIO_InputParameter('BernalReadXYZ',BernalReadXYZ,.false.)
-         call MIO_InputParameter('MoireSecondMoireMassFactor',sign2,1.0_dp)
-         call MIO_InputParameter('deactivateIntrasublattice',deactivateIntrasublattice,.false.)
-         call MIO_InputParameter('deactivateIntersublattice',deactivateIntersublattice,.false.)
-         call MIO_InputParameter('deactivateIntraSublatticeForC',deactivateIntraSublatticeForC,.false.)
-         call MIO_InputParameter('WriteDataFiles',writeData,.false.)
+         call MIO_InputParameter('Stack.Bulk',bulk,.false.)
+         call MIO_InputParameter('Structure.BernalReadXYZ',BernalReadXYZ,.false.)
+         call MIO_InputParameter('Moire.SecondMoireMassFactor',sign2,1.0_dp)
+         call MIO_InputParameter('Intralayer.DeactivateIntrasublattice',deactivateIntrasublattice,.false.)
+         call MIO_InputParameter('Intralayer.DeactivateIntersublattice',deactivateIntersublattice,.false.)
+         call MIO_InputParameter('Intralayer.DeactivateIntraSublatticeForC',deactivateIntraSublatticeForC,.false.)
+         call MIO_InputParameter('Output.WriteDataFiles',writeData,.false.)
          call MIO_InputParameter('t2Value',t2Value,0.0083_dp)
          ! f1
          call MIO_InputParameter('tA1B2',tA1B2,-0.1418_dp)
@@ -5646,7 +5646,7 @@ subroutine HamHopping
          else
             nLayers = 0
          end if
-         call MIO_InputParameter('setnLayersToZero',setnLayersToZero,.false.)
+         call MIO_InputParameter('Interlayer.SetnLayersToZero',setnLayersToZero,.false.)
          if (setnLayersToZero) then ! useful when using the small bulk neighbor but system is not bulk
             nLayers = 0
          end if
@@ -5668,8 +5668,8 @@ subroutine HamHopping
          countBN7 = 0
          countBN8 = 0
 
-         call MIO_InputParameter('MoirePotCabG',CabG_global,0.002235_dp)
-         call MIO_InputParameter('tBGSwitchDxDy',tBGSwitchDxDy,.false.)
+         call MIO_InputParameter('Moire.PotCabG',CabG_global,0.002235_dp)
+         call MIO_InputParameter('TBG.SwitchDxDy',tBGSwitchDxDy,.false.)
 
          call MIO_Allocate(HABreal,[inode1],[inode2],'H0','ham')
          call MIO_Allocate(HABimag,[inode1],[inode2],'H0','ham')
@@ -6029,7 +6029,7 @@ subroutine HamHopping
                      call fitFunSrivani(0.0134_dp, -0.0977_dp,0.1790_dp, abs(interlayerDistances(i)), CabG)
                   end if
               else
-                  call MIO_InputParameter('MoirePotCabG',CabG,0.001987_dp)
+                  call MIO_InputParameter('Moire.PotCabG',CabG,0.001987_dp)
               end if
               CabG = CabG/g0
               !if (i.eq. 1) print*, "adding the offdiagonal intralyer terms for tBG"
@@ -10417,7 +10417,7 @@ subroutine HamHopping
         call MIO_Print(' Number of interlayer hoppings '//trim(num2str(numberOfInterlayerHoppings)),'HamHopping')
    end if
 
-   call MIO_InputParameter('RandomStrain',randomStrain,.false.)
+   call MIO_InputParameter('Strain.RandomStrain',randomStrain,.false.)
    if (randomStrain) then
       if (frac) call AtomsSetCart()
       call MIO_Allocate(epsxy,[1,inode1],[maxNeigh,inode2],'epsxy','ham')
@@ -10466,16 +10466,16 @@ subroutine HamHopping
    end if
 
    ! Based on PHYSICAL REVIEW B 80, 045401 2009
-   call MIO_InputParameter('realStrain',realStrain,.false.)
-   call MIO_InputParameter('onlyFirstNeighborRealStrain',onlyFirstNeighborRealStrain,.false.)
+   call MIO_InputParameter('Strain.RealStrain',realStrain,.false.)
+   call MIO_InputParameter('Strain.OnlyFirstNeighborRealStrain',onlyFirstNeighborRealStrain,.false.)
    ! Decay exponent of t = t0 exp(-beta (d/d0 - 1)). Default 3.37 reproduces every existing input exactly;
    ! other values are for counterfactual scans of the strain gauge-field strength.
-   call MIO_InputParameter('realStrainBeta',realStrainBeta,3.37_dp)
+   call MIO_InputParameter('Strain.RealStrainBeta',realStrainBeta,3.37_dp)
    if (realStrain) then
       call MIO_Print('realStrain: t = t0 exp(-beta (d/d0 - 1)), beta = '//trim(num2str(realStrainBeta,4)),'ham')
-      call MIO_InputParameter('realStrainReferenceLatticeConstant',aGR,aG) !
+      call MIO_InputParameter('Strain.RealStrainReferenceLatticeConstant',aGR,aG) !
       accR = aGR/sqrt(3.0_dp)
-      call MIO_InputParameter('realStrainReferenceLatticeConstantBN',aBNR,aBN) !
+      call MIO_InputParameter('Strain.RealStrainReferenceLatticeConstantBN',aBNR,aBN) !
       aBN1R = aBNR/sqrt(3.0_dp)
 ! aCCR --> aCC
 ! aGR --> aG
@@ -10790,11 +10790,11 @@ subroutine HamHopping
       end if
    end if
 
-   call MIO_InputParameter('periodicStrain',periodicStrain,.false.)
+   call MIO_InputParameter('Strain.PeriodicStrain',periodicStrain,.false.)
    if (periodicStrain) then
       call MIO_InputParameter('periodicStrainu0',u0,0.1_dp)
       call MIO_InputParameter('periodicStrainPeriod',nPeriod,1)
-      call MIO_InputParameter('SuperCell',sCell,60)
+      call MIO_InputParameter('Structure.SuperCell',sCell,60)
       LMoire = norm(ucell(:,1))/sCell
       if (frac) call AtomsSetCart()
       call MIO_Allocate(epsxy,[1,inode1],[maxNeigh,inode2],'epsxy','ham')
@@ -10835,11 +10835,11 @@ subroutine HamHopping
       !$OMP END PARALLEL DO
    end if
 
-   call MIO_InputParameter('realisticBubbles',realisticBubbles,.false.)
+   call MIO_InputParameter('Strain.RealisticBubbles',realisticBubbles,.false.)
    if (realisticBubbles) then
-      call MIO_InputParameter('BigBubble',bigBubble,.false.)
-      call MIO_InputParameter('manyBubbles',manyBubbles,.false.)
-      call MIO_InputParameter('bubbleInPlaneStrain',bubbleInPlaneStrain,.false.)
+      call MIO_InputParameter('Strain.BigBubble',bigBubble,.false.)
+      call MIO_InputParameter('Strain.ManyBubbles',manyBubbles,.false.)
+      call MIO_InputParameter('Strain.BubbleInPlaneStrain',bubbleInPlaneStrain,.false.)
       if (bigBubble) then
          call MIO_Print('We add a single bubble','ham')
          if (.not. frac) call AtomsSetFrac()
@@ -10864,7 +10864,7 @@ subroutine HamHopping
          indexOfBigBubbleCenter = indxImp(1)
       else if (manyBubbles) then
          call MIO_Print('We add a lot of bubbles','ham')
-         call MIO_InputParameter('bubblePercentage',per,10.0_dp)
+         call MIO_InputParameter('Strain.BubblePercentage',per,10.0_dp)
          per = per/100.0_dp
          call MIO_Allocate(def,[inode1],[inode2],'def','gauss')
          def = .false.
@@ -10908,7 +10908,7 @@ subroutine HamHopping
                bubbleCenterY(nImp) = Rat(2,indxImp(nImp))
             end if
          end do
-         call MIO_InputParameter('bubbleGaussian',bubbleGauss,.false.)
+         call MIO_InputParameter('Strain.BubbleGaussian',bubbleGauss,.false.)
          if (bubbleGauss) then
             call GaussPotDefinedPositions(H0)
          end if
@@ -10917,12 +10917,12 @@ subroutine HamHopping
       call MIO_Allocate(epsxy,[1,inode1],[maxNeigh,inode2],'epsxy','ham')
       call MIO_Allocate(epsxx,[1,inode1],[maxNeigh,inode2],'epsxx','ham')
       call MIO_Allocate(epsyy,[1,inode1],[maxNeigh,inode2],'epsyy','ham')
-      call MIO_InputParameter('bubbleSigmaR',bubbleSigmaR,1.42_dp)
+      call MIO_InputParameter('Strain.BubbleSigmaR',bubbleSigmaR,1.42_dp)
       bubbleSigmaR2 = bubbleSigmaR**2.0d0
-      call MIO_InputParameter('bubbleC',bubbleC,1.42_dp)
+      call MIO_InputParameter('Strain.BubbleC',bubbleC,1.42_dp)
 
-      call MIO_InputParameter('bubbleShift',bubbleShift,0.07_dp)
-      call MIO_InputParameter('bubbleRadius',bubbleRadius,100.0_dp)
+      call MIO_InputParameter('Strain.BubbleShift',bubbleShift,0.07_dp)
+      call MIO_InputParameter('Strain.BubbleRadius',bubbleRadius,100.0_dp)
       call MIO_Allocate(onsiteShift,nAt,'onsiteShift','ham')
 
       if (totImp > 0) then
@@ -11010,7 +11010,7 @@ subroutine HamHopping
       !        !end if
       !   !$OMP END PARALLEL DO
 
-      call MIO_InputParameter('WriteDataFiles',l,.false.)
+      call MIO_InputParameter('Output.WriteDataFiles',l,.false.)
       if (l) then
          open(1,FILE='e')
          do i=1,nAt
@@ -11106,33 +11106,33 @@ subroutine HamHopping
       end if
    end if
 
-   call MIO_InputParameter('HaldaneNNN',l,.false.)
+   call MIO_InputParameter('Haldane.NNN',l,.false.)
    if (l) then
       if (frac) call AtomsSetCart()
-      call MIO_InputParameter('HaldaneSpecifyFlux',l,.false.)
-      call MIO_InputParameter('HaldaneSpecifyPhase',ll,.false.)
-      call MIO_InputParameter('HaldaneSpecifyRange',lll,.false.)
-      call MIO_InputParameter('paperOrientation',paperOrientation,.false.)
-      call MIO_InputParameter('HaldaneT2Complex',t2Complex,0.0_dp)
-      call MIO_InputParameter('HaldaneT2',t2, 0.0_dp)
-      call MIO_InputParameter('HaldaneOppositePhase',HaldaneOppositePhase,.false.)
+      call MIO_InputParameter('Haldane.SpecifyFlux',l,.false.)
+      call MIO_InputParameter('Haldane.SpecifyPhase',ll,.false.)
+      call MIO_InputParameter('Haldane.SpecifyRange',lll,.false.)
+      call MIO_InputParameter('Haldane.PaperOrientation',paperOrientation,.false.)
+      call MIO_InputParameter('Haldane.T2Complex',t2Complex,0.0_dp)
+      call MIO_InputParameter('Haldane.T2',t2, 0.0_dp)
+      call MIO_InputParameter('Haldane.OppositePhase',HaldaneOppositePhase,.false.)
       ! Note: HaldaneBothLayers is deprecated. Use HaldaneLayerControl and HaldaneLayers instead.
       ! For backward compatibility, we still check if it's set, but it's ignored if HaldaneLayerControl is enabled.
-      call MIO_InputParameter('HaldaneBothLayers',HaldaneBothLayers_deprecated,.false.)
+      call MIO_InputParameter('Haldane.BothLayers',HaldaneBothLayers_deprecated,.false.)
       if (HaldaneBothLayers_deprecated .and. .not. HaldaneLayerControl) then
          call MIO_Print('WARNING: HaldaneBothLayers is deprecated. Use HaldaneLayerControl and HaldaneLayers instead.','ham')
          call MIO_Print('  For backward compatibility, applying Haldane to all layers.','ham')
       end if
       if (l) then
-          call MIO_InputParameter('HaldaneFlux',flux,0.0_dp)
-          call MIO_InputParameter('HaldaneSetFluxQ',l,.false.)
+          call MIO_InputParameter('Haldane.Flux',flux,0.0_dp)
+          call MIO_InputParameter('Haldane.SetFluxQ',l,.false.)
           if (l) then
              HaldanePhase = 2.0_dp*pi*flux/1.0471975512_dp
           else
              HaldanePhase = 2.0_dp*pi*flux/fluxq
           end if
       else if (ll) then
-          call MIO_InputParameter('HaldanePhase',HaldanePhase,0.0_dp)
+          call MIO_InputParameter('Haldane.Phase',HaldanePhase,0.0_dp)
       else if (lll) then
           HaldanePhase = HaldanePhase
       end if
@@ -11204,7 +11204,7 @@ subroutine HamHopping
    call HamCheckFinite()
    call HamCheckHermiticity()
 
-   call MIO_InputParameter('WriteDataFiles',w,.false.)
+   call MIO_InputParameter('Output.WriteDataFiles',w,.false.)
    if (w) then
       ! One record holds every hopping of an atom; the default record length
       ! (maxlinel) is too short for that.
@@ -11215,7 +11215,7 @@ subroutine HamHopping
       end do
       call file%Close()
    end if
-   call MIO_InputParameter('WriteDataFiles',l,.false.)
+   call MIO_InputParameter('Output.WriteDataFiles',l,.false.)
    if (l) then
       call file%Open(name=trim(prefix)//'.'//'e',serial=.true.)
       u = file%GetUnit()
@@ -11260,7 +11260,7 @@ subroutine HamHopping
          write(u,*) H0Bottom(i), Species(i)
       end do
       call file%Close()
-      call MIO_InputParameter('MoireAddSecondMoire',zz,.false.)
+      call MIO_InputParameter('Moire.AddSecondMoire',zz,.false.)
       if (zz) then
           call file%Open(name=trim(prefix)//'.'//'top.e',serial=.true.)
           u = file%GetUnit()

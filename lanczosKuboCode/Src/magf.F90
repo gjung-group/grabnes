@@ -105,7 +105,7 @@ subroutine MagfValue(mB)
    ! Read Zeeman magnetic field parameter (separate from Landau level Bmag)
    call MIO_InputParameter('BmagZeeman',BmagZeeman,0.0_dp)
 
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (magfield) then
           Bmag = mB*fluxq/(area*1.0d-20)
       if (mBi /= mBf) then
@@ -148,9 +148,9 @@ subroutine HaldPhaseInit()
    call MIO_TimerCount('magf')
 #endif /* TIMER */
 
-   call MIO_InputParameter('HaldaneSpecifyFlux',l,.false.)
-   call MIO_InputParameter('HaldaneSpecifyPhase',ll,.false.)
-   call MIO_InputParameter('HaldaneSpecifyRange',lll,.false.)
+   call MIO_InputParameter('Haldane.SpecifyFlux',l,.false.)
+   call MIO_InputParameter('Haldane.SpecifyPhase',ll,.false.)
+   call MIO_InputParameter('Haldane.SpecifyRange',lll,.false.)
    if (l) then
       mPhii = 0
       mPhif = mPhii

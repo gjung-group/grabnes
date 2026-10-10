@@ -1212,15 +1212,15 @@
   "status": "ok"
  },
  "xyz10": {
-  "fingerprint": "d774843379b97946",
+  "fingerprint": "5ac1feb26ab893b3",
   "status": "ok"
  },
  "xyz2": {
-  "fingerprint": "7d59d4f2e15cfdcd",
+  "fingerprint": "dc807dc2eed59712",
   "status": "ok"
  },
  "xyz2+AtomsOrderDeactivated": {
-  "fingerprint": "29b8fe3a632bdf47",
+  "fingerprint": "e3e21724c3c5fd8a",
   "status": "ok"
  },
  "xyz2+BernalReadXYZ": {
@@ -1228,23 +1228,23 @@
   "status": "ok"
  },
  "xyz2+GBNuseDisplacementFile": {
-  "fingerprint": "7d59d4f2e15cfdcd",
+  "fingerprint": "dc807dc2eed59712",
   "status": "INERT"
  },
  "xyz2+invertDisplacements": {
-  "fingerprint": "7d59d4f2e15cfdcd",
+  "fingerprint": "dc807dc2eed59712",
   "status": "INERT"
  },
  "xyz2+readInterlayerDistances": {
-  "fingerprint": "7d59d4f2e15cfdcd",
+  "fingerprint": "dc807dc2eed59712",
   "status": "INERT"
  },
  "xyz2+readLayerIndex": {
-  "fingerprint": "7d59d4f2e15cfdcd",
+  "fingerprint": "dc807dc2eed59712",
   "status": "INERT"
  },
  "xyz2+readRigidXYZ": {
-  "fingerprint": "7d59d4f2e15cfdcd",
+  "fingerprint": "dc807dc2eed59712",
   "status": "INERT"
  },
  "xyz2+shellsFromRigidPositions": {
@@ -1256,19 +1256,19 @@
   "status": "REFUSED"
  },
  "xyz2+tBGuseDisplacementFile": {
-  "fingerprint": "7d59d4f2e15cfdcd",
+  "fingerprint": "dc807dc2eed59712",
   "status": "INERT"
  },
  "xyz2+useLayerSpecificOnsiteEnergyTerms": {
-  "fingerprint": "7d59d4f2e15cfdcd",
+  "fingerprint": "dc807dc2eed59712",
   "status": "INERT"
  },
  "xyz2+useSublatticeFile": {
-  "fingerprint": "7d59d4f2e15cfdcd",
+  "fingerprint": "dc807dc2eed59712",
   "status": "INERT"
  },
  "xyz20": {
-  "fingerprint": "36ac93b159ba508d",
+  "fingerprint": "a789e9a85c696f95",
   "status": "ok"
  },
  "xyz2_bnbn": {
@@ -1280,39 +1280,39 @@
   "status": "INERT"
  },
  "xyz2_gbn": {
-  "fingerprint": "66dcc81eddf7cb0b",
+  "fingerprint": "0b7e6578c4ca8399",
   "status": "ok"
  },
  "xyz2_gbn+GBNOffDiag": {
-  "fingerprint": "c60f1b557f46d278",
+  "fingerprint": "51b9ddce033902b0",
   "status": "NONHERM"
  },
  "xyz2_gbn+GBNtwoLayersF2G2s": {
-  "fingerprint": "db127201db8c0305",
+  "fingerprint": "6868234a1530cd41",
   "status": "ok"
  },
  "xyz2_gbn+GBNuseHarmonicApprox": {
-  "fingerprint": "66dcc81eddf7cb0b",
+  "fingerprint": "0b7e6578c4ca8399",
   "status": "INERT"
  },
  "xyz2_gbn+MoirePotential": {
-  "fingerprint": "66dcc81eddf7cb0b",
+  "fingerprint": "0b7e6578c4ca8399",
   "status": "INERT"
  },
  "xyz2_gbn+dontUseInplaneMoire": {
-  "fingerprint": "66dcc81eddf7cb0b",
+  "fingerprint": "0b7e6578c4ca8399",
   "status": "INERT"
  },
  "xyz2_gbn+realStrain": {
-  "fingerprint": "a5e695abcd1b948b",
+  "fingerprint": "e8fd21d261ba6ce9",
   "status": "ok"
  },
  "xyz2_gbn+renormalizeCoupling": {
-  "fingerprint": "995cf06d052ff848",
+  "fingerprint": "4edc702408e4a0dd",
   "status": "ok"
  },
  "xyz2_gbn+shellsFromRigidPositions": {
-  "fingerprint": "66dcc81eddf7cb0b",
+  "fingerprint": "0b7e6578c4ca8399",
   "status": "INERT"
  },
  "xyz2_gbn+threeLayerShort": {
@@ -1320,143 +1320,143 @@
   "status": "ok"
  },
  "xyz2_gbn+useBNGKaxiras": {
-  "fingerprint": "66dcc81eddf7cb0b",
+  "fingerprint": "0b7e6578c4ca8399",
   "status": "INERT"
  },
  "xyz2_gbn+useBNGSrivani": {
-  "fingerprint": "66dcc81eddf7cb0b",
+  "fingerprint": "0b7e6578c4ca8399",
   "status": "INERT"
  },
  "xyz2_gbn_relaxed": {
-  "fingerprint": "702286643612607e",
+  "fingerprint": "fe0c20e54f9ab5c4",
   "status": "ok"
  },
  "xyz2_gbn_relaxed+GBNOffDiag": {
-  "fingerprint": "f5e7879c890bf758",
+  "fingerprint": "d6b2b704d735580b",
   "status": "NONHERM"
  },
  "xyz2_gbn_relaxed+GBNOffDiag+file": {
-  "fingerprint": "29bae3f6f3725181",
+  "fingerprint": "cf397a93fa12fc08",
   "status": "NONHERM"
  },
  "xyz2_gbn_relaxed+GBNOffDiag+file+harmonic": {
-  "fingerprint": "29bae3f6f3725181",
+  "fingerprint": "cf397a93fa12fc08",
   "status": "NONHERM"
  },
  "xyz2_gbn_relaxed+GBNuseDisplacementFile": {
-  "fingerprint": "702286643612607e",
+  "fingerprint": "fe0c20e54f9ab5c4",
   "status": "INERT"
  },
  "xyz2_gbn_relaxed+IntralayerRadius": {
-  "fingerprint": "684181f2d116b4a7",
+  "fingerprint": "a7b002772130eb65",
   "status": "ok"
  },
  "xyz2_gbn_relaxed+readInterlayerDistances": {
-  "fingerprint": "702286643612607e",
+  "fingerprint": "fe0c20e54f9ab5c4",
   "status": "INERT"
  },
  "xyz2_gbn_relaxed+realStrain": {
-  "fingerprint": "654449a72182ba99",
+  "fingerprint": "996c4a1fb5008cd5",
   "status": "ok"
  },
  "xyz2_gbn_relaxed+realStrain+shellsFromRigid": {
-  "fingerprint": "654449a72182ba99",
+  "fingerprint": "996c4a1fb5008cd5",
   "status": "ok"
  },
  "xyz2_gbn_relaxed+renormalizeCoupling": {
-  "fingerprint": "b94e531212eb368d",
+  "fingerprint": "85474b2b03608691",
   "status": "ok"
  },
  "xyz2_gbn_relaxed+shellsFromRigidPositions": {
-  "fingerprint": "702286643612607e",
+  "fingerprint": "fe0c20e54f9ab5c4",
   "status": "INERT"
  },
  "xyz2_relaxed": {
-  "fingerprint": "0cf6994284cebe75",
+  "fingerprint": "d58f355c7f78513f",
   "status": "ok"
  },
  "xyz2_relaxed+KoshinoSR": {
-  "fingerprint": "024bb8cb8908cfcf",
+  "fingerprint": "9be991292a5cfca4",
   "status": "ok"
  },
  "xyz2_relaxed+corrugatedInterlayerTwoCenter": {
-  "fingerprint": "33639c3b5c294246",
+  "fingerprint": "30701aeb05bea533",
   "status": "ok"
  },
  "xyz2_relaxed+readInterlayerDistances": {
-  "fingerprint": "0cf6994284cebe75",
+  "fingerprint": "d58f355c7f78513f",
   "status": "INERT"
  },
  "xyz2_relaxed+readRigidXYZ": {
-  "fingerprint": "0cf6994284cebe75",
+  "fingerprint": "d58f355c7f78513f",
   "status": "INERT"
  },
  "xyz2_relaxed+realStrain": {
-  "fingerprint": "032acaec8dd70086",
+  "fingerprint": "82db33790520c74d",
   "status": "ok"
  },
  "xyz2_relaxed+tBGDiag+file": {
-  "fingerprint": "0cf6994284cebe75",
+  "fingerprint": "d58f355c7f78513f",
   "status": "INERT"
  },
  "xyz2_relaxed+tBGOffDiag+file": {
-  "fingerprint": "751f552404d4f159",
+  "fingerprint": "ae08effeb113cf1f",
   "status": "NONHERM"
  },
  "xyz2_relaxed+tBGOffDiag+invert": {
-  "fingerprint": "751f552404d4f159",
+  "fingerprint": "ae08effeb113cf1f",
   "status": "NONHERM"
  },
  "xyz2_relaxed+tBGuseDisplacementFile": {
-  "fingerprint": "0cf6994284cebe75",
+  "fingerprint": "d58f355c7f78513f",
   "status": "INERT"
  },
  "xyz3": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "ok"
  },
  "xyz3+MoireBLDeactivateUpperLayer": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+MoireTrilayer": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+MoiretDBLDeactivateUpperLayers": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+TrilayerFanZhang": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+addSecondLayerInteractions": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+basedOnMoireCellParameters": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+bilayerF2G2": {
-  "fingerprint": "a645f5ec4a236ca0",
+  "fingerprint": "2425d5f9d641c8f6",
   "status": "ok"
  },
  "xyz3+corrugatedInterlayerTwoCenter": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+deactivateInterlayerTwisted": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+deactivateIntraSublatticeForC": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+distanceDependentEffectiveModel": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+middleTwist": {
@@ -1464,19 +1464,19 @@
   "status": "REFUSED"
  },
  "xyz3+middleTwist_default": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+threeLayerShort": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3+useLayerSpecificOnsiteEnergyTerms": {
-  "fingerprint": "0fc3cb0cc7be6af5",
+  "fingerprint": "28e3548d354cc880",
   "status": "INERT"
  },
  "xyz3_enc": {
-  "fingerprint": "fd8c2475806691ea",
+  "fingerprint": "3ac157a5f9fb0630",
   "status": "ok"
  },
  "xyz3_enc+GBNOffDiag": {
@@ -1484,19 +1484,19 @@
   "status": "REFUSED"
  },
  "xyz3_enc+deactivateInterlayerBG": {
-  "fingerprint": "bcfe65a81da5b2b2",
+  "fingerprint": "9d10314bb5a79bc8",
   "status": "ok"
  },
  "xyz3_enc+removeTopMoireInL2": {
-  "fingerprint": "fd8c2475806691ea",
+  "fingerprint": "3ac157a5f9fb0630",
   "status": "INERT"
  },
  "xyz3_enc_relaxed": {
-  "fingerprint": "e78c62d39e7f854c",
+  "fingerprint": "00b61512ebb436a7",
   "status": "ok"
  },
  "xyz3_enc_relaxed+GBNOffDiag+file": {
-  "fingerprint": "b0075d3240bcccb9",
+  "fingerprint": "e7d21f5952c926d3",
   "status": "NONHERM"
  },
  "xyz3_t2BG": {
@@ -1508,7 +1508,7 @@
   "status": "REFUSED"
  },
  "xyz4": {
-  "fingerprint": "cd222c4636455d15",
+  "fingerprint": "07b5c795d3bdbb52",
   "status": "ok"
  },
  "xyz4+forceBilayerF2G2Intralayer=F": {
@@ -1516,71 +1516,71 @@
   "status": "REFUSED"
  },
  "xyz4_BNt2GBN": {
-  "fingerprint": "eb8ccba29bc32caa",
+  "fingerprint": "896739260eb94a09",
   "status": "ok"
  },
  "xyz4_enc": {
-  "fingerprint": "eb8ccba29bc32caa",
+  "fingerprint": "896739260eb94a09",
   "status": "ok"
  },
  "xyz4_enc+GBNOffDiag": {
-  "fingerprint": "034fcbdd7c28ad59",
+  "fingerprint": "664f4c7010df9ea5",
   "status": "NONHERM"
  },
  "xyz4_enc+encapsulatedFourLayersF2G2": {
-  "fingerprint": "29ac35c4a4ddac3a",
+  "fingerprint": "c1a1bbde11b58d60",
   "status": "ok"
  },
  "xyz4_helical": {
-  "fingerprint": "752e3c02d8151c0d",
+  "fingerprint": "ef0350fb512a6745",
   "status": "ok"
  },
  "xyz4_helical+CDWUseMassTerm": {
-  "fingerprint": "5d7920299d00d22d",
+  "fingerprint": "c7a21e44d7bfad77",
   "status": "ok"
  },
  "xyz4_helical+helicalTwistedMBM_CDW": {
-  "fingerprint": "d7286fe4c4952b8b",
+  "fingerprint": "773053c1899ba138",
   "status": "ok"
  },
  "xyz4_sandwiched": {
-  "fingerprint": "171bdc8ac9994116",
+  "fingerprint": "2fd41ef83de4bc71",
   "status": "ok"
  },
  "xyz4_sandwiched+MoireBilayerElectricField": {
-  "fingerprint": "d0056e3c045eebbf",
+  "fingerprint": "e36caa5276c1c1ef",
   "status": "ok"
  },
  "xyz4_sandwiched+bilayerF2G2": {
-  "fingerprint": "3aa47144a2014af9",
+  "fingerprint": "e2c92cf117b210a0",
   "status": "ok"
  },
  "xyz4_sandwiched+bilayerF2G2_default": {
-  "fingerprint": "3aa47144a2014af9",
+  "fingerprint": "e2c92cf117b210a0",
   "status": "ok"
  },
  "xyz4_sandwiched+deactivateInterlayer12": {
-  "fingerprint": "f8f9672bb0ffdf1c",
+  "fingerprint": "23cf76afeafc86d9",
   "status": "ok"
  },
  "xyz4_sandwiched+deactivateInterlayer23": {
-  "fingerprint": "e6ee09d455e8ea01",
+  "fingerprint": "477d392737c2ce81",
   "status": "ok"
  },
  "xyz4_sandwiched+deactivateInterlayer34": {
-  "fingerprint": "b30627255d9ec734",
+  "fingerprint": "81603ab6adc28227",
   "status": "ok"
  },
  "xyz4_sandwiched+differentCouplings": {
-  "fingerprint": "f8a1b1697ead6b3a",
+  "fingerprint": "4239ba77eacae681",
   "status": "ok"
  },
  "xyz4_sandwiched+fourLayerOnsiteShifts": {
-  "fingerprint": "aa851b664520fe0b",
+  "fingerprint": "1522a393fb22da1f",
   "status": "ok"
  },
  "xyz4_sandwiched+helicalTwistedMBM": {
-  "fingerprint": "70c34e00987e0020",
+  "fingerprint": "fb17862ad5f78eda",
   "status": "ok"
  },
  "xyz4_sandwiched+middleTwist=F": {
@@ -1588,79 +1588,79 @@
   "status": "REFUSED"
  },
  "xyz4_sandwiched+middleTwist_default": {
-  "fingerprint": "171bdc8ac9994116",
+  "fingerprint": "2fd41ef83de4bc71",
   "status": "INERT"
  },
  "xyz4_t2GBN": {
-  "fingerprint": "c45b661814202f39",
+  "fingerprint": "ce28be7be4d544a2",
   "status": "ok"
  },
  "xyz4_t2GBN+deactivateInterlayert2GBN1to2": {
-  "fingerprint": "f26e6eb332e80827",
+  "fingerprint": "598077a56ffd645b",
   "status": "ok"
  },
  "xyz4_t2GBN+deactivateInterlayert2GBN2to3": {
-  "fingerprint": "f2fbef9125c77c4c",
+  "fingerprint": "ba0fa13adc3d1f81",
   "status": "ok"
  },
  "xyz4_t3BG": {
-  "fingerprint": "b0f8fdce512101fb",
+  "fingerprint": "82e7eb38c9d50e53",
   "status": "ok"
  },
  "xyz4_t3GwithBN": {
-  "fingerprint": "1e88035b0ba523b8",
+  "fingerprint": "5626214dc3277d3b",
   "status": "ok"
  },
  "xyz5": {
-  "fingerprint": "5572f9df1478d879",
+  "fingerprint": "aa961341da87dd4b",
   "status": "ok"
  },
  "xyz5_enc": {
-  "fingerprint": "387dbb732b7b2db5",
+  "fingerprint": "df935aeccf639879",
   "status": "ok"
  },
  "xyz6": {
-  "fingerprint": "dcaf596b1d577b09",
+  "fingerprint": "b9aade57bd720b8c",
   "status": "ok"
  },
  "xyz6_enc": {
-  "fingerprint": "fc704dfab37faa08",
+  "fingerprint": "5110085d0c3226cd",
   "status": "ok"
  },
  "xyz6_t3BG": {
-  "fingerprint": "c45486b8eabf2432",
+  "fingerprint": "1475beb57093588d",
   "status": "ok"
  },
  "xyz6_t3BG+deactivateInterlayert3BG1to2": {
-  "fingerprint": "69173ebf01282bed",
+  "fingerprint": "6d54dd0cbfac7dcd",
   "status": "ok"
  },
  "xyz6_t3BG+deactivateInterlayert3BG2to3": {
-  "fingerprint": "db9a7229c46be2ac",
+  "fingerprint": "9b241001c0cabcb1",
   "status": "ok"
  },
  "xyz6_t3BG+deactivateInterlayert3BG3to4": {
-  "fingerprint": "baecf2fcdb4455bf",
+  "fingerprint": "61474ec2e251fe4e",
   "status": "ok"
  },
  "xyz6_t3BG+deactivateInterlayert3BG4to5": {
-  "fingerprint": "d23c4802adc9a326",
+  "fingerprint": "37420d68173b54d0",
   "status": "ok"
  },
  "xyz6_t3BG+deactivateInterlayert3BG5to6": {
-  "fingerprint": "3ef873f768cfa2a4",
+  "fingerprint": "a1fe23f16316a1f0",
   "status": "ok"
  },
  "xyz7": {
-  "fingerprint": "75012f7057459727",
+  "fingerprint": "ecf22eb6bf1d11c3",
   "status": "ok"
  },
  "xyz7_enc": {
-  "fingerprint": "c896cdff542236d1",
+  "fingerprint": "b9091d5321431004",
   "status": "ok"
  },
  "xyz8": {
-  "fingerprint": "147a88486948c376",
+  "fingerprint": "dc64825878253103",
   "status": "ok"
  }
 }

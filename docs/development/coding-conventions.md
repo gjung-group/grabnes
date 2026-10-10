@@ -85,10 +85,8 @@ October 2026 showed to be necessary.
   `Bands.NumPoints`, `Spectral.WeiKu`. The section names the part of the code
   that reads the key (usually the module), so that related keys sort together
   and a key says where it belongs.
-- 135 of the 722 keys follow this form, in 14 sections (`Diag` 47, `Spectral`
-  20, `TB` 17, `Neigh` 12, `Calculate` 10, `MagField` 7, `Bands` 7, ...). The
-  other 587 have no section, and 281 of them start with a lower-case letter
-  (`realStrain`, `middleTwist`, `fourLayersSandwiched`, `useTAPW`).
+- Before October 2026 only 135 of the 722 keys followed this form; 485 more
+  were renamed then (see "Renaming keys" below) and about 100 remain.
 - New keys follow the `Section.Name` form. The existing keys keep working: see
   "Renaming keys" below.
 
@@ -156,34 +154,31 @@ Each rule answers a defect that was found (see
 
 ## Renaming keys without breaking inputs
 
-Bringing the 587 keys without a section to the `Section.Name` form must not
-invalidate existing input files. The mechanism is in the input library
-(`Src/MIO/input.F90`); the table of names (`Src/MIO/input_aliases.inc`) is
-filled once the names in `input-key-renaming-proposal.md` are settled:
+485 of the keys without a section were given the `Section.Name` form in
+October 2026 (`Strain.RealStrain`, `Stack.MiddleTwist`, `Structure.SuperCell`,
+...); about 100 are still to be named. Existing input files are not affected:
 
-1. One table in the input library maps every new name to its former name
-   (`Ham.RealStrain` to `realStrain`, `Stack.MiddleTwist` to `middleTwist`).
-2. The solver asks for the new name. If the input file does not contain it,
-   the library looks for the former name and uses its value. An input file with
-   only old names therefore gives exactly the same run.
-3. If both names are present, the new one is used and a warning is printed. If
-   an old name was used, one line at the end of the run lists the old names
-   found and their replacements; nothing stops.
-4. The variables inside the solver are not renamed by this; only the strings
-   passed to `MIO_InputParameter` change, which is a mechanical edit that
-   `tools/input/list_input_keys.py` and the model survey check.
+1. `lanczosKuboCode/Src/MIO/input_aliases.inc` maps every present name to its
+   former name(s). The solver asks for the present name; the input library
+   looks for it and then for the former names, so an input file with only old
+   names gives exactly the same run. The model survey runs with the old names
+   and so tests this for every switch.
+2. If both names are in the input file, the present one is used and a warning
+   is printed. If former names were used, one line at the end of the run says
+   how many (`Input.ListFormerNames .true.` lists them with their present
+   names); nothing stops.
+3. The table of names is
+   [`input-key-renaming-proposal.md`](input-key-renaming-proposal.md);
+   `tools/input/apply_key_names.py` applies it to the sources and writes the
+   alias file. The variables inside the solver are not renamed.
+4. A pair can also be declared in an input file, for a trial:
 
-A pair is declared with `call InputAddAlias('Section.Name','formerName')` in
-`input_aliases.inc`, or, for a trial, in the input file itself:
-
-```
-&begin Input.Aliases 1
-Ham.Shells  TB.NeighLevels
-&end Input.Aliases
-```
-
-A key is found under either name whichever of the two the solver asks for, so
-the table can be filled before the strings in the sources are changed.
+   ```
+   &begin Input.Aliases 1
+   Ham.Shells  TB.NeighLevels
+   &end Input.Aliases
+   ```
 
 The former names stay accepted indefinitely unless a later release decides
-otherwise and announces it.
+otherwise and announces it. New keys are given the `Section.Name` form from
+the start.

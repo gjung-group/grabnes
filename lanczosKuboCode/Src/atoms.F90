@@ -184,16 +184,16 @@ subroutine AtomsPos()
    call MIO_TimerCount('atoms')
 #endif /* TIMER */
 
-   call MIO_InputParameter('encapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Stack.EncapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    frac = .true.
    if (MIO_StringComp(str,'Graphene') .or. MIO_StringComp(str,'BoronNitride') .or. &
      MIO_StringComp(str,'Hybrid') .or. MIO_StringComp(str,'BLtoSLYoungju')) then
-      call MIO_InputParameter('basedOnMoireCellParameters',ll,.false.)
+      call MIO_InputParameter('Structure.BasedOnMoireCellParameters',ll,.false.)
       if (ll) then
-          call MIO_InputParameter('MoireCellParameters',n,[0,0,0,0])
-          call MIO_InputParameter('CellHeight',h,40.0_dp)
-          call MIO_InputParameter('InterlayerDistance',dIntLay,3.22_dp) ! Ref. PRB 76, 73103
+          call MIO_InputParameter('Structure.MoireCellParameters',n,[0,0,0,0])
+          call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
+          call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
           g = n(1)**2 + n(2)**2 + n(1)*n(2)
           delta = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/g)
           phi = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*delta*g))
@@ -227,8 +227,8 @@ subroutine AtomsPos()
           !$OMP END PARALLEL DO
 
       else
-          call MIO_InputParameter('CellSize',m(1),50)
-          call MIO_InputParameter('SuperCellAsymmetric',l,.false.)
+          call MIO_InputParameter('Structure.CellSize',m(1),50)
+          call MIO_InputParameter('Structure.SuperCellAsymmetric',l,.false.)
           if (l) then
              m2(1) = m(1)*sCell2
              m2(2) = 0
@@ -271,9 +271,9 @@ subroutine AtomsPos()
           end if
       end if
    else if (MIO_StringComp(str,'Graphene_Over_BN')) then
-      call MIO_InputParameter('MoireCellParameters',n,[0,0,0,0])
-      call MIO_InputParameter('CellHeight',h,40.0_dp)
-      call MIO_InputParameter('InterlayerDistance',dIntLay,3.22_dp) ! Ref. PRB 76, 73103
+      call MIO_InputParameter('Structure.MoireCellParameters',n,[0,0,0,0])
+      call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
       g = n(1)**2 + n(2)**2 + n(1)*n(2)
       delta = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/g)
       phi = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*delta*g))
@@ -312,9 +312,9 @@ subroutine AtomsPos()
       end do
       !$OMP END PARALLEL DO
    else if (MIO_StringComp(str,'BilayerGraphene_Over_BN')) then
-      call MIO_InputParameter('MoireCellParameters',n,[0,0,0,0])
-      call MIO_InputParameter('CellHeight',h,40.0_dp)
-      call MIO_InputParameter('InterlayerDistance',dIntLay,3.22_dp) ! Ref. PRB 76, 73103
+      call MIO_InputParameter('Structure.MoireCellParameters',n,[0,0,0,0])
+      call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
       g = n(1)**2 + n(2)**2 + n(1)*n(2)
       delta = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/g)
       phi = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*delta*g))
@@ -337,10 +337,10 @@ subroutine AtomsPos()
       call AtomsConstruct(RatBN,n(3:4),-phi*180.0_dp/pi,'BN',-g, 0.0_dp)
       nAtBN = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
       call MIO_Print('Atoms of BN: '//trim(num2str(nAtBN)),'atoms')
-      call MIO_InputParameter('twistedBLAddShift',addShift,.false.)
-      call MIO_InputParameter('BernalShift',Bernal,.false.)
-      call MIO_InputParameter('bridgeShift',bridge,.false.)
-      call MIO_InputParameter('BilayerShiftFactor',shiftFactor,0)
+      call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
+      call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
+      call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
+      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftFactor,0)
       if (addShift) then
          if (Bernal) then
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
@@ -369,10 +369,10 @@ subroutine AtomsPos()
       end do
       !$OMP END PARALLEL DO
    else if (MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell')) then ! Other twisted bilayers seem to have a wrong shift
-      call MIO_InputParameter('CellSize',m(1),50)
-      call MIO_InputParameter('MoireCellParameters',n,[0,0,0,0])
-      call MIO_InputParameter('CellHeight',h,40.0_dp)
-      call MIO_InputParameter('InterlayerDistance',dIntLay,3.22_dp) ! Ref. PRB 76, 73103
+      call MIO_InputParameter('Structure.CellSize',m(1),50)
+      call MIO_InputParameter('Structure.MoireCellParameters',n,[0,0,0,0])
+      call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
       g = n(1)**2 + n(2)**2 + n(1)*n(2)
       delta = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/g)
       phi = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*delta*g))
@@ -391,10 +391,10 @@ subroutine AtomsPos()
       call AtomsConstruct(RatC,n(1:2),0.0_dp,'graphene',g, 0.0_dp)
       nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
       call MIO_Print('Atoms of C:  '//trim(num2str(nAtC)),'atoms')
-      call MIO_InputParameter('twistedBLAddShift',addShift,.false.)
-      call MIO_InputParameter('BernalShift',Bernal,.false.)
-      call MIO_InputParameter('bridgeShift',bridge,.false.)
-      call MIO_InputParameter('BilayerShiftFactor',shiftFactor,0)
+      call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
+      call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
+      call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
+      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftFactor,0)
       if (addShift) then
          if (Bernal) then
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
@@ -411,16 +411,16 @@ subroutine AtomsPos()
       call MIO_Allocate(Rat,[3,nAt],'Rat','atoms')
       Rat(:,1:nAtC) = RatC
       Rat(:,nAtC+1:nAt) = RatBN
-      call MIO_InputParameter('createBLDomainBoundary',createBLDomainBoundary,.false.)
+      call MIO_InputParameter('Structure.CreateBLDomainBoundary',createBLDomainBoundary,.false.)
       m(1) = m(1)*sCell
       if (createBLDomainBoundary) then
           if (frac) then
               call AtomsSetCart()
           end if
-          call MIO_InputParameter('BLDomainBoundaryWidth',boundaryWidth,60.0_dp)
-          call MIO_InputParameter('BLDomainBoundaryTypeArmAA',boundaryTypeArmAA,.false.)
-          call MIO_InputParameter('BLDomainBoundaryTypeArmSP',boundaryTypeArmSP,.false.)
-          call MIO_InputParameter('BLDomainBoundaryNRShifts',numberOfShifts,1)
+          call MIO_InputParameter('Structure.BLDomainBoundaryWidth',boundaryWidth,60.0_dp)
+          call MIO_InputParameter('Structure.BLDomainBoundaryTypeArmAA',boundaryTypeArmAA,.false.)
+          call MIO_InputParameter('Structure.BLDomainBoundaryTypeArmSP',boundaryTypeArmSP,.false.)
+          call MIO_InputParameter('Structure.BLDomainBoundaryNRShifts',numberOfShifts,1)
           limit0 = 0.0_dp
           limit1 = (m(1)*aG)*1.0_dp/2.0_dp
           limit2 = limit1 + boundaryWidth
@@ -482,10 +482,10 @@ subroutine AtomsPos()
       end do
       !$OMP END PARALLEL DO
    else if (MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
-      call MIO_InputParameter('CellSize',m(1),50)
-      call MIO_InputParameter('MoireCellParameters',n,[0,0,0,0])
-      call MIO_InputParameter('CellHeight',h,40.0_dp)
-      call MIO_InputParameter('InterlayerDistance',dIntLay,3.22_dp) ! Ref. PRB 76, 73103
+      call MIO_InputParameter('Structure.CellSize',m(1),50)
+      call MIO_InputParameter('Structure.MoireCellParameters',n,[0,0,0,0])
+      call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
       g = n(1)**2 + n(2)**2 + n(1)*n(2)
       delta = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/g)
       phi = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*delta*g))
@@ -504,10 +504,10 @@ subroutine AtomsPos()
       call AtomsConstruct(RatC,n(1:2),0.0_dp,'graphene',g, 0.0_dp)
       nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
       call MIO_Print('Atoms of C:  '//trim(num2str(nAtC)),'atoms')
-      call MIO_InputParameter('twistedBLAddShift',addShift,.false.)
-      call MIO_InputParameter('BernalShift',Bernal,.false.)
-      call MIO_InputParameter('bridgeShift',bridge,.false.)
-      call MIO_InputParameter('BilayerShiftFactor',shiftFactor,0)
+      call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
+      call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
+      call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
+      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftFactor,0)
       if (addShift) then
          if (Bernal) then
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
@@ -537,11 +537,11 @@ subroutine AtomsPos()
       end do
       !$OMP END PARALLEL DO
    else if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer')) then
-      call MIO_InputParameter('CellSize',m(1),50)
-      call MIO_InputParameter('CellHeight',h,40.0_dp)
-      call MIO_InputParameter('InterlayerDistance',dIntLay,3.22_dp) ! Ref. PRB 76, 73103
+      call MIO_InputParameter('Structure.CellSize',m(1),50)
+      call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
       call MIO_InputParameter('twistedBilayerAngle',BLAngle,0.0_dp) ! Ref. PRB 76, 73103
-      call MIO_InputParameter('BilayerShiftFactor',shiftFactor,0) ! Ref. PRB 76, 73103
+      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftFactor,0) ! Ref. PRB 76, 73103
       m(1) = m(1)*sCell
       m(2) = 0
       g = dIntLay/(2.0_dp*h)
@@ -578,10 +578,10 @@ subroutine AtomsPos()
       !    if (Rat(2,i)>1.0_dp) print*, Rat(2,i), "hey"
       !    if (Rat(2,i)>1.0_dp) Rat(2,i) = mod(Rat(2,i) - 1.0_dp,1.0_dp)
    else if (MIO_StringComp(str,'TrilayerBasedOnMoireCell')) then ! Other twisted bilayers seem to have a wrong shift
-      call MIO_InputParameter('CellSize',m(1),50)
-      call MIO_InputParameter('MoireCellParameters',n,[0,0,0,0])
-      call MIO_InputParameter('CellHeight',h,40.0_dp)
-      call MIO_InputParameter('InterlayerDistance',dIntLay,3.22_dp) ! Ref. PRB 76, 73103
+      call MIO_InputParameter('Structure.CellSize',m(1),50)
+      call MIO_InputParameter('Structure.MoireCellParameters',n,[0,0,0,0])
+      call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
       g = n(1)**2 + n(2)**2 + n(1)*n(2)
       delta = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/g)
       phi = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*delta*g))
@@ -600,10 +600,10 @@ subroutine AtomsPos()
       call AtomsConstruct(RatC,n(1:2),0.0_dp,'graphene',g, 0.0_dp)
       nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
       call MIO_Print('Atoms of C:  '//trim(num2str(nAtC)),'atoms')
-      call MIO_InputParameter('TrilayerAddShift',addShift,.false.)
-      call MIO_InputParameter('BernalShift',Bernal,.false.)
-      call MIO_InputParameter('bridgeShift',bridge,.false.)
-      call MIO_InputParameter('TrilayerShiftFactor',shiftFactor,0)
+      call MIO_InputParameter('Structure.TrilayerAddShift',addShift,.false.)
+      call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
+      call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
+      call MIO_InputParameter('Structure.TrilayerShiftFactor',shiftFactor,0)
       if (addShift) then
          if (Bernal) then
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
@@ -639,9 +639,9 @@ subroutine AtomsPos()
       end do
       !$OMP END PARALLEL DO
    else if (MIO_StringComp(str,'Ribbons')) then
-      call MIO_InputParameter('RibbonType',str,'Zigzag')
-      call MIO_InputParameter('GrapheneWidth',nC,9)
-      call MIO_InputParameter('BNWidth',nBN,9)
+      call MIO_InputParameter('Structure.RibbonType',str,'Zigzag')
+      call MIO_InputParameter('Structure.GrapheneWidth',nC,9)
+      call MIO_InputParameter('Structure.BNWidth',nBN,9)
       nAt = (nC+nBN)*2
       call MIO_Allocate(Rat,[3,nAt],'Rat','atoms')
       call MIO_Allocate(Species,nAt,'Species','atoms')
@@ -654,24 +654,24 @@ subroutine AtomsPos()
            'atoms','AtomsPos')
       end if
    else if (MIO_StringComp(str,'ReadXYZ')) then
-      call MIO_InputParameter('XYZFile',str,trim(prefix)//'.xyz')
+      call MIO_InputParameter('Structure.XYZFile',str,trim(prefix)//'.xyz')
       open(1,FILE=str,STATUS='old')
-      call MIO_InputParameter('useSublatticeFile',useSublatticeFile,.true.)
+      call MIO_InputParameter('Structure.UseSublatticeFile',useSublatticeFile,.true.)
       if (useSublatticeFile) then
          call MIO_Print('Let us read in the sublattice file, must be sorted after LAMMPS calculation','atoms')
-         call MIO_InputParameter('SublatticeFile',str2,'sublatticesSorted.dat')
+         call MIO_InputParameter('Structure.SublatticeFile',str2,'sublatticesSorted.dat')
          open(2,FILE=str2,STATUS='old')
       end if
-      call MIO_InputParameter('readInterlayerDistances',readInterlayerDistances,.false.)
+      call MIO_InputParameter('Structure.ReadInterlayerDistances',readInterlayerDistances,.false.)
       if (readInterlayerDistances) then
          call MIO_Print('Let us read in the interlayerDistance and displacements files, must be sorted after LAMMPS calculation','atoms')
-         call MIO_InputParameter('interlayerDistanceFile',str3,'interlayerDistances.dat')
+         call MIO_InputParameter('Structure.InterlayerDistanceFile',str3,'interlayerDistances.dat')
          open(3,FILE=str3,STATUS='old')
       end if
-      call MIO_InputParameter('GBNuseDisplacementFile',GBNuseDisplacementFile,.false.)
-      call MIO_InputParameter('tBGuseDisplacementFile',tBGuseDisplacementFile,.false.)
+      call MIO_InputParameter('GBN.UseDisplacementFile',GBNuseDisplacementFile,.false.)
+      call MIO_InputParameter('TBG.UseDisplacementFile',tBGuseDisplacementFile,.false.)
       if (GBNuseDisplacementFile .or. tBGuseDisplacementFile) then ! Carr format here
-         call MIO_InputParameter('displacementsFile',str4,'displacements.txt')
+         call MIO_InputParameter('Structure.DisplacementsFile',str4,'displacements.txt')
          open(4,FILE=str4,STATUS='old')
       end if
       do i=1,3
@@ -679,8 +679,8 @@ subroutine AtomsPos()
       end do
       read(1,*) nAt
       call MIO_Allocate(RatTemp,[3,nAt],'RatTemp','atoms')
-      call MIO_InputParameter('SuperCellX',SuperCellX,1)
-      call MIO_InputParameter('SuperCellY',SuperCellY,1)
+      call MIO_InputParameter('Structure.SuperCellX',SuperCellX,1)
+      call MIO_InputParameter('Structure.SuperCellY',SuperCellY,1)
       if (SuperCellX .ne. SuperCellY) then
          call MIO_Allocate(Rat,[3,nAt*SuperCellX*SuperCellY],'Rat','atoms')
          call MIO_Allocate(Species,nAt*SuperCellX*SuperCellY,'Species','atoms')
@@ -729,16 +729,16 @@ subroutine AtomsPos()
             end if
          end do
       end if
-      call MIO_InputParameter('invertDisplacements',invertDisplacements,.false.)
+      call MIO_InputParameter('Structure.InvertDisplacements',invertDisplacements,.false.)
       if (invertDisplacements) then
          do i=1,nAt
              displacements(1,i) = -displacements(1,i)
              displacements(2,i) = -displacements(2,i)
          end do
       end if
-      call MIO_InputParameter('readRigidXYZ',readRigidXYZ,.false.)
+      call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
       if (readRigidXYZ) then
-         call MIO_InputParameter('rigidPositions',str5,'generateInit.xyz')
+         call MIO_InputParameter('Structure.RigidPositions',str5,'generateInit.xyz')
          call MIO_Allocate(RatInit,[3,nAt*sCell*sCell],'RatInit','atoms')
          open(9,FILE=str5,STATUS='old')
          do i=1,4
@@ -755,7 +755,7 @@ subroutine AtomsPos()
           kk = 0
           frac = .false.
           call AtomsSetFracTemp()
-          call MIO_InputParameter('readInterlayerDistances',readInterlayerDistances,.false.)
+          call MIO_InputParameter('Structure.ReadInterlayerDistances',readInterlayerDistances,.false.)
           do ii=1,SuperCellX
              do jj=1,SuperCellY
                 do i=1,nAt
@@ -784,7 +784,7 @@ subroutine AtomsPos()
       else if (sCell.eq.1) then
           Rat = RatTemp
           Species = SpeciesTemp
-          call MIO_InputParameter('readLayerIndex',readLayerIndex,.false.)
+          call MIO_InputParameter('Structure.ReadLayerIndex',readLayerIndex,.false.)
           if (readLayerIndex) then
              open(987,FILE='layerIndex.dat',STATUS='old')
              do i=1,nAt
@@ -797,10 +797,10 @@ subroutine AtomsPos()
         kk = 0
         frac = .false.
         call AtomsSetFracTemp()
-        call MIO_InputParameter('readInterlayerDistances',readInterlayerDistances,.false.)
-        call MIO_InputParameter('readLayerIndex',readLayerIndex,.false.)
-        call MIO_InputParameter('GBNuseDisplacementFile',GBNuseDisplacementFile,.false.)
-        call MIO_InputParameter('tBGuseDisplacementFile',tBGuseDisplacementFile,.false.)
+        call MIO_InputParameter('Structure.ReadInterlayerDistances',readInterlayerDistances,.false.)
+        call MIO_InputParameter('Structure.ReadLayerIndex',readLayerIndex,.false.)
+        call MIO_InputParameter('GBN.UseDisplacementFile',GBNuseDisplacementFile,.false.)
+        call MIO_InputParameter('TBG.UseDisplacementFile',tBGuseDisplacementFile,.false.)
         if (readLayerIndex) then
            open(987,FILE='layerIndex.dat',STATUS='old')
            do i=1,nAt
@@ -841,7 +841,12 @@ subroutine AtomsPos()
       end if
       frac = .false.
    else
-      call MIO_Kill('Type of system not recognized','atoms','AtomsPos')
+      if (MIO_StringComp(str,'TwistedBilayerBasedOnMoireCellRectangular') .or. MIO_StringComp(str,'Hybrid') &
+          .or. MIO_StringComp(str,'BLtoSLYoungju')) then
+         call MIO_Kill('TypeOfSystem '//trim(str)//' is not supported at present: parts of the code refer to it, '// &
+           'but no atomic positions are generated for it.','atoms','AtomsPos')
+      end if
+      call MIO_Kill('Type of system not recognized: '//trim(str),'atoms','AtomsPos')
    end if
    call MIO_Allocate(indxDiv,nDiv+1,'indxDiv','atoms')
    call MIO_Allocate(procAt,nAt,'procAt','atoms')
@@ -887,7 +892,7 @@ subroutine AtomsPos()
    end if
 !#else
 !#endif /* MPI */
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (MIO_StringComp(str,'Hybrid')) then
       call AtomsSetCart()
       call HybridGen(nAt,Rat,Species,in1,in2)
@@ -899,89 +904,89 @@ subroutine AtomsPos()
         .or. MIO_StringComp(str,'ReadXYZ') &
         .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
       call AtomsSetCart()
-      call MIO_InputParameter('fourLayers',fourLayers,.false.)
-      call MIO_InputParameter('fourLayersSandwiched',fourLayersSandwiched,.false.)
-      call MIO_InputParameter('helicalTwistedMBM',helicalTwistedMBM,.false.)
-      call MIO_InputParameter('fiveLayersSandwiched',fiveLayersSandwiched,.false.)
-      call MIO_InputParameter('sixLayersSandwiched',sixLayersSandwiched,.false.)
-      call MIO_InputParameter('sevenLayersSandwiched',sevenLayersSandwiched,.false.)
-      call MIO_InputParameter('eightLayersSandwiched',eightLayersSandwiched,.false.)
-      call MIO_InputParameter('tenLayersSandwiched',tenLayersSandwiched,.false.)
-      call MIO_InputParameter('twentyLayersSandwiched',twentyLayersSandwiched,.false.)
-      call MIO_InputParameter('threeLayers',threeLayers,.false.)
-      call MIO_InputParameter('oneLayer',oneLayer,.false.)
-      call MIO_InputParameter('twoLayers',twoLayers,.false.)
-      call MIO_InputParameter('twoLayersZ1',twoLayersZ1,-3.3_dp)
-      call MIO_InputParameter('twoLayersZ2',twoLayersZ2,3.3_dp)
-      call MIO_InputParameter('threeLayersZ1',threeLayersZ1,-3.3_dp)
-      call MIO_InputParameter('threeLayersZ2',threeLayersZ2,0.0_dp)
-      call MIO_InputParameter('threeLayersZ3',threeLayersZ3,3.3_dp)
-      call MIO_InputParameter('fourLayersZ1',fourLayersZ1,-3.3_dp)
-      call MIO_InputParameter('fourLayersZ2',fourLayersZ2,-0.0_dp)
-      call MIO_InputParameter('fourLayersZ3',fourLayersZ3,3.3_dp)
-      call MIO_InputParameter('fourLayersZ4',fourLayersZ4,6.6_dp)
-      call MIO_InputParameter('fiveLayersZ1',fiveLayersZ1,-3.3_dp)
-      call MIO_InputParameter('fiveLayersZ2',fiveLayersZ2,-0.0_dp)
-      call MIO_InputParameter('fiveLayersZ3',fiveLayersZ3,3.3_dp)
-      call MIO_InputParameter('fiveLayersZ4',fiveLayersZ4,6.6_dp)
-      call MIO_InputParameter('fiveLayersZ5',fiveLayersZ5,6.6_dp)
-      call MIO_InputParameter('sixLayersZ1',sixLayersZ1,-3.3_dp)
-      call MIO_InputParameter('sixLayersZ2',sixLayersZ2,-0.0_dp)
-      call MIO_InputParameter('sixLayersZ3',sixLayersZ3,3.3_dp)
-      call MIO_InputParameter('sixLayersZ4',sixLayersZ4,6.6_dp)
-      call MIO_InputParameter('sixLayersZ5',sixLayersZ5,6.6_dp)
-      call MIO_InputParameter('sixLayersZ6',sixLayersZ6,6.6_dp)
-      call MIO_InputParameter('sevenLayersZ1',sevenLayersZ1,-3.3_dp)
-      call MIO_InputParameter('sevenLayersZ2',sevenLayersZ2,-0.0_dp)
-      call MIO_InputParameter('sevenLayersZ3',sevenLayersZ3,3.3_dp)
-      call MIO_InputParameter('sevenLayersZ4',sevenLayersZ4,6.6_dp)
-      call MIO_InputParameter('sevenLayersZ5',sevenLayersZ5,6.6_dp)
-      call MIO_InputParameter('sevenLayersZ6',sevenLayersZ6,6.6_dp)
-      call MIO_InputParameter('sevenLayersZ7',sevenLayersZ7,6.6_dp)
-      call MIO_InputParameter('eightLayersZ1',eightLayersZ1,-3.3_dp)
-      call MIO_InputParameter('eightLayersZ2',eightLayersZ2,-0.0_dp)
-      call MIO_InputParameter('eightLayersZ3',eightLayersZ3,3.3_dp)
-      call MIO_InputParameter('eightLayersZ4',eightLayersZ4,6.6_dp)
-      call MIO_InputParameter('eightLayersZ5',eightLayersZ5,6.6_dp)
-      call MIO_InputParameter('eightLayersZ6',eightLayersZ6,6.6_dp)
-      call MIO_InputParameter('eightLayersZ7',eightLayersZ7,6.6_dp)
-      call MIO_InputParameter('eightLayersZ8',eightLayersZ8,6.6_dp)
-      call MIO_InputParameter('tenLayersZ1',tenLayersZ1,-3.3_dp)
-      call MIO_InputParameter('tenLayersZ2',tenLayersZ2,-0.0_dp)
-      call MIO_InputParameter('tenLayersZ3',tenLayersZ3,3.3_dp)
-      call MIO_InputParameter('tenLayersZ4',tenLayersZ4,6.6_dp)
-      call MIO_InputParameter('tenLayersZ5',tenLayersZ5,6.6_dp)
-      call MIO_InputParameter('tenLayersZ6',tenLayersZ6,6.6_dp)
-      call MIO_InputParameter('tenLayersZ7',tenLayersZ7,6.6_dp)
-      call MIO_InputParameter('tenLayersZ8',tenLayersZ8,6.6_dp)
-      call MIO_InputParameter('tenLayersZ9',tenLayersZ9,6.6_dp)
-      call MIO_InputParameter('tenLayersZ10',tenLayersZ10,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ1',twentyLayersZ1,-3.3_dp)
-      call MIO_InputParameter('twentyLayersZ2',twentyLayersZ2,-0.0_dp)
-      call MIO_InputParameter('twentyLayersZ3',twentyLayersZ3,3.3_dp)
-      call MIO_InputParameter('twentyLayersZ4',twentyLayersZ4,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ5',twentyLayersZ5,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ6',twentyLayersZ6,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ7',twentyLayersZ7,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ8',twentyLayersZ8,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ9',twentyLayersZ9,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ10',twentyLayersZ10,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ11',twentyLayersZ11,-3.3_dp)
-      call MIO_InputParameter('twentyLayersZ12',twentyLayersZ12,-0.0_dp)
-      call MIO_InputParameter('twentyLayersZ13',twentyLayersZ13,3.3_dp)
-      call MIO_InputParameter('twentyLayersZ14',twentyLayersZ14,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ15',twentyLayersZ15,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ16',twentyLayersZ16,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ17',twentyLayersZ17,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ18',twentyLayersZ18,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ19',twentyLayersZ19,6.6_dp)
-      call MIO_InputParameter('twentyLayersZ20',twentyLayersZ20,6.6_dp)
-      call MIO_InputParameter('GBNtwoLayers',GBNtwoLayers,.false.)
-      call MIO_InputParameter('t2GBN',t2GBN,.false.)
-      call MIO_InputParameter('t2BG',t2BG,.false.)
-      call MIO_InputParameter('t3BG',t3BG,.false.)
-      call MIO_InputParameter('encapsulatedFourLayers',encapsulatedFourLayers,.false.)
-      call MIO_InputParameter('readLayerIndex',readLayerIndex,.false.)
+      call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
+      call MIO_InputParameter('Stack.FourLayersSandwiched',fourLayersSandwiched,.false.)
+      call MIO_InputParameter('Stack.HelicalTwistedMBM',helicalTwistedMBM,.false.)
+      call MIO_InputParameter('Stack.FiveLayersSandwiched',fiveLayersSandwiched,.false.)
+      call MIO_InputParameter('Stack.SixLayersSandwiched',sixLayersSandwiched,.false.)
+      call MIO_InputParameter('Stack.SevenLayersSandwiched',sevenLayersSandwiched,.false.)
+      call MIO_InputParameter('Stack.EightLayersSandwiched',eightLayersSandwiched,.false.)
+      call MIO_InputParameter('Stack.TenLayersSandwiched',tenLayersSandwiched,.false.)
+      call MIO_InputParameter('Stack.TwentyLayersSandwiched',twentyLayersSandwiched,.false.)
+      call MIO_InputParameter('Stack.ThreeLayers',threeLayers,.false.)
+      call MIO_InputParameter('Stack.OneLayer',oneLayer,.false.)
+      call MIO_InputParameter('Stack.TwoLayers',twoLayers,.false.)
+      call MIO_InputParameter('Stack.TwoLayersZ1',twoLayersZ1,-3.3_dp)
+      call MIO_InputParameter('Stack.TwoLayersZ2',twoLayersZ2,3.3_dp)
+      call MIO_InputParameter('Stack.ThreeLayersZ1',threeLayersZ1,-3.3_dp)
+      call MIO_InputParameter('Stack.ThreeLayersZ2',threeLayersZ2,0.0_dp)
+      call MIO_InputParameter('Stack.ThreeLayersZ3',threeLayersZ3,3.3_dp)
+      call MIO_InputParameter('Stack.FourLayersZ1',fourLayersZ1,-3.3_dp)
+      call MIO_InputParameter('Stack.FourLayersZ2',fourLayersZ2,-0.0_dp)
+      call MIO_InputParameter('Stack.FourLayersZ3',fourLayersZ3,3.3_dp)
+      call MIO_InputParameter('Stack.FourLayersZ4',fourLayersZ4,6.6_dp)
+      call MIO_InputParameter('Stack.FiveLayersZ1',fiveLayersZ1,-3.3_dp)
+      call MIO_InputParameter('Stack.FiveLayersZ2',fiveLayersZ2,-0.0_dp)
+      call MIO_InputParameter('Stack.FiveLayersZ3',fiveLayersZ3,3.3_dp)
+      call MIO_InputParameter('Stack.FiveLayersZ4',fiveLayersZ4,6.6_dp)
+      call MIO_InputParameter('Stack.FiveLayersZ5',fiveLayersZ5,6.6_dp)
+      call MIO_InputParameter('Stack.SixLayersZ1',sixLayersZ1,-3.3_dp)
+      call MIO_InputParameter('Stack.SixLayersZ2',sixLayersZ2,-0.0_dp)
+      call MIO_InputParameter('Stack.SixLayersZ3',sixLayersZ3,3.3_dp)
+      call MIO_InputParameter('Stack.SixLayersZ4',sixLayersZ4,6.6_dp)
+      call MIO_InputParameter('Stack.SixLayersZ5',sixLayersZ5,6.6_dp)
+      call MIO_InputParameter('Stack.SixLayersZ6',sixLayersZ6,6.6_dp)
+      call MIO_InputParameter('Stack.SevenLayersZ1',sevenLayersZ1,-3.3_dp)
+      call MIO_InputParameter('Stack.SevenLayersZ2',sevenLayersZ2,-0.0_dp)
+      call MIO_InputParameter('Stack.SevenLayersZ3',sevenLayersZ3,3.3_dp)
+      call MIO_InputParameter('Stack.SevenLayersZ4',sevenLayersZ4,6.6_dp)
+      call MIO_InputParameter('Stack.SevenLayersZ5',sevenLayersZ5,6.6_dp)
+      call MIO_InputParameter('Stack.SevenLayersZ6',sevenLayersZ6,6.6_dp)
+      call MIO_InputParameter('Stack.SevenLayersZ7',sevenLayersZ7,6.6_dp)
+      call MIO_InputParameter('Stack.EightLayersZ1',eightLayersZ1,-3.3_dp)
+      call MIO_InputParameter('Stack.EightLayersZ2',eightLayersZ2,-0.0_dp)
+      call MIO_InputParameter('Stack.EightLayersZ3',eightLayersZ3,3.3_dp)
+      call MIO_InputParameter('Stack.EightLayersZ4',eightLayersZ4,6.6_dp)
+      call MIO_InputParameter('Stack.EightLayersZ5',eightLayersZ5,6.6_dp)
+      call MIO_InputParameter('Stack.EightLayersZ6',eightLayersZ6,6.6_dp)
+      call MIO_InputParameter('Stack.EightLayersZ7',eightLayersZ7,6.6_dp)
+      call MIO_InputParameter('Stack.EightLayersZ8',eightLayersZ8,6.6_dp)
+      call MIO_InputParameter('Stack.TenLayersZ1',tenLayersZ1,-3.3_dp)
+      call MIO_InputParameter('Stack.TenLayersZ2',tenLayersZ2,-0.0_dp)
+      call MIO_InputParameter('Stack.TenLayersZ3',tenLayersZ3,3.3_dp)
+      call MIO_InputParameter('Stack.TenLayersZ4',tenLayersZ4,6.6_dp)
+      call MIO_InputParameter('Stack.TenLayersZ5',tenLayersZ5,6.6_dp)
+      call MIO_InputParameter('Stack.TenLayersZ6',tenLayersZ6,6.6_dp)
+      call MIO_InputParameter('Stack.TenLayersZ7',tenLayersZ7,6.6_dp)
+      call MIO_InputParameter('Stack.TenLayersZ8',tenLayersZ8,6.6_dp)
+      call MIO_InputParameter('Stack.TenLayersZ9',tenLayersZ9,6.6_dp)
+      call MIO_InputParameter('Stack.TenLayersZ10',tenLayersZ10,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ1',twentyLayersZ1,-3.3_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ2',twentyLayersZ2,-0.0_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ3',twentyLayersZ3,3.3_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ4',twentyLayersZ4,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ5',twentyLayersZ5,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ6',twentyLayersZ6,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ7',twentyLayersZ7,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ8',twentyLayersZ8,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ9',twentyLayersZ9,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ10',twentyLayersZ10,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ11',twentyLayersZ11,-3.3_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ12',twentyLayersZ12,-0.0_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ13',twentyLayersZ13,3.3_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ14',twentyLayersZ14,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ15',twentyLayersZ15,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ16',twentyLayersZ16,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ17',twentyLayersZ17,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ18',twentyLayersZ18,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ19',twentyLayersZ19,6.6_dp)
+      call MIO_InputParameter('Stack.TwentyLayersZ20',twentyLayersZ20,6.6_dp)
+      call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
+      call MIO_InputParameter('Stack.T2GBN',t2GBN,.false.)
+      call MIO_InputParameter('Stack.T2BG',t2BG,.false.)
+      call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
+      call MIO_InputParameter('Stack.EncapsulatedFourLayers',encapsulatedFourLayers,.false.)
+      call MIO_InputParameter('Structure.ReadLayerIndex',readLayerIndex,.false.)
       if (readLayerIndex) then
           call MIO_Print('We read the layer indices from an external file, make sure to provide it','atoms')
       else if (fourLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. encapsulatedFourLayers) then
@@ -1604,7 +1609,7 @@ subroutine AtomsOrder()
 #ifdef DEBUG
    call MIO_Debug('AtomsOrder',0)
 #endif /* DEBUG */
-   call MIO_InputParameter('LatticeParameter',a,2.46_dp)
+   call MIO_InputParameter('Structure.LatticeParameter',a,2.46_dp)
    a = a*2.0_dp
    d = norm(ucell(:,1))
    xSubdiv = max(1,floor(d/(a*xDiv)))
@@ -1624,7 +1629,7 @@ subroutine AtomsOrder()
 #ifdef DEBUG
    call MIO_Debug('AtomsSort',0)
 #endif /* DEBUG */
-   call MIO_InputParameter('AtomsOrderDeactivated',AtomsOrderDeactivated,.true.)
+   call MIO_InputParameter('Structure.AtomsOrderDeactivated',AtomsOrderDeactivated,.true.)
    if (.NOT. AtomsOrderDeactivated)then
       call AtomsSort(secAt,procAt,Rat,Species)
    end if

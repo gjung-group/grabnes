@@ -51,8 +51,8 @@ subroutine HybridGen(nAt,Rat,Species,in1,in2)
    n = nint(area*per/(pi*r**2))
    call MIO_Print('Number of hexagonal islands: '//trim(num2str(n)),'hybrid')
    call MIO_Allocate(c,[2,n],'c','hybrid')
-   call MIO_InputParameter('SuperCell',sCell,1)
-   call MIO_InputParameter('CellSize',sz,50)
+   call MIO_InputParameter('Structure.SuperCell',sCell,1)
+   call MIO_InputParameter('Structure.CellSize',sz,50)
    sz = sCell*sz
    Gcell(:,1) = [0.0_dp, aG]
    Gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp]

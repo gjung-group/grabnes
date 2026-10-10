@@ -36,8 +36,8 @@ subroutine RandSeedFromInput()
 
    call random_seed(size = n)
    allocate(seed(n))
-   call MIO_InputParameter('setSeed',setSeed,.false.)
-   call MIO_InputParameter('seedValue',seedValue,123456)
+   call MIO_InputParameter('Kubo.SetSeed',setSeed,.false.)
+   call MIO_InputParameter('Kubo.SeedValue',seedValue,123456)
    if (setSeed) then
       seed = seedValue
    else

@@ -36,6 +36,8 @@ module input
    ! or older input files call aliasOld(i). Either name may be asked for and either may be given.
    integer, parameter :: maxAlias = 2000, aliasLen = 80
    character(len=aliasLen), save :: aliasNew(maxAlias), aliasOld(maxAlias)
+   ! the same names in the form used for comparison (InputLower)
+   character(len=aliasLen), save :: aliasNewKey(maxAlias), aliasOldKey(maxAlias)
    logical, save :: aliasOldUsed(maxAlias) = .false., aliasBoth(maxAlias) = .false.
    ! Keys of the input file (lower case, each once) and whether the run asked for them
    character(len=aliasLen), allocatable, save :: fileKeys(:), fileKeysAsWritten(:)
@@ -1445,41 +1447,51 @@ function InputSearchLabel(label,str,lineid) result(found)
    integer, intent(out), optional :: lineid
    logical :: found
 
-   integer :: ia, idOther
-   logical :: isOld, foundOther
+   integer :: i, ig, idOther, iUsed
+   logical :: foundOther
    character(len=maxrecl) :: strOther
+   character(len=aliasLen) :: key, group
 
    found = InputSearchLabelRaw(label,str,lineid)
    if (len_trim(label) == 0) return
    if (label(1:1) == '&') return
    call InputMarkAsked(label)
    if (nAlias == 0) return
-   call InputAliasFind(label,ia,isOld)
-   if (ia == 0) return
-   call InputMarkAsked(trim(aliasNew(ia)))
-   call InputMarkAsked(trim(aliasOld(ia)))
-   if (isOld) then
-      ! asked by its former name: the Section.Name form has priority if it is in the file
-      foundOther = InputSearchLabelRaw(trim(aliasNew(ia)),strOther,idOther)
-      if (foundOther) then
-         if (found) aliasBoth(ia) = .true.
-         found = .true.
-         if (present(str)) str = strOther
-         if (present(lineid)) lineid = idOther
-      else if (found) then
-         aliasOldUsed(ia) = .true.
+   if (len_trim(label) > aliasLen) return
+   ! the group of names this label belongs to: one Section.Name form and its former names
+   key = InputLower(label)
+   ig = 0
+   do i=1,nAlias
+      if (key == aliasOldKey(i) .or. key == aliasNewKey(i)) then
+         ig = i
+         exit
       end if
-   else
-      foundOther = InputSearchLabelRaw(trim(aliasOld(ia)),strOther,idOther)
-      if (found) then
-         if (foundOther) aliasBoth(ia) = .true.
-      else if (foundOther) then
-         found = .true.
-         aliasOldUsed(ia) = .true.
-         if (present(str)) str = strOther
-         if (present(lineid)) lineid = idOther
-      end if
+   end do
+   if (ig == 0) return
+   group = aliasNewKey(ig)
+   ! the Section.Name form has priority; then the former names in the order of the table
+   found = InputSearchLabelRaw(trim(aliasNew(ig)),strOther,idOther)
+   call InputMarkAsked(trim(aliasNew(ig)))
+   if (found) then
+      if (present(str)) str = strOther
+      if (present(lineid)) lineid = idOther
    end if
+   iUsed = 0
+   do i=ig,nAlias
+      if (aliasNewKey(i) /= group) cycle
+      call InputMarkAsked(trim(aliasOld(i)))
+      foundOther = InputSearchLabelRaw(trim(aliasOld(i)),strOther,idOther)
+      if (.not. foundOther) cycle
+      if (found .and. iUsed == 0) then
+         aliasBoth(i) = .true.
+      else if (.not. found) then
+         found = .true.
+         iUsed = i
+         aliasOldUsed(i) = .true.
+         if (present(str)) str = strOther
+         if (present(lineid)) lineid = idOther
+      end if
+   end do
 
 end function InputSearchLabel
 !****** End function: InputSearchLabel ****************************************
@@ -1508,47 +1520,11 @@ subroutine InputAddAlias(newName,oldName)
    nAlias = nAlias + 1
    aliasNew(nAlias) = adjustl(newName)
    aliasOld(nAlias) = adjustl(oldName)
+   aliasNewKey(nAlias) = InputLower(newName)
+   aliasOldKey(nAlias) = InputLower(oldName)
 
 end subroutine InputAddAlias
 !****** End subroutine: InputAddAlias *****************************************
-!******************************************************************************
-
-
-!****** Subroutine: InputAliasFind ********************************************
-!******************************************************************************
-!
-!  Index of the pair of names that label belongs to (0 if none), and whether
-!  label is the former name. Keys are not case sensitive.
-!
-!******************************************************************************
-subroutine InputAliasFind(label,ia,isOld)
-
-   implicit none
-
-   character(*), intent(in) :: label
-   integer, intent(out) :: ia
-   logical, intent(out) :: isOld
-
-   integer :: i
-   character(len=aliasLen) :: key
-
-   ia = 0
-   isOld = .false.
-   if (len_trim(label) > aliasLen) return
-   key = InputLower(label)
-   do i=1,nAlias
-      if (key == InputLower(aliasOld(i))) then
-         ia = i
-         isOld = .true.
-         return
-      else if (key == InputLower(aliasNew(i))) then
-         ia = i
-         return
-      end if
-   end do
-
-end subroutine InputAliasFind
-!****** End subroutine: InputAliasFind ****************************************
 !******************************************************************************
 
 
@@ -1561,12 +1537,22 @@ function InputLower(string) result(low)
    character(*), intent(in) :: string
    character(len=aliasLen) :: low
 
-   integer :: i, c
+   integer :: i, n, c
+   character(len=len(string)) :: tmp
 
-   low = adjustl(string)
-   do i=1,len_trim(low)
-      c = ichar(low(i:i))
-      if (c >= ichar('A') .and. c <= ichar('Z')) low(i:i) = char(c + 32)
+   tmp = adjustl(string)
+   low = ''
+   n = 0
+   do i=1,len_trim(tmp)
+      c = ichar(tmp(i:i))
+      if (tmp(i:i) == '_' .or. tmp(i:i) == '-') cycle     ! ignored in key names, as in StringComp
+      if (n == aliasLen) exit
+      n = n + 1
+      if (c >= ichar('A') .and. c <= ichar('Z')) then
+         low(n:n) = char(c + 32)
+      else
+         low(n:n) = tmp(i:i)
+      end if
    end do
 
 end function InputLower
@@ -1679,17 +1665,37 @@ subroutine InputAliasReport()
 
    implicit none
 
-   integer :: i
+   integer :: i, n
+   logical :: list
+   character(len=maxrecl) :: line
 
+   n = 0
    do i=1,nAlias
       if (aliasBoth(i)) then
          write(*,'(A)') 'input: WARNING: the input file contains both "'//trim(aliasNew(i))//'" and its former name "'// &
            trim(aliasOld(i))//'"; the value of "'//trim(aliasNew(i))//'" was used.'
       else if (aliasOldUsed(i)) then
-         write(*,'(A)') 'input: note: the key "'//trim(aliasOld(i))//'" is now called "'//trim(aliasNew(i))// &
-           '"; the former name keeps working.'
+         n = n + 1
       end if
    end do
+   if (n == 0) return
+   list = .false.
+   if (InputSearchLabelRaw('Input.ListFormerNames',line)) then
+      line = adjustl(line)
+      list = (index('tTyY',line(1:1)) > 0 .or. line(1:2) == '.t' .or. line(1:2) == '.T')
+   end if
+   call InputMarkAsked('Input.ListFormerNames')
+   if (list) then
+      write(*,'(A,I0,A)') 'input: note: ', n, ' key(s) of the input file are given under a former name, which keeps working:'
+      do i=1,nAlias
+         if (aliasOldUsed(i) .and. .not. aliasBoth(i)) then
+            write(*,'(A)') 'input:    '//trim(aliasOld(i))//'  ->  '//trim(aliasNew(i))
+         end if
+      end do
+   else
+      write(*,'(A,I0,A)') 'input: note: ', n, ' key(s) of the input file are given under a former name, which keeps '// &
+        'working ("Input.ListFormerNames .true." lists the present names).'
+   end if
 
 end subroutine InputAliasReport
 !****** End subroutine: InputAliasReport **************************************

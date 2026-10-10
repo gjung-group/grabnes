@@ -200,8 +200,8 @@ subroutine DiagDOS()
 
    call MIO_Print('Calculating DOS by diagonalization','diag')
    call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
-   call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
    call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
    call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
    call MIO_Allocate(DOS,[Epts,nspin],'DOS','diag')
@@ -368,8 +368,8 @@ subroutine DiagPDOS()
 
    call MIO_Print('Calculating PDOS by diagonalization','diag')
    call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
-   call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
    call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
    call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
    call MIO_Allocate(E,Epts,'E','diag')
@@ -532,8 +532,8 @@ subroutine Diag3DBands()
 
    call MIO_Print('Calculating 3D Bands by diagonalization','diag')
    call MIO_InputParameter('KGrid',nk,[1,1,1])
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
-   call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
    call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
    call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
    call MIO_Allocate(DOS,[Epts,nspin],'DOS','diag')
@@ -631,16 +631,16 @@ subroutine DiagBands()
    call MIO_InputParameter('Bands.SparseNeig',neig,100)
    call MIO_InputParameter('Bands.UseDifferentLatticeVectors',useDifferentLatticeVectors,.false.)
    call MIO_InputParameter('Bands.UseSameNumberOfPoints',useSameNumberOfPoints,.false.)
-   call MIO_InputParameter('keepWaveFunction',keepWaveFunction,.false.)
-    call MIO_InputParameter('sparseDiagSolver',sparseDiagSolver,.false.)
-    call MIO_InputParameter('useTAPW',useTAPW,.false.)
-    call MIO_InputParameter('useDenseMatrixTAPW',useDenseMatrixTAPW,.false.)
+   call MIO_InputParameter('Output.KeepWaveFunction',keepWaveFunction,.false.)
+    call MIO_InputParameter('Diag.SparseSolver',sparseDiagSolver,.false.)
+    call MIO_InputParameter('TAPW.Use',useTAPW,.false.)
+    call MIO_InputParameter('TAPW.UseDenseMatrix',useDenseMatrixTAPW,.false.)
     ! The Zeeman, Ising and Rashba terms are implemented in the TAPW path only.
     if (.not. useTAPW) then
        block
           logical :: zeeman, pzeeman
-          call MIO_InputParameter('ZeemanTerm',zeeman,.false.)
-          call MIO_InputParameter('PseudoZeemanTerm',pzeeman,.false.)
+          call MIO_InputParameter('Zeeman.Term',zeeman,.false.)
+          call MIO_InputParameter('Zeeman.PseudoTerm',pzeeman,.false.)
           if (zeeman .or. pzeeman .or. IsingSOCterm) then
              call MIO_Print('WARNING: ZeemanTerm, PseudoZeemanTerm and IsingSOCterm are implemented for TAPW '// &
                'calculations only (useTAPW .true.); they have NO effect on this calculation.','diag')
@@ -1518,7 +1518,7 @@ subroutine DiagChern()
       write(u,'(2f16.8)') 0.0_dp, d
       write(u,'(2f16.8)') Emin-2.0_dp, Emax+2.0_dp
       write(u,'(3i8)') nAt, nspin, ptsTot
-      call MIO_InputParameter('keepWaveFunction',keepWaveFunction,.false.)
+      call MIO_InputParameter('Output.KeepWaveFunction',keepWaveFunction,.false.)
       d = 0.0_dp
       hv = -huge(0.0_dp)
       lc = huge(0.0_dp)
@@ -2081,11 +2081,11 @@ subroutine DiagSpectralFunction()
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1],[ptsTot,2],'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -2231,7 +2231,7 @@ subroutine DiagSpectralFunctionKGrid()
 
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
 
-   call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
    gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -2280,7 +2280,7 @@ subroutine DiagSpectralFunctionKGrid()
       ip = 0
       d = 0.0_dp
       GVec = matmul(rcell,[1,0,0]) ! we only want to translate them by one reciprocal lattice vector
-      call MIO_InputParameter('CellSize', cellSize, 1)
+      call MIO_InputParameter('Structure.CellSize', cellSize, 1)
       Kpts(1,1) = KptsG(1,1)/cellSize
       Kpts(2,1) = KptsG(2,1)/cellSize
       Kpts(3,1) = KptsG(3,1)
@@ -2313,11 +2313,11 @@ subroutine DiagSpectralFunctionKGrid()
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptsTot,nAt,2],'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -2518,16 +2518,16 @@ subroutine DiagSpectralFunctionKGridInequivalent()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
    call MIO_InputParameter('Spectral.UseCoordinates',useCoordinates,.false.)
-   if (MIO_InputSearchLabel('MoireCellParameters',line,id)) then
-       call MIO_InputParameter('MoireCellParameters',mmm,[0,0,0,0])
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
+       call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -2545,7 +2545,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
            gcell = matmul(rot,gcell)
        end if
    else
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -2737,11 +2737,11 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptsTot,nAt,2],'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -3048,16 +3048,16 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
    call MIO_InputParameter('Spectral.UseCoordinates',useCoordinates,.false.)
-   if (MIO_InputSearchLabel('MoireCellParameters',line,id)) then
-       call MIO_InputParameter('MoireCellParameters',mmm,[0,0,0,0])
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
+       call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -3075,7 +3075,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
            gcell = matmul(rot,gcell)
        end if
    else
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -3251,11 +3251,11 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptsTot,nAt,2],'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -3553,9 +3553,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
 
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
-   if (MIO_InputSearchLabel('MoireCellParameters',line,id)) then
-       call MIO_InputParameter('MoireCellParameters',mmm,[0,0,0,0])
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
+       call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -3578,7 +3578,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
            gcell = matmul(rot,gcell)
        end if
    else
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -3605,7 +3605,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
@@ -3755,11 +3755,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptot,nAt,2],'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -4017,9 +4017,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
 
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
-   if (MIO_InputSearchLabel('MoireCellParameters',line,id)) then
-       call MIO_InputParameter('MoireCellParameters',mmm,[0,0,0,0])
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
+       call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -4046,7 +4046,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
            gcell = matmul(rot,gcell)
        end if
    else
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -4085,7 +4085,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
@@ -4236,11 +4236,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptot,nAt,2],'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -4523,9 +4523,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
 
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
-   if (MIO_InputSearchLabel('MoireCellParameters',line,id)) then
-       call MIO_InputParameter('MoireCellParameters',mmm,[0,0,0,0])
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
+       call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -4548,7 +4548,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
            gcell = matmul(rot,gcell)
        end if
    else
-       call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+       call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -4575,7 +4575,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
@@ -4713,11 +4713,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptot,nAt,2],'Pkc','diag')
-      call MIO_InputParameter('NumberofEnergyPoints',Epts,1000)
+      call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call MIO_InputParameter('Spectral.Emin',E1,-1.0_dp)
       call MIO_InputParameter('Spectral.Emax',E2,1.0_dp)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Epsilon',eps,0.01_dp)
+      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -5772,7 +5772,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ! Debug prints
 
     ! === TAPW settings (configurable via input parameters) ===
-    call MIO_InputParameter('useDenseMatrixTAPW',useDenseMatrixTAPW,.false.)
+    call MIO_InputParameter('TAPW.UseDenseMatrix',useDenseMatrixTAPW,.false.)
     call MIO_InputParameter('Diag.CheckTAPWUnitary',checkTAPWUnitary,.false.)
 
     ! Only initialize sparse matrix if NOT using dense matrix approach
@@ -10140,7 +10140,7 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
    delta_kx = 0.01d0
    delta_ky = 0.01d0
 
-   call MIO_InputParameter('Epsilon',eps,0.001_dp)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.001_dp)
 
    HLoc = 0.0_dp
    do i=1,N
@@ -10420,7 +10420,7 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
    call MIO_Debug('DiagSpectralWeightNishi',0)
 #endif /* DEBUG */
 
-   call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
    gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -10531,7 +10531,7 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
 
    integer :: at1, at2
 
-   call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
+   call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
    gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
@@ -10542,7 +10542,7 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
    Hts = 0.0_dp
    PkcLoc = 0.0_dp
 
-   call MIO_InputParameter('CellSize', cellSize, 1)
+   call MIO_InputParameter('Structure.CellSize', cellSize, 1)
 
    if (.not. frac) call AtomsSetFrac()
    do i=1,N

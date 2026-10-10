@@ -73,8 +73,19 @@ def collect():
     return rows, blocks
 
 
+def former_names():
+    """{key in lower case: [former names]} from the alias table of the input library."""
+    inc = os.path.join(ROOT, "lanczosKuboCode", "Src", "MIO", "input_aliases.inc")
+    out = {}
+    if os.path.exists(inc):
+        for new, old in re.findall(r"^\s*call\s+InputAddAlias\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)", open(inc).read(), re.I | re.M):
+            out.setdefault(new.lower(), []).append(old)
+    return out
+
+
 def render():
     rows, blocks = collect()
+    former = former_names()
     keys = {}
     for (k, _), row in rows.items():
         keys.setdefault(k, []).append(row)
@@ -87,12 +98,15 @@ def render():
            "The default shown is the expression in the source; where it is not a literal, it is computed from other",
            "input. \"Read in\" names the source file and routine, which is where to look for what the key does: most",
            "keys have no other documentation yet.", "",
-           "| Key | Type | Default | Read in |", "| --- | --- | --- | --- |"]
+           "\"Former name\" is the name of the key before October 2026. It keeps working: an input file may use either",
+           "name (if both are given, the present name is used and the solver prints a warning).", "",
+           "| Key | Former name | Type | Default | Read in |", "| --- | --- | --- | --- | --- |"]
     for k in sorted(keys):
         for key, default, typ, where in sorted(keys[k], key=lambda r: r[1]):
             places = sorted(set(where))
             shown = "; ".join(places[:3]) + (f"; ... ({len(places)} places)" if len(places) > 3 else "")
-            out.append(f"| `{key}` | {typ} | `{default.replace('|', '/')}` | {shown} |")
+            was = ", ".join(f"`{x}`" for x in former.get(k, []))
+            out.append(f"| `{key}` | {was} | {typ} | `{default.replace('|', '/')}` | {shown} |")
     out += ["", "## Blocks", "", "| Block | Read in |", "| --- | --- |"]
     for k in sorted(blocks):
         name, where = blocks[k]

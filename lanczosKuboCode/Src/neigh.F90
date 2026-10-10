@@ -295,7 +295,7 @@ subroutine NeighFinishSearch()
    call NeighSetRadii()
    call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    NList2 = NList
-   call MIO_InputParameter('WriteDataFiles',prnt,.false.)
+   call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
    if (prnt) call NeighWriteDataFiles()
 
 #ifdef DEBUG
@@ -318,7 +318,7 @@ subroutine NeighSetRadii()
    call MIO_Debug('NeighSetRadii',0)
 #endif /* DEBUG */
 
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    do i=1,min(tbnn,maxShells)
       Nradii(i,1) = shellRadius(i)*aG/sqrt(3.0_dp)*1.1_dp
@@ -510,36 +510,36 @@ subroutine NeighList()
    call MIO_TimerCount('neigh::p1')
 #endif /* TIMER */
 
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    inplaneNeigh=sum(numN(1:tbnn))
    if (MIO_StringComp(str,'Graphene_Over_BN')) then
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    else if (MIO_StringComp(str,'BilayerGraphene_Over_BN')) then ! optimize this
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh*2.0_dp
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    else if (MIO_StringComp(str,'TrilayerBasedOnMoireCell')) then ! optimize this
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh*2.0_dp
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    else if (MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell') &
          .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    else if (MIO_StringComp(str,'ReadXYZ')) then
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
       maxNeigh = inplaneNeigh + outplaneNeigh
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    else if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer')) then
-      call MIO_InputParameter('InterlayerDistance',d,3.22_dp)
+      call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,1)
       maxNeigh = inplaneNeigh + outplaneNeigh
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
@@ -935,7 +935,7 @@ subroutine NeighList()
 #ifdef TIMER
    call MIO_TimerStop('neigh::p2')
 #endif /* TIMER */
-   call MIO_InputParameter('WriteDataFiles',prnt,.false.)
+   call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
    if (prnt) then
       open(1,FILE='v')
       open(2,FILE='dx')
@@ -993,7 +993,7 @@ subroutine NeighListOld()
    call MIO_Debug('NeighListOld',0)
 #endif /* DEBUG */
 
-   call MIO_InputParameter('LatticeParameter',alatt,2.46_dp)
+   call MIO_InputParameter('Structure.LatticeParameter',alatt,2.46_dp)
    r0 = alatt/sqrt(3.0_dp)
    call MIO_InputParameter('Neigh.Distance',r0,alatt/sqrt(3.0_dp))
    r0 = r0*1.1_dp
@@ -1394,7 +1394,7 @@ subroutine fastNNnotsquare(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2)
    call MIO_Debug('fastNNnotsquare',0)
 #endif /* DEBUG */
 
-   call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
+   call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call NeighReadDataFiles()
    else
@@ -1462,8 +1462,8 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
    call MIO_Debug('fastNNnotsquareSmall',0)
 #endif /* DEBUG */
 
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
-   call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
 
@@ -1504,7 +1504,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
 !`idx_1` and `idx_2` are both in `[-1,0,1] and `direction_1` and `direction_2`
 !are the real space directions of the translational symmetry.`
 
-      call MIO_InputParameter('SuperCell',sCell,1)
+      call MIO_InputParameter('Structure.SuperCell',sCell,1)
       call MIO_InputParameter('only000Cell',only000Cell,.false.)
          do i=1,nAt
             do j=1,Nneigh(i) ! different from ultraSmall because here we already know the neighbors
@@ -1757,7 +1757,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
 
        ENDDO
 
-       call MIO_InputParameter('SuperCell',sCell,1)
+       call MIO_InputParameter('Structure.SuperCell',sCell,1)
           !$OMP PARALLEL DO PRIVATE(v, d, ncell, i,j, dist, ix, iy)
           do i=1,nAt
              do j=1,Nneigh(i) ! different from ultraSmall because here we already know the neighbors
@@ -1818,7 +1818,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
        !   !$OMP PARALLEL PRIVATE(np)
        !   !$OMP END PARALLEL
 #endif /* MPI */
-       call MIO_InputParameter('WriteDataFiles',prnt,.false.)
+       call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
        if (prnt) then
           open(1,FILE='v')
           open(2,FILE='dx')
@@ -1867,7 +1867,7 @@ subroutine fastNNnotsquareBulk(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2,A3)
    call MIO_Debug('fastNNnotsquareBulk',0)
 #endif /* DEBUG */
 
-   call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
+   call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call NeighReadDataFiles()
    else
@@ -1897,11 +1897,11 @@ subroutine fastNNnotsquareBulkSmall(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2,A3)
    call MIO_Debug('fastNNnotsquareBulkSmall',0)
 #endif /* DEBUG */
 
-   call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
+   call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       call NeighReadDataFiles()
    else
-      call MIO_InputParameter('addSecondLayerInteractions',addSecondLayerInteractions,.false.)
+      call MIO_InputParameter('Interlayer.AddSecondLayerInteractions',addSecondLayerInteractions,.false.)
       call NeighSearchLayered(natoms,x,y,z,A1,A2,cutoff2,cutoff2bis,.true.,A3,addSecondLayerInteractions)
       call NeighFinishSearch()
    end if
@@ -2196,7 +2196,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    do i=1,tbnn
       Nradii(i,1) = rad(i)*aG*1.1_dp
    end do
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (MIO_StringComp(str,'BoronNitride')) then
       Nradii(:,2) = Nradii(:,1)
    else
@@ -2318,7 +2318,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
       call MIO_Deallocate(countN,'countN','neigh')
    end if
 #endif /* MPI */
-   call MIO_InputParameter('WriteDataFiles',prnt,.false.)
+   call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
    if (prnt) then
       open(1,FILE='v')
       open(2,FILE='dx')
@@ -2404,7 +2404,7 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
    do i=1,tbnn
       Nradii(i,1) = rad(i)*aG*1.1_dp
    end do
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (MIO_StringComp(str,'BoronNitride')) then
       Nradii(:,2) = Nradii(:,1)
    else
@@ -2613,7 +2613,7 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
       call MIO_Deallocate(countN,'countN','neigh')
    end if
 #endif /* MPI */
-   call MIO_InputParameter('WriteDataFiles',prnt,.false.)
+   call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
    if (prnt) then
       open(1,FILE='v')
       open(2,FILE='dx')

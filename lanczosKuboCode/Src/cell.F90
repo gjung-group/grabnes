@@ -32,20 +32,28 @@ subroutine CellGet()
    call MIO_TimerCount('cell')
 #endif /* TIMER */
 
-   call MIO_InputParameter('LatticeParameter',aG,2.46_dp)
-   call MIO_InputParameter('LatticeParameterBN',aBN,2.505_dp)
-   call MIO_InputParameter('TypeOfSystem',str,'Graphene')
-   call MIO_InputParameter('CellHeight',h,40.0_dp)
-   call MIO_InputParameter('SuperCell',sCell,1)
-   call MIO_InputParameter('SuperCellAsymmetric',l,.false.)
-   call MIO_InputParameter('SuperCellY',sCell2,1)
+   call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
+   call MIO_InputParameter('Structure.LatticeParameterBN',aBN,2.505_dp)
+   call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+   call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
+   call MIO_InputParameter('Structure.SuperCell',sCell,1)
+   ! Default of the interlayer distance: 3.35 Ang everywhere since October 2026 (3.22 Ang before in the
+   ! generators, the neighbor search and parts of the Hamiltonian; it matters for structures read from a file too)
+   if (.not. (MIO_StringComp(str,'Graphene') .or. MIO_StringComp(str,'BoronNitride'))) then
+      if (.not. MIO_InputSearchLabel('Structure.InterlayerDistance')) then
+         call MIO_Print('NOTE: InterlayerDistance is not given: 3.35 Ang is used (the default was 3.22 Ang '// &
+           'before October 2026)','cell')
+      end if
+   end if
+   call MIO_InputParameter('Structure.SuperCellAsymmetric',l,.false.)
+   call MIO_InputParameter('Structure.SuperCellY',sCell2,1)
    if (MIO_StringComp(str,'Graphene') .or. MIO_StringComp(str,'BoronNitride') &
     .or. MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer')) then
-      call MIO_InputParameter('basedOnMoireCellParameters',ll,.false.)
+      call MIO_InputParameter('Structure.BasedOnMoireCellParameters',ll,.false.)
       if (ll) then
           uc(:,1) = (/aG,0.0_dp/)
           uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
-          call MIO_InputParameter('MoireCellParameters',m,[0,0,0,0])
+          call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
           call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
             '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
             'cell')
@@ -78,7 +86,7 @@ subroutine CellGet()
           ucell(:,:2) = ucell(:,:2)*sCell
           aBN = aG ! added this, not sure if necessary
       else
-          call MIO_InputParameter('CellSize',n,50)
+          call MIO_InputParameter('Structure.CellSize',n,50)
           call MIO_Print('Length of unit cell: '//trim(num2str(n*aG,5))// &
             ' Ang','cell')
              n = n*sCell
@@ -91,7 +99,7 @@ subroutine CellGet()
    else if (MIO_StringComp(str,'Graphene_Over_BN')) then
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
-      call MIO_InputParameter('MoireCellParameters',m,[0,0,0,0])
+      call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
       call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
@@ -125,7 +133,7 @@ subroutine CellGet()
    else if (MIO_StringComp(str,'BilayerGraphene_Over_BN')) then
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
-      call MIO_InputParameter('MoireCellParameters',m,[0,0,0,0])
+      call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
       call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
@@ -159,7 +167,7 @@ subroutine CellGet()
    else if (MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell')) then
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
-      call MIO_InputParameter('MoireCellParameters',m,[0,0,0,0])
+      call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
       call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
@@ -193,7 +201,7 @@ subroutine CellGet()
    else if (MIO_StringComp(str,'TrilayerBasedOnMoireCell')) then
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
-      call MIO_InputParameter('MoireCellParameters',m,[0,0,0,0])
+      call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
       call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
@@ -227,7 +235,7 @@ subroutine CellGet()
    else if (MIO_StringComp(str,'TwistedBilayerBasedOnMoireCellRectangular')) then
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
-      call MIO_InputParameter('MoireCellParameters',m,[0,0,0,0])
+      call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
       call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
@@ -261,7 +269,7 @@ subroutine CellGet()
    else if (MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
-      call MIO_InputParameter('MoireCellParameters',m,[0,0,0,0])
+      call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
       call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
@@ -293,9 +301,9 @@ subroutine CellGet()
         ' Ang','cell')
       ucell(:,:2) = ucell(:,:2)*sCell
    else if (MIO_StringComp(str,'Ribbons')) then
-      call MIO_InputParameter('RibbonType',str,'Zigzag')
-      call MIO_InputParameter('GrapheneWidth',nC,9)
-      call MIO_InputParameter('BNWidth',nBN,9)
+      call MIO_InputParameter('Structure.RibbonType',str,'Zigzag')
+      call MIO_InputParameter('Structure.GrapheneWidth',nC,9)
+      call MIO_InputParameter('Structure.BNWidth',nBN,9)
       aBN = aG
       if (MIO_StringComp(str,'Zigzag')) then
          ucell(:,1) = [aG,0.0_dp,0.0_dp]
@@ -310,7 +318,7 @@ subroutine CellGet()
            'cell','CellGet')
       end if
    else if (MIO_StringComp(str,'ReadXYZ')) then
-      call MIO_InputParameter('XYZFile',str,trim(prefix)//'.xyz')
+      call MIO_InputParameter('Structure.XYZFile',str,trim(prefix)//'.xyz')
       open(1,FILE=str,STATUS='old')
       do i=1,3
          read(1,*) (ucell(j,i),j=1,3)
@@ -320,13 +328,17 @@ subroutine CellGet()
       print*, ucell(:,2)
       print*, ucell(:,3)
       close(1)
-      call MIO_InputParameter('LatticeParameterBN',aBN,2.505_dp)
+      call MIO_InputParameter('Structure.LatticeParameterBN',aBN,2.505_dp)
       g = norm(ucell(:,1))
       call MIO_Print('')
       call MIO_Print('Length of unit cell: '//trim(num2str(g,5))// &
         ' Ang','cell')
    else
-      call MIO_Kill('Type of system not recognized','cell','CellGet')
+      if (MIO_StringComp(str,'Hybrid') .or. MIO_StringComp(str,'BLtoSLYoungju')) then
+         call MIO_Kill('TypeOfSystem '//trim(str)//' is not supported at present: parts of the code refer to it, '// &
+           'but no cell is defined for it.','cell','CellGet')
+      end if
+      call MIO_Kill('Type of system not recognized: '//trim(str),'cell','CellGet')
    end if
    if (sCell /= 1) then
       if (l) then

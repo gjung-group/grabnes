@@ -24,14 +24,14 @@ subroutine GrabnesStart(success)
    call MIO_Initialize('grabnes',success)
    if (success) then
       call StartHeader()
-      call MIO_InputParameter('Description',desc,'')
+      call MIO_InputParameter('Run.Description',desc,'')
       if (desc/='') then
          call MIO_Print('---- Description of the system ----','start')
          call MIO_Print(desc,'start')
          call MIO_Print('-------------------------------------------------------'&
            //'-----------','start')
       end if
-      call MIO_InputParameter('Prefix',sysname,'grabnes')
+      call MIO_InputParameter('Run.Prefix',sysname,'grabnes')
       prefix = sysname
    end if
    call MIO_Print('')

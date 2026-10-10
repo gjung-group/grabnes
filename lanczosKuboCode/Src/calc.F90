@@ -62,9 +62,9 @@ subroutine CalcSelect()
        call HaldPhaseInit()
        call MIO_InputParameter('Kubo.Calc',calcK,.true.)
        call MIO_InputParameter('Diag.Calc',calcD,.false.)
-       call MIO_InputParameter('ReadDataFiles',readDataFiles,.false.)
+       call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
        call MIO_InputParameter('Tunn.Calc',calcT,.false.)
-       call MIO_InputParameter('FrankMagneticField',Frank,.false.)
+       call MIO_InputParameter('MagField.FrankMagneticField',Frank,.false.)
 
        do mB=mBi,mBf, mStep
           call MagfValue(mB)
@@ -152,15 +152,15 @@ subroutine CalcKubo()
    call MIO_Debug('CalcKubo',0)
 #endif /* DEBUG */
 
-   call MIO_InputParameter('RecursionNumber',nRecurs,700)
-   call MIO_InputParameter('NumberofTimeSteps',nT,500)
-   call MIO_InputParameter('TimeStep',dT,5.0_dp)
+   call MIO_InputParameter('Kubo.RecursionNumber',nRecurs,700)
+   call MIO_InputParameter('Kubo.NumberofTimeSteps',nT,500)
+   call MIO_InputParameter('Kubo.TimeStep',dT,5.0_dp)
    call MIO_InputParameter('NumberofPolynomials',nPol,100)
-   call MIO_InputParameter('NumberofEnergyPoints',nEn,1000)
-   call MIO_InputParameter('Epsilon',eps,0.01_dp)
+   call MIO_InputParameter('Kubo.NumberofEnergyPoints',nEn,1000)
+   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('WriteNumberofSteps',nWr,10)
-   call MIO_InputParameter('EnergyMin',Emin,-4.0_dp)
-   call MIO_InputParameter('EnergyMax',Emax,4.0_dp)
+   call MIO_InputParameter('Kubo.EnergyMin',Emin,-4.0_dp)
+   call MIO_InputParameter('Kubo.EnergyMax',Emax,4.0_dp)
    eps = eps/g0
    Emin = Emin/g0
    Emax = Emax/g0
@@ -186,34 +186,34 @@ subroutine CalcKubo()
       call MIO_Allocate(tempZ,sndSz,'tempZ','calc')
    end if
 #endif /* MPI */
-   call MIO_InputParameter('PDOS',PDOS,.false.)
+   call MIO_InputParameter('Kubo.PDOS',PDOS,.false.)
    if (PDOS) then
-        call MIO_InputParameter('PDOSxmin',PDOSxmin,0.0_dp)
-        call MIO_InputParameter('PDOSxmax',PDOSxmax,5.0_dp)
-        call MIO_InputParameter('PDOSymin',PDOSymin,0.0_dp)
-        call MIO_InputParameter('PDOSymax',PDOSymax,5.0_dp)
-        call MIO_InputParameter('PDOSDist',PDOSDist,.false.)
-        call MIO_InputParameter('PDOSLayer',PDOSLayer,.false.)
-        call MIO_InputParameter('PDOSLayerAndSpecies',PDOSLayerAndSpecies,.false.)
-        call MIO_InputParameter('PDOSMoireSC1',PDOSMoireSC1,.false.)
-        call MIO_InputParameter('PDOSMoireSuperMoire',PDOSMoireSuperMoire,.true.)
-        call MIO_InputParameter('PDOSMoireSuperMoire2',PDOSMoireSuperMoire2,.true.)
-        call MIO_InputParameter('PDOSMoireSuperMoire3',PDOSMoireSuperMoire3,.true.)
-        call MIO_InputParameter('PDOSMoireSuperMoireLength',PDOSMoireSuperMoireLength,135d0)
-        call MIO_InputParameter('PDOSMinValue',PDOSMinValue,0)
+        call MIO_InputParameter('Kubo.PDOSxmin',PDOSxmin,0.0_dp)
+        call MIO_InputParameter('Kubo.PDOSxmax',PDOSxmax,5.0_dp)
+        call MIO_InputParameter('Kubo.PDOSymin',PDOSymin,0.0_dp)
+        call MIO_InputParameter('Kubo.PDOSymax',PDOSymax,5.0_dp)
+        call MIO_InputParameter('Kubo.PDOSDist',PDOSDist,.false.)
+        call MIO_InputParameter('Kubo.PDOSLayer',PDOSLayer,.false.)
+        call MIO_InputParameter('Kubo.PDOSLayerAndSpecies',PDOSLayerAndSpecies,.false.)
+        call MIO_InputParameter('Kubo.PDOSMoireSC1',PDOSMoireSC1,.false.)
+        call MIO_InputParameter('Kubo.PDOSMoireSuperMoire',PDOSMoireSuperMoire,.true.)
+        call MIO_InputParameter('Kubo.PDOSMoireSuperMoire2',PDOSMoireSuperMoire2,.true.)
+        call MIO_InputParameter('Kubo.PDOSMoireSuperMoire3',PDOSMoireSuperMoire3,.true.)
+        call MIO_InputParameter('Kubo.PDOSMoireSuperMoireLength',PDOSMoireSuperMoireLength,135d0)
+        call MIO_InputParameter('Kubo.PDOSMinValue',PDOSMinValue,0)
         PDOSMoireSuperMoireLength = PDOSMoireSuperMoireLength/aG
-        call MIO_InputParameter('CellSize',cellSize,50)
-        call MIO_InputParameter('PDOSAtomList',PDOSAtomList,.false.)
-        call MIO_InputParameter('PDOSByNumber',PDOSByNumber,.false.)
-        call MIO_InputParameter('PDOSIgnoreLayer1and4',PDOSIgnoreLayer1and4,.false.)
+        call MIO_InputParameter('Structure.CellSize',cellSize,50)
+        call MIO_InputParameter('Kubo.PDOSAtomList',PDOSAtomList,.false.)
+        call MIO_InputParameter('Kubo.PDOSByNumber',PDOSByNumber,.false.)
+        call MIO_InputParameter('Kubo.PDOSIgnoreLayer1and4',PDOSIgnoreLayer1and4,.false.)
         call MIO_InputParameter('numberOfLayers',numberOfLayers,2)
         call MIO_InputParameter('numberOfBNAtoms1',numberOfBNAtoms1,5832)
         call MIO_InputParameter('numberOfBNAtoms2',numberOfBNAtoms2,5832)
         call MIO_InputParameter('numberOfCAtoms',numberOfCAtoms,6050)
-        call MIO_InputParameter('encapsulatedFourLayers',encapsulatedFourLayers,.false.)
-        call MIO_InputParameter('encapsulatedSixLayers',encapsulatedSixLayers,.false.)
-        call MIO_InputParameter('t3BG',t3BG,.false.)
-        call MIO_InputParameter('PDOSPNP',PDOSPNP,.false.)
+        call MIO_InputParameter('Stack.EncapsulatedFourLayers',encapsulatedFourLayers,.false.)
+        call MIO_InputParameter('Stack.EncapsulatedSixLayers',encapsulatedSixLayers,.false.)
+        call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
+        call MIO_InputParameter('Kubo.PDOSPNP',PDOSPNP,.false.)
         !  !call PDOSByInterpolation()
         !  ! Calculate each of the 6 high symmetry sites
         !  ! PDOS_A, corresponds to AA site
@@ -398,7 +398,7 @@ subroutine CalcKubo()
             end if
           end do
         else if (PDOSAtomList) then
-          call MIO_InputParameter('PDOSList',PDOSList,[1,2,3,4,5,6])
+          call MIO_InputParameter('Kubo.PDOSList',PDOSList,[1,2,3,4,5,6])
           do j=1,size(PDOSList)
             i = PDOSList(j)
             write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
@@ -415,15 +415,15 @@ subroutine CalcKubo()
             call KuboDOS(Psi,Psin,Psinm1,a,b,H,H0,hopp,NList2,nRecurs,eps,nEn,Emin,Emax)
           end do
         else if (PDOSByNumber) then
-          call MIO_InputParameter('PDOSNumber',PDOSNumber,1)
+          call MIO_InputParameter('Kubo.PDOSNumber',PDOSNumber,1)
           call KuboInitWFPDOS(Psi,PDOSNumber)
           call KuboDOS(Psi,Psin,Psinm1,a,b,H,H0,hopp,NList2,nRecurs,eps,nEn,Emin,Emax)
         else if (PDOSPNP) then
           if (frac) call AtomsSetCart()
-          call MIO_InputParameter('CellSize',n,50)
+          call MIO_InputParameter('Structure.CellSize',n,50)
           aCC = aG/sqrt(3.0_dp)
           limit1 = (n*sCell*aG)*1.0_dp/4.0_dp
-          call MIO_InputParameter('PNPDelta',delta,10.0_dp)
+          call MIO_InputParameter('Potential.PNPDelta',delta,10.0_dp)
           flag1 = 0
           flag2 = 0
           do i=inode1,inode2
@@ -689,7 +689,7 @@ subroutine CalcDiag()
    call MIO_InputParameter('Calculate.SpectralEnergyCutNickDale',spectralEnergyCutNickDale,.false.)
    call MIO_InputParameter('Bands.GrapheneUnitCell',grapheneUnitCell,.false.)
    call MIO_InputParameter('Bands.AroundGrapheneK',aroundGrapheneK,.false.)
-   call MIO_InputParameter('EnableSCF',enableSCF,.true.)
+   call MIO_InputParameter('Hubbard.EnableSCF',enableSCF,.true.)
    if (spectralEnergyCut .or. spectralEnergyCutNickDale .or. spectral .or. bands .or. dos .or. bands3D) then
       call DiagInit(nAt)
       if (nspin==2 .and. enableSCF) then
