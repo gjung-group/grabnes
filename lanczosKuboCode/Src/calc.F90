@@ -19,9 +19,9 @@ subroutine CalcSelect()
    use moireBLShift,         only : mSi, mSf, mSStep, moireBLShiftInit, moireBLShiftValue
    use atoms,                only : nAt, Rat, frac, AtomsSetCart
    use neigh,                only : Nneigh, neighCell, NList, maxNeigh, neighD
-   use constants
+   use constants,            only : pi, cmplx_i, fluxq
    use cell,                 only : ucell, aG
-   use math
+   use math,                 only : CrossProd
 
    logical :: calcK, calcD, u, readDataFiles, calcT
    logical :: Frank
@@ -121,7 +121,7 @@ subroutine CalcKubo()
 
    use atoms,                only : inode1, inode2, Rat, in1, in2, frac, nAt
    use atoms,                only : AtomsSetFrac, AtomsSetCart, Species, layerIndex
-   use kuboarrays
+   use kuboarrays,           only : a, b, Psi, ZUPsi, c, Psin, Psinm1, XpnPsi, XpnPsim1, H, tempZ, tempD
    use kubo,                 only : KuboInitWF, KuboInitWFPDOS, KuboDOS, KuboTEvol, KuboInitWFLayerDOS, KuboInitWFLayerAndSpeciesDOS
    use kubosubs,             only : KuboInterval, KuboCn
    use neigh,                only : NList2, NeighD
@@ -523,7 +523,6 @@ subroutine CalcTunn()
    use cell,                 only : aG, rcell
    use tbpar,                only : g0
    use ham,                  only : hopp
-   use math
    use name,                 only : prefix
 
    integer :: i, jj, j, u1, u2, u3, u4, numberOfMoires

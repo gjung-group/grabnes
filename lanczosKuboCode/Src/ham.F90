@@ -142,7 +142,6 @@ subroutine HamInit()
    use cell,                 only : aG, ucell, aBN, sCell
    use tbpar,                only : g0, tbnn
    use gauss,                only : GaussHeight
-   use math
 
    ! System configuration flags
    logical :: printBubble           ! Add a bubble to the system
@@ -541,7 +540,6 @@ subroutine HamOnSite()
    use tbpar,                only : e0_C, g0, e0_B, e0_N, e0_C1, e0_C2, e0_C1_LB, e0_C2_LB, e0_C1_LT, e0_C2_LT
    use cell,                 only : sCell, aG, aBN, ucell
    use constants,            only : twopi, pi
-   use math
    use parallel,             only : nDiv, procID
    use gauss,                only : GaussPot, GaussHeight
    use moireBLShift,          only : tauX1, tauY1, tauX2, tauY2
@@ -3483,7 +3481,7 @@ end subroutine HamUpdateNormals
 !! @param[in]  moirePreFactor Moiré pattern prefactor
 subroutine diagoH0FromAABB(H0,dx,dy, z, moirePreFactor)
 
-    use constants
+    use constants,            only : pi
     use cell,                 only : aG
     use tbpar,                only : g0
     real(dp), intent(in):: z, moirePreFactor
@@ -3517,7 +3515,7 @@ end subroutine diagoH0FromAABB
 !! @param[in]  moirePreFactor Moiré pattern prefactor
 subroutine diagoHzFromAABB(Hz,dx,dy,z,moirePreFactor)
 
-    use constants
+    use constants,            only : pi
     use cell,                 only : aG
     use tbpar,                only : g0
     real(dp), intent(in):: z, moirePreFactor
@@ -3548,7 +3546,7 @@ end subroutine diagoHzFromAABB
 !! @param[in]  Phijj  Phase factor
 subroutine diago(Hdjj,dx,dy,Cjj,Phijj)
 
-    use constants
+    use constants,            only : pi, cmplx_i
     use cell,                 only : aG
     real(dp), intent(in):: Cjj, Phijj
     real(dp):: dx, dy, G1
@@ -3570,7 +3568,7 @@ end subroutine diago
 !! @param[in]  Cjj0   Constant offset
 subroutine diagoGBN(Hdjj,dx,dy,Cjj,Phijj,Cjj0)
 
-    use constants
+    use constants,            only : pi, cmplx_i
     use cell,                 only : aG
     real(dp), intent(in):: Cjj, Phijj
     real(dp), intent(in):: Cjj0
@@ -3592,7 +3590,7 @@ end subroutine diagoGBN
 !! @param[in]  Phijj  Phase factor
 subroutine offdiago(Hodjj,dx,dy,Cjj,Phijj)
 
-   use constants
+   use constants,            only : pi, cmplx_i
    use cell,                 only : aG
    real(dp), intent(in)::  dx, dy, Cjj, Phijj
    real(dp):: G1
@@ -3614,7 +3612,7 @@ end subroutine offdiago
 !! @param[in]  Cjj    Coupling amplitude
 !! @param[in]  Phijj  Phase factor
 subroutine offdiago2(Hodjj,dx,dy,Cjj,Phijj)
-   use constants
+   use constants,            only : pi, cmplx_i
    use cell,                 only : aG
    real(dp), intent(in)::  dx, dy, Cjj, Phijj
    real(dp):: G1
@@ -3699,7 +3697,7 @@ end subroutine MoireBondDeltaMidpoint
 !! @param[in]  Cjj    Coupling amplitude
 !! @param[in]  Phijj  Phase factor
 subroutine offdiagoGBN(Hodjj,dx,dy,Cjj,Phijj)
-   use constants
+   use constants,            only : pi, cmplx_i
    use cell,                 only : aG
    real(dp), intent(in)::  dx, dy, Cjj, Phijj
    real(dp):: G1
@@ -3721,7 +3719,7 @@ end subroutine offdiagoGBN
 !! @param[in]  Cjj    Coupling amplitude
 !! @param[in]  Phijj  Phase factor
 subroutine offdiagotBG(Hodjj,dx,dy,Cjj,Phijj)
-   use constants
+   use constants,            only : pi, cmplx_i
    use cell,                 only : aG
    real(dp), intent(in)::  dx, dy, Cjj, Phijj
    real(dp):: G1
@@ -3744,7 +3742,7 @@ end subroutine offdiagotBG
 !! @param[in]  Phijj  Phase factor
 !! @param[in]  Cjj0   Constant offset
 subroutine diagotBG(Hodjj,dx,dy,Cjj,Phijj,Cjj0)
-   use constants
+   use constants,            only : pi, cmplx_i
    use cell,                 only : aG
    real(dp), intent(in)::  dx, dy, Cjj, Phijj, Cjj0
    real(dp):: G1
@@ -3764,7 +3762,7 @@ end subroutine diagotBG
 !! @param[in]  A,B,C  Harmonic parameters
 !! @param[out] Hjj    Onsite energy contribution
 subroutine harmonicApprox(dx,dy,A,B,C, Hjj)
-    use constants
+    use constants,            only : pi
 
     real(dp), intent(in) :: dx, dy, A, B, C
     real(dp), intent(out) :: Hjj
@@ -3772,7 +3770,7 @@ subroutine harmonicApprox(dx,dy,A,B,C, Hjj)
     real(dp) :: delta, Ax, Ay, acc, f1, D, c0, c1, phi
 
     if (abs(B-C) < 0.0000001) then
-        print*, "WARNING: we have a singularity"
+        call MIO_Print("WARNING: we have a singularity",'ham')
         D = (A-B)/(10**(-16))
     else
         D = (A-B)/(B-C)
@@ -3807,7 +3805,7 @@ subroutine harmonicApprox(dx,dy,A,B,C, Hjj)
     phi = atan((1.0_dp/(delta/beta*D-1.0_dp)*((delta*alpha-beta*gammma)/(beta*delta)))-(gammma)/(delta))
     if (abs(B-C) < 0.0000001_dp) then
         c1 = (10**(-16))/(2.0_dp*(gammma*cos(phi)+delta*sin(phi)))
-        print*, "WARNING: we have a singularity2"
+        call MIO_Print("WARNING: we have a singularity2",'ham')
     else
         c1= (B-C)/(2.0*(gammma*cos(phi)+delta*sin(phi)))
     end if
@@ -3830,7 +3828,7 @@ end subroutine
 !! @param[in]  tbt      Base coupling amplitude
 !! @param[in]  posOrNeg Sign selector (+1/-1) for valley/rotation
 subroutine interlayerBLAB(HAB,dx,dy,tbt,posOrNeg)
-   use constants
+   use constants,            only : pi, cmplx_i
    use cell,                 only : aG
    real(dp), intent(in) ::  dx, dy, tbt, posOrNeg
    real(dp) :: Gplusx, Gplusy, Gminx, Gminy, phi
@@ -3856,7 +3854,7 @@ end subroutine interlayerBLAB
 !! @param[in]  posOrNeg Sign selector (+1/-1) for valley/rotation
 subroutine interlayerBLBA(HBA,dx,dy,tbt,posOrNeg)
 
-   use constants
+   use constants,            only : pi, cmplx_i
    use cell,                 only : aG
    real(dp), intent(in) ::  dx, dy, tbt, posOrNeg
    real(dp) :: Gplusx, Gplusy, Gminx, Gminy, phi
@@ -3882,7 +3880,7 @@ end subroutine interlayerBLBA
 !! @param[in]  posOrNeg Sign selector (+1/-1) for valley/rotation
 subroutine interlayerBLAA(HAA,dx,dy,tbt,posOrNeg)
 
-   use constants
+   use constants,            only : pi, cmplx_i
    use cell,                 only : aG
    real(dp), intent(in) ::  dx, dy, tbt, posOrNeg
    real(dp) :: Gplusx, Gplusy, Gminx, Gminy
@@ -3936,7 +3934,7 @@ subroutine HamHopping
    use cell,                 only : aG, aBN
    use gauss,                only : gaussPotDefinedPositions
    use moireBLShift,         only : tauX1, tauY1, tauX2, tauY2
-   use math
+   use math,                 only : CrossProd, norm
    use name,                 only : prefix, sysname
 
    integer :: i, j, ilvl, nlay
@@ -4965,7 +4963,7 @@ subroutine HamHopping
          call MIO_InputParameter('Strain.PeriodicStrainPeriod',nPeriod,1)
          call MIO_InputParameter('Strain.StrainedMoireMaxDisplacement',umax,0.5_dp)
          call MIO_InputParameter('Strain.StrainedMoire',strainedMoire,.false.)
-         call MIO_InputParameter('Structure.SuperCell',sCell,60)
+         call MIO_InputParameter('Structure.SuperCell',sCell,1)
          LMoire = norm(ucell(:,1))/sCell
 
          call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
@@ -9040,35 +9038,35 @@ subroutine HamHopping
                             .and. ((layerIndex(i).eq. 1 .and. layerIndex(jj).eq.2) &
                             .or. (layerIndex(i).eq.2 .and. layerIndex(jj).eq.1))) then
 #ifdef DEBUG
-                          print*, "deactivated layer t3BG1to2"
+                          call MIO_Print("deactivated layer t3BG1to2",'ham')
 #endif /* DEBUG */
                           cycle
                       else if (deactivateInterlayert3BG2to3 &
                             .and. ((layerIndex(i).eq. 2 .and. layerIndex(jj).eq.3) &
                             .or. (layerIndex(i).eq.3 .and. layerIndex(jj).eq.2))) then
 #ifdef DEBUG
-                          print*, "deactivated layer t3BG2to3"
+                          call MIO_Print("deactivated layer t3BG2to3",'ham')
 #endif /* DEBUG */
                           cycle
                       else if (deactivateInterlayert3BG3to4 &
                             .and. ((layerIndex(i).eq. 3 .and. layerIndex(jj).eq.4) &
                             .or. (layerIndex(i).eq.4 .and. layerIndex(jj).eq.3))) then
 #ifdef DEBUG
-                          print*, "deactivated layer t3BG3to4"
+                          call MIO_Print("deactivated layer t3BG3to4",'ham')
 #endif /* DEBUG */
                           cycle
                       else if (deactivateInterlayert3BG4to5 &
                             .and. ((layerIndex(i).eq. 4 .and. layerIndex(jj).eq.5) &
                             .or. (layerIndex(i).eq.5 .and. layerIndex(jj).eq.4))) then
 #ifdef DEBUG
-                          print*, "deactivated layer t3BG4to5"
+                          call MIO_Print("deactivated layer t3BG4to5",'ham')
 #endif /* DEBUG */
                           cycle
                       else if (deactivateInterlayert3BG5to6 &
                             .and. ((layerIndex(i).eq. 5 .and. layerIndex(jj).eq.6) &
                             .or. (layerIndex(i).eq.6 .and. layerIndex(jj).eq.5))) then
 #ifdef DEBUG
-                          print*, "deactivated layer t3BG5to6"
+                          call MIO_Print("deactivated layer t3BG5to6",'ham')
 #endif /* DEBUG */
                           cycle
                       end if
@@ -10814,7 +10812,7 @@ subroutine HamHopping
    if (periodicStrain) then
       call MIO_InputParameter('Strain.PeriodicStrainU0',u0,0.1_dp)
       call MIO_InputParameter('Strain.PeriodicStrainPeriod',nPeriod,1)
-      call MIO_InputParameter('Structure.SuperCell',sCell,60)
+      call MIO_InputParameter('Structure.SuperCell',sCell,1)
       LMoire = norm(ucell(:,1))/sCell
       if (frac) call AtomsSetCart()
       call MIO_Allocate(epsxy,[1,inode1],[maxNeigh,inode2],'epsxy','ham')

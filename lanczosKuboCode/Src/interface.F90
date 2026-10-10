@@ -109,7 +109,7 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
    use neigh,                only : maxNeigh
    use cell,                 only : ucell, aG
    use constants,            only : pi
-   use math
+   use math,                 only : norm
 
    real(dp), intent(inout) :: H(inode1:)
    integer, intent(in) :: Nneigh(inode1:), NList(1:maxNeigh,inode1:inode2), neighCell(1:3,1:maxNeigh,inode1:inode2)

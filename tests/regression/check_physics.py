@@ -184,7 +184,15 @@ def tapw_two_way(r):
         return equal_counts, worst
 
     problems = []
-    ok, worst = compare(valleys("angle0", "0.0"), "moire angle 0")
+    runs = valleys("angle0", "0.0")
+    ok, worst = compare(runs, "moire angle 0")
+    # the diagnostic output of TAPW must not change the result (it used to end with a segmentation fault)
+    debug = r.run("tapw_debug_K", TBG + "useTAPW .true.\nuseDenseMatrixTAPW .true.\nDiag.N_G 5\nTAPW.aG 2.46\n"
+                  "Diag.MoireAngle 0.0\nDiag.UseKprimeValley .false.\nDiag.TAPWDebug .true.\n", threads="1")
+    same = all(len(a) == len(b) and np.max(abs(a - b)) < 1e-9 for a, b in zip(debug, runs[0]))
+    print("  with Diag.TAPWDebug: " + ("same levels" if same else "DIFFERENT levels"))
+    if not same:
+        problems.append("the run with Diag.TAPWDebug does not give the levels of the run without it")
     if not ok or worst > 5e-5:
         problems.append("the TAPW levels of the two valleys are not the exact levels within 1 eV of neutrality")
     ok, worst = compare(valleys("control", "26.9955"), "control (wrong angle)")

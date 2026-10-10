@@ -178,7 +178,7 @@ subroutine DiagDOS()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : twopi
-   use math
+   use math,                 only : TrapezoidalInt
 
    integer, parameter :: intorder=5
 
@@ -339,7 +339,7 @@ subroutine DiagPDOS()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : twopi
-   use math
+   use math,                 only : TrapezoidalInt
 
    integer, parameter :: intorder=5
 
@@ -515,7 +515,6 @@ subroutine Diag3DBands()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : twopi
-   use math
 
    integer, parameter :: intorder=5
 
@@ -595,7 +594,6 @@ subroutine DiagBands()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, uu, uuu, uuuu, neig, i_eig
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:,:)=>NULL()
@@ -1453,7 +1451,7 @@ subroutine DiagChern()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, uu, uuu, uuuu
    real(dp), pointer :: path(:,:)=>NULL(), Kgrid(:,:)=>NULL(), Chern(:,:,:)=>NULL()
@@ -1580,7 +1578,6 @@ subroutine DiagBandsRashba()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:,:)=>NULL()
@@ -1719,7 +1716,7 @@ subroutine DiagBandsAroundK()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:)=>NULL()
@@ -1854,7 +1851,7 @@ subroutine DiagBandsG()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:)=>NULL()
@@ -2185,7 +2182,7 @@ subroutine DiagSpectralFunctionKGrid()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is
    integer :: ik, iee, ie
@@ -2424,7 +2421,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, u1, u2, u3, u4, uu1,uu2,uu3,uu4,uuu2,uuuu2,uuuuu2,uuuuuu2,uuuuuuu2,uuuuuuuu2
    integer :: ik, iee, ie
@@ -2962,7 +2959,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, u1, u2, u3, u4, uu1,uu2,uu3,uu4
    integer :: ik, iee, ie
@@ -3457,7 +3454,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, u1, u2, u3, u4, uu1, uu2, uu3, uu4
    integer :: ik, iee, ie
@@ -3917,7 +3914,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, u1, u2, u3, u4, uu1, uu2, uu3, uu4
    integer :: ik, iee, ie
@@ -4374,7 +4371,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
          AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
       end do
       !$OMP END PARALLEL DO
-      print*, "lets write it all out"
+      call MIO_Print("lets write it all out",'diag')
       do ik=1,ptot ! K loop
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -4430,7 +4427,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    use name,                 only : prefix
    use tbpar,                only : g0
    use constants,            only : pi, twopi
-   use math
+   use math,                 only : CrossProd, norm
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, u1, u2, u3
    integer :: ik, iee, ie
@@ -4806,7 +4803,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
          AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
       end do
       !$OMP END PARALLEL DO
-      print*, "lets write it all out"
+      call MIO_Print("lets write it all out",'diag')
       do ik=1,ptot ! K loop
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -5045,7 +5042,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
      ! Debug print for resid
     if (any(resid /= resid)) then
-        print *, 'Error: resid contains NaN values initially.'
+        call MIO_Print('Error: resid contains NaN values initially.','diag')
         error stop 1
     end if
 
@@ -5055,11 +5052,11 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     ! Create CSR sparse matrix storage
 #ifdef DEBUG
-    print *, "initialize the sparse matrix and put it in csr format"
+    call MIO_Print("initialize the sparse matrix and put it in csr format",'diag')
 #endif /* DEBUG */
     call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell, row_ptr, col_ind, values,sigma)
 #ifdef DEBUG
-    print *, "done"
+    call MIO_Print("done",'diag')
 #endif /* DEBUG */
     symmetric = is_structurally_symmetric(values, row_ptr, col_ind, N)
 
@@ -5069,12 +5066,12 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     ! Debug prints for CSR matrix
     if (any(values /= values)) then
-        print *, 'Error: values contains NaN values after initialization.'
+        call MIO_Print('Error: values contains NaN values after initialization.','diag')
         error stop 1
     end if
 
     if (maxval(abs(values)) > 1e10) then
-        print *, 'Warning: values contains extremely large values.'
+        call MIO_Print('Warning: values contains extremely large values.','diag')
     end if
 
     if (useShift) then
@@ -5229,7 +5226,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
            end if
 !          ! resid_norm = sqrt(sum(abs(workd(ipntr(2):ipntr(2) + nn - 1))**2))
        end do
-       print*, 'Solve completed ... '
+       call MIO_Print('Solve completed ... ','diag')
     else
        do while (ido /= 99)
            if (ido == -1 .or. ido == 1) then
@@ -5259,7 +5256,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     ! Debug print for extreme values
     if (maxval(abs(resid)) > 1e10) then
-        print *, 'Warning: resid contains extremely large values.'
+        call MIO_Print('Warning: resid contains extremely large values.','diag')
     end if
 
     if (saveRitz) then
@@ -5299,7 +5296,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     end if
     ! Debug prints after zneupd
     if (any(d /= d)) then
-        print *, 'Error: d contains NaN values after zneupd.'
+        call MIO_Print('Error: d contains NaN values after zneupd.','diag')
     endif
     if (info /= 0) then
         print *, 'Error with zneupd, ierr = ', info
@@ -5790,7 +5787,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     if (.not. useDenseMatrixTAPW) then
     ! Create CSR sparse matrix storage
 #ifdef DEBUG
-    print *, "initialize the sparse matrix and put it in csr format"
+    call MIO_Print("initialize the sparse matrix and put it in csr format",'diag')
 #endif /* DEBUG */
     if (tapwDebug) then
        print *, "DEBUG TAPW: KLoc for sparse matrix =", KLoc
@@ -5800,7 +5797,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
        ! Cell is already in correct column format for initialize_sparse_matrix
        ! matmul(cell, neighCell) expects cell(:,k) = k-th lattice vector
-       print *, "DEBUG TAPW: Using cell_real in column format (correct for matmul):"
+       call MIO_Print("DEBUG TAPW: Using cell_real in column format (correct for matmul):",'diag')
        print *, "TAPW:   a1 = cell_real(:,1) =", cell_real(:,1)
        print *, "TAPW:   a2 = cell_real(:,2) =", cell_real(:,2)
     end if
@@ -5808,7 +5805,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
      call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell_real, row_ptr, &
            col_ind, values,sigma)
 #ifdef DEBUG
-    print *, "done"
+    call MIO_Print("done",'diag')
 #endif /* DEBUG */
     symmetric = is_structurally_symmetric(values, row_ptr, col_ind, N)
 
@@ -5817,7 +5814,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 #endif /* DEBUG */
     else
         ! Skip sparse matrix initialization when using dense matrix approach
-        if (tapwDebug) print *, "Skipping sparse matrix initialization (using dense matrix approach)"
+        if (tapwDebug) call MIO_Print("Skipping sparse matrix initialization (using dense matrix approach)",'diag')
         ! Initialize dummy values to avoid uninitialized variables
         allocate(row_ptr(1), col_ind(1), values(1))
         row_ptr(1) = 1
@@ -5828,12 +5825,12 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     ! Debug prints for CSR matrix
     if (any(values /= values)) then
-        print *, 'Error: values contains NaN values after initialization.'
+        call MIO_Print('Error: values contains NaN values after initialization.','diag')
         error stop 1
     end if
 
     if (maxval(abs(values)) > 1e10) then
-        print *, 'Warning: values contains extremely large values.'
+        call MIO_Print('Warning: values contains extremely large values.','diag')
     end if
 
     ! === TAPW settings (configurable via input parameters) ===
@@ -5928,7 +5925,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Print lattice vectors and reference point calculation
-       print *, "DEBUG: Lattice vectors and reference point:"
+       call MIO_Print("DEBUG: Lattice vectors and reference point:",'diag')
        print *, "  Graphene lattice constant aG =", aG
        print *, "  sGlattice(1,:) =", sGlattice(1,:)
        print *, "  sGlattice(2,:) =", sGlattice(2,:)
@@ -5943,7 +5940,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Compare orientations of graphene vs moiré lattice vectors
-       print *, "DEBUG: Orientation comparison between graphene and moiré lattices:"
+       call MIO_Print("DEBUG: Orientation comparison between graphene and moiré lattices:",'diag')
        print *, "  Moiré rcell(:,1) =", rcell(:,1)
        print *, "  Moiré rcell(:,2) =", rcell(:,2)
     end if
@@ -5966,7 +5963,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        if (angle_diff_2 > 180.0_dp) angle_diff_2 = angle_diff_2 - 360.0_dp
        if (angle_diff_2 < -180.0_dp) angle_diff_2 = angle_diff_2 + 360.0_dp
 
-       print *, "  Orientation angles:"
+       call MIO_Print("  Orientation angles:",'diag')
     end if
     if (tapwDebug) then
        print *, "    Moiré b1 angle =", angle_rcell_1, "degrees"
@@ -6078,7 +6075,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Show TAPW structure
-       print *, "TAPW Structure:"
+       call MIO_Print("TAPW Structure:",'diag')
        print *, "  Number of atoms (N):", N
        print *, "  Number of G-vectors (NG):", NG
        print *, "  Number of unique labels (Nlabel):", Nlabel
@@ -6095,10 +6092,10 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Print atomic coordinates and G-vector information
-       print *, "DEBUG: Atomic coordinates and X matrix construction:"
+       call MIO_Print("DEBUG: Atomic coordinates and X matrix construction:",'diag')
        print *, "  Total atoms N =", N
        print *, "  frac flag =", frac
-       print *, "  Sample atomic coordinates (first 5 atoms):"
+       call MIO_Print("  Sample atomic coordinates (first 5 atoms):",'diag')
        do i = 1, min(5, N)
           print '(A,I3,A,2F12.6,A,I0)', "    Atom ", i, ": (", Rat(1,i), Rat(2,i), "), label=", label(i)
        end do
@@ -6110,7 +6107,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Show phase calculations for multiple atoms and G-vectors
-       print *, "DEBUG: Phase calculations G·r for X-matrix construction:"
+       call MIO_Print("DEBUG: Phase calculations G·r for X-matrix construction:",'diag')
        block
           real(dp) :: real_phase
           do i = 1, min(3, N)  ! First 3 atoms
@@ -6134,18 +6131,18 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        close(98)
     end if
     if (tapwDebug) then
-       print *, "DEBUG: Atomic coordinates written to atomic_coords_debug.dat for visualization"
+       call MIO_Print("DEBUG: Atomic coordinates written to atomic_coords_debug.dat for visualization",'diag')
 
        ! Output comprehensive debugging data for TAPW visualization
-       print *, "DEBUG: About to call output_brillouin_zones_debug..."
+       call MIO_Print("DEBUG: About to call output_brillouin_zones_debug...",'diag')
        call output_brillouin_zones_debug(aG, moireAngle, k_ref, rG)
 
        ! Output moiré BZ data
-       print *, "DEBUG: Outputting moiré BZ data..."
+       call MIO_Print("DEBUG: Outputting moiré BZ data...",'diag')
        call output_moire_bz_debug(rcell)
 
        ! Output k-path data if available
-       print *, "DEBUG: Outputting k-path data..."
+       call MIO_Print("DEBUG: Outputting k-path data...",'diag')
        call output_kpath_debug()
     end if
 
@@ -6433,7 +6430,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           if (present(kpoint_index)) then
              print *, "TAPW Average Mass Term - GRAPHENE Layer 1 (k-point ", kpoint_index, "):"
           else
-             print *, "TAPW Average Mass Term - GRAPHENE Layer 1:"
+             call MIO_Print("TAPW Average Mass Term - GRAPHENE Layer 1:",'diag')
           end if
           print *, "  TAPW basis: label_A_idx = ", label_A_idx, " (layer 1, Species 1 = A, GRAPHENE)"
           print *, "  TAPW basis: label_B_idx = ", label_B_idx, " (layer 1, Species 2 = B, GRAPHENE)"
@@ -6445,15 +6442,15 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           print *, "  V_B(G=0) = ", V_B_0, " (in units of g0)"
           print *, "  m0 = (V_A - V_B)/2 = ", m0, " (in units of g0) = ", m0_meV, " meV"
           print *, "  Delta_avg = 2|m0| = ", delta_avg, " (in units of g0) = ", delta_avg_meV, " meV"
-          print *, "  NOTE: V_A and V_B are TAPW-averaged values (normalized by 1/N_label)"
-          print *, "        For relaxed systems, spatial variations in moiré pattern can cause"
-          print *, "        on-site energies to vary across atoms with same label, leading to"
-          print *, "        smaller averaged mass term than individual atom values"
-          print *, "        The gap in bands (from eigenvalues) may still be reasonable because"
-          print *, "        it includes off-diagonal contributions and full Hproj structure"
+          call MIO_Print("  NOTE: V_A and V_B are TAPW-averaged values (normalized by 1/N_label)",'diag')
+          call MIO_Print("        For relaxed systems, spatial variations in moiré pattern can cause",'diag')
+          call MIO_Print("        on-site energies to vary across atoms with same label, leading to",'diag')
+          call MIO_Print("        smaller averaged mass term than individual atom values",'diag')
+          call MIO_Print("        The gap in bands (from eigenvalues) may still be reasonable because",'diag')
+          call MIO_Print("        it includes off-diagonal contributions and full Hproj structure",'diag')
        else
-          if (.not. found_A) print *, "Warning: Could not find layer 1 sublattice A (code 11, GRAPHENE) in TAPW basis"
-          if (.not. found_B) print *, "Warning: Could not find layer 1 sublattice B (code 12, GRAPHENE) in TAPW basis"
+          if (.not. found_A) call MIO_Print("Warning: Could not find layer 1 sublattice A (code 11, GRAPHENE) in TAPW basis",'diag')
+          if (.not. found_B) call MIO_Print("Warning: Could not find layer 1 sublattice B (code 12, GRAPHENE) in TAPW basis",'diag')
           if (found_A .and. label_A_idx > M) print *, "Warning: label_A_idx = ", label_A_idx, " > M = ", M
           if (found_B .and. label_B_idx > M) print *, "Warning: label_B_idx = ", label_B_idx, " > M = ", M
        end if
@@ -6473,7 +6470,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           if (present(kpoint_index)) then
              print *, "TAPW Average Mass Term - hBN Layer 2 (k-point ", kpoint_index, "):"
           else
-             print *, "TAPW Average Mass Term - hBN Layer 2:"
+             call MIO_Print("TAPW Average Mass Term - hBN Layer 2:",'diag')
           end if
           print *, "  TAPW basis: label_B_hBN_idx = ", label_B_hBN_idx, " (layer 2, Species 3 = B, hBN)"
           print *, "  TAPW basis: label_N_hBN_idx = ", label_N_hBN_idx, " (layer 2, Species 4 = N, hBN)"
@@ -6482,8 +6479,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           print *, "  m0_hBN = (V_B_hBN - V_N_hBN)/2 = ", m0_hBN, " (in units of g0) = ", m0_hBN_meV, " meV"
           print *, "  Delta_avg_hBN = 2|m0_hBN| = ", delta_avg_hBN, " (in units of g0) = ", delta_avg_hBN_meV, " meV"
        else
-          if (.not. found_B_hBN) print *, "Warning: Could not find layer 2 B atom (code 23, hBN) in TAPW basis"
-          if (.not. found_N_hBN) print *, "Warning: Could not find layer 2 N atom (code 24, hBN) in TAPW basis"
+          if (.not. found_B_hBN) call MIO_Print("Warning: Could not find layer 2 B atom (code 23, hBN) in TAPW basis",'diag')
+          if (.not. found_N_hBN) call MIO_Print("Warning: Could not find layer 2 N atom (code 24, hBN) in TAPW basis",'diag')
           if (found_B_hBN .and. label_B_hBN_idx > M) print *, "Warning: label_B_hBN_idx = ", label_B_hBN_idx, " > M = ", M
           if (found_N_hBN .and. label_N_hBN_idx > M) print *, "Warning: label_N_hBN_idx = ", label_N_hBN_idx, " > M = ", M
        end if
@@ -6542,14 +6539,14 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        if (present(kpoint_index)) then
           print *, "TAPW Gap from Eigenvalues - GRAPHENE Layer 1 (k-point ", kpoint_index, "):"
        else
-          print *, "TAPW Gap from Eigenvalues - GRAPHENE Layer 1:"
+          call MIO_Print("TAPW Gap from Eigenvalues - GRAPHENE Layer 1:",'diag')
        end if
        print *, "  Lowest eigenvalue (idx ", idx_min1, "): ", eigval_sorted(1), " (in units of g0)"
        print *, "  2nd lowest eigenvalue (idx ", idx_min2, "): ", eigval_sorted(2), " (in units of g0)"
        print *, "  Gap from eigenvalues = ", gap_from_eigenvalues, " (in units of g0) = ", gap_from_eigenvalues_meV, " meV"
-       print *, "  NOTE: This is the actual gap that appears in the bands"
-       print *, "        It includes off-diagonal contributions from Hproj"
-       print *, "        Compare with Delta_avg from diagonal extraction above"
+       call MIO_Print("  NOTE: This is the actual gap that appears in the bands",'diag')
+       call MIO_Print("        It includes off-diagonal contributions from Hproj",'diag')
+       call MIO_Print("        Compare with Delta_avg from diagonal extraction above",'diag')
 
        ! Deallocate sorting arrays
        deallocate(eigval_sorted, idx_sorted)
@@ -6724,116 +6721,116 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
 ! eigvals now contains eigenvalues of projected H
 
-    if (tapwDebug) print *, "Deallocating arrays..."
+    if (tapwDebug) call MIO_Print("Deallocating arrays...",'diag')
 
     ! PERFORMANCE OPTIMIZATION: Only deallocate if not using pre-allocated arrays
     ! Use a simple approach: always deallocate, pre-allocated arrays will be reused
     if (allocated(eigvals)) then
         deallocate(eigvals)
-        if (tapwDebug) print *, "Deallocated eigvals"
+        if (tapwDebug) call MIO_Print("Deallocated eigvals",'diag')
     endif
 
     if (allocated(ZWorkLoc)) then
         deallocate(ZWorkLoc)
-        if (tapwDebug) print *, "Deallocated ZWorkLoc"
+        if (tapwDebug) call MIO_Print("Deallocated ZWorkLoc",'diag')
     endif
 
     if (allocated(DWorkLoc)) then
         deallocate(DWorkLoc)
-        if (tapwDebug) print *, "Deallocated DWorkLoc"
+        if (tapwDebug) call MIO_Print("Deallocated DWorkLoc",'diag')
     endif
 
     if (allocated(XArray)) then
         deallocate(XArray)
-        if (tapwDebug) print *, "Deallocated XArray"
+        if (tapwDebug) call MIO_Print("Deallocated XArray",'diag')
     endif
 
     if (allocated(Hproj)) then
         deallocate(Hproj)
-        if (tapwDebug) print *, "Deallocated Hproj"
+        if (tapwDebug) call MIO_Print("Deallocated Hproj",'diag')
     endif
 
     if (allocated(Gx)) then
         deallocate(Gx)
-        if (tapwDebug) print *, "Deallocated Gx"
+        if (tapwDebug) call MIO_Print("Deallocated Gx",'diag')
     endif
 
     if (allocated(Gy)) then
         deallocate(Gy)
-        if (tapwDebug) print *, "Deallocated Gy"
+        if (tapwDebug) call MIO_Print("Deallocated Gy",'diag')
     endif
 
     if (allocated(label)) then
         deallocate(label)
-        if (tapwDebug) print *, "Deallocated label"
+        if (tapwDebug) call MIO_Print("Deallocated label",'diag')
     endif
 
     if (allocated(row_ptr)) then
         deallocate(row_ptr)
-        if (tapwDebug) print *, "Deallocated row_ptr"
+        if (tapwDebug) call MIO_Print("Deallocated row_ptr",'diag')
     endif
 
     if (allocated(col_ind)) then
         deallocate(col_ind)
-        if (tapwDebug) print *, "Deallocated col_ind"
+        if (tapwDebug) call MIO_Print("Deallocated col_ind",'diag')
     endif
 
     if (allocated(values)) then
         deallocate(values)
-        if (tapwDebug) print *, "Deallocated values"
+        if (tapwDebug) call MIO_Print("Deallocated values",'diag')
     endif
 
     if (allocated(rand_real)) then
         deallocate(rand_real)
-        if (tapwDebug) print *, "Deallocated rand_real"
+        if (tapwDebug) call MIO_Print("Deallocated rand_real",'diag')
     endif
 
     if (allocated(rand_imag)) then
         deallocate(rand_imag)
-        if (tapwDebug) print *, "Deallocated rand_imag"
+        if (tapwDebug) call MIO_Print("Deallocated rand_imag",'diag')
     endif
 
     if (allocated(a)) then
         deallocate(a)
-        if (tapwDebug) print *, "Deallocated a"
+        if (tapwDebug) call MIO_Print("Deallocated a",'diag')
     endif
 
     if (allocated(EVectors)) then
         deallocate(EVectors)
-        if (tapwDebug) print *, "Deallocated EVectors"
+        if (tapwDebug) call MIO_Print("Deallocated EVectors",'diag')
     endif
 
     if (allocated(ax)) then
         deallocate(ax)
-        if (tapwDebug) print *, "Deallocated ax"
+        if (tapwDebug) call MIO_Print("Deallocated ax",'diag')
     endif
 
     if (allocated(rd)) then
         deallocate(rd)
-        if (tapwDebug) print *, "Deallocated rd"
+        if (tapwDebug) call MIO_Print("Deallocated rd",'diag')
     endif
 
     if (allocated(XArray)) then
         deallocate(XArray)
-        if (tapwDebug) print *, "Deallocated XArray"
+        if (tapwDebug) call MIO_Print("Deallocated XArray",'diag')
     endif
 
     if (allocated(Hproj)) then
         deallocate(Hproj)
-        if (tapwDebug) print *, "Deallocated Hproj"
+        if (tapwDebug) call MIO_Print("Deallocated Hproj",'diag')
     endif
 
     if (allocated(ZWorkLoc)) then
         deallocate(ZWorkLoc)
-        if (tapwDebug) print *, "Deallocated ZWorkLoc"
+        if (tapwDebug) call MIO_Print("Deallocated ZWorkLoc",'diag')
     endif
 
     if (allocated(DWorkLoc)) then
         deallocate(DWorkLoc)
-        if (tapwDebug) print *, "Deallocated DWorkLoc"
+        if (tapwDebug) call MIO_Print("Deallocated DWorkLoc",'diag')
     endif
 
-    if (tapwDebug) print *, "Done deallocating."
+    if (tapwDebug) call MIO_Print("Done deallocating.",'diag')
 
     ! the set-up messages above are printed for the first k-point only
     tapwSetupSaid = .true.
@@ -7172,7 +7169,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     end if
 
     ! Debug: Check HBlock structure before projection (for forceBlockTAPW testing)
-    if (forceBlockTAPW .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if (forceBlockTAPW .and. tapw_k_at_most(kpoint_index, 2)) then
        call MIO_Print('=== HBlock STRUCTURE CHECK (before projection) ===','diag')
        call MIO_Print('  HBlock dimensions: '//trim(num2str(2*N))//'×'//trim(num2str(2*N)),'diag')
 
@@ -7223,7 +7220,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     end if
 
     ! Debug: Check HBlock before projection
-    if (tapwDebug .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if (tapwDebug .and. tapw_k_at_most(kpoint_index, 2)) then
        allocate(diag_temp(2*N))
 
        call MIO_Print('DiagH0TAPW_withBlockH: Checking HBlock before projection (k-point '//trim(num2str(kpoint_index))//')','diag')
@@ -7343,7 +7340,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     ! Debug: Check Hproj after projection and compare with expected structure
     ! For no-SOC case (forceBlockTAPW), Hproj should be block-diagonal with identical blocks
-    if ((tapwDebug .or. forceBlockTAPW) .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if ((tapwDebug .or. forceBlockTAPW) .and. tapw_k_at_most(kpoint_index, 2)) then
        if (forceBlockTAPW) then
           call MIO_Print('=== BLOCK TAPW PROJECTION DEBUG (no SOC) ===','diag')
           call MIO_Print('  Expected: Hproj should be block-diagonal [H_TAPW 0; 0 H_TAPW]','diag')
@@ -7407,7 +7404,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        end if
     end if
 
-    if (tapwDebug .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if (tapwDebug .and. tapw_k_at_most(kpoint_index, 2)) then
        allocate(proj_diag_temp(2*M))
 
        call MIO_Print('DiagH0TAPW_withBlockH: Checking Hproj after projection','diag')
@@ -7487,7 +7484,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     end if
 
     ! Debug: Check eigenvalue degeneracy after diagonalization (for forceBlockTAPW testing)
-    if (forceBlockTAPW .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if (forceBlockTAPW .and. tapw_k_at_most(kpoint_index, 2)) then
        call MIO_Print('=== EIGENVALUE DEGENERACY CHECK (after diagonalization) ===','diag')
        call MIO_Print('  Total eigenvalues: '//trim(num2str(2*M)),'diag')
        call MIO_Print('  Expected: Each eigenvalue should appear twice (degenerate pairs)','diag')
@@ -7565,7 +7562,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     ! Debug: Check FULL eigenvalue range BEFORE extraction
     ! This is critical to understand if positive eigenvalues exist
-    if (tapwDebug .and. present(kpoint_index) .and. kpoint_index <= 2) then
+    if (tapwDebug .and. tapw_k_at_most(kpoint_index, 2)) then
        eig_full_min = minval(eigvals(1:2*M))
        eig_full_max = maxval(eigvals(1:2*M))
        eig_full_range = eig_full_max - eig_full_min
@@ -8135,31 +8132,31 @@ subroutine generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, center_poi
   inv_rcell = reshape([b2(2), -b2(1), -b1(2), b1(1)], [2,2]) / det
 
   ! Debug: Check matrix calculations
-  print *, "DEBUG: OLD vs NEW coordinate conversion methods:"
+  call MIO_Print("DEBUG: OLD vs NEW coordinate conversion methods:",'diag')
   print *, "  det =", det
-  print *, "  OLD inv_rcell method (reciprocal lattice inverse):"
+  call MIO_Print("  OLD inv_rcell method (reciprocal lattice inverse):",'diag')
   print *, "    inv_rcell(1,1) = b2(2)/det =", b2(2), "/", det, "=", b2(2)/det
   print *, "    inv_rcell(1,2) = -b2(1)/det =", -b2(1), "/", det, "=", -b2(1)/det
   print *, "    inv_rcell(2,1) = -b1(2)/det =", -b1(2), "/", det, "=", -b1(2)/det
   print *, "    inv_rcell(2,2) = b1(1)/det =", b1(1), "/", det, "=", b1(1)/det
 
   ! Debug: Direct lattice calculation details
-  print *, "DEBUG: Direct lattice coordinate conversion (FIXED):"
-  print *, "  ucell_T (direct lattice transpose):"
+  call MIO_Print("DEBUG: Direct lattice coordinate conversion (FIXED):",'diag')
+  call MIO_Print("  ucell_T (direct lattice transpose):",'diag')
   print *, "    ucell_T(1,:) =", ucell_T(1,:)
   print *, "    ucell_T(2,:) =", ucell_T(2,:)
 
   ! Debug: Matrix multiplication k_ref @ ucell_T / (2π) (Python equivalent)
-  print *, "DEBUG: k_ref @ ucell_T / (2π) calculation (Python equivalent):"
-  print *, "  k_ref(1) * ucell_T(1,1) + k_ref(2) * ucell_T(2,1) ="
+  call MIO_Print("DEBUG: k_ref @ ucell_T / (2π) calculation (Python equivalent):",'diag')
+  call MIO_Print("  k_ref(1) * ucell_T(1,1) + k_ref(2) * ucell_T(2,1) =",'diag')
   print *, "  ", k_ref(1), "*", ucell_T(1,1), "+", k_ref(2), "*", ucell_T(2,1), "="
   print *, "  ", (k_ref(1) * ucell_T(1,1) + k_ref(2) * ucell_T(2,1)) / (2.0_dp * 3.14159265358979323846_dp)
-  print *, "  k_ref(1) * ucell_T(1,2) + k_ref(2) * ucell_T(2,2) ="
+  call MIO_Print("  k_ref(1) * ucell_T(1,2) + k_ref(2) * ucell_T(2,2) =",'diag')
   print *, "  ", k_ref(1), "*", ucell_T(1,2), "+", k_ref(2), "*", ucell_T(2,2), "="
   print *, "  ", (k_ref(1) * ucell_T(1,2) + k_ref(2) * ucell_T(2,2)) / (2.0_dp * 3.14159265358979323846_dp)
 
   ! CRITICAL CHECK: Test both transpose methods for coordinate conversion
-  print *, "DEBUG: Testing coordinate conversion methods:"
+  call MIO_Print("DEBUG: Testing coordinate conversion methods:",'diag')
   print *, "  Method 1 (current): k_ref * ucell_T =", matmul(k_ref, ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
   print *, "  Method 2 (transpose): k_ref * ucell_T^T =", matmul(k_ref, transpose(ucell_T)) / (2.0_dp * 3.14159265358979323846_dp)
 
@@ -8181,18 +8178,18 @@ subroutine generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, center_poi
   end if
 
   ! COMPREHENSIVE VERIFICATION: Test both methods by reconstruction
-  print *, "DEBUG: === COMPREHENSIVE COORDINATE CONVERSION VERIFICATION ==="
+  call MIO_Print("DEBUG: === COMPREHENSIVE COORDINATE CONVERSION VERIFICATION ===",'diag')
 
   ! Method 1 reconstruction: G_nn_int -> G_nn -> k_space
   G_nn_method1 = G_nn_int(1)*b1 + G_nn_int(2)*b2
-  print *, "Method 1 reconstruction:"
+  call MIO_Print("Method 1 reconstruction:",'diag')
   print *, "  G_nn_int =", G_nn_int
   print *, "  G_nn_method1 = G_nn_int(1)*b1 + G_nn_int(2)*b2 =", G_nn_method1
   print *, "  Distance from grid_center: |G_nn_method1 - grid_center| =", sqrt(sum((G_nn_method1 - grid_center)**2))
 
   ! Method 2 reconstruction: G_nn_int_transpose -> G_nn -> k_space
   G_nn_method2 = G_nn_int_transpose(1)*b1 + G_nn_int_transpose(2)*b2
-  print *, "Method 2 reconstruction:"
+  call MIO_Print("Method 2 reconstruction:",'diag')
   print *, "  G_nn_int_transpose =", G_nn_int_transpose
   print *, "  G_nn_method2 = G_nn_int_transpose(1)*b1 + G_nn_int_transpose(2)*b2 =", G_nn_method2
   print *, "  Distance from grid_center: |G_nn_method2 - grid_center| =", sqrt(sum((G_nn_method2 - grid_center)**2))
@@ -8200,20 +8197,20 @@ subroutine generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, center_poi
   ! Round-trip test: fractional -> integer -> fractional
   frac_roundtrip1 = matmul(G_nn_method1, ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
   frac_roundtrip2 = matmul(G_nn_method2, ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
-  print *, "Round-trip test (should recover integer values):"
+  call MIO_Print("Round-trip test (should recover integer values):",'diag')
   print *, "  Method 1: G_nn_method1 -> fractional =", frac_roundtrip1
   print *, "  Method 2: G_nn_method2 -> fractional =", frac_roundtrip2
 
   ! The correct method should give the nearest G-vector to grid_center
-  print *, "VERDICT: Method with smaller distance from grid_center is likely correct"
+  call MIO_Print("VERDICT: Method with smaller distance from grid_center is likely correct",'diag')
   if (sqrt(sum((G_nn_method1 - grid_center)**2)) < sqrt(sum((G_nn_method2 - grid_center)**2))) then
-print *, "  -> Method 1 (current) appears CORRECT: closer to grid_center"
+call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",'diag')
   else
-     print *, "  -> Method 2 (transpose) appears CORRECT: closer to grid_center"
+     call MIO_Print("  -> Method 2 (transpose) appears CORRECT: closer to grid_center",'diag')
   end if
 
   G_nn = G_nn_int(1)*b1 + G_nn_int(2)*b2
-  print *, "DEBUG: G_nn reconstruction:"
+  call MIO_Print("DEBUG: G_nn reconstruction:",'diag')
   print *, "  G_nn_int(1)*b1 =", G_nn_int(1), "*", b1, "=", G_nn_int(1)*b1
   print *, "  G_nn_int(2)*b2 =", G_nn_int(2), "*", b2, "=", G_nn_int(2)*b2
   print *, "  G_nn = G_nn_int(1)*b1 + G_nn_int(2)*b2 =", G_nn
@@ -9299,7 +9296,7 @@ subroutine remap_labels_to_contiguous(labels, N, num_unique)
 
   ! Debug output
 #ifdef DEBUG
-  print *, "Label mapping (original -> contiguous):"
+  call MIO_Print("Label mapping (original -> contiguous):",'diag')
   do i = 1, num_unique
      print *, "  ", unique_labels(i), "->", i
   end do
@@ -9326,9 +9323,9 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
 
   ! Validate CSR size
   if (size(row_ptr) /= N+1) then
-     print *, "ERROR: row_ptr size mismatch!"
+     call MIO_Print("ERROR: row_ptr size mismatch!",'diag')
      print *, "ERROR: row_ptr has", size(row_ptr), "entries but should have", N+1
-     print *, "ERROR: This will cause array bounds violations in sparse multiplication"
+     call MIO_Print("ERROR: This will cause array bounds violations in sparse multiplication",'diag')
      error stop "row_ptr size mismatch in transform_sparse_hamiltonian"
   endif
 
@@ -9344,9 +9341,9 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
 
   ! Validate matrix dimensions
   if (size(X,1) /= N) then
-     print *, "ERROR: Matrix dimension mismatch!"
+     call MIO_Print("ERROR: Matrix dimension mismatch!",'diag')
      print *, "ERROR: X matrix has", size(X,1), "rows but sparse matrix H has", N, "rows"
-     print *, "ERROR: This will cause incorrect matrix multiplication"
+     call MIO_Print("ERROR: This will cause incorrect matrix multiplication",'diag')
      error stop "Matrix dimension mismatch in transform_sparse_hamiltonian"
   endif
 
@@ -9388,7 +9385,7 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
   !$OMP END PARALLEL DO
 
   ! Debug: Check sparse matrix structure
-  print *, "Debug: Sparse matrix info:"
+  call MIO_Print("Debug: Sparse matrix info:",'diag')
   print *, "Debug: N =", N, "M =", M
   print *, "Debug: row_ptr range:", row_ptr(1), "to", row_ptr(N+1)
   print *, "Debug: col_ind range:", minval(col_ind(1:row_ptr(N+1)-1)), "to", maxval(col_ind(1:row_ptr(N+1)-1))
@@ -9397,7 +9394,7 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
   print *, "Debug: First few values:", (values(i), i=1,min(10,row_ptr(N+1)-1))
 
   ! Debug: Check if Y calculation is reasonable
-  print *, "Debug: After Y = H * X calculation:"
+  call MIO_Print("Debug: After Y = H * X calculation:",'diag')
   print *, "Debug: Max |values| in sparse matrix:", maxval(abs(values))
   print *, "Debug: Max |X| element used in multiplication:", maxval(abs(X))
   print *, "Debug: Expected max |Y| should be around:", maxval(abs(values)) * maxval(abs(X)) * maxval(row_ptr(2:N+1) - row_ptr(1:N))
@@ -9413,7 +9410,7 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
        print *, "Debug: Original max values - X:", maxval(abs(X)), "Y:", maxval(abs(Y))
 
        ! Debug: Check matrices before zgemm
-       print *, "Debug: Before zgemm call:"
+       call MIO_Print("Debug: Before zgemm call:",'diag')
        print *, "Debug: X matrix shape:", shape(X), "leading dimension:", N
        print *, "Debug: Y matrix shape:", shape(Y), "leading dimension:", N
        print *, "Debug: Hproj matrix shape:", shape(Hproj), "leading dimension:", M
@@ -9424,20 +9421,20 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
        call zgemm('C', 'N', M, M, N, cmplx_1, X, N, Y, N, cmplx_0, Hproj, M)
 
        ! Debug: Check result with transpose
-       print *, "Debug: After zgemm('C') call:"
+       call MIO_Print("Debug: After zgemm('C') call:",'diag')
        print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
 
        ! If that fails, try without transpose 'N' (no transpose)
        if (maxval(abs(Hproj)) == 0.0_dp) then
-          print *, "Debug: Transpose failed, trying without transpose..."
+          call MIO_Print("Debug: Transpose failed, trying without transpose...",'diag')
           call zgemm('N', 'N', M, M, N, cmplx_1, X, N, Y, N, cmplx_0, Hproj, M)
-          print *, "Debug: After zgemm('N') call:"
+          call MIO_Print("Debug: After zgemm('N') call:",'diag')
           print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
        endif
 
        ! If both zgemm calls fail, try manual matrix multiplication
        if (maxval(abs(Hproj)) == 0.0_dp) then
-          print *, "Debug: Both zgemm calls failed, trying manual multiplication..."
+          call MIO_Print("Debug: Both zgemm calls failed, trying manual multiplication...",'diag')
           Hproj = (0.0_dp, 0.0_dp)
           do i = 1, M
              do j = 1, M
@@ -9446,12 +9443,12 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
                 end do
              end do
           end do
-          print *, "Debug: After manual multiplication:"
+          call MIO_Print("Debug: After manual multiplication:",'diag')
           print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
        endif
 
        ! Debug: Check result immediately after zgemm
-       print *, "Debug: After zgemm call:"
+       call MIO_Print("Debug: After zgemm call:",'diag')
        print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
        print *, "Debug: Hproj first few diagonal elements:", (abs(Hproj(i,i)), i=1,min(5,M))
 
@@ -9651,13 +9648,13 @@ subroutine build_X(X, xcoord, ycoord, label, Gx, Gy, N_orbit, N_G, N_label)
 
   if (tapwDebug) then
      ! Debug: Print label counts and normalizations
-     print *, "DEBUG: Label counts and normalizations in build_X:"
+     call MIO_Print("DEBUG: Label counts and normalizations in build_X:",'diag')
      do i_label = 1, N_label
         print *, "  Label ", i_label, ": count =", count(i_label), ", norm = 1/√count =", norm(i_label)
      end do
 
      ! Debug: Check X-matrix phases for first few elements
-     print *, "DEBUG: X-matrix phase factors (first 3 G-vectors, first 3 atoms):"
+     call MIO_Print("DEBUG: X-matrix phase factors (first 3 G-vectors, first 3 atoms):",'diag')
      do i_G = 1, min(3, N_G)
         do i_orb = 1, min(3, N_orbit)
            if (label(i_orb) == 1) then  ! Only check first label
@@ -11044,7 +11041,6 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
    use atoms,                 only : Species, Rat, AtomsSetCart, AtomsSetFrac, frac, layerIndex
    use tbpar,                 only : U
    use neigh,                 only : maxNeigh
-   use math
 
    integer, intent(in) :: N, maxN, NList(maxN,N), Nneigh(N), neighCell(3,maxN,N), ns, is
    complex(dp) :: Hts(N,N)
@@ -12052,7 +12048,6 @@ end subroutine CalculateChernTAPW
 subroutine CalculateBerryAtKpoint(kpt, band_indices, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, berry_curv)
    ! Calculate Berry curvature at a single k-point using analytical derivatives (following Python dHdk method)
    use constants, only : pi, twopi, cmplx_i
-   use math
    use atoms, only : nAt
    implicit none
 
@@ -14165,7 +14160,7 @@ subroutine output_moire_bz_debug(rcell)
    write(96, '(2F16.8)') moire_b2(1), moire_b2(2)
    close(96)
 
-   print *, "Moiré BZ data written to moire_bz_debug.dat"
+   call MIO_Print("Moiré BZ data written to moire_bz_debug.dat",'diag')
 
 end subroutine output_moire_bz_debug
 
@@ -14176,7 +14171,7 @@ subroutine output_kpath_debug()
 
    ! This is a placeholder - we'll need to modify the main routine to call this
    ! with the actual path data
-   print *, "K-path debug output placeholder - needs path data from main routine"
+   call MIO_Print("K-path debug output placeholder - needs path data from main routine",'diag')
 
 end subroutine output_kpath_debug
 
@@ -14259,10 +14254,25 @@ subroutine write_chern_tapw_results(band_indices, chern_bands, chern_total, nkx,
 end subroutine write_chern_tapw_results
 
 !> Comprehensive numerical verification of lattice operations and TAPW setup
+!> True if the optional k-point index is present and not larger than n. An absent optional argument
+!! must not appear in the same condition as its presence test: Fortran evaluates both sides of .and.
+logical function tapw_k_at_most(k, n)
+
+   implicit none
+
+   integer, intent(in), optional :: k
+   integer, intent(in) :: n
+
+   tapw_k_at_most = .false.
+   if (present(k)) tapw_k_at_most = (k <= n)
+
+end function tapw_k_at_most
+
 subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngle, &
                                             Gx, Gy, NG, aG, path_frac, nPath)
    use cell, only: ucell  ! Import actual direct lattice from cell module
    implicit none
+   logical :: havePath
    ! Input parameters
    real(dp), intent(in) :: rcell(3,3)           ! Moiré reciprocal lattice
    real(dp), intent(in) :: rG(2,2)              ! Graphene reciprocal lattice (2x2)
@@ -14395,7 +14405,10 @@ subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngl
    end if
 
    ! 5. Path round-trip test (if path provided)
-   if (present(path_frac) .and. present(nPath) .and. nPath > 0) then
+   ! an absent optional argument must not be evaluated: Fortran does not short-circuit .and.
+   havePath = .false.
+   if (present(path_frac) .and. present(nPath)) havePath = (nPath > 0)
+   if (havePath) then
       call MIO_Print('5. Path coordinate round-trip test (first point)','diag')
       ! frac → abs → frac
       path_abs = path_frac(1,1)*rcell_2d(:,1) + path_frac(2,1)*rcell_2d(:,2)
@@ -14588,7 +14601,7 @@ subroutine build_tapw_labels(layerIndex, species, N, label, Nlabel)
   end do
 
   ! (Optional) debug print
-  print *, "TAPW labels (sorted):"
+  call MIO_Print("TAPW labels (sorted):",'diag')
   do j = 1, Nlabel
      print '(A,I0,A,I0)', "  code ", uniq(j), " -> contiguous ", j
   end do

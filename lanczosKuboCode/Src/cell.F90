@@ -15,7 +15,7 @@ contains
 
 subroutine CellGet()
 
-   use math
+   use math,                 only : CrossProd, norm
    use constants,            only : twopi, pi
    use name,                 only : prefix
 
@@ -324,7 +324,7 @@ subroutine CellGet()
          read(1,*) (ucell(j,i),j=1,3)
       end do
 #ifdef DEBUG
-      print*, "ucell was read from ReadXYZ as: "
+      call MIO_Print("ucell was read from ReadXYZ as: ",'cell')
       print*, ucell(:,1)
       print*, ucell(:,2)
       print*, ucell(:,3)

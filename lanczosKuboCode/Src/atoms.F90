@@ -1,7 +1,7 @@
 module atoms
 
    use mio
-   use math
+   use math,                 only : CrossProd, norm
 
    implicit none
 
@@ -63,7 +63,7 @@ end subroutine AtomsRotate
 
 subroutine AtomsPos()
 
-   use math
+   use math,                 only : CrossProd, norm
    use parallel,             only : nDiv, nTh, procID
    use cell,                 only : sCell, sCell2, aG, ucell, rcell, volume, area, aBN
    use constants,            only : pi, twopi

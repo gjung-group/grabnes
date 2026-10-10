@@ -719,8 +719,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Structure.RotationAngle` | `rotationAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Structure.SingleLayerXYZ` | `singleLayerXYZ` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
 | `Structure.SublatticeFile` | `SublatticeFile` | string | `'sublatticesSorted.dat'` | atoms.F90: AtomsPos |
-| `Structure.SuperCell` | `SuperCell` | integer | `1` | cell.F90: CellGet; hybrid.F90: HybridGen; neigh.F90: fastNNnotsquareSmall |
-| `Structure.SuperCell` | `SuperCell` | integer | `60` | ham.F90: HamHopping |
+| `Structure.SuperCell` | `SuperCell` | integer | `1` | cell.F90: CellGet; ham.F90: HamHopping; hybrid.F90: HybridGen; ... (4 places) |
 | `Structure.SuperCellAsymmetric` | `SuperCellAsymmetric` | logical | `.false.` | atoms.F90: AtomsPos; cell.F90: CellGet |
 | `Structure.SuperCellX` | `SuperCellX` | integer | `1` | atoms.F90: AtomsPos; ham.F90: HamOnSite |
 | `Structure.SuperCellY` | `SuperCellY` | integer | `1` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamOnSite |

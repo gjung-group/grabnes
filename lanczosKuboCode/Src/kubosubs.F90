@@ -594,7 +594,7 @@ end subroutine KuboUpdate_z
 subroutine KuboFermi(npts)
 
    use atoms,                only : nEl, nAt
-   use math
+   use math,                 only : TrapezoidalInt
 
    integer, parameter :: intorder=5
 

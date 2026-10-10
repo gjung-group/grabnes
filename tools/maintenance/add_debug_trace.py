@@ -280,7 +280,10 @@ def main():
     p.add_argument("--skip", nargs="*", default=[], help="routine names to leave alone")
     p.add_argument("--trace-looped", nargs="*", default=[],
                    help="routines called inside a loop that are traced nevertheless (few calls per run)")
+    p.add_argument("--root", default=ROOT, help="directory of the sources (default: the solver in this repository)")
+    p.add_argument("--only-file", default=None, help="edit this file only (the others are read for the calls)")
     a = p.parse_args()
+    globals()["ROOT"] = a.root
     keep = {s.lower() for s in a.trace_looped}
     files = sorted(f for f in os.listdir(ROOT) if f.endswith(".F90"))
     # the include files of a private build are parsed for calls as well, if present
@@ -295,6 +298,8 @@ def main():
     skip = {s.lower() for s in a.skip}
     total = {"added": 0, "present": 0, "parallel": 0, "loop": 0, "kind": 0, "layout": 0}
     for f in files:
+        if a.only_file and f != a.only_file:
+            continue
         lines, rs = parsed[f]
         out, changed = list(lines), False
         for r in sorted((r for r in rs if r.kind == "subroutine" and not r.internal and r.end is not None),

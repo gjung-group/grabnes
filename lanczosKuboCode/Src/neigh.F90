@@ -399,7 +399,7 @@ subroutine NeighReadDataFiles()
 
    use atoms,                only : inode1, inode2, nAt, Rat
    use cell,                 only : aG, ucell
-   use math
+   use math,                 only : norm
 
    logical :: readNeighborDetails
    integer :: i, j, jj, ix, iy, ncell(3)
@@ -474,7 +474,7 @@ subroutine NeighList()
    use cell,                 only : ucell, aG, aBN
    use constants,            only : pi
    use tbpar,                only : tbnn
-   use math
+   use math,                 only : norm
 
    integer, parameter :: cellneigh(2,9) = reshape([-1,0, 1,0, 0,-1, 0,1, -1,-1, 1,-1, &
                                                   -1,1, 1,1, 0,0],[2,9])
@@ -978,7 +978,7 @@ subroutine NeighListOld()
    use atoms,                only : AtomsSetCart, indxDiv, indxNode
    use parallel,             only : xDiv, yDiv, procID
    use cell,                 only : ucell
-   use math
+   use math,                 only : CrossProd, norm
 
    integer, pointer :: pos(:)
    real(dp) :: alatt, r0, normal(3,4), x0(3,4), d, v(3)
@@ -1414,7 +1414,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
    use tbpar,                only : tbnn
    use cell,                 only : aG, aBN,ucell
    use atoms,                only : AtomsSetCart, frac
-   use math
+   use math,                 only : norm
    implicit none
    integer, intent(in) :: natoms,maxnn
    real(dp), intent(in) :: x(natoms),y(natoms),z(natoms)
@@ -1549,7 +1549,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
        dx=0.0_dp;dy=0.0_dp;dz=0.0_dp !;dr=0.0_dp
 
        PRINT*,''
-       PRINT*,'Building nearest neighbor data...'
+       call MIO_Print('Building nearest neighbor data...','neigh')
        num0 = 0
        num1 = 0
        num2 = 0
@@ -1804,7 +1804,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
        PRINT*,'>10 neighbors: ',natoms-(num0+num1+num2+num3+num4+num5+num6+num7+num8+num9+num10+num11+num12+num13+num14)
 
        PRINT*,''
-       PRINT*,'...done'
+       call MIO_Print('...done','neigh')
        PRINT*,''
 
        call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
@@ -1917,7 +1917,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    use atoms,                only : frac, AtomsSetCart
    use tbpar,                only : tbnn
    use cell,                 only : aG, aBN,ucell
-   use math
+   use math,                 only : norm
    implicit none
    integer, intent(in) :: natoms,maxnn
    real(dp), intent(in) :: x(natoms),y(natoms),z(natoms)
@@ -1959,7 +1959,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    dx=0.0_dp;dy=0.0_dp;dz=0.0_dp !;dr=0.0_dp
 
    PRINT*,''
-   PRINT*,'Building nearest neighbor data...'
+   call MIO_Print('Building nearest neighbor data...','neigh')
    num0 = 0
    num1 = 0
    num2 = 0
@@ -2239,7 +2239,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    PRINT*,'>10 neighbors: ',natoms-(num0+num1+num2+num3+num4+num5+num6+num7+num8+num9+num10)
 
    PRINT*,''
-   PRINT*,'...done'
+   call MIO_Print('...done','neigh')
    PRINT*,''
 
    call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')

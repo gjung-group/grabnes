@@ -11,7 +11,7 @@ contains
 subroutine GrabnesStart(success)
 
    use mio
-   use name
+   use name,                 only : prefix, sysname
    !use random,               only : RandTest, RandSeed, rand_t
 
    logical, intent(out) :: success
