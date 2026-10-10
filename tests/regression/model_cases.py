@@ -484,6 +484,15 @@ case("graphene+alias_both_names", "graphene", **{"TB.NeighLevels": "5", "Ham.She
 case("graphene+moire_cell_key", "graphene", basedOnMoireCellParameters=T, MoireCellParameters="5 0 0 5")
 case("graphene+moire_cell_key_misspelt", "graphene", basedOnMoireCellParamters=T, MoireCellParameters="5 0 0 5")
 
+# ------------------------------------------------------------------ present key names
+# The cases above are written with the key names of before October 2026. These repeat some of them with every
+# key in its Section.Name form: each must give the fingerprint of the case it repeats.
+for _c in ("graphene", "hbn", "tbg", "eff", "xyz2_gbn_relaxed", "xyz4_sandwiched", "graphene@bands", "tbg_small@bands",
+           "xyz2_gbn_relaxed+realStrain", "eff+MoireOffDiagMidpoint"):
+    if _c in CASES:
+        _e = CASES[_c]
+        CASES[_c + "@present_names"] = (_e[0], dict(_e[1], **{"@names": "present"})) + tuple(_e[2:])
+
 # ------------------------------------------------------------------ results that depend on the compiler
 # With identical sources and inputs these cases give a different Hamiltonian (or end differently) with the
 # checked GNU build, the optimised GNU build and the Intel build: they use variables that are never set

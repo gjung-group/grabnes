@@ -129,6 +129,9 @@ module diag
    public :: berryLinksTAPW
 #endif
 
+   ! DiagH0TAPW: the description of the basis has been printed (it is the same at every k-point)
+   logical, save :: tapwSetupSaid = .false.
+
 contains
 
 subroutine DiagInit(N)
@@ -5899,23 +5902,23 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
         ! For valley separation: use user-specified N_G for reduced basis around K-point
         NGrange = tapwNG
         if (tapwDebug) call MIO_Print('VALLEY SEPARATION MODE: Using user-specified N_G = '//trim(num2str(NGrange)),'diag')
-        call MIO_Print('This creates a reduced TAPW basis centered around K-point','diag')
+        if (.not. tapwSetupSaid) call MIO_Print('This creates a reduced TAPW basis centered around K-point','diag')
     end if
 
     ! Debug output for TAPW parameters (always show basic parameters)
     if (tapwDebug) call MIO_Print('TAPW Parameters:','diag')
-    call MIO_Print('  N_G (requested G-vectors): '//trim(num2str(tapwNG)),'diag')
-    call MIO_Print('  Moire angle: '//trim(num2str(moireAngle,6))//' degrees','diag')
-    call MIO_Print('  TAPW graphene lattice constant: '//trim(num2str(tapw_aG,6))//' Angstroms','diag')
+    if (.not. tapwSetupSaid) call MIO_Print('  N_G (requested G-vectors): '//trim(num2str(tapwNG)),'diag')
+    if (.not. tapwSetupSaid) call MIO_Print('  Moire angle: '//trim(num2str(moireAngle,6))//' degrees','diag')
+    if (.not. tapwSetupSaid) call MIO_Print('  TAPW graphene lattice constant: '//trim(num2str(tapw_aG,6))//' Angstroms','diag')
     if (useKprimeValley) then
-       call MIO_Print('  Valley selection: K'' valley [1/3, 2/3]','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  Valley selection: K'' valley [1/3, 2/3]','diag')
     else
-       call MIO_Print('  Valley selection: K valley [2/3, 1/3]','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  Valley selection: K valley [2/3, 1/3]','diag')
     end if
     if (useRigidPositions) then
-       call MIO_Print('  Position mode: Rigid reference positions','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  Position mode: Rigid reference positions','diag')
     else
-       call MIO_Print('  Position mode: Current relaxed positions','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  Position mode: Current relaxed positions','diag')
     end if
 
     if (tapwDebug) then
@@ -5982,7 +5985,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     ! Choose G-vector generation method based on input flag
     if (useTriangularTruncation) then
-       call MIO_Print('Using triangular G-vector truncation (following Python get_Gvecs_tri)','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using triangular G-vector truncation (following Python get_Gvecs_tri)','diag')
 
        ! Control distance-based ordering with input parameter
        call MIO_InputParameter('TAPW.UseTriangularDistanceOrder', useTriangularDistanceOrder, .true.)
@@ -5994,7 +5997,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
        call generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, useTriangularDistanceOrder)
     else
-       call MIO_Print('Using hexagonal shell G-vector truncation (original method)','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using hexagonal shell G-vector truncation (original method)','diag')
        if (checkTAPWUnitary) then
            ! For unitary check, center G-grid around (0,0) to cover entire first BZ
            call MIO_Print('UNITARY CHECK MODE: Centering G-grid around Γ(0,0) for complete BZ coverage','diag')
@@ -6149,7 +6152,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     if (useRigidPositions) then
        ! Use rigid reference positions for X matrix construction
        ! This ensures perfect TAPW unitarity even with lattice reconstruction
-       call MIO_Print('Using rigid reference positions for TAPW X matrix construction','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using rigid reference positions for TAPW X matrix construction','diag')
 
        ! Read rigid positions from generateInit.xyz
        allocate(rigid_positions(3, N))
@@ -6165,7 +6168,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        Rat = rigid_positions
     else
        ! Use current positions in Rat directly (default behavior)
-       call MIO_Print('Using current atomic positions for TAPW X matrix construction','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using current atomic positions for TAPW X matrix construction','diag')
 
        ! Store current state for consistency with rigid position path
        temp_positions = Rat  ! Save current positions (no change needed)
@@ -6201,7 +6204,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     else
        ! For current positions, ensure we're in the right coordinate system for build_X
        if (frac) call AtomsSetCart()
-       call MIO_Print('Using current positions directly for X matrix construction','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using current positions directly for X matrix construction','diag')
     end if
 
     ! Build X matrix using current positions (rigid or relaxed)
@@ -6226,7 +6229,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        ! Clean up rigid positions array
        deallocate(rigid_positions)
     else
-       call MIO_Print('Using same positions for both X matrix and TB Hamiltonian construction','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('Using same positions for both X matrix and TB Hamiltonian construction','diag')
     end if
 
     if (tapwDebug) then
@@ -6258,11 +6261,11 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     ! Branch: use dense or sparse matrix approach for TAPW transformation
     if (useDenseMatrixTAPW) then
-        call MIO_Print('Using DENSE matrix approach for TAPW transformation','diag')
+        if (.not. tapwSetupSaid) call MIO_Print('Using DENSE matrix approach for TAPW transformation','diag')
         call transform_dense_hamiltonian_tapw(N, M, XArray, Hproj, KLoc, cell_real, H0, maxN, hopp, NList, Nneigh, &
               neighCell, ns, is)
     else
-        call MIO_Print('Using SPARSE matrix approach for TAPW transformation','diag')
+        if (.not. tapwSetupSaid) call MIO_Print('Using SPARSE matrix approach for TAPW transformation','diag')
         ! For large systems (>1M atoms), force sparse approach to avoid memory issues
         if (N > 1000000) then
             call MIO_Print('Large system detected (N='//trim(num2str(N))//'), using sparse-only TAPW transformation','diag')
@@ -6831,6 +6834,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     endif
 
     if (tapwDebug) print *, "Done deallocating."
+
+    ! the set-up messages above are printed for the first k-point only
+    tapwSetupSaid = .true.
 
 end subroutine DiagH0TAPW
 

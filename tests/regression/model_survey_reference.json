@@ -43,6 +43,10 @@
   "fingerprint": "03203a2f51969fce",
   "status": "ok"
  },
+ "eff+MoireOffDiagMidpoint@present_names": {
+  "fingerprint": "03203a2f51969fce",
+  "status": "ok"
+ },
  "eff+MoireOnlyH0": {
   "fingerprint": "4fe2a94762a4762b",
   "status": "ok"
@@ -128,6 +132,10 @@
   "status": "ok"
  },
  "eff+useLayerSpecificOnsiteEnergyTerms": {
+  "fingerprint": "0c0fb149d1cf093d",
+  "status": "INERT"
+ },
+ "eff@present_names": {
   "fingerprint": "0c0fb149d1cf093d",
   "status": "INERT"
  },
@@ -527,6 +535,14 @@
   "fingerprint": "11c9291f120c49a0",
   "status": "ok"
  },
+ "graphene@bands@present_names": {
+  "fingerprint": "7376944da6f53527",
+  "status": "INERT"
+ },
+ "graphene@present_names": {
+  "fingerprint": "61909524e9c6043c",
+  "status": "INERT"
+ },
  "graphene_small@bands": {
   "fingerprint": "0b96e1d2ad48f31f",
   "status": "ok"
@@ -582,6 +598,10 @@
  "hbn": {
   "fingerprint": "caa891530d9064ed",
   "status": "ok"
+ },
+ "hbn@present_names": {
+  "fingerprint": "caa891530d9064ed",
+  "status": "INERT"
  },
  "sys_BLtoSLYoungju": {
   "fingerprint": "",
@@ -1151,6 +1171,10 @@
   "fingerprint": "3aa2c16153f9803a",
   "status": "ok"
  },
+ "tbg@present_names": {
+  "fingerprint": "2bc664a989c22727",
+  "status": "INERT"
+ },
  "tbg_small@bands": {
   "fingerprint": "ccc9a20dc32553c5",
   "status": "ok"
@@ -1200,6 +1224,10 @@
   "status": "INERT"
  },
  "tbg_small@bands+ZeemanTerm": {
+  "fingerprint": "ccc9a20dc32553c5",
+  "status": "INERT"
+ },
+ "tbg_small@bands@present_names": {
   "fingerprint": "ccc9a20dc32553c5",
   "status": "INERT"
  },
@@ -1363,11 +1391,19 @@
   "fingerprint": "996c4a1fb5008cd5",
   "status": "ok"
  },
+ "xyz2_gbn_relaxed+realStrain@present_names": {
+  "fingerprint": "996c4a1fb5008cd5",
+  "status": "ok"
+ },
  "xyz2_gbn_relaxed+renormalizeCoupling": {
   "fingerprint": "85474b2b03608691",
   "status": "ok"
  },
  "xyz2_gbn_relaxed+shellsFromRigidPositions": {
+  "fingerprint": "fe0c20e54f9ab5c4",
+  "status": "INERT"
+ },
+ "xyz2_gbn_relaxed@present_names": {
   "fingerprint": "fe0c20e54f9ab5c4",
   "status": "INERT"
  },
@@ -1588,6 +1624,10 @@
   "status": "REFUSED"
  },
  "xyz4_sandwiched+middleTwist_default": {
+  "fingerprint": "2fd41ef83de4bc71",
+  "status": "INERT"
+ },
+ "xyz4_sandwiched@present_names": {
   "fingerprint": "2fd41ef83de4bc71",
   "status": "INERT"
  },

@@ -83,6 +83,7 @@ def build_input(base, changes):
     lines = BASES[base].strip("\n").split("\n")
     todo = dict(RUN_MODE)
     changes = dict(changes)
+    present_names = changes.pop("@names", "former") == "present"
     if changes.pop("@mode", "tables") == "bands":
         todo.update(BANDS_MODE)
     todo.update(changes)
@@ -105,7 +106,30 @@ def build_input(base, changes):
                 out.append(f"{hit} {value}")
     # a key starting with "&" carries a whole input block as its value
     out += [v if k.startswith("&") else f"{k} {v}" for k, v in todo.items() if v is not None]
+    if present_names:
+        out = with_present_names(out)
     return "\n".join(out) + "\n"
+
+
+def with_present_names(lines):
+    """The input with every key that has a Section.Name form written in that form (alias table of the
+    input library). The other cases of the survey use the former names, so the two together test that
+    both spellings of a key give the same run."""
+    inc = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "lanczosKuboCode", "Src", "MIO",
+                       "input_aliases.inc")
+    form = lambda k: k.lower().replace("_", "").replace("-", "")
+    new = {form(o): n for n, o in re.findall(r"call\s+InputAddAlias\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)", open(inc).read(), re.I)}
+    out, inblock = [], False
+    for line in lines:
+        s = line.strip()
+        if s.startswith("&"):
+            inblock = s.startswith("&begin")
+        elif s and not inblock and not s.startswith("#"):
+            key = s.split()[0]
+            if form(key) in new:
+                line = line.replace(key, new[form(key)], 1)
+        out.append(line)
+    return out
 
 
 def classify_bands(run_dir, info):
