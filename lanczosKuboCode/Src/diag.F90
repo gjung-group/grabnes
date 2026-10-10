@@ -683,7 +683,7 @@ subroutine DiagBands()
       end do
       close(98)
 
-      print *, "K-path debug data written to kpath_debug_* files"
+      call MIO_Print('k-path written to kpath_debug_absolute and kpath_debug_fractional','diag')
          !   !print*, "theta=", theta
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
@@ -5051,12 +5051,18 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     ! Debug prints
 
     ! Create CSR sparse matrix storage
+#ifdef DEBUG
     print *, "initialize the sparse matrix and put it in csr format"
+#endif /* DEBUG */
     call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell, row_ptr, col_ind, values,sigma)
+#ifdef DEBUG
     print *, "done"
+#endif /* DEBUG */
     symmetric = is_structurally_symmetric(values, row_ptr, col_ind, N)
 
+#ifdef DEBUG
     print*, "is it symmetric?", symmetric
+#endif /* DEBUG */
 
     ! Debug prints for CSR matrix
     if (any(values /= values)) then
@@ -5119,7 +5125,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
         print *, 'ipntr: ', ipntr
         error stop 1
     else
-        print *, 'znaupd converged successfully'
+        call MIO_Print('ARPACK (znaupd) converged','diag')
     endif
 
     !    ! Sort each row
@@ -5296,7 +5302,9 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
         print *, 'Error with zneupd, ierr = ', info
         error stop 1
     end if
+#ifdef DEBUG
     print *, "eigenvalues: ", d
+#endif /* DEBUG */
 
     if (useShift) then
        phase = -1  ! release the solve factor before the count matrices are factorised
@@ -5778,7 +5786,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ! Only initialize sparse matrix if NOT using dense matrix approach
     if (.not. useDenseMatrixTAPW) then
     ! Create CSR sparse matrix storage
+#ifdef DEBUG
     print *, "initialize the sparse matrix and put it in csr format"
+#endif /* DEBUG */
     if (tapwDebug) then
        print *, "DEBUG TAPW: KLoc for sparse matrix =", KLoc
        print *, "DEBUG TAPW: |KLoc| =", sqrt(dot_product(KLoc, KLoc))
@@ -5794,10 +5804,14 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
      call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell_real, row_ptr, &
            col_ind, values,sigma)
+#ifdef DEBUG
     print *, "done"
+#endif /* DEBUG */
     symmetric = is_structurally_symmetric(values, row_ptr, col_ind, N)
 
+#ifdef DEBUG
     print*, "is it symmetric?", symmetric
+#endif /* DEBUG */
     else
         ! Skip sparse matrix initialization when using dense matrix approach
         if (tapwDebug) print *, "Skipping sparse matrix initialization (using dense matrix approach)"
@@ -5868,7 +5882,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     ! With column storage for sGlattice, rG should also use column storage like rcell
     rG = 2.0_dp * pi * transpose(sGlattice_inv)  ! Column storage: rG(:,i) = i-th reciprocal vector
+#ifdef DEBUG
     print *, "A*rG =", matmul(sGlattice, rG)  ! Should give 2π*identity with column storage
+#endif /* DEBUG */
 
     ! Calculate reference K-point in reciprocal space using graphene vectors (by design)
     ! rG stores vectors as columns: rG(:,1) = b1, rG(:,2) = b2 (like rcell)
@@ -6235,7 +6251,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
         call MIO_Print('Using pre-allocated Hproj array for performance','diag')
     else
         allocate(Hproj(M, M))
+#ifdef DEBUG
         call MIO_Print('Allocated new Hproj array (not pre-allocated)','diag')
+#endif /* DEBUG */
     end if
 
     ! Branch: use dense or sparse matrix approach for TAPW transformation
@@ -6293,7 +6311,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
         call MIO_Print('Using pre-allocated eigvals array for performance','diag')
     else
         allocate(eigvals(M))
+#ifdef DEBUG
         call MIO_Print('Allocated new eigvals array (not pre-allocated)','diag')
+#endif /* DEBUG */
     end if
 
     lwork = 2*M
@@ -6305,7 +6325,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
         call MIO_Print('Using pre-allocated ZWorkLoc array for performance','diag')
     else
         allocate(ZWorkLoc(2*M))
+#ifdef DEBUG
         call MIO_Print('Allocated new ZWorkLoc array (not pre-allocated)','diag')
+#endif /* DEBUG */
     end if
 
     tapw_pre_ok = .false.
@@ -6316,7 +6338,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
         call MIO_Print('Using pre-allocated DWorkLoc array for performance','diag')
     else
         allocate(DWorkLoc(3*M))
+#ifdef DEBUG
         call MIO_Print('Allocated new DWorkLoc array (not pre-allocated)','diag')
+#endif /* DEBUG */
     end if
 
     ! Extract average mass term from G=0 block BEFORE ZHEEV overwrites Hproj
@@ -9222,7 +9246,9 @@ subroutine compute_unique_labels(labels, N, num_unique)
 
   deallocate(unique_labels)
 
+#ifdef DEBUG
   print *, "Found", num_unique, "unique layer×sublattice combinations"
+#endif /* DEBUG */
 end subroutine compute_unique_labels
 
 ! Subroutine to remap labels to contiguous indices 1..Nlabel
@@ -9266,10 +9292,12 @@ subroutine remap_labels_to_contiguous(labels, N, num_unique)
   end do
 
   ! Debug output
+#ifdef DEBUG
   print *, "Label mapping (original -> contiguous):"
   do i = 1, num_unique
      print *, "  ", unique_labels(i), "->", i
   end do
+#endif /* DEBUG */
 
   deallocate(unique_labels, label_map)
 end subroutine remap_labels_to_contiguous
@@ -9990,10 +10018,12 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
     ! Trim the allocated arrays to actual size
 
     ! Debug print for sparse matrix
+#ifdef DEBUG
     print *, 'Sparse matrix row_ptr: ', row_ptr(1:min(N+1,10))
     print *, 'Sparse matrix col_ind: ', col_ind(1:min(nnz_temp,10))
     print *, 'Sparse matrix values: ', values(1:min(nnz,10))
     print *, "CSR max l =", l-1, "allocated nnz_temp =", nnz_temp
+#endif /* DEBUG */
 end subroutine initialize_sparse_matrix
 
 !subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell, row_ptr, col_ind, values)

@@ -1643,7 +1643,6 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
        call MIO_Allocate(neighCell,(/1,1,inode1/),(/3,maxnn,inode2/),'neighCell','neigh')
        ! HERE
 
-       write(*,*) 'Inicia busqueda'
        ! Find NNs of each atom by only searching nearby cells
        safetycounter = 0
        DO n = 1,natoms
@@ -2065,7 +2064,6 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    call MIO_Allocate(neighCell,(/1,1,inode1/),(/3,maxnn,inode2/),'neighCell','neigh')
    ! HERE
 
-   write(*,*) 'Inicia busqueda'
    ! Find NNs of each atom by only searching nearby cells
    safetycounter = 0
    DO n = 1,natoms
@@ -2168,8 +2166,8 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
           END IF
        END DO
        safetycounter = safetycounter + 1
-       if (safetycounter.gt.100) print*, "Carefull, you are probably going too many times through this safety loop. &
-      I originally implemented this because the fastNNnotsquared routine was missing neighbors for 4 atoms only..."
+       if (safetycounter == 101) call MIO_Print('WARNING: the neighbor search repeated its completion loop more '// &
+         'than 100 times; check the neighbor lists','neigh')
      ENDIF
 
    ! Count the number of atoms with 1, 2, 3, 4, 5 nearest neighbors

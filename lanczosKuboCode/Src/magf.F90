@@ -37,7 +37,7 @@ subroutine MagfInit()
       call MIO_InputParameter('MagField',Bmag,0.0_dp)
       mBi = nint(area*1.0d-20*Bmag/(fluxq))
       mBf = mBi
-      print*, "chosen magnetic field is ", Bmag, " with index ", mBf
+      call MIO_Print('Magnetic field '//trim(num2str(Bmag,5))//' T, flux index '//trim(num2str(mBf)),'magf')
    else if (MIO_InputSearchLabel('MagField.Integer',line,id)) then
       call MIO_InputParameter('MagField.Integer',mBi,0)
       mBf = mBi

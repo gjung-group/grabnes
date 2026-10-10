@@ -50,7 +50,7 @@ subroutine KuboInitWF(Psi)
    call MIO_InputParameter('Kubo.SeedValue',seedValue,123456)
    if (setSeed) then
        seed = seedValue
-       print*, "seedValue considered from Gendata"
+       call MIO_Print('seedValue considered from Gendata','kubo')
    else
        seed = clock + 37 * (/ (i - 1, i = 1, n) /)
    end if
@@ -162,11 +162,10 @@ subroutine KuboInitWFLayerDOS(Psi,layerNumber,numberOfLayers,numberOfAtomsInLaye
    allocate(seed(n))
    call system_clock(COUNT=clock)
    call MIO_InputParameter('SeedSet',SetSeed,1235)
-   print*, "setting the RP seed to", SetSeed
+   call MIO_Print('Seed of the random-phase state: '//trim(num2str(SetSeed)),'kubo')
    seed = SetSeed
    call random_seed(PUT = seed)
 
-   print*, "inode1, inode2, nAt", inode1, inode2, nAt
    do i=1,nAt
       if (layerIndex(i).eq.layerNumber) then
           call random_number(r)
@@ -224,11 +223,10 @@ subroutine KuboInitWFLayerAndSpeciesDOS(Psi,layerNumber,speciesNumber,numberOfLa
    allocate(seed(n))
    call system_clock(COUNT=clock)
    call MIO_InputParameter('SeedSet',SetSeed,1235)
-   print*, "setting the RP seed to", SetSeed
+   call MIO_Print('Seed of the random-phase state: '//trim(num2str(SetSeed)),'kubo')
    seed = SetSeed
    call random_seed(PUT = seed)
 
-   print*, "inode1, inode2, nAt", inode1, inode2, nAt
    do i=1,nAt
       if (layerIndex(i).eq.layerNumber .and. Species(i) .eq. speciesNumber) then
           call random_number(r)

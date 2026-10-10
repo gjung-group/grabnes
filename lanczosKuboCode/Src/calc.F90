@@ -86,7 +86,9 @@ subroutine CalcSelect()
                     !         !print*, "phase= ", phase, v1, v2
                        if (frac) call AtomsSetCart()
                        flux = Bmag*pi/fluxq
+#ifdef DEBUG
                        print*, "flux, B, pi, fluxq", flux, Bmag, pi, fluxq
+#endif /* DEBUG */
                        do i=1,nAt
                           do j=1,Nneigh(i)
                              v1 = Rat(:,i) + Rat(:,NList(j,i))
@@ -538,12 +540,16 @@ subroutine CalcTunn()
    call MIO_InputParameter('bigKVecX',bigKVecX,0.0_dp) ! give the coordinates of K like for the k-path, one by one
    call MIO_InputParameter('bigKVecY',bigKVecY,0.0_dp)
    call MIO_InputParameter('bigKVecZ',bigKVecZ,0.0_dp)
+#ifdef DEBUG
    print*, bigKVecX
    print*, bigKVecY
    print*, bigKVecZ
+#endif /* DEBUG */
    bigKVec = [bigKVecX,bigKVecY,bigKVecZ]
    bigKVec = bigKVec(1)*rcell(:,1) + bigKVec(2)*rcell(:,2) + bigKVec(3)*rcell(:,3)
+#ifdef DEBUG
    print*, "bigKVec: ", bigKVec
+#endif /* DEBUG */
    call MIO_InputParameter('numberOfMoires',numberOfMoires,1)
    call file1%Open(name=trim(prefix)//'.'//'TunnAAR',serial=.true.)
    u1 = file1%GetUnit()

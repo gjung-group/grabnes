@@ -689,7 +689,9 @@ subroutine HamOnSite()
    call MIO_InputParameter('Stack.MiddleTwist',middleTwist,.not. forceBilayerF2G2Intralayer)
    call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
    call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
+#ifdef DEBUG
    print*, "onsite, B, N, C1, C2", e0_B, e0_N, e0_C1, e0_C2
+#endif /* DEBUG */
    !$OMP PARALLEL DO
    do i=1,nAt
       if (Species(i)==3) then
@@ -1757,7 +1759,7 @@ subroutine HamOnSite()
                              dxTemp = -dx/aBN
                              dyTemp = -dy/aBN
                           else
-                             print*, "we have atoms in the wrong layer"
+                             call MIO_Print('WARNING: atom '//trim(num2str(i))//' is in a layer that this model does not expect','ham')
                           end if
                            call harmonicApprox(dxTemp,dyTemp,A,B,C, Hjj)
                            Hjj = Hjj/g0
@@ -4501,6 +4503,7 @@ subroutine HamHopping
    logical :: singleLayerXYZ, changeLatticeParameterForSrivaniModel
    real (dp) :: Cabd, BfactorCab, z0 ! it should be ok to take the first neighbor as it is effective model with only 3 neighbors
    real (dp) :: CabG, CabBN
+   logical :: saidHTCGBN, saidHTCBNBN
    real (dp) :: CabG_global
    logical :: distanceDependentEffectiveModel, findThetasGeometrically
 
@@ -4676,6 +4679,9 @@ subroutine HamHopping
    xshift = hamUnset
    yshift = hamUnset
    ! <<< unset markers
+   ! messages of the hopping loop that are printed once
+   saidHTCGBN = .false.
+   saidHTCBNBN = .false.
 
 #ifdef DEBUG
    call MIO_Debug('HamHopping',0)
@@ -5640,7 +5646,7 @@ subroutine HamHopping
             else if (twentyLayersSandwiched) then
                 nLayers = 20
             else
-               print*, "is this a new type of bulk system?"
+               call MIO_Print('WARNING: Bulk is set without a recognized number of layers','ham')
             end if
             call MIO_Print('We set the number of layers for the bulk','ham')
          else
@@ -8715,7 +8721,6 @@ subroutine HamHopping
                     if (abs(NeighD(1,j,i)) < 0.01_dp .and. abs(NeighD(2,j,i)) < 0.01_dp) then
                        hopp(j,i) = hopp(j,i) -tAB1
                        numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                       print*, "here1"
                     else if (dist>aCC*0.95_dp .and. dist<aCC*1.05_dp .and. BilayerThreeParameters) then
                        if (Species(i).eq.Species(NList(j,i))) then
                           hopp(j,i) = hopp(j,i) -tAB4
@@ -8742,7 +8747,6 @@ subroutine HamHopping
                     if (distXY < 0.1_dp .and. abs(NeighD(3,j,i)) < 3.5_dp) then
                         hopp(j,i) = hopp(j,i) + tr1
                         numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                        print*, "here2"
                     else if (distXY < 0.1_dp .and. abs(NeighD(3,j,i)) > 3.5_dp) then
                         hopp(j,i) = hopp(j,i) + tr2/2.0_dp
                         numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
@@ -8759,7 +8763,8 @@ subroutine HamHopping
                        hopp(j,i) = hopp(j,i)+ 0.0_dp
                     end if
                     hopp(j,i) = -hopp(j,i)
-                    print*, "if this shows up, check the code... this might be wrong if you have a moire lattice... the moire part already has the sign change"
+                    if (i == 1 .and. j == 1) call MIO_Print('WARNING: this bilayer branch changes the sign of the hopping after '// &
+                      'adding the interlayer terms; check the result if a moire term is present (it carries the sign already)','ham')
                   ! add intralayer hopping terms (see Jeil's paper)
                   else if (MIO_StringComp(str,'TwistedBilayer') &
                         .or. (MIO_StringComp(str,'ReadXYZ') .and. .not.(singleLayerXYZ)) &
@@ -8837,7 +8842,6 @@ subroutine HamHopping
                           if (dist<0.2_dp) then ! on top of each other
                              hopp(j,i) = hopp(j,i) + tB1A2
                              numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                             print*, "here3"
                           ! First nearest neighbors surrounding the atom in the middle of the hexagon
                           else if (dist>aCC*0.9_dp .and. dist<aCC*1.1_dp) then
                              if (Species(i).eq.Species(NList(j,i))) then ! same sublattice
@@ -8879,7 +8883,6 @@ subroutine HamHopping
                           if (dist<0.2_dp) then
                              hopp(j,i) = hopp(j,i) + tBA0
                              numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                             print*, "here3"
                           ! First nearest neighbors surrounding the atom in the middle of the hexagon
                           else if (dist>aCC*0.9_dp .and. dist<aCC*1.1_dp) then
                              if (Species(i).eq.Species(NList(j,i))) then ! same sublattice
@@ -8938,7 +8941,11 @@ subroutine HamHopping
                           end if
                           ! add the hopping terms depending if it is the C-B, C-N or C-C
                           ! interaction
-                          if (i.eq.1) call MIO_Print('Adding the interlayer terms for the HTC model for G and BN interactions','ham')
+                          ! (atom 1 is handled by one thread, so the flag needs no protection)
+                          if (i.eq.1 .and. .not. saidHTCGBN) then
+                             call MIO_Print('Adding the interlayer terms for the HTC model for G and BN interactions','ham')
+                             saidHTCGBN = .true.
+                          end if
                           if (Species(i).eq.1 .and. Species(NList(j,i)).eq.3) then ! C to B
                             aval = 1.02796_dp
                             bval = 3.047657_dp
@@ -9001,7 +9008,11 @@ subroutine HamHopping
                       if ((layerIndex(i) .eq. layerIndex(jj) + 1 .or. layerIndex(i).eq. layerIndex(jj)-1)) then ! INTERLAYER
                           ! add the hopping terms depending if it is the C-B, C-N or C-C
                           ! interaction
-                          if (i.eq.1) call MIO_Print('Adding the interlayer terms for the HTC model for BN and BN interactions based on Fengpings parametrization','ham')
+                          if (i.eq.1 .and. .not. saidHTCBNBN) then
+                             call MIO_Print('Adding the interlayer terms for the HTC model for BN and BN interactions '// &
+                               'based on Fengpings parametrization','ham')
+                             saidHTCBNBN = .true.
+                          end if
                       end if
                    else if (MIO_StringComp(BilayerModel,'Koshino').or. MIO_StringComp(BilayerModel,'HTC') &
                          .or. MIO_StringComp(SinglelayerModel,'HTC')) then
@@ -9025,27 +9036,37 @@ subroutine HamHopping
                       else if (deactivateInterlayert3BG1to2 &
                             .and. ((layerIndex(i).eq. 1 .and. layerIndex(jj).eq.2) &
                             .or. (layerIndex(i).eq.2 .and. layerIndex(jj).eq.1))) then
+#ifdef DEBUG
                           print*, "deactivated layer t3BG1to2"
+#endif /* DEBUG */
                           cycle
                       else if (deactivateInterlayert3BG2to3 &
                             .and. ((layerIndex(i).eq. 2 .and. layerIndex(jj).eq.3) &
                             .or. (layerIndex(i).eq.3 .and. layerIndex(jj).eq.2))) then
+#ifdef DEBUG
                           print*, "deactivated layer t3BG2to3"
+#endif /* DEBUG */
                           cycle
                       else if (deactivateInterlayert3BG3to4 &
                             .and. ((layerIndex(i).eq. 3 .and. layerIndex(jj).eq.4) &
                             .or. (layerIndex(i).eq.4 .and. layerIndex(jj).eq.3))) then
+#ifdef DEBUG
                           print*, "deactivated layer t3BG3to4"
+#endif /* DEBUG */
                           cycle
                       else if (deactivateInterlayert3BG4to5 &
                             .and. ((layerIndex(i).eq. 4 .and. layerIndex(jj).eq.5) &
                             .or. (layerIndex(i).eq.5 .and. layerIndex(jj).eq.4))) then
+#ifdef DEBUG
                           print*, "deactivated layer t3BG4to5"
+#endif /* DEBUG */
                           cycle
                       else if (deactivateInterlayert3BG5to6 &
                             .and. ((layerIndex(i).eq. 5 .and. layerIndex(jj).eq.6) &
                             .or. (layerIndex(i).eq.6 .and. layerIndex(jj).eq.5))) then
+#ifdef DEBUG
                           print*, "deactivated layer t3BG5to6"
+#endif /* DEBUG */
                           cycle
                       end if
                       if (frac) call AtomsSetCart()
@@ -9060,7 +9081,6 @@ subroutine HamHopping
                               if (abs(NeighD(1,j,i)) < 0.2_dp .and. abs(NeighD(2,j,i)) < 0.2_dp) then
                                  hopp(j,i) = hopp(j,i) -tAB1
                                  numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                                 print*, "here4"
                               else if (dist>aCC*0.95_dp .and. dist<aCC*1.05_dp .and. BilayerThreeParameters) then
                                  if (Species(i).eq.Species(NList(j,i))) then
                                     hopp(j,i) = hopp(j,i) -tAB4
@@ -9087,7 +9107,6 @@ subroutine HamHopping
                               if (abs(NeighD(1,j,i)) < 0.2_dp .and. abs(NeighD(2,j,i)) < 0.2_dp) then
                                  hopp(j,i) = hopp(j,i) -tAB1
                                  numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                                 print*, "here5"
                               else
                                  hopp(j,i) = hopp(j,i) + 0.0_dp
                               end if
@@ -9214,7 +9233,6 @@ subroutine HamHopping
                             if (abs(NeighD(1,j,i)) < 0.2_dp .and. abs(NeighD(2,j,i)) < 0.2_dp) then
                                hopp(j,i) = hopp(j,i) -tAB1
                                numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                               print*, "here7"
                             else if (dist>aCC*0.95_dp .and. dist<aCC*1.05_dp .and. BilayerThreeParameters) then
                                if (Species(i).eq.Species(NList(j,i))) then
                                   hopp(j,i) = hopp(j,i) -tAB4
@@ -9241,7 +9259,6 @@ subroutine HamHopping
                             if (abs(NeighD(1,j,i)) < 0.2_dp .and. abs(NeighD(2,j,i)) < 0.2_dp) then
                                hopp(j,i) = hopp(j,i) -tAB1
                                numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                               print*, "here8"
                             else
                                hopp(j,i) = hopp(j,i) + 0.0_dp
                             end if
@@ -9253,7 +9270,6 @@ subroutine HamHopping
                                !if (i.eq.1) print*, "assigning inerlayer F2G2 terms BA 0", delta
                                hopp(j,i) = hopp(j,i) + tBA0
                                numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                               print*, "here9"
                             ! First nearest neighbors surrounding the atom in the middle of the hexagon
                             else if (dist>aCC*0.9_dp .and. dist<aCC*1.1_dp) then
                                if (Species(i).eq.Species(NList(j,i))) then ! same sublattice
@@ -9329,7 +9345,6 @@ subroutine HamHopping
                             if (abs(NeighD(1,j,i)) < 0.2_dp .and. abs(NeighD(2,j,i)) < 0.2_dp) then
                                hopp(j,i) = hopp(j,i) -tAB1
                                numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                               print*, "here10"
                             else if (dist>aCC*0.95_dp .and. dist<aCC*1.05_dp .and. BilayerThreeParameters) then
                                if (Species(i).eq.Species(NList(j,i))) then
                                   hopp(j,i) = hopp(j,i) -tAB4
@@ -9357,7 +9372,6 @@ subroutine HamHopping
                                !if (i.eq.1) print*, "assigning inerlayer F2G2 terms BA 0", delta
                                hopp(j,i) = hopp(j,i) + tBA0
                                numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                               print*, "here11"
                             ! First nearest neighbors surrounding the atom in the middle of the hexagon
                             else if (dist>aCC*0.9_dp .and. dist<aCC*1.1_dp) then
                                if (Species(i).eq.Species(NList(j,i))) then ! same sublattice
@@ -9418,7 +9432,6 @@ subroutine HamHopping
                             if (abs(NeighD(1,j,i)) < 0.2_dp .and. abs(NeighD(2,j,i)) < 0.2_dp) then
                                hopp(j,i) = hopp(j,i) -tAB1
                                numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
-                               print*, "here12"
                             else
                                hopp(j,i) = hopp(j,i) + 0.0_dp
                             end if
@@ -11082,8 +11095,10 @@ subroutine HamHopping
                if (lllll .eq. 4 .and. nnnnn .eq. 2) mmphi= -1.d0 / n2 * (j-1)
                if (lllll .eq. 4 .and. nnnnn .eq. 3 .and. diffy .ge. 0.d0) mmphi= -1.d0 / n1 * (i-1)-1.d0/ n1 / 2.d0
                if (lllll .eq. 4 .and. nnnnn .eq. 3 .and. diffy .lt. 0.d0) mmphi= 0.d0
+#ifdef DEBUG
                print*, mB, n2, n1
                print*, "Magnetic field using Franks approach: ", dble(mB) / dble(n2) / dble(n1) * 39471.80806616257_dp, "T"
+#endif /* DEBUG */
                phase = -mmphi*2.0_dp*pi*mB
                hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
             end do
@@ -11139,10 +11154,9 @@ subroutine HamHopping
       if (HaldaneOppositePhase) then
         HaldanePhase = -HaldanePhase
       end if
-      print*, "Haldane phase = ", HaldanePhase
-      print*, "HaldaneT2 = ", t2, " eV"
-      print*, "Expected gap = ", 2.0_dp*sqrt(3.0_dp)*3.0_dp*t2*sin(HaldanePhase), " eV (according to PRL 106, 236804)"
-      print*, Nneigh(1)
+      call MIO_Print('Haldane phase = '//trim(num2str(HaldanePhase,6))//' rad, T2 = '//trim(num2str(t2,6))// &
+        ' eV, expected gap = '//trim(num2str(2.0_dp*sqrt(3.0_dp)*3.0_dp*t2*sin(HaldanePhase),6))// &
+        ' eV (PRL 106, 236804)','ham')
       !$OMP PARALLEL DO PRIVATE(d)
       do i=1,nAt
          ! >>> unset markers

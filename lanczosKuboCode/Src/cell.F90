@@ -323,10 +323,12 @@ subroutine CellGet()
       do i=1,3
          read(1,*) (ucell(j,i),j=1,3)
       end do
+#ifdef DEBUG
       print*, "ucell was read from ReadXYZ as: "
       print*, ucell(:,1)
       print*, ucell(:,2)
       print*, ucell(:,3)
+#endif /* DEBUG */
       close(1)
       call MIO_InputParameter('Structure.LatticeParameterBN',aBN,2.505_dp)
       g = norm(ucell(:,1))

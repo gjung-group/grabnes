@@ -86,7 +86,6 @@ subroutine TBInit()
              gn(1,1,i) = 0.0_dp !t2
              gn(2,2,i) = 0.0_dp !t2
           end do
-          print*, "HaldaneT2 = ", t2
       end if
    end if
    do i=1,tbnn; do i1=1,3; do i2=i1+1,4

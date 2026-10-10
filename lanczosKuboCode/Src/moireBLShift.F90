@@ -33,12 +33,10 @@ subroutine moireBLShiftInit()
       mSi = 0
       mSf = mSi
       mSStep = 1
-      print*, "hereclup", mSi, mSf
    else if (v) then
       call MIO_InputParameter('Moire.BLShiftRangeSteps',mSStep,10)
       mSi = 0
       mSf = mSi + mSStep
-      print*, "hereclap", mSi, mSf
    end if
 
 #ifdef TIMER
