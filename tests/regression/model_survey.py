@@ -278,8 +278,9 @@ def main():
             for name, r in results.items():
                 f.write(f"| `{name}` | `{r['base']}` | {r['status']} | {r['atoms']} | {r['entries']} | "
                         f"`{r['fingerprint']}` | {r['message'].replace('|', '/')} |\n")
-    # a case whose result depends on the compiler is recorded as such and not compared
-    compact = {k: (dict(status="UNDEFINED", fingerprint="") if k in COMPILER_DEPENDENT
+    # a case whose result depends on the compiler is recorded as such and not compared, unless it crashed:
+    # its status may be ok or REFUSED depending on the build, but a crash is never an expected outcome
+    compact = {k: (dict(status="UNDEFINED", fingerprint="") if k in COMPILER_DEPENDENT and v["status"] != "CRASH"
                    else dict(status=v["status"], fingerprint=v["fingerprint"])) for k, v in results.items()}
     undefined = sum(1 for k in results if k in COMPILER_DEPENDENT)
     if undefined:
