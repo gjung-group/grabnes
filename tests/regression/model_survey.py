@@ -17,7 +17,7 @@ the run ends normally) and writes its tables (WriteDataFiles). For every case th
 and, with --check, compares status and fingerprint with the stored reference
 (model_survey_reference.json), so that a change of any Hamiltonian is detected.
 
-    python3 model_survey.py --bin /path/to/grabnes [--work DIR] [--only PATTERN]
+    python3 model_survey.py --bin /path/to/grabnes [--work DIR] [--only PATTERN] [--threads N]
                             [--check | --update-reference] [--report FILE.md]
 
 The fingerprint is a hash of the sorted list of (atom, neighbour, lattice translation, hopping)
@@ -231,12 +231,15 @@ def main():
     p.add_argument("--only", default="*", help="shell pattern on the case name")
     p.add_argument("--launcher", default="mpirun -np 1")
     p.add_argument("--timeout", type=int, default=120)
+    p.add_argument("--threads", type=int, default=2,
+                   help="OpenMP threads of every run (OMP_NUM_THREADS of the caller is not used)")
     p.add_argument("--check", action="store_true", help="compare with the stored reference; exit 1 on a difference")
     p.add_argument("--update-reference", action="store_true")
     p.add_argument("--report", help="write the table as Markdown")
     a = p.parse_args()
 
-    env = dict(os.environ, OMP_NUM_THREADS="2")
+    env = dict(os.environ, OMP_NUM_THREADS=str(a.threads))
+    print(f"OMP_NUM_THREADS = {a.threads} for every run", flush=True)
     results, base_print = {}, {}
     names = [c for c in CASES if fnmatch.fnmatch(c, a.only) or c in BASES or c.endswith("@bands")]
     for name in names:
