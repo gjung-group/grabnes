@@ -2208,7 +2208,7 @@ subroutine DiagSpectralFunction()
                 end do
             end do
             !   !if(abs(E(ie,is) - Energy(iee)).lt.(0.1/g0)) then
-            AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+            AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
             !      !DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
             !      !Ake(ik,i2) = Ake(ik,i2) + Pkc(ik,i1)
          !       ! write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
@@ -2449,7 +2449,7 @@ subroutine DiagSpectralFunctionKGrid()
             end do
             Ake = Ake1 + Ake2
             !   !if(abs(E(ie,is) - Energy(iee)).lt.(0.1/g0)) then
-            AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+            AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
             !      !DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
             !      !Ake(ik,i2) = Ake(ik,i2) + Pkc(ik,i1)
          !       ! write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
@@ -2972,7 +2972,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
                 end do
             end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:) + Ake4(ik,:)
-         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
       do ik=1,ptsTot ! K loop
@@ -3472,7 +3472,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
                 end do
             end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:)
-         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
       do ik=1,ptsTot ! K loop
@@ -3948,7 +3948,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
                 end do
             end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:) + Ake4(ik,:)
-         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
       do ik=1,ptot ! K loop
@@ -4453,7 +4453,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
                 end do
             end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:)
-         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
       call MIO_Print("lets write it all out",'diag')
@@ -4885,7 +4885,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
                 end do
             end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:)
-         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
       call MIO_Print("lets write it all out",'diag')
@@ -11478,46 +11478,24 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
 
 end subroutine DiagSpectralWeightWeiKuInequivalentNishi
 
-function convolve(x, h, Epts)
+!> Convolution of the spectrum x (Epts points) with the kernel h (nh points, centred on point nh/2, the
+!> point the spectral routines centre their Gaussian on), on the same grid: the result is not shifted, and
+!> points of the kernel beyond either end of the spectrum are left out.
+function convolve(x, h, Epts, nh)
     implicit none
 
-    integer :: Epts
-    !x is the signal array
-    !h is the noise/impulse array
-    real(dp), allocatable :: convolve(:), y(:)
-    real(dp) :: x(Epts), h(Epts)
-    integer :: kernelsize, datasize
-    integer :: i,j,k
+    integer, intent(in) :: Epts, nh
+    real(dp), intent(in) :: x(Epts), h(nh)
+    real(dp) :: convolve(Epts)
+    integer :: i, j, k
 
-    datasize = size(x)  ! Ake
-    kernelsize = size(h) ! gaussian
-
-    allocate(y(datasize))
-    allocate(convolve(datasize))
-
-    !last part
-    do i=kernelsize,datasize
-        y(i) = 0.0
-        j=i
-        do k=1,kernelsize
-            y(i) = y(i) + x(j)*h(k)
-            j = j-1
+    do i=1,Epts
+        convolve(i) = 0.0_dp
+        do k=1,nh
+            j = i - k + nh/2
+            if (j >= 1 .and. j <= Epts) convolve(i) = convolve(i) + x(j)*h(k)
         end do
     end do
-
-    !first part
-    do i=1,kernelsize
-        y(i) = 0.0
-        j=i
-        k=1
-        do while (j > 0)
-            y(i) = y(i) + x(j)*h(k)
-            j = j-1
-            k = k+1
-        end do
-    end do
-
-    convolve = y
 
 end function convolve
 
