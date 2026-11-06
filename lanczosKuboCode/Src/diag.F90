@@ -14378,6 +14378,11 @@ subroutine cleanup_TAPW_storage()
       call MIO_Print('Deallocated stored eigenvalues','diag')
    end if
 
+   ! Also the X matrix and the k-points: DiagH0TAPW allocates X again whenever the eigenvectors are
+   ! unallocated, so the next point of a sweep stopped with "already allocated".
+   if (allocated(stored_X_matrix)) deallocate(stored_X_matrix)
+   if (allocated(stored_Kpts)) deallocate(stored_Kpts)
+
    stored_M = 0
    stored_nk = 0
    stored_nspin = 0
