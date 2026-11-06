@@ -522,7 +522,6 @@ COMPILER_DEPENDENT = {
     'graphene+Anderson',
     'graphene+Bubbles',
     'graphene+GaussDisorder',
-    'graphene+MoireStrain',
     'graphene+SublatticeDisorder',
     'graphene+deltaDisorder',
     'tbg+twistedBLAddShift',

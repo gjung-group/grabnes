@@ -244,8 +244,8 @@
   "status": "INERT"
  },
  "graphene+MoireStrain": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "80d1117f857556aa",
+  "status": "ok"
  },
  "graphene+Neigh.CutAtNN3": {
   "fingerprint": "d728b851fdd3d797",
@@ -616,7 +616,7 @@
   "status": "ok"
  },
  "sys_Graphene_Over_BN+realStrain": {
-  "fingerprint": "8523e6efd43c65bc",
+  "fingerprint": "8446fe27ff4b0d20",
   "status": "ok"
  },
  "sys_Hybrid": {
