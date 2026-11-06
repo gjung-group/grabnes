@@ -6208,6 +6208,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     end if
 
     M = NG * Nlabel
+    call tapw_check_basis_size(M, N, NG, Nlabel)
     M_tapw = M  ! Update M_tapw to actual projected matrix size
 
     if (tapwDebug) then
@@ -7187,6 +7188,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     ! Calculate M (spinless TAPW basis size)
     M = NG * Nlabel
+    call tapw_check_basis_size(M, N, NG, Nlabel)
     ! For Rashba SOC with block-diagonal projection, we have 2M eigenvalues (spin-split)
     ! For forceBlockTAPW without SOC, we have 2M eigenvalues but they're degenerate pairs
     ! Set M_tapw based on whether we need to collapse duplicates
@@ -8181,6 +8183,16 @@ end subroutine generate_shifted_G_list_reduced
 ! on every graphene site); that holds when both shells stay inside |K|/2,
 ! the valley-purity cap, and is checked here pair by pair.
 !-----------------------------------------------------------------------------
+subroutine tapw_check_basis_size(M, N, NG, Nlabel)
+  ! A TAPW basis of more plane-wave states than atoms cannot be independent: X (N x M) has rank <= N,
+  ! so X^dag H X has M - N exact zero eigenvalues that belong to no state of H (and Loewdin fails).
+  implicit none
+  integer, intent(in) :: M, N, NG, Nlabel
+  if (M > N) call MIO_Kill('TAPW basis of '//trim(num2str(M))//' states ('//trim(num2str(NG))//' G x '// &
+       trim(num2str(Nlabel))//' labels) exceeds the '//trim(num2str(N))//' atoms of the cell: lower Diag.N_G', &
+       'diag','tapw_check_basis_size')
+end subroutine tapw_check_basis_size
+
 subroutine tapw_append_second_valley(rcell, rG, sGlattice, refF, NGrange, useDense, Gx, Gy, NG)
   use ham, only : IsingSOCterm
   use constants, only : pi
