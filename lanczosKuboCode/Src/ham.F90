@@ -5272,9 +5272,9 @@ subroutine HamHopping
              tAB2 = -tAB2/g0
              call MIO_InputParameter('Intralayer.BilayertBA0',tBA0,0.331_dp)
              tBA0 = -tBA0/g0
-             call MIO_InputParameter('Intralayer.BilayertBA0',tBA2,-0.01016_dp)
+             call MIO_InputParameter('Intralayer.BilayertBA2',tBA2,-0.01016_dp)
              tBA2 = -tBA2/g0
-             call MIO_InputParameter('Intralayer.BilayertBA0',tBA5,0.0001_dp)
+             call MIO_InputParameter('Intralayer.BilayertBA5',tBA5,0.0001_dp)
              tBA5 = -tBA5/g0
          end if
          if (hamModelFromTwist .and. .not. (BilayerOneParameter .or. BilayerThreeParameters .or. F2G2Model)) then
@@ -5289,9 +5289,9 @@ subroutine HamHopping
             tAB2 = -tAB2/g0
             call MIO_InputParameter('Intralayer.BilayertBA0',tBA0,0.331_dp)
             tBA0 = -tBA0/g0
-            call MIO_InputParameter('Intralayer.BilayertBA0',tBA2,-0.01016_dp)
+            call MIO_InputParameter('Intralayer.BilayertBA2',tBA2,-0.01016_dp)
             tBA2 = -tBA2/g0
-            call MIO_InputParameter('Intralayer.BilayertBA0',tBA5,0.0001_dp)
+            call MIO_InputParameter('Intralayer.BilayertBA5',tBA5,0.0001_dp)
             tBA5 = -tBA5/g0
          end if
          call MIO_InputParameter('Trilayer.FanZhang',FanZhang,.false.)
