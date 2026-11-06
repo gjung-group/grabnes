@@ -84,19 +84,19 @@
   "status": "INERT"
  },
  "eff+TypeOfBL_BLKaxiras": {
-  "fingerprint": "",
+  "fingerprint": "82a5067b52db6735",
   "status": "REFUSED"
  },
  "eff+TypeOfBL_HTC": {
-  "fingerprint": "",
+  "fingerprint": "82a5067b52db6735",
   "status": "REFUSED"
  },
  "eff+TypeOfSL_HTC": {
-  "fingerprint": "",
+  "fingerprint": "82a5067b52db6735",
   "status": "REFUSED"
  },
  "eff+addDisplacements": {
-  "fingerprint": "",
+  "fingerprint": "ba80b6603c6b9a81",
   "status": "REFUSED"
  },
  "eff+addOnsiteEnergyShift": {
@@ -112,7 +112,7 @@
   "status": "INERT"
  },
  "eff+noOnsiteSelection": {
-  "fingerprint": "",
+  "fingerprint": "6fe7ba96a9dfd21b",
   "status": "REFUSED"
  },
  "eff+onlyBottomLayerMassTerm": {
@@ -300,11 +300,11 @@
   "status": "INERT"
  },
  "graphene+RandomStrain": {
-  "fingerprint": "",
+  "fingerprint": "efaf60053e255b61",
   "status": "REFUSED"
  },
  "graphene+RashbaSOCterm": {
-  "fingerprint": "",
+  "fingerprint": "52368365dc431721",
   "status": "REFUSED"
  },
  "graphene+SOCLayerControl": {
@@ -348,7 +348,7 @@
   "status": "INERT"
  },
  "graphene+TypeOfSL_HTC": {
-  "fingerprint": "",
+  "fingerprint": "11d127812468d46a",
   "status": "REFUSED"
  },
  "graphene+ZeemanTerm": {
@@ -428,11 +428,11 @@
   "status": "UNDEFINED"
  },
  "graphene+fastNN": {
-  "fingerprint": "",
+  "fingerprint": "6460705298957753",
   "status": "REFUSED"
  },
  "graphene+fastNNnotsquareNotRectangle": {
-  "fingerprint": "",
+  "fingerprint": "6460705298957753",
   "status": "REFUSED"
  },
  "graphene+forceBilayerF2G2Intralayer": {
@@ -452,7 +452,7 @@
   "status": "ok"
  },
  "graphene+moireCDW_incommensurate": {
-  "fingerprint": "",
+  "fingerprint": "19cdc5c2f25ea3cb",
   "status": "REFUSED"
  },
  "graphene+moireCDW_mass": {
@@ -468,7 +468,7 @@
   "status": "ok"
  },
  "graphene+printBubble": {
-  "fingerprint": "",
+  "fingerprint": "02f922790a8f99a7",
   "status": "REFUSED"
  },
  "graphene+realStrain": {
@@ -576,7 +576,7 @@
   "status": "INERT"
  },
  "graphene_small@bands+RashbaSOCterm": {
-  "fingerprint": "",
+  "fingerprint": "52368365dc431721",
   "status": "REFUSED"
  },
  "graphene_small@bands+SOCLayerControl": {
@@ -584,7 +584,7 @@
   "status": "INERT"
  },
  "graphene_small@bands+SpinPolarized": {
-  "fingerprint": "",
+  "fingerprint": "c160848729b896ee",
   "status": "REFUSED"
  },
  "graphene_small@bands+Zeeman+Spin-1": {
@@ -604,7 +604,7 @@
   "status": "INERT"
  },
  "sys_BLtoSLYoungju": {
-  "fingerprint": "",
+  "fingerprint": "a3dfff707b1332c7",
   "status": "REFUSED"
  },
  "sys_BilayerGraphene_Over_BN": {
@@ -620,7 +620,7 @@
   "status": "ok"
  },
  "sys_Hybrid": {
-  "fingerprint": "",
+  "fingerprint": "7686d1e66a326a28",
   "status": "REFUSED"
  },
  "sys_MoireEncapsulatedBilayer": {
@@ -656,7 +656,7 @@
   "status": "ok"
  },
  "sys_MoireEncapsulatedBilayerMC+MoirePotential+noOnsiteSelection": {
-  "fingerprint": "",
+  "fingerprint": "6fe7ba96a9dfd21b",
   "status": "REFUSED"
  },
  "sys_MoireEncapsulatedBilayerMC+MoiretDBLDeactivateUpperLayers": {
@@ -668,7 +668,7 @@
   "status": "INERT"
  },
  "sys_MoireEncapsulatedBilayerMC+TypeOfBL_Jeil": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "sys_Ribbons_armchair": {
@@ -696,7 +696,7 @@
   "status": "ok"
  },
  "sys_TwistedBilayerRectangular": {
-  "fingerprint": "",
+  "fingerprint": "b9cdd881a4083cb2",
   "status": "REFUSED"
  },
  "tbg": {
@@ -712,27 +712,27 @@
   "status": "ok"
  },
  "tbg+BLKaxiras+BilayerOneParameter": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+BilayerThreeParameters": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+addExponentialDecayForDihedral": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+addPressureDependence=F": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+changeLatticeParameterForSrivaniModel": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+deactivateV3": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+deactivateV6": {
@@ -740,11 +740,11 @@
   "status": "ok"
  },
  "tbg+BLKaxiras+findThetasGeometrically": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+newFittingFunctions": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+oldParameterSet": {
@@ -752,27 +752,27 @@
   "status": "ok"
  },
  "tbg+BLKaxiras+onlyV0": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+oppositedxdy": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+sublatticeDependent": {
-  "fingerprint": "",
+  "fingerprint": "8cb4b852ff6afc85",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+sublatticeIndependent": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+switchV3Sign": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+useBNGKaxiras": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+useBNGSrivani": {
@@ -780,15 +780,15 @@
   "status": "ok"
  },
  "tbg+BLKaxiras+useOnlyVAB": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+useTheta": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+useThetaIJ": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLSrivani+BilayerOneParameter": {
@@ -804,7 +804,7 @@
   "status": "ok"
  },
  "tbg+BLSrivani+addPressureDependence=F": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLSrivani+changeLatticeParameterForSrivaniModel": {
@@ -820,7 +820,7 @@
   "status": "ok"
  },
  "tbg+BLSrivani+findThetasGeometrically": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+BLSrivani+newFittingFunctions": {
@@ -840,7 +840,7 @@
   "status": "ok"
  },
  "tbg+BLSrivani+sublatticeDependent": {
-  "fingerprint": "",
+  "fingerprint": "8cb4b852ff6afc85",
   "status": "REFUSED"
  },
  "tbg+BLSrivani+sublatticeIndependent": {
@@ -852,7 +852,7 @@
   "status": "ok"
  },
  "tbg+BLSrivani+useBNGKaxiras": {
-  "fingerprint": "",
+  "fingerprint": "e324dddda8bf8c12",
   "status": "REFUSED"
  },
  "tbg+BLSrivani+useBNGSrivani": {
@@ -896,83 +896,83 @@
   "status": "INERT"
  },
  "tbg+Jeil+BilayerOneParameter": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+BilayerThreeParameters": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+addExponentialDecayForDihedral": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+addPressureDependence=F": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+changeLatticeParameterForSrivaniModel": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+deactivateV3": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+deactivateV6": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+findThetasGeometrically": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+newFittingFunctions": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+oldParameterSet": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+onlyV0": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+oppositedxdy": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+sublatticeDependent": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+sublatticeIndependent": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+switchV3Sign": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+useBNGKaxiras": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+useBNGSrivani": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+useOnlyVAB": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+useTheta": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+Jeil+useThetaIJ": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+KoshinoIntralayer": {
@@ -1000,15 +1000,15 @@
   "status": "INERT"
  },
  "tbg+RashbaSOCterm": {
-  "fingerprint": "",
+  "fingerprint": "52368365dc431721",
   "status": "REFUSED"
  },
  "tbg+TypeOfBL_BLKaxiras": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+TypeOfBL_BLKaxiras+NeighLevels1": {
-  "fingerprint": "",
+  "fingerprint": "72b4f9b504efbe94",
   "status": "REFUSED"
  },
  "tbg+TypeOfBL_BLSrivani": {
@@ -1020,15 +1020,15 @@
   "status": "INERT"
  },
  "tbg+TypeOfBL_Jeil": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+TypeOfBL_Jeil+NeighLevels1": {
-  "fingerprint": "",
+  "fingerprint": "63b86aaf1b42fda9",
   "status": "REFUSED"
  },
  "tbg+TypeOfBL_Mayou": {
-  "fingerprint": "",
+  "fingerprint": "b40e00abad277c26",
   "status": "REFUSED"
  },
  "tbg+TypeOfBL_None": {
@@ -1036,7 +1036,7 @@
   "status": "ok"
  },
  "tbg+TypeOfBL_Srivani": {
-  "fingerprint": "",
+  "fingerprint": "8d7a392e965856a2",
   "status": "REFUSED"
  },
  "tbg+addSecondLayerInteractions": {
@@ -1156,7 +1156,7 @@
   "status": "UNDEFINED"
  },
  "tbg+useBNGKaxiras": {
-  "fingerprint": "",
+  "fingerprint": "e324dddda8bf8c12",
   "status": "REFUSED"
  },
  "tbg+useLayerSpecificOnsiteEnergyTerms": {
@@ -1208,7 +1208,7 @@
   "status": "INERT"
  },
  "tbg_small@bands+RashbaSOCterm": {
-  "fingerprint": "",
+  "fingerprint": "52368365dc431721",
   "status": "REFUSED"
  },
  "tbg_small@bands+SOCLayerControl": {
@@ -1216,7 +1216,7 @@
   "status": "INERT"
  },
  "tbg_small@bands+SpinPolarized": {
-  "fingerprint": "",
+  "fingerprint": "c160848729b896ee",
   "status": "REFUSED"
  },
  "tbg_small@bands+Zeeman+Spin-1": {
@@ -1276,11 +1276,11 @@
   "status": "INERT"
  },
  "xyz2+shellsFromRigidPositions": {
-  "fingerprint": "",
+  "fingerprint": "495d4c2a91f561c8",
   "status": "REFUSED"
  },
  "xyz2+singleLayerXYZ": {
-  "fingerprint": "",
+  "fingerprint": "9d829836162d86b2",
   "status": "REFUSED"
  },
  "xyz2+tBGuseDisplacementFile": {
@@ -1496,7 +1496,7 @@
   "status": "INERT"
  },
  "xyz3+middleTwist": {
-  "fingerprint": "",
+  "fingerprint": "6feb3882d972e12b",
   "status": "REFUSED"
  },
  "xyz3+middleTwist_default": {
@@ -1516,7 +1516,7 @@
   "status": "ok"
  },
  "xyz3_enc+GBNOffDiag": {
-  "fingerprint": "",
+  "fingerprint": "452b7845ab22ba79",
   "status": "REFUSED"
  },
  "xyz3_enc+deactivateInterlayerBG": {
@@ -1544,11 +1544,11 @@
   "status": "ok"
  },
  "xyz3_t2BG": {
-  "fingerprint": "",
+  "fingerprint": "6ff582865d494bdc",
   "status": "REFUSED"
  },
  "xyz3_t2BG+deactivateInterlayert2BG2to3": {
-  "fingerprint": "",
+  "fingerprint": "6ff582865d494bdc",
   "status": "REFUSED"
  },
  "xyz4": {
@@ -1556,7 +1556,7 @@
   "status": "ok"
  },
  "xyz4+forceBilayerF2G2Intralayer=F": {
-  "fingerprint": "",
+  "fingerprint": "2a9b35490e35725f",
   "status": "REFUSED"
  },
  "xyz4_BNt2GBN": {
@@ -1628,7 +1628,7 @@
   "status": "ok"
  },
  "xyz4_sandwiched+middleTwist=F": {
-  "fingerprint": "",
+  "fingerprint": "6feb3882d972e12b",
   "status": "REFUSED"
  },
  "xyz4_sandwiched+middleTwist_default": {
