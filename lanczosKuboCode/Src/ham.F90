@@ -6719,7 +6719,7 @@ subroutine HamHopPeriodicStrain()
          dlij = hamUnset
          ! <<< unset markers
          do j=1,Nneigh(i)
-           if (NeighD(3,j,i) .lt. 0.01_dp) then
+           if (abs(NeighD(3,j,i)) .lt. 0.01_dp) then   ! in-plane bonds only, in both directions
              dlij = 1.0_dp/(aG/sqrt(3.0_dp)) * (epsxx(j,i) * NeighD(1,j,i)**2.0_dp &
                   + epsyy(j,i) * NeighD(2,j,i)**2.0_dp + 2.0_dp * epsxy(j,i) * NeighD(1,j,i)*NeighD(2,j,i))
                  hopp(j,i) = hopp(j,i) * exp(-3.37_dp*((dlij + aG/sqrt(3.0_dp))/(aG/sqrt(3.0_dp))-1.0_dp))
