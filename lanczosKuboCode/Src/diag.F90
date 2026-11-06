@@ -10144,7 +10144,7 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
                         if (col_ind(k) == in) then
                            ! Apply PIA hopping: lambdaPIA * (neighD_y + i*neighD_x)
                            ! Note: NeighD is from i to j, matching ApplyPIAHopping convention
-                           values(k) = values(k) + lambdaPIA * cmplx(NeighD(2, j, i), NeighD(1, j, i))
+                           values(k) = values(k) + lambdaPIA * cmplx(NeighD(2, j, i), NeighD(1, j, i), dp)
                            exit
                         end if
                      end do
@@ -15583,14 +15583,14 @@ subroutine ApplyPIAHopping(i, j, in, N, HLoc, isBlock)
    ! This creates imaginary hopping terms
    if (isBlock) then
       ! Block Hamiltonian: apply to both spin blocks
-      phase = lambdaPIA * cmplx(neighD(2, j, i), neighD(1, j, i))
+      phase = lambdaPIA * cmplx(neighD(2, j, i), neighD(1, j, i), dp)
       HLoc(in, i) = HLoc(in, i) + phase
       HLoc(i, in) = HLoc(i, in) - conjg(phase) ! Hermitian conjugate
       HLoc(in + N, i + N) = HLoc(in + N, i + N) + phase
       HLoc(i + N, in + N) = HLoc(i + N, in + N) - conjg(phase)
    else
       ! Sequential Hamiltonian: apply normally
-      phase = lambdaPIA * cmplx(neighD(2, j, i), neighD(1, j, i))
+      phase = lambdaPIA * cmplx(neighD(2, j, i), neighD(1, j, i), dp)
       HLoc(in, i) = HLoc(in, i) + phase
       HLoc(i, in) = HLoc(i, in) - conjg(phase)
    end if
