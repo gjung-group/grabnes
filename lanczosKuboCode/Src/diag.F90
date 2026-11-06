@@ -8977,6 +8977,15 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
   ! This follows your exact instructions and uses the proper graphene BZ geometry
   call create_triangle_from_graphene_BZ(k_ref, ratio, BZ_triangle, rG, bMvec)
 
+  ! The index box j in [-N1, N1-1], i in [-N2, N2-1] is centred on Gamma, not on K: a box that does not
+  ! contain the whole triangle silently kept part of it (on a CellSize-3 cell, N_G 2 dropped K itself).
+  if (minval(BZ_triangle(:,1)) < -N1 - 1.0e-6_dp .or. maxval(BZ_triangle(:,1)) > N1 - 1 + 1.0e-6_dp .or. &
+      minval(BZ_triangle(:,2)) < -N2 - 1.0e-6_dp .or. maxval(BZ_triangle(:,2)) > N2 - 1 + 1.0e-6_dp) then
+     call MIO_Kill('Diag.TriangularTruncation: the G index box [-N_G, N_G-1] does not contain the valley '// &
+          'triangle (corners up to '//trim(num2str(maxval(abs(BZ_triangle)),3))//' in moire units); set Diag.N_G >= '// &
+          trim(num2str(ceiling(maxval(abs(BZ_triangle)) - 1.0e-6_dp) + 1)),'diag','generate_triangular_G_list')
+  end if
+
   ! Select G-vectors inside triangular boundary (Python: G_bounds.contains_point)
   call select_G_vectors_in_triangle(G_frac, total_G, BZ_triangle, G_selected)
 
