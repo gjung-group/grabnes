@@ -183,7 +183,7 @@ function AdamsOI(df,n,i,k) result(f)
    elseif (k==4) then
       f = (25.1_dp*df(i+1)+64.6_dp*df(i)-26.4_dp*df(i-1)+10.6_dp*df(i-2)-1.9_dp*df(i-3))/72.0_dp
    elseif (k==5) then
-      f = (47.5_dp*df(i+1)+142.7_dp*df(i)-79.8_dp*df(i-1)+48.2_dp*df(i-2)-17.3_dp*df(i-3)+2.7*df(i-4))/144.0_dp
+      f = (47.5_dp*df(i+1)+142.7_dp*df(i)-79.8_dp*df(i-1)+48.2_dp*df(i-2)-17.3_dp*df(i-3)+2.7_dp*df(i-4))/144.0_dp
    elseif (k==6) then
       f = (190.87_dp*df(i+1)+651.12_dp*df(i)-464.61_dp*df(i-1)+375.04_dp*df(i-2)-202.11_dp*df(i-3)+ &
         63.12_dp*df(i-4)-8.63_dp*df(i-5))/604.8_dp
@@ -229,7 +229,7 @@ function AdamsII(df,n,i,k) result(f)
    elseif (k==4) then
       f = -(25.1_dp*df(i-1)+64.6_dp*df(i)-26.4_dp*df(i+1)+10.6_dp*df(i+2)-1.9_dp*df(i+3))/72.0_dp
    elseif (k==5) then
-      f = -(47.5_dp*df(i-1)+142.7_dp*df(i)-79.8_dp*df(i+1)+48.2_dp*df(i+2)-17.3_dp*df(i+3)+2.7*df(i+4))/144.0_dp
+      f = -(47.5_dp*df(i-1)+142.7_dp*df(i)-79.8_dp*df(i+1)+48.2_dp*df(i+2)-17.3_dp*df(i+3)+2.7_dp*df(i+4))/144.0_dp
    elseif (k==6) then
       f = -(190.87_dp*df(i-1)+651.12_dp*df(i)-464.61_dp*df(i+1)+375.04_dp*df(i+2)-202.11_dp*df(i+3)+ &
         63.12_dp*df(i+4)-8.63_dp*df(i+5))/604.8_dp
