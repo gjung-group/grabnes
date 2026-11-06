@@ -616,9 +616,9 @@ subroutine AtomsPos()
       call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
       ! the per-atom data read from files are replicated only by the SuperCell branch below
       if (SuperCellX .ne. SuperCellY .and. (readInterlayerDistances .or. GBNuseDisplacementFile .or. &
-            tBGuseDisplacementFile .or. readLayerIndex .or. readRigidXYZ)) call MIO_Kill('Structure.SuperCellX /= '// &
+            tBGuseDisplacementFile .or. readRigidXYZ)) call MIO_Kill('Structure.SuperCellX /= '// &
             'SuperCellY does not replicate the per-atom data read from files (ReadInterlayerDistances, '// &
-            'GBN/TBG.UseDisplacementFile, ReadLayerIndex, ReadRigidXYZ): use SuperCell, or a structure file of '// &
+            'GBN/TBG.UseDisplacementFile, ReadRigidXYZ): use SuperCell, or a structure file of '// &
             'the whole cell.','atoms','AtomsPos')
       ! the rigid positions are read only in the SuperCell 1 branch below
       if (SuperCellX .eq. SuperCellY .and. sCell .ne. 1 .and. readRigidXYZ) call MIO_Kill('Structure.ReadRigidXYZ '// &
@@ -694,6 +694,9 @@ subroutine AtomsPos()
       close(9)
       if (SuperCellX .ne. SuperCellY) then
           call MIO_Print('Different number of supercells in X and Y direction','atoms')
+          ! layerIndex.dat holds the original cell: read it, then copy it with the positions below
+          call MIO_Allocate(layerIndex,nAt*SuperCellX*SuperCellY,'layerIndex','atoms')
+          if (readLayerIndex) call AtomsReadLayerIndex()
           kk = 0
           frac = .false.
           call AtomsSetFracTemp()
@@ -705,9 +708,7 @@ subroutine AtomsPos()
                    Rat(2,kk*nAt+i) = RatTemp(2,i)+(jj-1)*1.0
                    Rat(3,kk*nAt+i) = RatTemp(3,i)
                    Species(kk*nAt+i) = SpeciesTemp(i)
-                   if (readInterlayerDistances) then
-                        interlayerDistances(kk*nAt+i) = interlayerDistances(i)
-                   end if
+                   if (readLayerIndex) layerIndex(kk*nAt+i) = layerIndex(i)
                 end do
                 kk = kk + 1
              end do
