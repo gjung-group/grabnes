@@ -539,7 +539,7 @@ subroutine Diag3DBands()
    write(uu,'(3i8)') nAt, nspin, ptot
    do is=1,nspin
       do ik=1,ptot
-         if (modulo(ik,int(ptot/10)).eq.0) call MIO_Print('progress is: '//trim(num2str((ik/ptot/10.0_dp*10.0_dp),4)) &
+         if (modulo(ik,max(1,ptot/10)).eq.0) call MIO_Print('progress is: '//trim(num2str(100.0_dp*ik/ptot,4)) &
                //' percent','diag')
          call DiagHam(nAt,nspin,is,H(:,:,is),Eig(:,is),Kgrid(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
          !hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0))
