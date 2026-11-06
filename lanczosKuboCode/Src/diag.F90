@@ -603,6 +603,7 @@ subroutine DiagBands()
    use constants,            only : pi, twopi
 
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, uu, uuu, uuuu, neig, i_eig
+   integer :: nPathIn                       ! vertices of Bands.Path (nPath is reused below to count printed vertices)
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:,:)=>NULL()
    integer, pointer :: nPts(:)=>NULL()
    real(dp) :: d0, v(3), d, hv, lc
@@ -936,6 +937,7 @@ subroutine DiagBands()
       E = 0.0_dp
       call MIO_Print('')
       call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      nPathIn = nPath
       nPath = 1
       call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
       !      !if (modulo(ip,int(ptsTot/10)).eq.0) print*, "progress is: ", ip/int(ptsTot/10)*10, "percent"
@@ -948,7 +950,9 @@ subroutine DiagBands()
          call MIO_Print('Starting TAPW calculations for '//trim(num2str(ptsTot))//' k-points...', 'diag')
       end if
 
-      if (ptsTot == 1) then
+      ! A path of nPathIn > 1 vertices holds ptsTot+1 points (ptsTot = 1 for two vertices with Bands.NumPoints 1);
+      ! a one-vertex path and a grid hold ptsTot.
+      if (ptsTot == 1 .and. (nPathIn == 1 .or. (calculateChern .and. useTAPW) .or. calculate3DTAPWBands)) then
          ! Special case: only one k-point, do not use OpenMP here
          do ip = 1, ptsTot
             ! Progress tracking for TAPW
@@ -1792,14 +1796,14 @@ subroutine DiagBandsAroundK()
       call MIO_InputBlock('Bands.Path',path)
       do ip=1,nPath
          path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
-         grapheneK = 2.0/3.0*grcell(:,1) + 1.0/3.0*grcell(:,2) + 0.0*grcell(:,3)
+         grapheneK = 2.0_dp/3.0_dp*grcell(:,1) + 1.0_dp/3.0_dp*grcell(:,2)
          path(:,ip) = path(:,ip) + grapheneK
          !   !print*, "theta=", theta
       end do
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
          nPts(1) = 1
-         ptsTot = 1
+         ptsTot = 0   ! one point: the loops below run over ptsTot+1 points
       else
          call MIO_Allocate(nPts,nPath,'nPts','diag')
          nPts(1) = nPts0
@@ -1932,7 +1936,7 @@ subroutine DiagBandsG()
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
          nPts(1) = 1
-         ptsTot = 1
+         ptsTot = 0   ! one point: the loops below run over ptsTot+1 points
       else
          call MIO_Allocate(nPts,nPath,'nPts','diag')
          nPts(1) = nPts0
