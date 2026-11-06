@@ -2860,6 +2860,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       Ake4B = 0.0_dp
 !HERE
       !$OMP PARALLEL DO PRIVATE(iee, ie, unfoldedK, ELoc, PkcLocA, PkcLocB, PkcLocC,PkcLocD,PkcLocE,PkcLocF,PkcLocG,PkcLocH, KptsLoc), &
+      !$OMP& PRIVATE(ELoc1, ELoc2), &
       !$OMP& SHARED(KptsG, Kpts, AkeGaussian1, AkeGaussian2, AkeGaussian, nAt, nspin, is, ucell, gcell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, gaussian, Epts, Ake)
       do ik=1,ptsTot ! K loop
          ELoc = 0.0_dp
@@ -3368,6 +3369,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       end if
 !HERE
       !$OMP PARALLEL DO PRIVATE(iee, ie, unfoldedK, ELoc, PkcLocA, PkcLocB, KptsLoc), &
+      !$OMP& PRIVATE(ELoc1, ELoc2), &
       !$OMP& SHARED(KptsG, Kpts, AkeGaussian1, AkeGaussian2, AkeGaussian, nAt, nspin, is, ucell, gcell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, gaussian, Epts, Ake)
       do ik=1,ptsTot ! K loop
          ELoc = 0.0_dp
@@ -3866,6 +3868,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       Ake4B = 0.0_dp
 !HERE
       !$OMP PARALLEL DO PRIVATE(iee, ie, unfoldedK, ELoc, PkcLocA, PkcLocB, KptsLoc), &
+      !$OMP& PRIVATE(ELoc1, ELoc2), &
       !$OMP& SHARED(KptsG, Kpts, AkeGaussian1, AkeGaussian2, AkeGaussian, nAt, nspin, is, ucell, gcell, gcell1, gcell2, H0, maxNeigh, hopp, NList, Nneigh, neighCell, gaussian, Epts, Ake)
       do ik=1,ptot ! K loop
          ELoc = 0.0_dp
@@ -4355,6 +4358,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
 
 !HERE
       !$OMP PARALLEL DO PRIVATE(iee, ie, unfoldedK, ELoc, PkcLocA, PkcLocB, KptsLoc), &
+      !$OMP& PRIVATE(ELoc1, ELoc2), &
       !$OMP& SHARED(KptsG, Kpts, AkeGaussian1, AkeGaussian2, AkeGaussian, nAt, nspin, is, ucell, gcell, gcell1, gcell2, H0, maxNeigh, hopp, NList, Nneigh, neighCell, gaussian, Epts, Ake)
       do ik=1,ptot ! K loop
          ELoc = 0.0_dp
@@ -4814,6 +4818,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       Ake3 = 0.0_dp
 !HERE
       !$OMP PARALLEL DO PRIVATE(iee, ie, unfoldedK, ELoc, PkcLocA, PkcLocB, KptsLoc), &
+      !$OMP& PRIVATE(ELoc1, ELoc2), &
       !$OMP& SHARED(KptsG, Kpts, AkeGaussian1, AkeGaussian2, AkeGaussian, nAt, nspin, is, ucell, gcell, gcell1, gcell2, H0, maxNeigh, hopp, NList, Nneigh, neighCell, gaussian, Epts, Ake)
       do ik=1,ptot ! K loop
          ELoc = 0.0_dp
