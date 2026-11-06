@@ -244,8 +244,8 @@
   "status": "INERT"
  },
  "graphene+MoireStrain": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "80d1117f857556aa",
+  "status": "ok"
  },
  "graphene+Neigh.CutAtNN3": {
   "fingerprint": "d728b851fdd3d797",
