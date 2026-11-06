@@ -7,7 +7,9 @@ number of lines and the same number of values on every line, and every value
 must agree within ``atol + rtol * |reference|``. Byte identity is reported for
 information; it is only required with ``--exact``.
 
-Exit status: 0 on agreement, 1 on disagreement, 2 on unreadable input.
+Exit status: 0 on agreement, 1 when values lie outside the tolerance (or differ
+in bytes with ``--exact``) and nothing else is wrong, 2 on unreadable input, 3 when
+the files differ in shape, hold non-finite values or fail the format checks.
 """
 
 import argparse
@@ -94,7 +96,7 @@ def main():
         print(f"  ERROR: {exc}")
         return 2
 
-    problems = []
+    problems = []  # differences in shape or format: exit status 3
     if len(result) != len(reference):
         problems.append(f"line count differs: {len(result)} vs reference {len(reference)}")
     else:
@@ -105,6 +107,7 @@ def main():
                 )
                 break
 
+    value_problems = []  # values outside the tolerance: exit status 1
     max_abs = max_rel = 0.0
     worst = None
     count = failures = 0
@@ -124,7 +127,7 @@ def main():
                     failures += 1
         if failures:
             number, column, value, ref = worst
-            problems.append(
+            value_problems.append(
                 f"{failures} of {count} values outside tolerance; largest deviation at data "
                 f"line {number}, column {column}: {value!r} vs reference {ref!r}"
             )
@@ -136,16 +139,16 @@ def main():
     with open(args.result, "rb") as a, open(args.reference, "rb") as b:
         identical = a.read() == b.read()
     if args.exact and not identical:
-        problems.append("files are not byte-identical (--exact)")
+        value_problems.append("files are not byte-identical (--exact)")
 
     print(
         f"  values: {count}   max |diff|: {max_abs:.3e}   max rel diff: {max_rel:.3e}   "
         f"byte-identical: {'yes' if identical else 'no'}   "
         f"(atol {args.atol:g}, rtol {args.rtol:g})"
     )
-    for problem in problems:
+    for problem in problems + value_problems:
         print(f"  MISMATCH: {problem}")
-    return 1 if problems else 0
+    return 3 if problems else 1 if value_problems else 0
 
 
 if __name__ == "__main__":
