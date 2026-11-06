@@ -11143,7 +11143,7 @@ subroutine HamHopIntralayerGBN(dist, j, i, d, countG1, countG2, countG3, countG4
                                delta = 0.0_dp
                            end if
                            ! Konda, use the chosen value of delta
-                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta)
+                           hopp(j,i) = hopp(j,i) + cmplx(gn(Species(i),Species(NList(j,i)),ilvl) - 1.0_dp*delta, 0.0_dp, dp)
                            !if (i.eq.1) print*, "GBNF2G2", hopp(j,i)
 
 end subroutine HamHopIntralayerGBN
