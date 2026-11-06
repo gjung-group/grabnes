@@ -4073,7 +4073,7 @@ subroutine HamCheckHermiticity()
 
 
    ! Switches and options read from the input
-   logical :: gbnOD, haldane, haldanePhase, moireMid, moireOD, tbgOD
+   logical :: gbnOD, haldane, haldanePhase, moireMid, moireOD, strMoire, tbgOD
 
    ! Other local variables
    integer :: i, j, j2, m, nmissing, npairs
@@ -4086,7 +4086,8 @@ subroutine HamCheckHermiticity()
    call MIO_InputParameter('Haldane.NNN',haldane,.false.)
    call MIO_InputParameter('Haldane.SpecifyPhase',haldanePhase,.false.)
    haldanePhase = haldane .and. haldanePhase
-   if (.not. (moireOD .or. tbgOD .or. gbnOD .or. haldanePhase)) return
+   call MIO_InputParameter('Strain.StrainedMoire',strMoire,.false.)
+   if (.not. (moireOD .or. tbgOD .or. gbnOD .or. haldanePhase .or. strMoire)) return
    call MIO_InputParameter('Moire.OffDiagMidpoint',moireMid,.false.)
 
    maxAsym = 0.0_dp
@@ -4113,7 +4114,13 @@ subroutine HamCheckHermiticity()
    if (nmissing > 0) then
       call MIO_Print('Hopping table: '//trim(num2str(nmissing))//' entries without reverse entry','ham')
    end if
-   if (haldanePhase .and. .not. (moireOD .or. tbgOD .or. gbnOD)) then
+   if (strMoire .and. .not. (moireOD .or. tbgOD .or. gbnOD)) then
+      if (maxAsym*g0 > 1.0e-9_dp) then
+         call MIO_Print('WARNING: the hopping table is NOT Hermitian with StrainedMoire: the two directions of a bond '// &
+           'differ by up to '//trim(num2str(maxAsym*g0,6))//' eV, because the displacement of the first atom of each '// &
+           'bond is added to the bond vector.','ham')
+      end if
+   else if (haldanePhase .and. .not. (moireOD .or. tbgOD .or. gbnOD)) then
       if (maxAsym*g0 > 1.0e-9_dp) then
          call MIO_Print('WARNING: the hopping table is NOT Hermitian with HaldaneNNN and HaldaneSpecifyPhase: '// &
            'the two directions of a bond differ by up to '//trim(num2str(maxAsym*g0,6))//' eV.','ham')
