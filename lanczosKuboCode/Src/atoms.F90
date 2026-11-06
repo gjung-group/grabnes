@@ -612,6 +612,17 @@ subroutine AtomsPos()
       call MIO_Allocate(RatTemp,[3,nAt],'RatTemp','atoms')
       call MIO_InputParameter('Structure.SuperCellX',SuperCellX,1)
       call MIO_InputParameter('Structure.SuperCellY',SuperCellY,1)
+      call MIO_InputParameter('Structure.ReadLayerIndex',readLayerIndex,.false.)
+      call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
+      ! the per-atom data read from files are replicated only by the SuperCell branch below
+      if (SuperCellX .ne. SuperCellY .and. (readInterlayerDistances .or. GBNuseDisplacementFile .or. &
+            tBGuseDisplacementFile .or. readLayerIndex .or. readRigidXYZ)) call MIO_Kill('Structure.SuperCellX /= '// &
+            'SuperCellY does not replicate the per-atom data read from files (ReadInterlayerDistances, '// &
+            'GBN/TBG.UseDisplacementFile, ReadLayerIndex, ReadRigidXYZ): use SuperCell, or a structure file of '// &
+            'the whole cell.','atoms','AtomsPos')
+      ! the rigid positions are read only in the SuperCell 1 branch below
+      if (SuperCellX .eq. SuperCellY .and. sCell .ne. 1 .and. readRigidXYZ) call MIO_Kill('Structure.ReadRigidXYZ '// &
+            'is not replicated by SuperCell > 1: use a structure file of the whole cell.','atoms','AtomsPos')
       if (SuperCellX .ne. SuperCellY) then
          call MIO_Allocate(Rat,[3,nAt*SuperCellX*SuperCellY],'Rat','atoms')
          call MIO_Allocate(Species,nAt*SuperCellX*SuperCellY,'Species','atoms')
@@ -742,6 +753,8 @@ subroutine AtomsPos()
                  end if
                  if (GBNuseDisplacementFile .or. tBGuseDisplacementFile) then ! Carr format here
                       displacements(:,kk*nAt+i) = displacements(:,i)
+                      displacements_b(:,kk*nAt+i) = displacements_b(:,i)
+                      displacements_t(:,kk*nAt+i) = displacements_t(:,i)
                  end if
               end do
               kk = kk + 1
