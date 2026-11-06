@@ -46,7 +46,7 @@ module ham
    complex(dp), public, pointer :: hopp(:,:)=>NULL() ! Hopping integral matrix
 
    ! Public subroutines
-   public :: HamInit, HamOnSite, HamHopping, HamInputEnergyEV
+   public :: HamInit, HamOnSite, HamHopping, HamInputEnergyEV, HamPeierlsPeriodicGauge
 
    ! Public functions
    public :: SOCEnabledForLayer, HaldaneEnabledForLayer, ZeemanEnabledForLayer
@@ -6395,11 +6395,6 @@ end subroutine HamHopHaldane
 !> Magnetic field: Peierls phase on every hopping (periodic gauge) (internal procedure of HamHopping: it uses the variables of that routine)
 subroutine HamHopMagneticField()
 
-   ! Local variables of the periodic-gauge corner term (see below)
-   logical :: legacyCorner
-   real(dp) :: fluxQuanta, cellArea
-   integer :: nCorner
-
 #ifdef DEBUG
    call MIO_Debug('HamHopMagneticField',0)
 #endif /* DEBUG */
@@ -6472,37 +6467,7 @@ subroutine HamHopMagneticField()
          ! half a flux quantum sits at the corners (measured: hexagon fluxes off by pi, spurious levels inside the
          ! Landau gaps). m is taken from the field actually used and the cell area; MagField.LegacyCornerPhase .true.
          ! restores the former phases.
-         call MIO_InputParameter('MagField.LegacyCornerPhase',legacyCorner,.false.)
-         cellArea = abs(ucell(1,1)*ucell(2,2) - ucell(2,1)*ucell(1,2))
-         fluxQuanta = flux*cellArea/(pi*1.0d20)
-         if (.not. legacyCorner .and. abs(fluxQuanta - nint(fluxQuanta)) > 1.0d-6) then
-            call MIO_Kill('The number of flux quanta through the cell is not an integer ('// &
-              trim(num2str(fluxQuanta,8))//'): the periodic gauge needs an integer','ham','HamHopMagneticField')
-         end if
-         nCorner = 0
-         do i=1,nAt
-            do j=1,Nneigh(i)
-               !if (abs(neighCell(1,j,i)).gt.1 .or. abs(neighCell(2,j,i)).gt.1) print*, i, neighCell(1,j,i), neighCell(2,j,i)
-               v1 = Rat(:,i) + Rat(:,NList(j,i))
-               ! neighCell(1...) contains n1-m1, neighCell(2...) contains n2-m2 (see Cresti's notes)
-               v2 = neighCell(1,j,i)*ucell(:,1) + neighCell(2,j,i)*ucell(:,2)
-               v2 = CrossProd(v1,v2)
-               v1 = CrossProd(Rat(:,i),Rat(:,NList(j,i))) + v2 ! Implementation of third expersion in Cresti's notes
-               phase = flux*v1(3)/1.0d20
-               if (.not. legacyCorner .and. neighCell(1,j,i) /= 0 .and. neighCell(2,j,i) /= 0) then
-                  phase = phase + pi*nint(fluxQuanta)*neighCell(1,j,i)*neighCell(2,j,i)
-                  nCorner = nCorner + 1
-               end if
-               hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
-            end do
-         end do
-         if (legacyCorner) then
-            call MIO_Print('WARNING: MagField.LegacyCornerPhase: bonds across a cell corner keep the former phase '// &
-              '(wrong by a sign for an odd number of flux quanta)','ham')
-         else
-            call MIO_Print('Peierls phases: '//trim(num2str(nint(fluxQuanta)))//' flux quanta through the cell; '// &
-              'corner term exp(i pi m n1 n2) on '//trim(num2str(nCorner))//' bonds','ham')
-         end if
+         call HamPeierlsPeriodicGauge(flux)
       end if
 
 #ifdef DEBUG
@@ -11896,6 +11861,57 @@ subroutine HamHopInterlayerBernalF2G2(i, j, jj, numberOfInterlayerHoppings)
 end subroutine HamHopInterlayerBernalF2G2
 
 end subroutine HamHopping
+
+!> Peierls phases of the periodic gauge (Cresti) for a field of flux = B pi / flux quantum [1/Ang^2], applied to every
+!! hopping, with the corner term exp(i pi m n1 n2). Used by HamHopping and by the Output.ReadDataFiles path of
+!! CalcSelect, so that both get the same phases. Positions must be Cartesian.
+subroutine HamPeierlsPeriodicGauge(flux)
+
+   use atoms,                only : nAt, Rat
+   use neigh,                only : Nneigh, NList, neighCell
+   use cell,                 only : ucell
+   use constants,            only : pi, cmplx_i
+   use math,                 only : CrossProd
+
+   real(dp), intent(in) :: flux
+
+   logical :: legacyCorner
+   real(dp) :: fluxQuanta, cellArea, phase, v1(3), v2(3)
+   integer :: i, j, nCorner
+
+   call MIO_InputParameter('MagField.LegacyCornerPhase',legacyCorner,.false.)
+   cellArea = abs(ucell(1,1)*ucell(2,2) - ucell(2,1)*ucell(1,2))
+   fluxQuanta = flux*cellArea/(pi*1.0d20)
+   if (.not. legacyCorner .and. abs(fluxQuanta - nint(fluxQuanta)) > 1.0d-6) then
+      call MIO_Kill('The number of flux quanta through the cell is not an integer ('// &
+        trim(num2str(fluxQuanta,8))//'): the periodic gauge needs an integer','ham','HamPeierlsPeriodicGauge')
+   end if
+   nCorner = 0
+   do i=1,nAt
+      do j=1,Nneigh(i)
+         !if (abs(neighCell(1,j,i)).gt.1 .or. abs(neighCell(2,j,i)).gt.1) print*, i, neighCell(1,j,i), neighCell(2,j,i)
+         v1 = Rat(:,i) + Rat(:,NList(j,i))
+         ! neighCell(1...) contains n1-m1, neighCell(2...) contains n2-m2 (see Cresti's notes)
+         v2 = neighCell(1,j,i)*ucell(:,1) + neighCell(2,j,i)*ucell(:,2)
+         v2 = CrossProd(v1,v2)
+         v1 = CrossProd(Rat(:,i),Rat(:,NList(j,i))) + v2 ! Implementation of third expersion in Cresti's notes
+         phase = flux*v1(3)/1.0d20
+         if (.not. legacyCorner .and. neighCell(1,j,i) /= 0 .and. neighCell(2,j,i) /= 0) then
+            phase = phase + pi*nint(fluxQuanta)*neighCell(1,j,i)*neighCell(2,j,i)
+            nCorner = nCorner + 1
+         end if
+         hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
+      end do
+   end do
+   if (legacyCorner) then
+      call MIO_Print('WARNING: MagField.LegacyCornerPhase: bonds across a cell corner keep the former phase '// &
+        '(wrong by a sign for an odd number of flux quanta)','ham')
+   else
+      call MIO_Print('Peierls phases: '//trim(num2str(nint(fluxQuanta)))//' flux quanta through the cell; '// &
+        'corner term exp(i pi m n1 n2) on '//trim(num2str(nCorner))//' bonds','ham')
+   end if
+
+end subroutine HamPeierlsPeriodicGauge
 
 !> Orientation of each layer from its first-shell intralayer bonds: phi(L) [deg] = arg(sum exp(6 i theta))/6,
 !> coh(L) = |sum|/nBond(L) (1 for a perfect honeycomb).  Local atoms inode1:inode2 only.

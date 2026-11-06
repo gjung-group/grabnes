@@ -352,7 +352,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `MagField.Integer` |  | integer | `0` | magf.F90: MagfInit |
 | `MagField.Integer` |  | integer | `1` | ham.F90: HamHopping |
 | `MagField.IntegerStep` |  | integer | `1` | magf.F90: MagfInit |
-| `MagField.LegacyCornerPhase` |  | logical | `.false.` | ham.F90: HamHopMagneticField |
+| `MagField.LegacyCornerPhase` |  | logical | `.false.` | ham.F90: HamPeierlsPeriodicGauge |
 | `MagField.Step` |  | real | `1.0` | magf.F90: MagfInit |
 | `MagField.Value` | `MagField` | real | `0.0` | magf.F90: MagfInit |
 | `Moire.AddSecondMoire` | `MoireAddSecondMoire` | logical | `.false.` | ham.F90: HamHopWriteTables; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
