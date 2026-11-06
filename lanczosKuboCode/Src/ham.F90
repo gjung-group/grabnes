@@ -5188,6 +5188,10 @@ subroutine HamHopping
    xi6b = hamUnset
    xshift = hamUnset
    yshift = hamUnset
+   ! bilayer (F2G2 / one- / three-parameter) interlayer terms: read only for the model selected below,
+   ! so Stack.ModelFromTwist + BilayerOneParameter/ThreeParameters used the F2G2 ones unset
+   tAA1 = hamUnset; tAA2 = hamUnset; tAB1 = hamUnset; tAB2 = hamUnset; tAB3 = hamUnset; tAB4 = hamUnset
+   tBA0 = hamUnset; tBA2 = hamUnset; tBA5 = hamUnset
    ! <<< unset markers
    ! messages of the hopping loop that are printed once
    saidHTCGBN = .false.
