@@ -186,6 +186,18 @@ subroutine KuboInitWFLayerDOS(Psi,layerNumber,numberOfLayers,numberOfAtomsInLaye
    cnum = s
 #endif /* MPI */
    call MIO_Print('Initial norm of wave function: '//num2str(sqrt(abs(cnum)),12),'kubo')
+   ! KuboRecursion assumes <Psi|Psi> = 1. numberOfAtomsInLayer is an estimate (nAt/numberOfLayers unless
+   ! a stack flag gives the counts), so a layer of another size gave a start vector of the wrong norm and a
+   ! wrong continued fraction (not only a rescaled one). Normalise; a correct count is left untouched.
+   if (abs(real(cnum,dp) - 1.0_dp) > 1.0e-6_dp) then
+      if (real(cnum,dp) <= 0.0_dp) call MIO_Kill('layer '//trim(num2str(layerNumber))//' has no atoms', &
+         'kubo','KuboInitWFLayerDOS')
+      call MIO_Print('Layer '//trim(num2str(layerNumber))//': start vector normalised (assumed '// &
+         trim(num2str(numberOfAtomsInLayer))//' atoms in the layer)','kubo')
+      do i=1,nAt
+         Psi(i) = Psi(i)/sqrt(real(cnum,dp))
+      end do
+   end if
 
 #ifdef TIMER
    call MIO_TimerStop('kubo')
