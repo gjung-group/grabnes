@@ -5888,8 +5888,10 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        print *, "TAPW:   a2 = cell_real(:,2) =", cell_real(:,2)
     end if
 
+     ! The projected matrix X^H H X is diagonalised densely below: no shift-invert shift belongs in H here
+     ! (Diag.SparseSetShift is in eV and was subtracted from every diagonal entry without being added back).
      call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell_real, row_ptr, &
-           col_ind, values,sigma)
+           col_ind, values,(0.0_dp,0.0_dp))
 #ifdef DEBUG
     call MIO_Print("done",'diag')
 #endif /* DEBUG */
