@@ -9970,11 +9970,9 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
     ! First pass to count non-zero elements
     nnz_temp = 0
     do i = 1, N
-        if (useShift) then
-           nnz_temp = nnz_temp + 1
-        else
-           if (H0(i) /= 0.0_dp) nnz_temp = nnz_temp + 1
-        end if
+        ! One diagonal slot per atom: the fill pass below also writes a diagonal entry where H0(i) = 0 but a
+        ! spin term (Zeeman, intrinsic, Ising, PIA) is not; counting only H0(i) /= 0 overflowed the CSR arrays.
+        nnz_temp = nnz_temp + 1
         do j = 1, Nneigh(i)
             if (hopp(j,i) /= 0.0_dp) nnz_temp = nnz_temp + 1
         end do
