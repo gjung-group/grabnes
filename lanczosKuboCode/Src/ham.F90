@@ -138,6 +138,8 @@ module ham
 
    ! Rigid reference positions for the neighbour-shell classification (shellsFromRigidPositions)
    real(dp), allocatable, save :: RshellRig(:,:)
+   ! realStrain: 4th-shell reference distance fixed at 3.75696 A (the former value) instead of sqrt(7) a1Ref
+   logical, save :: strainLegacyShell4 = .false.
 
 contains
 
@@ -176,7 +178,9 @@ end function HamRigidBondXY
 !! in a rigid reference structure with Neigh.ShellsFromRigidPositions) with windows of +-10 % around the ideal
 !! shell distances of a honeycomb lattice with first-shell distance `a1` and lattice constant `a`. The result
 !! is the distance of that shell in the reference lattice (`a1Ref`, `aRef`: the lattice the hoppings were
-!! fitted for). Shells: 1 (a/sqrt(3)), 2 (a), 3 (2 a1), 4 (a fixed 3.75696 A, between 2.2 a1 and 4 A), 5 (3 a1).
+!! fitted for). Shells: 1 (a/sqrt(3)), 2 (a), 3 (2 a1), 4 (sqrt(7) a1, window between 2.2 a1 and 4 A), 5 (3 a1).
+!! The 4th shell took the fixed 3.75696 A (= sqrt(7) a1 at a = 2.4595 A) for every layer before; strainLegacyShell4
+!! (Strain.RealStrainLegacyFourthShell) restores it.
 !! A length outside every window gives NaN: the bond has no reference distance and the caller reports it.
 function HamStrainReferenceDistance(d, a1, a, a1Ref, aRef) result(refDist)
 
@@ -197,7 +201,11 @@ function HamStrainReferenceDistance(d, a1, a, a1Ref, aRef) result(refDist)
    else if (d .gt. 2.0_dp*a1*0.9_dp .and. d .lt. a1*2.0_dp*1.1_dp) then
       refDist = 2.0_dp*a1Ref
    else if (d .gt. 2.0_dp*a1*1.1_dp .and. d .lt. 4.0_dp) then
-      refDist = 3.75696_dp
+      if (strainLegacyShell4) then
+         refDist = 3.75696_dp
+      else
+         refDist = sqrt(7.0_dp)*a1Ref
+      end if
    else if (d .gt. (a1*3.0_dp)*0.9_dp .and. d .lt. (a1*3.0_dp)*1.1_dp) then
       refDist = a1Ref*3.0_dp
    else
@@ -6773,6 +6781,14 @@ subroutine HamHopRealStrain()
       accR = aGR/sqrt(3.0_dp)
       call MIO_InputParameter('Strain.RealStrainReferenceLatticeConstantBN',aBNR,aBN) !
       aBN1R = aBNR/sqrt(3.0_dp)
+      call MIO_InputParameter('Strain.RealStrainLegacyFourthShell',strainLegacyShell4,.false.)
+      if (strainLegacyShell4) then
+         call MIO_Print('realStrain: 4th-shell reference distance 3.75696 A for every layer (RealStrainLegacyFourthShell)','ham')
+      else
+         call MIO_Print('realStrain: 4th-shell reference distance sqrt(7) a1Ref = '//trim(num2str(sqrt(7.0_dp)*accR,5))// &
+           ' A (graphene), '//trim(num2str(sqrt(7.0_dp)*aBN1R,5))//' A (hBN); before 2026-11 a fixed 3.75696 A '// &
+           '(Strain.RealStrainLegacyFourthShell .true.)','ham')
+      end if
 ! aCCR --> aCC
 ! aGR --> aG
 ! aBN1R --> aBN1 = aBN/sqrt(3)
