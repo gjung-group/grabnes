@@ -161,6 +161,10 @@ subroutine HaldPhaseInit()
       if (lll) then
          call MIO_InputParameter('HaldPhase.InitialInteger',mPhii,0)
          call MIO_InputParameter('HaldPhase.FinalInteger',mPhif,0)
+         ! the phase of step m is m*2*pi/(FinalInteger - InitialInteger)
+         if (mPhii == mPhif .and. mPhii /= 0) call MIO_Kill('Haldane.SpecifyRange: HaldPhase.InitialInteger = '// &
+           'HaldPhase.FinalInteger divides the phase step by zero. For one phase use Haldane.SpecifyPhase and '// &
+           'Haldane.Phase.','magf','HaldPhaseInit')
          if (mPhii>mPhif) then
             mPhii = 0
             mPhif = 0
