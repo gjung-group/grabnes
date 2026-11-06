@@ -4534,8 +4534,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    complex(dp), pointer :: Ake3(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian2(:,:)=>NULL()
 
-   complex(dp) :: PkcLocA(nAt,3)
-   complex(dp) :: PkcLocB(nAt,3)
+   complex(dp) :: PkcLocA(nAt,4)
+   complex(dp) :: PkcLocB(nAt,4)
 
    real(dp) :: GVec(3) , G01(3), G10(3), G11(3), unfoldedK(3)
 
