@@ -69,6 +69,13 @@ class TestTokens:
         assert parse_token('-0.01') == ('real', -0.01)
         assert fmt_token(parse_token('-0.01')) == '0-0.01'
 
+    def test_negative_integer_written_with_zero_prefix(self) -> None:
+        # the solver stops on a bare -5 ("Bad real number") and reads 0-5 (checked on Kubo.SeedValue)
+        assert parse_token('0-5') == ('integer', -5)
+        assert fmt_token(('integer', -5)) == '0-5'
+        assert fmt_token(parse_token('-5')) == '0-5'
+        assert fmt_token(('integer', 5)) == '5'
+
     def test_fraction_and_d_exponent(self) -> None:
         assert parse_token('2/3') == ('real', pytest.approx(2 / 3))
         assert parse_token('135d0') == ('real', 135.0)
@@ -165,6 +172,46 @@ class TestParseIn:
         model = parser.parse_in('TB.Hopping 3.1\nTB.Hopping 2.9\n', name='test')
         assert model['keys']['tb.hopping']['value'] == ('real', 3.1)
         assert any('appears twice' in w for w in parser.warnings)
+
+    def test_comments_as_in_the_solver(self, schema: Schema) -> None:
+        # '!' and '#' start a comment anywhere; '!', '#' and '*' in the first column mark a comment line
+        text = '* star line\n! bang line\nTB.Hopping 3.1!x\nKubo.Epsilon 0.002#y\n'
+        parser = InputParser(schema)
+        model = parser.parse_in(text, name='test')
+        assert model['keys']['tb.hopping']['value'] == ('real', 3.1)
+        assert model['keys']['kubo.epsilon']['value'] == ('real', 0.002)
+        assert set(model['keys']) == {'tb.hopping', 'kubo.epsilon'}
+        assert not parser.warnings
+
+    def test_continuation_line(self, schema: Schema) -> None:
+        # a trailing backslash joins the next line, also between key and value (the solver ran 60 steps)
+        text = 'Kubo.RecursionNumber \\\n   60   # sixty\nKubo.Epsilon \\\n# inside\n 0.002\n'
+        parser = InputParser(schema)
+        model = parser.parse_in(text, name='test')
+        assert model['keys']['kubo.recursionnumber']['value'] == ('integer', 60)
+        assert model['keys']['kubo.recursionnumber']['comment'] == 'sixty'
+        assert model['keys']['kubo.epsilon']['value'] == ('real', 0.002)
+        assert not parser.warnings
+
+    def test_present_name_wins_over_former_name(self, schema: Schema) -> None:
+        # the solver uses Kubo.RecursionNumber wherever it is (checked: 60 recursion steps for both orders)
+        for text in (
+            'RecursionNumber 40\nKubo.RecursionNumber 60\n',
+            'Kubo.RecursionNumber 60\nRecursionNumber 40\n',
+        ):
+            parser = InputParser(schema)
+            model = parser.parse_in(text, name='test')
+            assert model['keys']['kubo.recursionnumber']['value'] == ('integer', 60)
+            assert any('the value of Kubo.RecursionNumber is used' in w for w in parser.warnings)
+
+    def test_present_name_wins_in_yaml(self, schema: Schema) -> None:
+        for data in (
+            {'RecursionNumber': 40, 'kubo': {'recursionNumber': 60}},
+            {'kubo': {'recursionNumber': 60}, 'RecursionNumber': 40},
+        ):
+            model = InputParser(schema).parse_yaml(data)
+            assert model['keys']['kubo.recursionnumber']['value'] == ('integer', 60)
+            assert model['order'].count(('keys', 'kubo.recursionnumber')) == 1
 
     def test_unclosed_block_raises(self, schema: Schema) -> None:
         with pytest.raises(InputFormat, match='not closed'):

@@ -288,12 +288,12 @@
   "status": "INERT"
  },
  "graphene+PNP": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "dc361044ab4cf5af",
+  "status": "ok"
  },
  "graphene+PNPKink": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "94aafa2a9c709670",
+  "status": "ok"
  },
  "graphene+PseudoZeemanTerm": {
   "fingerprint": "61909524e9c6043c",
@@ -316,16 +316,16 @@
   "status": "INERT"
  },
  "graphene+SquareChecker2219": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "9176d1d81556655d",
+  "status": "ok"
  },
  "graphene+SquareFunction": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "7b2e218bc928bf5e",
+  "status": "ok"
  },
  "graphene+SquareFunction2": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "3df7220831a6499e",
+  "status": "ok"
  },
  "graphene+SublatticeDisorder": {
   "fingerprint": "",
@@ -356,12 +356,12 @@
   "status": "INERT"
  },
  "graphene+Zterm1D": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "340c39838196397b",
+  "status": "ok"
  },
  "graphene+Zterm1DKink": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "7e27e61c795cf5ff",
+  "status": "ok"
  },
  "graphene+addOnsiteEnergyShift": {
   "fingerprint": "d6aeeacfba5e0aa6",
@@ -500,8 +500,8 @@
   "status": "INERT"
  },
  "graphene+sinusModulation": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "25ee9e5a4c654206",
+  "status": "ok"
  },
  "graphene+sinusModulationAddMassTerm": {
   "fingerprint": "1119aaf2151bee0f",
@@ -624,12 +624,12 @@
   "status": "REFUSED"
  },
  "sys_MoireEncapsulatedBilayer": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "d7e3defb001f935d",
+  "status": "ok"
  },
  "sys_MoireEncapsulatedBilayer+removeF2G2Flag": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "9999674bf778d04f",
+  "status": "REFUSED"
  },
  "sys_MoireEncapsulatedBilayerMC": {
   "fingerprint": "36285816e66cbe0c",
@@ -680,16 +680,16 @@
   "status": "ok"
  },
  "sys_Trilayer": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "ede217a851d9db33",
+  "status": "REFUSED"
  },
  "sys_Trilayer+TrilayerAddShift": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "ede217a851d9db33",
+  "status": "REFUSED"
  },
  "sys_Trilayer+TypeOfBL_Jeil": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "63b86aaf1b42fda9",
+  "status": "REFUSED"
  },
  "sys_TwistedBilayer": {
   "fingerprint": "0b6668e2725ce7ca",
@@ -820,8 +820,8 @@
   "status": "ok"
  },
  "tbg+BLSrivani+findThetasGeometrically": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "7b7a09d33224378a",
+  "status": "ok"
  },
  "tbg+BLSrivani+newFittingFunctions": {
   "fingerprint": "13eeec627497171f",
@@ -1673,14 +1673,6 @@
  },
  "xyz4_tdbg_from_structure+ModelFromTwist=F": {
   "fingerprint": "020ee8cb2a451d7b",
-  "status": "ok"
- },
- "xyz4_tdbg_from_structure_t5zero": {
-  "fingerprint": "fb81833e03eb15ea",
-  "status": "ok"
- },
- "xyz4_tdbg_t5zero": {
-  "fingerprint": "fb81833e03eb15ea",
   "status": "ok"
  },
  "xyz5": {

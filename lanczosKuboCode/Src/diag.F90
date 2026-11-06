@@ -645,6 +645,11 @@ subroutine DiagBands()
     call MIO_InputParameter('TAPW.Use',useTAPW,.false.)
     call MIO_InputParameter('TAPW.UseDenseMatrix',useDenseMatrixTAPW,.false.)
     call MIO_InputParameter('TAPW.BlockMatrixFree',tapwBlockMatrixFree,.false.)
+    ! Diag.SparseSolver is tested before TAPW.Use in the k loops below: it would replace TAPW with the sparse
+    ! solver on the full Hamiltonian, without a message (the band file then holds no TAPW states)
+    if (useTAPW .and. sparseDiagSolver) call MIO_Kill('TAPW.Use and Diag.SparseSolver cannot be combined: the '// &
+      'sparse solver diagonalises the full Hamiltonian and would replace TAPW. For TAPW on a large cell use '// &
+      'TAPW.UseDenseMatrix .false. (sparse TAPW); otherwise switch one of them off.','diag','DiagBands')
     if (tapwBlockMatrixFree .and. (tapwDebug .or. forceBlockTAPW)) call MIO_Kill('TAPW.BlockMatrixFree: the '// &
       'Diag.TAPWDebug / forceBlockTAPW checks read the dense block - switch them off or use the dense block','diag', &
       'DiagBands')
@@ -666,6 +671,12 @@ subroutine DiagBands()
           end if
        end block
     end if
+    ! Output.KeepWaveFunction is tested before the other solvers in the k loops below: it would replace them
+    ! with a dense spinless diagonalisation of the full Hamiltonian, without a message
+    if (keepWaveFunction .and. (useTAPW .or. sparseDiagSolver)) call MIO_Kill('Output.KeepWaveFunction writes '// &
+      'the eigenvectors of the dense diagonalisation of the full Hamiltonian; it cannot be combined with TAPW.Use '// &
+      'or Diag.SparseSolver (the bands would come from the dense solver instead). Switch one of them off.', &
+      'diag','DiagBands')
 
    if (useDifferentLatticeVectors) then
        ucell(1,2) = 0.0_dp
@@ -991,6 +1002,17 @@ subroutine DiagBands()
                   call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, &
                         Nneigh, neighCell, neig, ip)
                   !$OMP END CRITICAL
+                  ! the block gives the 2M spin-mixed levels of both spins at once: stored in both spin slots, as the
+                  ! k-point loop below does (without this, is = 2 went on to the spinless DiagH0TAPW)
+                  E(1:min(2*M_tapw, nAt), 1, ip) = ELoc(1:min(2*M_tapw, nAt))
+                  E(1:min(2*M_tapw, nAt), 2, ip) = ELoc(1:min(2*M_tapw, nAt))
+                  if (2*M_tapw > nAt) then
+                     E(nAt+1:min(2*M_tapw, size(E,1)), 1, ip) = 0.0_dp
+                     E(nAt+1:min(2*M_tapw, size(E,1)), 2, ip) = 0.0_dp
+                  end if
+                  cycle
+               else if (useTAPW .and. RashbaSOCterm .and. is == 2) then
+                  cycle
                else if (useTAPW) then
                   call DiagH0TAPW(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell,neig, ip)
                else if (RashbaSOCterm .and. is == 1) then
@@ -1293,18 +1315,12 @@ subroutine DiagBands()
                   ! Store eigenvalues for both spins (they're spin-mixed, but we need to populate E array)
                   ! ELoc contains min(2*M_tapw, nAt) eigenvalues, so we need to be careful with bounds
                   if (M_tapw > 0) then
-                     if (forceBlockTAPW) then
-                        ! For no-SOC case: eigenvalues are in degenerate pairs, extract only M unique ones
-                        ! Pattern: (λ₁,λ₁), (λ₂,λ₂), ..., so take eigvals(2i-1) for i=1..M
-                        ! Extract one eigenvalue from each degenerate pair
+                     if (forceBlockTAPW .and. .not. RashbaSOCterm) then
+                        ! No SOC: DiagH0TAPW_withBlockH has already kept one level of each degenerate pair
+                        ! (ELoc(1:M), M_tapw = M); taking every second one again dropped half the bands
                         do i_eig = 1, min(M_tapw, size(E,1))
-                           if (2*i_eig - 1 <= size(ELoc)) then
-                              E(i_eig, 1, ip) = ELoc(2*i_eig - 1)  ! Take first of each pair
-                              E(i_eig, 2, ip) = ELoc(2*i_eig - 1)  ! Same for both spins (degenerate)
-                           else
-                              E(i_eig, 1, ip) = 0.0_dp
-                              E(i_eig, 2, ip) = 0.0_dp
-                           end if
+                           E(i_eig, 1, ip) = ELoc(i_eig)
+                           E(i_eig, 2, ip) = ELoc(i_eig)  ! Same for both spins (degenerate)
                         end do
                         ! Zero out remaining entries if M_tapw < size(E,1)
                         if (M_tapw < size(E,1)) then
@@ -2028,6 +2044,18 @@ subroutine DiagSpectralWindow(E1,E2)
 
 end subroutine DiagSpectralWindow
 
+!> Gaussian width of the spectral routines (Spectral.UseGaussianBroadening, Spectral.GaussianConvolution), in units of g0
+!> like their energy grid. Kubo.Epsilon is read in eV, as in the Kubo routines; it was taken in units of g0 here before.
+subroutine DiagSpectralEpsilon(eps)
+
+   use ham,                  only : HamInputEnergyEV
+
+   real(dp), intent(out) :: eps
+
+   call HamInputEnergyEV('Kubo.Epsilon',eps,0.01_dp,since='2026-11-07')
+
+end subroutine DiagSpectralEpsilon
+
 !> A state adds its weight to the energy points closer than resolution [eV]: with points further apart than twice
 !> that, states fall between them and are missing from the output. E1 and E2 are in units of g0.
 subroutine DiagSpectralCheckGrid(E1,E2,Epts,resolution)
@@ -2154,7 +2182,7 @@ subroutine DiagSpectralFunction()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+      call DiagSpectralEpsilon(eps)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -2191,7 +2219,7 @@ subroutine DiagSpectralFunction()
                 end do
             end do
             !   !if(abs(E(ie,is) - Energy(iee)).lt.(0.1/g0)) then
-            AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+            AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
             !      !DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
             !      !Ake(ik,i2) = Ake(ik,i2) + Pkc(ik,i1)
          !       ! write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
@@ -2385,7 +2413,7 @@ subroutine DiagSpectralFunctionKGrid()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+      call DiagSpectralEpsilon(eps)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -2432,7 +2460,7 @@ subroutine DiagSpectralFunctionKGrid()
             end do
             Ake = Ake1 + Ake2
             !   !if(abs(E(ie,is) - Energy(iee)).lt.(0.1/g0)) then
-            AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+            AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
             !      !DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
             !      !Ake(ik,i2) = Ake(ik,i2) + Pkc(ik,i1)
          !       ! write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
@@ -2586,7 +2614,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
@@ -2808,7 +2836,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -2910,6 +2937,26 @@ subroutine DiagSpectralFunctionKGridInequivalent()
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
                              Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1B(ik,iee) = Ake1B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,1))**2
+                             Ake2B(ik,iee) = Ake2B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,2))**2
+                             Ake3B(ik,iee) = Ake3B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,3))**2
+                             Ake4B(ik,iee) = Ake4B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,4))**2
+                             Ake2C(ik,iee) = Ake2C(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocC(ie,2))**2
+                             Ake2D(ik,iee) = Ake2D(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocD(ie,2))**2
+                             Ake2E(ik,iee) = Ake2E(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocE(ie,2))**2
+                             Ake2F(ik,iee) = Ake2F(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocF(ie,2))**2
+                             Ake2G(ik,iee) = Ake2G(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocG(ie,2))**2
+                             Ake2H(ik,iee) = Ake2H(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocH(ie,2))**2
                           else
                              if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                                  ! A sublattice
@@ -2956,7 +3003,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
                 end do
             end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:) + Ake4(ik,:)
-         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
       do ik=1,ptsTot ! K loop
@@ -3117,7 +3164,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
@@ -3323,7 +3370,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -3409,6 +3455,16 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
                              Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1B(ik,iee) = Ake1B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,1))**2
+                             Ake2B(ik,iee) = Ake2B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,2))**2
+                             Ake3B(ik,iee) = Ake3B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,3))**2
+                             Ake4B(ik,iee) = Ake4B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,4))**2
                           else if (DirectBand) then
                              if (iee == int(ie-(nAt/2-Epts/2))) then
                                  EAke(ik,iee) = ELoc(ie)
@@ -3457,7 +3513,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
                 end do
             end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:)
-         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
       do ik=1,ptsTot ! K loop
@@ -3675,7 +3731,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
@@ -3828,7 +3884,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -3907,6 +3962,14 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
                              Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1B(ik,iee) = Ake1B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,1))**2
+                             Ake2B(ik,iee) = Ake2B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,2))**2
+                             Ake3B(ik,iee) = Ake3B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,3))**2
+                             Ake4B(ik,iee) = Ake4B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,4))**2
                           else
                              if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                                  ! A sublattice
@@ -3934,7 +3997,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
                 end do
             end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:) + Ake4(ik,:)
-         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
       do ik=1,ptot ! K loop
@@ -4156,7 +4219,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
@@ -4310,7 +4373,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -4397,6 +4459,14 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
                              Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1B(ik,iee) = Ake1B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,1))**2
+                             Ake2B(ik,iee) = Ake2B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,2))**2
+                             Ake3B(ik,iee) = Ake3B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,3))**2
+                             Ake4B(ik,iee) = Ake4B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,4))**2
                           else if (DirectBand) then
                              if (iee == int(ie-(nAt/2-Epts/2))) then
                                  EAke(ik,iee) = ELoc(ie)
@@ -4440,7 +4510,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
                 end do
             end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:)
-         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
       call MIO_Print("lets write it all out",'diag')
@@ -4538,8 +4608,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    complex(dp), pointer :: Ake3(:,:)=>NULL()
    complex(dp), pointer :: AkeGaussian2(:,:)=>NULL()
 
-   complex(dp) :: PkcLocA(nAt,3)
-   complex(dp) :: PkcLocB(nAt,3)
+   complex(dp) :: PkcLocA(nAt,4)
+   complex(dp) :: PkcLocB(nAt,4)
 
    real(dp) :: GVec(3) , G01(3), G10(3), G11(3), unfoldedK(3)
 
@@ -4647,7 +4717,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
@@ -4788,7 +4858,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -4873,7 +4942,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
                 end do
             end do
          Ake(ik,:) = Ake1(ik,:) + Ake2(ik,:) + Ake3(ik,:)
-         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts)
+         AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
       call MIO_Print("lets write it all out",'diag')
@@ -4885,9 +4954,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
          else
             do iee=1,Epts  ! epsilon
                 write(u,'(3f12.6,f12.6,f12.6)') KptsG(:,ik), Energy(iee), REAL(Ake(ik,iee))
-                write(u1,'(f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake1(ik,iee))
-                write(u2,'(f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake2(ik,iee))
-                write(u3,'(f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake3(ik,iee))
+                write(u1,'(3f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake1(ik,iee))
+                write(u2,'(3f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake2(ik,iee))
+                write(u3,'(3f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake3(ik,iee))
             end do
          end if
       end do
@@ -6150,6 +6219,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     end if
 
     M = NG * Nlabel
+    call tapw_check_basis_size(M, N, NG, Nlabel)
     M_tapw = M  ! Update M_tapw to actual projected matrix size
 
     if (tapwDebug) then
@@ -7129,6 +7199,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     ! Calculate M (spinless TAPW basis size)
     M = NG * Nlabel
+    call tapw_check_basis_size(M, N, NG, Nlabel)
     ! For Rashba SOC with block-diagonal projection, we have 2M eigenvalues (spin-split)
     ! For forceBlockTAPW without SOC, we have 2M eigenvalues but they're degenerate pairs
     ! Set M_tapw based on whether we need to collapse duplicates
@@ -8123,6 +8194,16 @@ end subroutine generate_shifted_G_list_reduced
 ! on every graphene site); that holds when both shells stay inside |K|/2,
 ! the valley-purity cap, and is checked here pair by pair.
 !-----------------------------------------------------------------------------
+subroutine tapw_check_basis_size(M, N, NG, Nlabel)
+  ! A TAPW basis of more plane-wave states than atoms cannot be independent: X (N x M) has rank <= N,
+  ! so X^dag H X has M - N exact zero eigenvalues that belong to no state of H (and Loewdin fails).
+  implicit none
+  integer, intent(in) :: M, N, NG, Nlabel
+  if (M > N) call MIO_Kill('TAPW basis of '//trim(num2str(M))//' states ('//trim(num2str(NG))//' G x '// &
+       trim(num2str(Nlabel))//' labels) exceeds the '//trim(num2str(N))//' atoms of the cell: lower Diag.N_G', &
+       'diag','tapw_check_basis_size')
+end subroutine tapw_check_basis_size
+
 subroutine tapw_append_second_valley(rcell, rG, sGlattice, refF, NGrange, useDense, Gx, Gy, NG)
   use ham, only : IsingSOCterm
   use constants, only : pi
@@ -8977,8 +9058,23 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
   ! This follows your exact instructions and uses the proper graphene BZ geometry
   call create_triangle_from_graphene_BZ(k_ref, ratio, BZ_triangle, rG, bMvec)
 
+  ! The index box j in [-N1, N1-1], i in [-N2, N2-1] is centred on Gamma, not on K: a box that does not
+  ! contain the whole triangle silently kept part of it (on a CellSize-3 cell, N_G 2 dropped K itself).
+  if (minval(BZ_triangle(:,1)) < -N1 - 1.0e-6_dp .or. maxval(BZ_triangle(:,1)) > N1 - 1 + 1.0e-6_dp .or. &
+      minval(BZ_triangle(:,2)) < -N2 - 1.0e-6_dp .or. maxval(BZ_triangle(:,2)) > N2 - 1 + 1.0e-6_dp) then
+     call MIO_Kill('Diag.TriangularTruncation: the G index box [-N_G, N_G-1] does not contain the valley '// &
+          'triangle (corners up to '//trim(num2str(maxval(abs(BZ_triangle)),3))//' in moire units); set Diag.N_G >= '// &
+          trim(num2str(ceiling(maxval(abs(BZ_triangle)) - 1.0e-6_dp) + 1)),'diag','generate_triangular_G_list')
+  end if
+
   ! Select G-vectors inside triangular boundary (Python: G_bounds.contains_point)
   call select_G_vectors_in_triangle(G_frac, total_G, BZ_triangle, G_selected)
+
+  ! The triangle's corners are graphene Gamma points and the test is inclusive, so up to three Gamma
+  ! copies were kept, by roundoff. On the lattice sites they are one plane wave (a constant phase per
+  ! sublattice): X had null vectors and X^dag H X exact zero eigenvalues. Keep the first of any G equal
+  ! to an earlier selected one modulo the graphene reciprocal lattice rG.
+  call tapw_drop_graphene_lattice_copies(G_frac, total_G, bMvec, rG, G_selected)
 
   ! Count selected G-vectors
   selected_count = count(G_selected)
@@ -9111,6 +9207,37 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
   deallocate(G_frac, G_selected)
 
 end subroutine generate_triangular_G_list
+
+subroutine tapw_drop_graphene_lattice_copies(G_frac, total_G, bMvec, rG, G_selected)
+  ! Unselect every G equal to an earlier selected G modulo the graphene reciprocal lattice
+  ! (tolerance 1e-3 in units of rG, wider than the TAPW.aG default mismatch). Prints how many.
+  implicit none
+  integer, intent(in) :: total_G
+  double precision, intent(in) :: G_frac(2,total_G), bMvec(2,2), rG(2,2)
+  logical, intent(inout) :: G_selected(total_G)
+  double precision :: rGinv(2,2), d(2), c(2), det
+  integer :: i, j, ndrop
+
+  det = rG(1,1)*rG(2,2) - rG(1,2)*rG(2,1)
+  rGinv(1,1) =  rG(2,2)/det;  rGinv(1,2) = -rG(1,2)/det
+  rGinv(2,1) = -rG(2,1)/det;  rGinv(2,2) =  rG(1,1)/det
+  ndrop = 0
+  do i = 1, total_G
+     if (.not. G_selected(i)) cycle
+     do j = 1, i - 1
+        if (.not. G_selected(j)) cycle
+        d = matmul(bMvec, G_frac(:,i) - G_frac(:,j))
+        c = matmul(rGinv, d)
+        if (all(abs(c - nint(c)) < 1.0d-3)) then
+           G_selected(i) = .false.
+           ndrop = ndrop + 1
+           exit
+        end if
+     end do
+  end do
+  if (ndrop > 0) call MIO_Print('Triangular truncation: dropped '//trim(num2str(ndrop))// &
+       ' G equal to another selected G modulo the graphene reciprocal lattice (Gamma copies at the corners)','diag')
+end subroutine tapw_drop_graphene_lattice_copies
 
 subroutine select_G_vectors_in_triangle(G_frac, total_G, BZ_corners, G_selected)
   ! Select G-vectors that lie within the triangular boundary
@@ -11466,46 +11593,24 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
 
 end subroutine DiagSpectralWeightWeiKuInequivalentNishi
 
-function convolve(x, h, Epts)
+!> Convolution of the spectrum x (Epts points) with the kernel h (nh points, centred on point nh/2, the
+!> point the spectral routines centre their Gaussian on), on the same grid: the result is not shifted, and
+!> points of the kernel beyond either end of the spectrum are left out.
+function convolve(x, h, Epts, nh)
     implicit none
 
-    integer :: Epts
-    !x is the signal array
-    !h is the noise/impulse array
-    real(dp), allocatable :: convolve(:), y(:)
-    real(dp) :: x(Epts), h(Epts)
-    integer :: kernelsize, datasize
-    integer :: i,j,k
+    integer, intent(in) :: Epts, nh
+    real(dp), intent(in) :: x(Epts), h(nh)
+    real(dp) :: convolve(Epts)
+    integer :: i, j, k
 
-    datasize = size(x)  ! Ake
-    kernelsize = size(h) ! gaussian
-
-    allocate(y(datasize))
-    allocate(convolve(datasize))
-
-    !last part
-    do i=kernelsize,datasize
-        y(i) = 0.0
-        j=i
-        do k=1,kernelsize
-            y(i) = y(i) + x(j)*h(k)
-            j = j-1
+    do i=1,Epts
+        convolve(i) = 0.0_dp
+        do k=1,nh
+            j = i - k + nh/2
+            if (j >= 1 .and. j <= Epts) convolve(i) = convolve(i) + x(j)*h(k)
         end do
     end do
-
-    !first part
-    do i=1,kernelsize
-        y(i) = 0.0
-        j=i
-        k=1
-        do while (j > 0)
-            y(i) = y(i) + x(j)*h(k)
-            j = j-1
-            k = k+1
-        end do
-    end do
-
-    convolve = y
 
 end function convolve
 
@@ -11599,6 +11704,7 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
    integer :: temp_idx  ! Temporary variable for sorting
    real(dp) :: temp_dist, band_energy_at_gamma  ! Temporary variables
    integer, allocatable :: target_band_indices(:)  ! Actual band indices of target bands
+   integer, allocatable :: target_pos(:)  ! Their positions in band_indices / berry_curv_bands
    real(dp), allocatable :: target_chern_values(:)  ! Chern numbers of target bands
 
    ! Variables for BZ area calculation (following Python approach)
@@ -11873,7 +11979,7 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          chern_bands = 0.0_dp
 
          ! Identify target bands (closest to Fermi energy) for this spin channel
-      allocate(target_band_indices(n_target_bands))
+      allocate(target_band_indices(n_target_bands), target_pos(n_target_bands))
       if (n_target_bands > 0 .and. n_target_bands <= n_bands_near_fermi) then
          ! Find the actual bands closest to Fermi energy from our selected bands
          allocate(fermi_distances(n_bands_near_fermi))
@@ -11901,6 +12007,7 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          ! Store the indices of the closest bands for file naming
          do i = 1, n_target_bands
             target_band_indices(i) = band_indices(sorted_indices(i))
+            target_pos(i) = sorted_indices(i)
          end do
 
          ! Debug: Show target band indices
@@ -11912,8 +12019,9 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          deallocate(fermi_distances, sorted_indices)
       else
          ! Fallback: use first n_target_bands from convergence bands
-         do i = 1, n_target_bands
+         do i = 1, min(n_target_bands, n_bands_near_fermi)
             target_band_indices(i) = band_indices(i)
+            target_pos(i) = i
          end do
       end if
 
@@ -11994,7 +12102,10 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          end if
 
          ! OUTPUT: Write Berry curvature data for hotspot analysis
-         call output_berry_curvature_data(ik, Kpts(:,ik), berry_curv_bands, target_band_indices, n_target_bands)
+         ! the curvature of the bands named in the file, not of window positions 1..n_target_bands
+         if (n_target_bands > 0 .and. n_target_bands <= n_bands_near_fermi) &
+            call output_berry_curvature_data(ik, Kpts(:,ik), berry_curv_bands(target_pos), target_band_indices, &
+                                             n_target_bands, is)
 
          ! Accumulate Chern numbers (BZ integration) for all bands
          ! Python formula: C = np.sum(berry, axis=0) * dkx_dky / (2*np.pi)
@@ -12155,12 +12266,15 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          ! Pass only the target bands (closest to Fermi) to file output
          call write_chern_tapw_results(target_band_indices, target_chern_values, &
                                          chern_total, nk_chern_x, nk_chern_y, fermi_energy, is)
-         deallocate(target_band_indices, target_chern_values)
+         deallocate(target_chern_values)
       else
-         ! Fallback: use first 2 bands if target bands not properly defined
-         call write_chern_tapw_results(band_indices(1:2), chern_bands(1:2), &
+         ! Fallback: use the first (up to) 2 bands if target bands not properly defined
+         call write_chern_tapw_results(band_indices(1:min(2,n_bands_near_fermi)), chern_bands(1:min(2,n_bands_near_fermi)), &
                                          chern_total, nk_chern_x, nk_chern_y, fermi_energy, is)
       end if
+      ! freed on every spin pass (the fallback kept it allocated: spin 2 stopped with "already allocated")
+      if (allocated(target_band_indices)) deallocate(target_band_indices)
+      if (allocated(target_pos)) deallocate(target_pos)
       end do  ! End of spin loop
 
       deallocate(chern_bands, berry_curv_bands)
@@ -12908,8 +13022,10 @@ subroutine compute_TB_hamiltonian_derivatives(dH_TB_dkx, dH_TB_dky, N, KLoc, H0,
             derivative_factor_y = -cmplx_i * R(2) * phase_factor
 
             ! Apply to hopping term: dH/dk = -t_ij * d/dk[exp(-i k·R)]
-            dH_TB_dkx(i, in) = dH_TB_dkx(i, in) - hopp(j, i) * derivative_factor_x
-            dH_TB_dky(i, in) = dH_TB_dky(i, in) - hopp(j, i) * derivative_factor_y
+            ! At (in, i), where transform_dense_hamiltonian_tapw puts this bond's term of H (as the block
+            ! version does). At (i, in) this was dH^T = -dH(-k) for real hoppings: the velocity at G+k.
+            dH_TB_dkx(in, i) = dH_TB_dkx(in, i) - hopp(j, i) * derivative_factor_x
+            dH_TB_dky(in, i) = dH_TB_dky(in, i) - hopp(j, i) * derivative_factor_y
          end if
       end do
    end do
@@ -14340,6 +14456,11 @@ subroutine cleanup_TAPW_storage()
       call MIO_Print('Deallocated stored eigenvalues','diag')
    end if
 
+   ! Also the X matrix and the k-points: DiagH0TAPW allocates X again whenever the eigenvectors are
+   ! unallocated, so the next point of a sweep stopped with "already allocated".
+   if (allocated(stored_X_matrix)) deallocate(stored_X_matrix)
+   if (allocated(stored_Kpts)) deallocate(stored_Kpts)
+
    stored_M = 0
    stored_nk = 0
    stored_nspin = 0
@@ -15392,13 +15513,13 @@ function is_in_first_BZ(kx_frac, ky_frac) result(in_BZ)
 
 end function is_in_first_BZ
 
-subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band_indices, n_target_bands)
+subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band_indices, n_target_bands, spin_index)
    ! Output Berry curvature data for hotspot analysis
    ! Format: kx, ky, BerryCurvature_band1, BerryCurvature_band2, ...
    implicit none
 
    ! Input parameters
-   integer, intent(in) :: kpoint_index, n_target_bands
+   integer, intent(in) :: kpoint_index, n_target_bands, spin_index
    real(dp), intent(in) :: kpt(3)
    real(dp), intent(in) :: berry_curv_bands(:)
    integer, intent(in) :: band_indices(:)
@@ -15422,6 +15543,8 @@ subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band
       write(filename, '(A,I0,A,I0,A,I0,A)') 'berry_curvature_bands_', band_indices(1), '_to_', &
             band_indices(n_target_bands), '_', n_target_bands, 'bands.dat'
    end if
+   ! spin 2 in its own file (it replaced the spin-1 file before); the spin-1 name is unchanged
+   if (spin_index > 1) filename = filename(1:len_trim(filename)-4)//'_spin'//trim(num2str(spin_index))//'.dat'
 
    ! Open file (append mode for multiple k-points)
    if (kpoint_index == 1) then

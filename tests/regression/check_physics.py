@@ -156,11 +156,13 @@ def sparse_dense(r):
     dense = r.run("sparse_dense_reference", common)
     sparse = r.run("sparse_dense", common + "sparseDiagSolver .true.\nBands.SparseNeig 20\n")
     problems = []
-    for k in range(3):
+    if len(sparse) != len(dense):
+        problems.append(f"{len(sparse)} sparse k-points against {len(dense)} dense ones")
+    for k in range(min(len(dense), len(sparse))):    # every k-point: the last one was once written as zeros
         d = np.sort(dense[k])
         s = np.sort(sparse[k][sparse[k] != 0.0])
         nearest = np.sort(d[np.argsort(abs(d))[:len(s)]])
-        worst = np.max(abs(s - nearest)) if len(s) == len(nearest) else float("inf")
+        worst = np.max(abs(s - nearest)) if len(s) and len(s) == len(nearest) else float("inf")
         print(f"  k-point {k + 1}: {len(s)} sparse levels; largest difference from the {len(s)} dense levels nearest to zero: {worst:.2e} eV")
         if len(s) != 20 or worst > 5e-6:
             problems.append(f"k-point {k + 1}: the sparse levels are not the 20 dense levels nearest to zero")

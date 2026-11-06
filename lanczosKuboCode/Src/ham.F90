@@ -5188,6 +5188,10 @@ subroutine HamHopping
    xi6b = hamUnset
    xshift = hamUnset
    yshift = hamUnset
+   ! bilayer (F2G2 / one- / three-parameter) interlayer terms: read only for the model selected below,
+   ! so Stack.ModelFromTwist + BilayerOneParameter/ThreeParameters used the F2G2 ones unset
+   tAA1 = hamUnset; tAA2 = hamUnset; tAB1 = hamUnset; tAB2 = hamUnset; tAB3 = hamUnset; tAB4 = hamUnset
+   tBA0 = hamUnset; tBA2 = hamUnset; tBA5 = hamUnset
    ! <<< unset markers
    ! messages of the hopping loop that are printed once
    saidHTCGBN = .false.
@@ -5438,7 +5442,8 @@ subroutine HamHopping
          call MIO_InputParameter('Structure.InterlayerDistance',interlayerdistance,3.35_dp)
          qsigma = interlayerdistance * 2.218_dp
          call MIO_InputParameter('Moire.DistanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
-         call MIO_InputParameter('Intralayer.F2G2Model',F2G2Model,.true.) ! default true
+         ! (Intralayer.F2G2Model is read once above, unless Intralayer.RemoveF2G2Flag: a second read here
+         !  with default .true. undid that flag)
          call MIO_InputParameter('Intralayer.UseOldGrapheneF2G2',useOldGrapheneF2G2,.false.) ! default true
          call MIO_InputParameter('Interlayer.DeactivateInterlayer',deactivateInterlayer,.false.)
          call MIO_InputParameter('Interlayer.DeactivateInterlayer12',deactivateInterlayer12,.false.)
@@ -6727,7 +6732,7 @@ subroutine HamHopPeriodicStrain()
          dlij = hamUnset
          ! <<< unset markers
          do j=1,Nneigh(i)
-           if (NeighD(3,j,i) .lt. 0.01_dp) then
+           if (abs(NeighD(3,j,i)) .lt. 0.01_dp) then   ! in-plane bonds only, in both directions
              dlij = 1.0_dp/(aG/sqrt(3.0_dp)) * (epsxx(j,i) * NeighD(1,j,i)**2.0_dp &
                   + epsyy(j,i) * NeighD(2,j,i)**2.0_dp + 2.0_dp * epsxy(j,i) * NeighD(1,j,i)*NeighD(2,j,i))
                  hopp(j,i) = hopp(j,i) * exp(-3.37_dp*((dlij + aG/sqrt(3.0_dp))/(aG/sqrt(3.0_dp))-1.0_dp))
@@ -7130,10 +7135,9 @@ subroutine HamHopSecondMoire()
                     !  (Species(i)==2 .and. Species(NList(j,i))==1)) then
                     !else if ((Species(i)==3 .and. Species(NList(j,i))==4) .or. &
                     !  (Species(i)==4 .and. Species(NList(j,i))==3)) then
-                 else
-                    d = sqrt(dot_product(NeighD(1:2,j,i),NeighD(1:2,j,i)))
-                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay),kind=dp)
                  end if
+                 ! (bonds between layers: left as HamHopping set them; a generic gIntLay*exp(-d/dIntLay)
+                 !  term was added here on top of the interlayer model, i.e. a second time)
               end do
           end do
         !$OMP END PARALLEL DO
@@ -7319,48 +7323,48 @@ subroutine HamHopInterlayerParameters()
                     else
                         tAB = 0.3357_dp
                         if (useOnlyVAB) then
-                            c1_0 =   0.3356095024843812
-                            c1_1 =   -1.9555147793478367
-                            c1_2 =   5.542631379367501
-                            c2_0 =   1.718698822030771
-                            c2_1 =   -1.989378866684143
-                            c2_2 =   6.0025023827468775
-                            c3_0 =   1.7543868745706959
-                            c3_1 =   -0.7739949690181664
-                            c3_2 =   1.903243378532328
-                            c4_0 =   0.06851906419484396
-                            c4_1 =   -0.6872433666263775
-                            c4_2 =   3.769207297230312
-                            c5_0 =   3.1733357766403234
-                            c5_1 =   2.5647115615881324
-                            c5_2 =   -123.63154378822028
-                            c6_0 =   0.39765806464770465
-                            c6_1 =   1.543230705089051
-                            c6_2 =   -22.973479855570684
-                            c7_0 =   -0.012256483205855817
-                            c7_1 =   0.16990943196521704
-                            c7_2 =   -2.1647529202020253
-                            c8_0 =   1.1716245804866041
-                            c8_1 =   4.487359824823402
-                            c8_2 =   -58.75949608817599
-                            c9_0 =   0.8917021392108377
-                            c9_1 =   1.0187648341101367
-                            c9_2 =   -16.229901468075237
-                            c10_0 =  2.09879167259061
-                            c10_1 =  0.29714623365951714
-                            c10_2 =  12.863626996121283
-                            c11_0 =  0.04071154326934091
-                            c11_1 =  -0.5873777395380401
-                            c11_2 =  7.654992092022496
-                            c12_0 =  0.4488364197392876
-                            c12_1 =  0.013400104807997755
-                            c12_2 =  -2.142393269209168e-06
-                            c13_0 =  -0.7078365546490298
-                            c13_1 =  -0.06723178248496989
-                            c13_2 =  2.0037377859863668
-                            c14_0 =  2.109173635556271
-                            c14_1 =  -0.14140771101700622
-                            c14_2 =  7.571534745370173
+                            c1_0 =   0.3356095024843812_dp
+                            c1_1 =   -1.9555147793478367_dp
+                            c1_2 =   5.542631379367501_dp
+                            c2_0 =   1.718698822030771_dp
+                            c2_1 =   -1.989378866684143_dp
+                            c2_2 =   6.0025023827468775_dp
+                            c3_0 =   1.7543868745706959_dp
+                            c3_1 =   -0.7739949690181664_dp
+                            c3_2 =   1.903243378532328_dp
+                            c4_0 =   0.06851906419484396_dp
+                            c4_1 =   -0.6872433666263775_dp
+                            c4_2 =   3.769207297230312_dp
+                            c5_0 =   3.1733357766403234_dp
+                            c5_1 =   2.5647115615881324_dp
+                            c5_2 =   -123.63154378822028_dp
+                            c6_0 =   0.39765806464770465_dp
+                            c6_1 =   1.543230705089051_dp
+                            c6_2 =   -22.973479855570684_dp
+                            c7_0 =   -0.012256483205855817_dp
+                            c7_1 =   0.16990943196521704_dp
+                            c7_2 =   -2.1647529202020253_dp
+                            c8_0 =   1.1716245804866041_dp
+                            c8_1 =   4.487359824823402_dp
+                            c8_2 =   -58.75949608817599_dp
+                            c9_0 =   0.8917021392108377_dp
+                            c9_1 =   1.0187648341101367_dp
+                            c9_2 =   -16.229901468075237_dp
+                            c10_0 =  2.09879167259061_dp
+                            c10_1 =  0.29714623365951714_dp
+                            c10_2 =  12.863626996121283_dp
+                            c11_0 =  0.04071154326934091_dp
+                            c11_1 =  -0.5873777395380401_dp
+                            c11_2 =  7.654992092022496_dp
+                            c12_0 =  0.4488364197392876_dp
+                            c12_1 =  0.013400104807997755_dp
+                            c12_2 =  -2.142393269209168e-06_dp
+                            c13_0 =  -0.7078365546490298_dp
+                            c13_1 =  -0.06723178248496989_dp
+                            c13_2 =  2.0037377859863668_dp
+                            c14_0 =  2.109173635556271_dp
+                            c14_1 =  -0.14140771101700622_dp
+                            c14_2 =  7.571534745370173_dp
                         else
                             c1_0 =  0.3575872537033165_dp
                             c1_1 =  -1.9347697178845817_dp
@@ -7766,7 +7770,7 @@ subroutine HamHopSrivaniConstants()
             p3b0AA = -1.004_dp
             p3c0AA = 1.629_dp
             p3d0AA = 2.222_dp
-            p3h0AA = 0.238
+            p3h0AA = 0.238_dp
             p1a0AB = 5.498_dp
             p1b0AB = -1.997_dp
             p1c0AB = 1.457_dp
@@ -8189,7 +8193,8 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                                  !if (i.eq.1 .and. j.eq.1) print*, "we are assigning the thetas geometrically"
                                  uvec(1) = NeighD(1,j,i)
                                  uvec(2) = NeighD(2,j,i)
-                                 uvec(1) = 0.0_dp
+                                 uvec(3) = 0.0_dp
+                                 vvec(1) = 0.0_dp
                                  vvec(2) = 0.0_dp
                                  vvec(3) = 0.0_dp
                                  ! Attom 1 in top layer (seems like top layer is the unrotated one)
@@ -9621,11 +9626,9 @@ subroutine HamHopIntralayerKaxirasSrivani(dist, j, i, d, delta, ilvl)
                                                  hopp(j,i) = hopp(j,i) + t5KB
                                             end if
                                         end if
-                                        if (Species(i).eq.1) then
-                                             hopp(j,i) = hopp(j,i) + t5KA
-                                        else if (Species(i).eq.2) then
-                                             hopp(j,i) = hopp(j,i) + t5KB
-                                        end if
+                                        ! (a second block added t5KA / t5KB once more here, so the fifth-shell
+                                        ! term was twice the model value; removed in November 2026, as in
+                                        ! HamHopIntralayerGraphene in October)
                                    end if
                               ! narrow: the seventh shell is only 4 % further out
                               else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then

@@ -211,16 +211,18 @@ def classify(run_dir, rc, timed_out, mode="tables"):
     key = {}
     for e in range(len(t["hop"])):
         key.setdefault((int(t["owner"][e]), int(t["neighbor"][e]), tuple(int(x) for x in t["image"][e])), []).append(e)
+    # H(k) adds every entry of a bond: compare and fingerprint the sum, so that a bond entered twice shows
+    hop = {k: complex(np.sum(t["hop"][es])) for k, es in key.items()}
     asym, unpaired, duplicates = 0.0, 0, sum(len(v) - 1 for v in key.values())
-    for (i, m, r), es in key.items():
-        partner = key.get((m, i, tuple(-x for x in r)))
+    for (i, m, r), value in hop.items():
+        partner = hop.get((m, i, tuple(-x for x in r)))
         if partner is None:
             unpaired += 1
             continue
-        asym = max(asym, abs(t["hop"][es[0]] - np.conj(t["hop"][partner[0]])))
+        asym = max(asym, abs(value - np.conj(partner)))
     info.update(asym=float(asym), unpaired=unpaired)
-    rows = sorted((i, m) + r + (round(float(t["hop"][es[0]].real), DIGITS) + 0.0, round(float(t["hop"][es[0]].imag), DIGITS) + 0.0)
-                  for (i, m, r), es in key.items())
+    rows = sorted((i, m) + r + (round(value.real, DIGITS) + 0.0, round(value.imag, DIGITS) + 0.0)
+                  for (i, m, r), value in hop.items())
     h = hashlib.sha1()
     h.update(repr(rows).encode())
     h.update(repr([round(float(x), DIGITS) + 0.0 for x in t["h0"]]).encode())
@@ -295,15 +297,22 @@ def main():
             for name, r in results.items():
                 f.write(f"| `{name}` | `{r['base']}` | {r['status']} | {r['atoms']} | {r['entries']} | "
                         f"`{r['fingerprint']}` | {r['message'].replace('|', '/')} |\n")
-    # a case whose result depends on the compiler is recorded as such and not compared
-    compact = {k: (dict(status="UNDEFINED", fingerprint="") if k in COMPILER_DEPENDENT
+    # a case whose result depends on the compiler is recorded as such and not compared, unless it crashed:
+    # its status may be ok or REFUSED depending on the build, but a crash is never an expected outcome
+    compact = {k: (dict(status="UNDEFINED", fingerprint="") if k in COMPILER_DEPENDENT and v["status"] != "CRASH"
                    else dict(status=v["status"], fingerprint="" if k in REFUSAL_MESSAGE_VARIES and v["status"] == "REFUSED"
                              else v["fingerprint"])) for k, v in results.items()}
     undefined = sum(1 for k in results if k in COMPILER_DEPENDENT)
     if undefined:
         print(f"{undefined} case(s) are listed as compiler dependent (model_cases.COMPILER_DEPENDENT) and are not compared")
+    # on a full run, a reference entry without a case (a case removed or renamed) is not silently kept
+    full_run = a.only == "*"
     if a.update_reference:
         ref = json.load(open(REFERENCE)) if os.path.exists(REFERENCE) else {}
+        if full_run:
+            for k in sorted(set(ref) - set(compact)):
+                print(f"removed from the reference (no longer a case): {k}")
+                del ref[k]
         ref.update(compact)
         json.dump(ref, open(REFERENCE, "w"), indent=1, sort_keys=True)
         print(f"reference updated: {REFERENCE}")
@@ -312,6 +321,11 @@ def main():
         bad = [k for k, v in compact.items() if ref.get(k) != v]
         for k in bad:
             print(f"DIFFERS from the reference: {k}: {ref.get(k)} -> {compact[k]}")
+        if full_run:
+            stale = sorted(set(ref) - set(compact))
+            for k in stale:
+                print(f"IN THE REFERENCE BUT NOT A CASE: {k} (removed or renamed? run --update-reference)")
+            bad += stale
         print("PASS: every case equals its reference" if not bad else f"FAIL: {len(bad)} case(s) differ")
         sys.exit(1 if bad else 0)
 

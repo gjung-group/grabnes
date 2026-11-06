@@ -63,11 +63,15 @@ for name in $names; do
               set -- --kind table --atol 2e-3 --rtol 0 "$run_dir/result.dat" "$run_dir/reference/summary.dat" ;;
         *)    set -- --kind bands --atol 5e-6 --rtol 0 "$run_dir/generate.bands" "$run_dir/reference/bands.dat" ;;
     esac
-    if python3 "$harness_dir/compare_output.py" "$@"; then
+    rc=0
+    python3 "$harness_dir/compare_output.py" "$@" || rc=$?
+    if [ "$rc" -eq 0 ]; then
         printf '%s\n' "  PASS"
     else
+        # only values outside the tolerance (status 1) can come from another random vector; a result that cannot
+        # be read, has another shape or holds non-finite values fails with any compiler
         case $name in
-            06_*|07_*) if [ -n "$compiler" ] && [ "$compiler" != gnu ]; then
+            06_*|07_*) if [ "$rc" -eq 1 ] && [ -n "$compiler" ] && [ "$compiler" != gnu ]; then
                            printf '%s\n' "  NOT COMPARABLE: reference made with GNU Fortran; this $compiler build draws a" \
                                "  different random vector from the same seed (intrinsic random_number), see the header"
                            not_comparable=$((not_comparable + 1)); continue

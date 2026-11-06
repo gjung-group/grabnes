@@ -103,12 +103,17 @@ KEY_WIDTH = 24
 
 
 def fmt_token(token: Token) -> str:
-    """A parsed token in the .in spelling: .true., integers, and 0-0.01 for negative reals."""
+    """A parsed token in the .in spelling: .true., and the 0-5 / 0-0.01 form of negative numbers.
+
+    The solver reads integers with the same expression parser as reals, so a bare -5 stops a
+    run with "Bad real number" just like -0.01.
+    """
     kind, value = token
     if kind == 'logical':
         return '.true.' if value else '.false.'
     if kind == 'integer':
-        return str(value)
+        s = str(value)
+        return '0' + s if s.startswith('-') else s
     if kind == 'real':
         s = repr(float(value))
         return '0' + s if s.startswith('-') else s  # the 0-0.01 form

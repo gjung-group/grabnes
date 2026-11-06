@@ -23,12 +23,15 @@ Diag.Calc             .true.
 
 - One key per line, followed by its value. Keys are not case sensitive, and
   `_` and `-` inside a key are ignored.
+- `#` or `!` starts a comment anywhere on a line; a line that starts with `*` is
+  a comment too. A line ending in `\` continues on the next line.
 - Logical values: `.true.`, `true`, `t`, `yes`, `y` (and the corresponding
   forms of false).
 - A block starts with `&begin Name N`, where `N` is the number of lines that
   follow, and ends with `&end Name`.
 - **A negative number is written `0-0.01`.** A bare `-0.01` stops the run with
-  "Bad real number". This also holds for the numbers inside a block.
+  "Bad real number". This also holds for integers (`0-5`, not `-5`) and for the
+  numbers inside a block.
 - **If a key appears twice, the first value is used.** The solver prints a
   warning that names the key. When an input file is adapted from another one,
   edit the existing line instead of appending a new one.
