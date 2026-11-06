@@ -21,7 +21,8 @@ and, with --check, compares status and fingerprint with the stored reference
                             [--check | --update-reference] [--report FILE.md]
 
 The fingerprint is a hash of the sorted list of (atom, neighbour, lattice translation, hopping)
-and of the on-site energies, rounded to 1e-6 g0. It does not depend on the order of the
+and of the on-site energies, rounded to 1e-6 g0; for a REFUSED case it is a hash of the solver's
+error message, so that a case refused for another reason is detected too. It does not depend on the order of the
 neighbour list. Use a checked build (tests/regression/config/gfortran.debug.make.sys) to turn
 out-of-bounds accesses into CRASH lines instead of silent wrong numbers.
 
@@ -149,6 +150,17 @@ def classify_bands(run_dir, info):
     return info
 
 
+def refusal_fingerprint(lines):
+    """Hash of the whole error message (all its wrapped lines, without the module prefixes), up to the
+    error count that SysKill prints after it."""
+    text = []
+    for line in lines:
+        if re.match(r"\d+ errors?, \d+ warnings?", line) or line.startswith("***"):
+            break
+        text.append(re.sub(r"^\w+: ", "", line))
+    return hashlib.sha1(" ".join(" ".join(text).split()).encode()).hexdigest()[:16]
+
+
 def classify(run_dir, rc, timed_out, mode="tables"):
     log = open(os.path.join(run_dir, "job.out"), errors="replace").read() if os.path.exists(
         os.path.join(run_dir, "job.out")) else ""
@@ -157,6 +169,12 @@ def classify(run_dir, rc, timed_out, mode="tables"):
     info = dict(status="ok", message="", atoms=0, entries=0, asym=0.0, unpaired=0, fingerprint="")
     if timed_out:
         info.update(status="CRASH", message="time limit")
+        return info
+    # an error the solver reported but did not stop on, or a failure after the final message
+    errors = [l for l in tail if re.search(r"\bERROR\b", l)]
+    if finished and (errors or rc != 0):
+        info.update(status="CRASH", message=(f"rc={rc} after 'Program finished'; " +
+                                             (" ".join(errors[:1]) or (tail[-1] if tail else "")))[:300])
         return info
     if not finished:
         runtime = [l for l in tail if re.search(r"Fortran runtime error|SIGSEGV|SIGFPE|SIGABRT|severe|"
@@ -168,7 +186,8 @@ def classify(run_dir, rc, timed_out, mode="tables"):
             info.update(status="CRASH", message=" | ".join(runtime[:2])[:300])
         elif killed:
             start = next(i for i, l in enumerate(tail) if l == killed[0])
-            info.update(status="REFUSED", message=" ".join(tail[start:start + 3])[:300])
+            info.update(status="REFUSED", message=" ".join(tail[start:start + 3])[:300],
+                        fingerprint=refusal_fingerprint(tail[start:]))
         else:
             info.update(status="CRASH", message=("rc=%d; last line: " % rc + (tail[-1] if tail else "no output"))[:300])
         return info
