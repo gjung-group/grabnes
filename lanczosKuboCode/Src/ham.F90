@@ -868,7 +868,7 @@ subroutine HamOnSite()
    10 CONTINUE
       if (.not. frac) call AtomsSetFrac()
       !$OMP PARALLEL DO PRIVATE(i)
-      do i = in1,in2
+      do i = 1,nAt
          if (checkerActivate(CEILING(Rat(1,i)*checkerDivider),CEILING(Rat(2,i)*checkerDivider)).eqv.(.true.)) then
                H0(i) = H0(i) + onsiteShift
          else
@@ -892,7 +892,7 @@ subroutine HamOnSite()
       call MIO_InputParameter('Structure.CellSize',n,50)
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i)
-      do i = in1,in2
+      do i = 1,nAt
         H0(i) = H0(i) + sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))
       end do
       !$OMP END PARALLEL DO
@@ -1322,7 +1322,7 @@ subroutine HamOnSiteSquareChecker()
 
       !$OMP PARALLEL DO PRIVATE(i,H)
 
-      do i = in1,in2
+      do i = 1,nAt
       ! >>> unset markers
       h = hamUnset
       ! <<< unset markers
@@ -1367,7 +1367,7 @@ subroutine HamOnSiteZterm1DKink()
       limit3 = (n*sCell*aG)*3.0_dp/4.0_dp
       limit4 = (n*sCell*aG)
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1402,7 +1402,7 @@ subroutine HamOnSiteZterm1D()
       call HamInputEnergyEV('Potential.AmplitudeOfSquare3',Amp3,0.01_dp)
 
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1441,7 +1441,7 @@ subroutine HamOnSiteSquareFunction2()
            if (l) then
 
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1456,7 +1456,7 @@ subroutine HamOnSiteSquareFunction2()
 
       else
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1474,7 +1474,7 @@ subroutine HamOnSiteSquareFunction2()
       call MIO_InputParameter('Potential.ArmChairShape',l,.false.)
       if (l) then
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1489,7 +1489,7 @@ subroutine HamOnSiteSquareFunction2()
 
       else
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1529,7 +1529,7 @@ subroutine HamOnSiteSquareFunction()
            if (l) then
 
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1545,7 +1545,7 @@ subroutine HamOnSiteSquareFunction()
       else
 
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1561,7 +1561,7 @@ subroutine HamOnSiteSquareFunction()
 
       else
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1598,7 +1598,7 @@ subroutine HamOnSitePNPKink()
       limit3 = (n*sCell*aG)*3.0_dp/4.0_dp
       limit4 = (n*sCell*aG)
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1633,7 +1633,7 @@ subroutine HamOnSitePNP()
       PNPLeft = (n*sCell*aG)/6.0_dp * 2.0_dp
       PNPRight = (n*sCell*aG)/6.0_dp * 4.0_dp
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
