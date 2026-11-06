@@ -11791,7 +11791,13 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
    if (use_all_occupied_bands) then
       ! Method 1: Include ALL bands below Fermi level (proper total Chern number)
       call MIO_Print('Using ALL occupied bands (E < E_F) for total Chern number','diag')
-      do iband = 1, min(size(E,1), 1000)
+      ! only the stored_M TAPW bands are valid: E is zero-filled beyond them (counted as occupied when E_F > 0)
+      if (stored_M > 0) then
+         max_valid_band = min(stored_M, size(E,1))
+      else
+         max_valid_band = size(E,1)
+      end if
+      do iband = 1, min(max_valid_band, 1000)
          ! Check if this band is below Fermi level at ANY k-point
          do ik = 1, nk
             if (E(iband,1,ik) < fermi_energy_internal) then
