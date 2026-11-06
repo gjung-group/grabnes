@@ -193,7 +193,9 @@ subroutine AtomsPos()
           !$OMP END PARALLEL DO
           call MIO_InputParameter('Moire.DistanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
           if (distanceDependentEffectiveModel) then
-             call MIO_Allocate(interlayerDistances,nAt*sCell*sCell,'interlayerDistances','atoms')
+             ! nAt already counts the SuperCell copies here. A larger array was reallocated (and zeroed)
+             ! to nAt in AtomsPos, which put every interlayer distance at 0 for SuperCell > 1.
+             call MIO_Allocate(interlayerDistances,nAt,'interlayerDistances','atoms')
              do i=1,nAt
                 interlayerDistances(i) = 3.35_dp
              end do
