@@ -12,7 +12,7 @@ contains
 
 subroutine CalcSelect()
 
-   use ham,                  only : HamInit, HamHopping, HamOnSite, hopp
+   use ham,                  only : HamInit, HamHopping, HamOnSite, HamPeierlsPeriodicGauge, hopp
    use tbpar,                only : TBInit
    use magf,                 only : MagfInit, mBi, mBf, MagfValue, mStep, HaldPhaseInit, mPhii, mPhif, HaldPhaseValue, &
          mPhiStep, magfield, Bmag
@@ -29,7 +29,8 @@ subroutine CalcSelect()
 
    ! Other local variables
    integer :: i, j, mB, mPhi, mS
-   real(dp) :: flux, hoppI(maxNeigh,nAt), hoppR(maxNeigh,nAt), phase, v1(3), v2(3)
+   ! scalars: automatic arrays (maxNeigh,nAt) were sized on entry, before the atoms and the neighbour list exist
+   real(dp) :: flux, hoppI, hoppR, phase, v1(3), v2(3)
 
 
 #ifdef DEBUG
@@ -75,8 +76,8 @@ subroutine CalcSelect()
                  open(222,FILE="generate.s",STATUS='old')
                  do i=1,nAt
                     do j=1,Nneigh(i)
-                       read(222,*) hoppR(j,i), hoppI(j,i)
-                       hopp(j,i) = (hoppR(j,i) + cmplx_i * hoppI(j,i))
+                       read(222,*) hoppR, hoppI
+                       hopp(j,i) = (hoppR + cmplx_i * hoppI)
                     end do
                  end do
                  close(222)
@@ -89,17 +90,8 @@ subroutine CalcSelect()
 #ifdef DEBUG
                        print*, "flux, B, pi, fluxq", flux, Bmag, pi, fluxq
 #endif /* DEBUG */
-                       do i=1,nAt
-                          do j=1,Nneigh(i)
-                             v1 = Rat(:,i) + Rat(:,NList(j,i))
-                             ! neighCell(1...) contains n1-m1, neighCell(2...) contains n2-m2 (see Cresti's notes)
-                             v2 = neighCell(1,j,i)*ucell(:,1) + neighCell(2,j,i)*ucell(:,2)
-                             v2 = CrossProd(v1,v2)
-                             v1 = CrossProd(Rat(:,i),Rat(:,NList(j,i))) + v2 ! Implementation of third expersion in Cresti's notes
-                             phase = flux*v1(3)/1.0d20
-                             hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
-                          end do
-                       end do
+                       ! the same phases as HamHopping, including the corner term of the periodic gauge
+                       call HamPeierlsPeriodicGauge(flux)
                  end if
              else
                 call HamHopping()
