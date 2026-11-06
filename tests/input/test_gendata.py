@@ -186,6 +186,26 @@ class TestParseIn:
         assert model['keys']['kubo.epsilon']['value'] == ('real', 0.002)
         assert not parser.warnings
 
+    def test_present_name_wins_over_former_name(self, schema: Schema) -> None:
+        # the solver uses Kubo.RecursionNumber wherever it is (checked: 60 recursion steps for both orders)
+        for text in (
+            'RecursionNumber 40\nKubo.RecursionNumber 60\n',
+            'Kubo.RecursionNumber 60\nRecursionNumber 40\n',
+        ):
+            parser = InputParser(schema)
+            model = parser.parse_in(text, name='test')
+            assert model['keys']['kubo.recursionnumber']['value'] == ('integer', 60)
+            assert any('the value of Kubo.RecursionNumber is used' in w for w in parser.warnings)
+
+    def test_present_name_wins_in_yaml(self, schema: Schema) -> None:
+        for data in (
+            {'RecursionNumber': 40, 'kubo': {'recursionNumber': 60}},
+            {'kubo': {'recursionNumber': 60}, 'RecursionNumber': 40},
+        ):
+            model = InputParser(schema).parse_yaml(data)
+            assert model['keys']['kubo.recursionnumber']['value'] == ('integer', 60)
+            assert model['order'].count(('keys', 'kubo.recursionnumber')) == 1
+
     def test_unclosed_block_raises(self, schema: Schema) -> None:
         with pytest.raises(InputFormat, match='not closed'):
             InputParser(schema).parse_in('&begin Bands.Path 2\n0.0 0.0 0.0\n', name='test')

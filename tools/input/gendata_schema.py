@@ -208,7 +208,8 @@ def generate(src: str | None = None) -> Schema:
         entry['defaults'] = sorted(set(entry['defaults']))
         entry['readIn'] = sorted(set(entry['readIn']))
         entry['type'] = types.pop() if len(types) == 1 else 'mixed' if 'unknown' not in types else 'unknown'
-        entry['formerNames'] = sorted(former.get(n, []))
+        # table order, not sorted: the solver tries the former names in this order
+        entry['formerNames'] = list(former.get(n, []))
 
     blocks: dict[str, BlockInfo] = {}
     for n, (name, where) in rawblocks.items():
