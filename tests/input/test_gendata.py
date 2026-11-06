@@ -166,6 +166,26 @@ class TestParseIn:
         assert model['keys']['tb.hopping']['value'] == ('real', 3.1)
         assert any('appears twice' in w for w in parser.warnings)
 
+    def test_comments_as_in_the_solver(self, schema: Schema) -> None:
+        # '!' and '#' start a comment anywhere; '!', '#' and '*' in the first column mark a comment line
+        text = '* star line\n! bang line\nTB.Hopping 3.1!x\nKubo.Epsilon 0.002#y\n'
+        parser = InputParser(schema)
+        model = parser.parse_in(text, name='test')
+        assert model['keys']['tb.hopping']['value'] == ('real', 3.1)
+        assert model['keys']['kubo.epsilon']['value'] == ('real', 0.002)
+        assert set(model['keys']) == {'tb.hopping', 'kubo.epsilon'}
+        assert not parser.warnings
+
+    def test_continuation_line(self, schema: Schema) -> None:
+        # a trailing backslash joins the next line, also between key and value (the solver ran 60 steps)
+        text = 'Kubo.RecursionNumber \\\n   60   # sixty\nKubo.Epsilon \\\n# inside\n 0.002\n'
+        parser = InputParser(schema)
+        model = parser.parse_in(text, name='test')
+        assert model['keys']['kubo.recursionnumber']['value'] == ('integer', 60)
+        assert model['keys']['kubo.recursionnumber']['comment'] == 'sixty'
+        assert model['keys']['kubo.epsilon']['value'] == ('real', 0.002)
+        assert not parser.warnings
+
     def test_unclosed_block_raises(self, schema: Schema) -> None:
         with pytest.raises(InputFormat, match='not closed'):
             InputParser(schema).parse_in('&begin Bands.Path 2\n0.0 0.0 0.0\n', name='test')

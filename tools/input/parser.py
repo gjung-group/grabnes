@@ -121,11 +121,54 @@ def evaluate(tok: str) -> int | float | None:
 
 
 def split_comment(line: str) -> tuple[str, str | None]:
-    """A .in line into (code, comment); '#' starts a comment at the start or after a space."""
-    m = re.search(r'(^|\s)#', line)
+    """A .in line into (code, comment), as the solver reads it (InputProcess).
+
+    A line whose first character is '!', '#' or '*' is a comment; elsewhere '!' or '#' starts
+    a comment wherever it stands, with or without a space before it.
+    """
+    stripped = line.lstrip()
+    if stripped[:1] in ('!', '#', '*'):
+        return '', stripped[1:].strip().lstrip('!#*').strip()
+    m = re.search(r'[!#]', line)
     if m:
-        return line[: m.start()], line[m.start() :].strip().lstrip('#').strip()
+        return line[: m.start()], line[m.start() + 1 :].strip().lstrip('!#').strip()
     return line, None
+
+
+def solver_lines(text: str) -> list[tuple[str, str | None, int]]:
+    """The logical lines of a .in text as (code, comment, number of the first physical line).
+
+    As in the solver: a line whose code ends with '\\' continues on the next line (joined with
+    a space); comment lines inside a continuation are skipped, and a blank line ends it.
+    """
+    out: list[tuple[str, str | None, int]] = []
+    held: list[str] = []  # code of the lines of an open continuation
+    held_comments: list[str] = []
+    start = 0
+    for number, line in enumerate(text.splitlines(), start=1):
+        body, comment = split_comment(line)
+        if held and not body.strip():
+            if comment is not None:  # a comment line does not end a continuation
+                held_comments.append(comment)
+                continue
+            out.append((' '.join(held), ' '.join(held_comments) or None, start))
+            held, held_comments = [], []
+        if not body.strip():
+            out.append((body, comment, number))
+            continue
+        if not held:
+            start = number
+        if comment is not None:
+            held_comments.append(comment)
+        if body.rstrip().endswith('\\'):
+            held.append(body.rstrip()[:-1].strip())
+            continue
+        held.append(body.strip())
+        out.append((' '.join(held), ' '.join(held_comments) or None, start))
+        held, held_comments = [], []
+    if held:
+        out.append((' '.join(held), ' '.join(held_comments) or None, start))
+    return out
 
 
 def clean_comment(text: str) -> str:
@@ -349,12 +392,12 @@ class InputParser:
     def parse_in(self, text: str, name: str = '<input>') -> Model:
         """The text of a Gendata.in into the model; first value wins, as in the solver."""
         model = new_model()
-        lines = text.splitlines()
+        lines = solver_lines(text)
         pending: list[str] = []  # comment lines before the next entry
         seen: set[str] = set()
         i = 0
         while i < len(lines):
-            body, comment = split_comment(lines[i])
+            body, comment, number = lines[i]
             words = body.split()
             if not words:
                 if comment:
@@ -363,20 +406,20 @@ class InputParser:
                 continue
             if words[0].lower() in ('&begin', '&end'):
                 if words[0].lower() == '&end':
-                    raise InputFormat(f'{name}, line {i + 1}: "&end" without "&begin"')
+                    raise InputFormat(f'{name}, line {number}: "&end" without "&begin"')
                 block_name = words[1]
                 declared = int(words[2]) if len(words) > 2 and re.fullmatch(r'\d+', words[2]) else None
                 rows: list[BlockRow] = []
                 j = i + 1
                 while j < len(lines):
-                    body2, comment2 = split_comment(lines[j])
+                    body2, comment2, _ = lines[j]
                     if body2.split()[:1] == ['&end']:
                         break
                     if body2.strip():
                         rows.append(([parse_token(t) for t in body2.split()], comment2))
                     j += 1
                 if j >= len(lines):
-                    raise InputFormat(f'{name}, line {i + 1}: block {block_name} is not closed with "&end"')
+                    raise InputFormat(f'{name}, line {number}: block {block_name} is not closed with "&end"')
                 if declared is not None and declared != len(rows):
                     self.warnings.append(
                         f'{block_name}: the block declares {declared} lines but contains {len(rows)}'
