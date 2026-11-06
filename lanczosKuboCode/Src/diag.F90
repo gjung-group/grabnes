@@ -1025,10 +1025,11 @@ subroutine DiagBands()
          end do
          do ip=1,ptsTot
             if (ip.eq.1) then
+               ! one k point is computed and written here: the header gives that count
                if (useTAPW) then
-                  write(u,'(3i8)') M_tapw, nspin, ptsTot+1  ! TAPW: M eigenvalues
+                  write(u,'(3i8)') M_tapw, nspin, ptsTot  ! TAPW: M eigenvalues
                else
-                  write(u,'(3i8)') nAt, nspin, ptsTot+1     ! Regular: nAt eigenvalues
+                  write(u,'(3i8)') nAt, nspin, ptsTot     ! Regular: nAt eigenvalues
                end if
             end if
             v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
@@ -1050,7 +1051,9 @@ subroutine DiagBands()
       else if (sparseDiagSolver) then
          ! Many k-points, but parallelisation happens inside DiagHamSparse so no OMP here (some obsolete code here, too lazy to
          ! remove the parts that will not be considered because we are only doing the sparseDiagSolver part here
-         do ip = 1, ptsTot
+         ! A path holds ptsTot+1 points (the dense loop computes them all and the band file below writes them all);
+         ! a 3-D grid holds ptsTot.
+         do ip = 1, merge(ptsTot, ptsTot+1, calculate3DTAPWBands)
             ! Progress tracking for TAPW (show every 10%)
             if (useTAPW .and. modulo(ip, max(1, int(ptsTot/10))) == 0 .and. ip <= ptsTot) then
                call MIO_Print('TAPW progress: '//trim(num2str(nint(100.0_dp*ip/ptsTot)))//'% ('// &
