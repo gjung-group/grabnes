@@ -1018,7 +1018,7 @@ subroutine HamOnSite()
    call MIO_InputParameter('Disorder.SublatticeDisorder',l,.false.)
    if (l) then
       call RandSeedFromInput()
-      call MIO_InputParameter('Disorder.SublattAmp',A,2.0_dp)
+      call HamInputEnergyEV('Disorder.SublattAmp',A,2.0_dp,since='2026-11-07')
       call MIO_InputParameter('Disorder.SublattPct',pct,0.1_dp)
       call MIO_Print('Sublattice disorder','ham')
       call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
@@ -1034,7 +1034,7 @@ subroutine HamOnSite()
    call MIO_InputParameter('Disorder.Anderson',l,.false.)
    if (l) then
       call RandSeedFromInput()
-      call MIO_InputParameter('Disorder.AndersonAmp',A,1.0_dp)
+      call HamInputEnergyEV('Disorder.AndersonAmp',A,1.0_dp,since='2026-11-07')
       call MIO_Print('Anderson disorder','ham')
       call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
       call MIO_Print('')
@@ -1047,7 +1047,8 @@ subroutine HamOnSite()
    if (l) call HamOnSiteDeltaDisorder()
    call MIO_InputParameter('Disorder.GaussDisorder',l,.false.)
    if (l) then
-      call GaussPot(H0)
+      call HamInputEnergyEV('Disorder.GaussPotStrength',A,1.0_dp,since='2026-11-07')
+      call GaussPot(H0,A)
    end if
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (Zterm .or. PZterm) then
