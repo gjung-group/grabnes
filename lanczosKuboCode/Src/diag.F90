@@ -666,6 +666,12 @@ subroutine DiagBands()
           end if
        end block
     end if
+    ! Output.KeepWaveFunction is tested before the other solvers in the k loops below: it would replace them
+    ! with a dense spinless diagonalisation of the full Hamiltonian, without a message
+    if (keepWaveFunction .and. (useTAPW .or. sparseDiagSolver)) call MIO_Kill('Output.KeepWaveFunction writes '// &
+      'the eigenvectors of the dense diagonalisation of the full Hamiltonian; it cannot be combined with TAPW.Use '// &
+      'or Diag.SparseSolver (the bands would come from the dense solver instead). Switch one of them off.', &
+      'diag','DiagBands')
 
    if (useDifferentLatticeVectors) then
        ucell(1,2) = 0.0_dp
