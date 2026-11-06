@@ -69,6 +69,13 @@ class TestTokens:
         assert parse_token('-0.01') == ('real', -0.01)
         assert fmt_token(parse_token('-0.01')) == '0-0.01'
 
+    def test_negative_integer_written_with_zero_prefix(self) -> None:
+        # the solver stops on a bare -5 ("Bad real number") and reads 0-5 (checked on Kubo.SeedValue)
+        assert parse_token('0-5') == ('integer', -5)
+        assert fmt_token(('integer', -5)) == '0-5'
+        assert fmt_token(parse_token('-5')) == '0-5'
+        assert fmt_token(('integer', 5)) == '5'
+
     def test_fraction_and_d_exponent(self) -> None:
         assert parse_token('2/3') == ('real', pytest.approx(2 / 3))
         assert parse_token('135d0') == ('real', 135.0)

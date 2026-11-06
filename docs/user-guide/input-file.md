@@ -28,7 +28,8 @@ Diag.Calc             .true.
 - A block starts with `&begin Name N`, where `N` is the number of lines that
   follow, and ends with `&end Name`.
 - **A negative number is written `0-0.01`.** A bare `-0.01` stops the run with
-  "Bad real number". This also holds for the numbers inside a block.
+  "Bad real number". This also holds for integers (`0-5`, not `-5`) and for the
+  numbers inside a block.
 - **If a key appears twice, the first value is used.** The solver prints a
   warning that names the key. When an input file is adapted from another one,
   edit the existing line instead of appending a new one.
