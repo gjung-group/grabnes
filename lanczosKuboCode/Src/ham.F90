@@ -9605,11 +9605,9 @@ subroutine HamHopIntralayerKaxirasSrivani(dist, j, i, d, delta, ilvl)
                                                  hopp(j,i) = hopp(j,i) + t5KB
                                             end if
                                         end if
-                                        if (Species(i).eq.1) then
-                                             hopp(j,i) = hopp(j,i) + t5KA
-                                        else if (Species(i).eq.2) then
-                                             hopp(j,i) = hopp(j,i) + t5KB
-                                        end if
+                                        ! (a second block added t5KA / t5KB once more here, so the fifth-shell
+                                        ! term was twice the model value; removed in November 2026, as in
+                                        ! HamHopIntralayerGraphene in October)
                                    end if
                               ! narrow: the seventh shell is only 4 % further out
                               else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
