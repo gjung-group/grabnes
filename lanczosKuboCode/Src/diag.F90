@@ -2022,6 +2022,18 @@ subroutine DiagSpectralWindow(E1,E2)
 
 end subroutine DiagSpectralWindow
 
+!> Gaussian width of the spectral routines (Spectral.UseGaussianBroadening, Spectral.GaussianConvolution), in units of g0
+!> like their energy grid. Kubo.Epsilon is read in eV, as in the Kubo routines; it was taken in units of g0 here before.
+subroutine DiagSpectralEpsilon(eps)
+
+   use ham,                  only : HamInputEnergyEV
+
+   real(dp), intent(out) :: eps
+
+   call HamInputEnergyEV('Kubo.Epsilon',eps,0.01_dp,since='2026-11-07')
+
+end subroutine DiagSpectralEpsilon
+
 !> A state adds its weight to the energy points closer than resolution [eV]: with points further apart than twice
 !> that, states fall between them and are missing from the output. E1 and E2 are in units of g0.
 subroutine DiagSpectralCheckGrid(E1,E2,Epts,resolution)
@@ -2148,7 +2160,7 @@ subroutine DiagSpectralFunction()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+      call DiagSpectralEpsilon(eps)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -2379,7 +2391,7 @@ subroutine DiagSpectralFunctionKGrid()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+      call DiagSpectralEpsilon(eps)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -2580,7 +2592,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
@@ -2802,7 +2814,6 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -3111,7 +3122,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
@@ -3317,7 +3328,6 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -3669,7 +3679,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
@@ -3822,7 +3832,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -4150,7 +4159,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
@@ -4304,7 +4313,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
@@ -4641,7 +4649,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
-   call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+   call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
@@ -4782,7 +4790,6 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
-      call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
       factor = (E2-E1)/(6.0*eps)
       Epts2 = CEILING(Epts/factor)
       if (mod(Epts2,2).ne.0) then
