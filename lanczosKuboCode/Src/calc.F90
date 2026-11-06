@@ -610,7 +610,7 @@ subroutine CalcDiag()
          calculate3DTAPWBands, nk_3D_x, nk_3D_y, gammaCentred3D, socDebug, forceBlockTAPW
    use atoms,                only : nAt
    use ham,                  only : nspin
-   use scf,                  only : SCFGetCharge, SCFInit, charge
+   use scf,                  only : SCFGetCharge, SCFInit, charge, Zch
 #ifdef SEMICL
 #define SEMICL_SECTION 1
 #include "calc_semicl.inc"
@@ -716,8 +716,9 @@ subroutine CalcDiag()
          call SCFInit(nAt)
          ! Allocate charge array that diag.F90 needs (even without SCF)
          call MIO_Allocate(charge,[2,nAt],'charge','calc')
-         ! Initialize charge array to default values
-         charge = 0.0_dp
+         ! Neutral charges: DiagHamWF, DiagHamPDOS and DiagHamChern add U*(charge - Zch)/2, which is then zero, as in
+         ! DiagHam (no Hubbard term). With charge = 0 they shifted every level by -U/2 against the band routine.
+         charge = Zch
       end if
    end if
    if (dos) then
