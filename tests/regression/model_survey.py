@@ -54,7 +54,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "..", "tools", "hamiltonian"))
 from verify_tables import load  # noqa: E402
 
 sys.path.insert(0, HERE)
-from model_cases import BASES, CASES, COMPILER_DEPENDENT, STRUCTURES  # noqa: E402
+from model_cases import BASES, CASES, COMPILER_DEPENDENT, REFUSAL_MESSAGE_VARIES, STRUCTURES  # noqa: E402
 
 REFERENCE = os.path.join(HERE, "model_survey_reference.json")
 # Decimals (in units of g0) kept in the fingerprint: coarse enough to be the same for every compiler and
@@ -297,7 +297,8 @@ def main():
                         f"`{r['fingerprint']}` | {r['message'].replace('|', '/')} |\n")
     # a case whose result depends on the compiler is recorded as such and not compared
     compact = {k: (dict(status="UNDEFINED", fingerprint="") if k in COMPILER_DEPENDENT
-                   else dict(status=v["status"], fingerprint=v["fingerprint"])) for k, v in results.items()}
+                   else dict(status=v["status"], fingerprint="" if k in REFUSAL_MESSAGE_VARIES and v["status"] == "REFUSED"
+                             else v["fingerprint"])) for k, v in results.items()}
     undefined = sum(1 for k in results if k in COMPILER_DEPENDENT)
     if undefined:
         print(f"{undefined} case(s) are listed as compiler dependent (model_cases.COMPILER_DEPENDENT) and are not compared")

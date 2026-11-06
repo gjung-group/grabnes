@@ -553,3 +553,11 @@ COMPILER_DEPENDENT |= {c for c in CASES if c.startswith("sys_Trilayer")}
 # realisticBubbles: the number of bubbles is drawn at random. With none the switch does nothing; with one or
 # more the run is refused (the list of bubble centres is never filled). Which of the two happens varies.
 COMPILER_DEPENDENT.add("graphene+realisticBubbles")
+
+# Refused in every run, but the number of non-finite entries in the refusal message varies from run to run (74, 98, 100
+# measured in November 2026): the pressure path of these interlayer models leaves the sublattice-dependent parameters
+# unset, and how many bonds carry the not-set marker depends on leftover memory. Only their status is compared.
+REFUSAL_MESSAGE_VARIES = {
+    'tbg+BLKaxiras+sublatticeDependent',
+    'tbg+BLSrivani+sublatticeDependent',
+}
