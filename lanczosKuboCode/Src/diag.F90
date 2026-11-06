@@ -1293,18 +1293,12 @@ subroutine DiagBands()
                   ! Store eigenvalues for both spins (they're spin-mixed, but we need to populate E array)
                   ! ELoc contains min(2*M_tapw, nAt) eigenvalues, so we need to be careful with bounds
                   if (M_tapw > 0) then
-                     if (forceBlockTAPW) then
-                        ! For no-SOC case: eigenvalues are in degenerate pairs, extract only M unique ones
-                        ! Pattern: (λ₁,λ₁), (λ₂,λ₂), ..., so take eigvals(2i-1) for i=1..M
-                        ! Extract one eigenvalue from each degenerate pair
+                     if (forceBlockTAPW .and. .not. RashbaSOCterm) then
+                        ! No SOC: DiagH0TAPW_withBlockH has already kept one level of each degenerate pair
+                        ! (ELoc(1:M), M_tapw = M); taking every second one again dropped half the bands
                         do i_eig = 1, min(M_tapw, size(E,1))
-                           if (2*i_eig - 1 <= size(ELoc)) then
-                              E(i_eig, 1, ip) = ELoc(2*i_eig - 1)  ! Take first of each pair
-                              E(i_eig, 2, ip) = ELoc(2*i_eig - 1)  ! Same for both spins (degenerate)
-                           else
-                              E(i_eig, 1, ip) = 0.0_dp
-                              E(i_eig, 2, ip) = 0.0_dp
-                           end if
+                           E(i_eig, 1, ip) = ELoc(i_eig)
+                           E(i_eig, 2, ip) = ELoc(i_eig)  ! Same for both spins (degenerate)
                         end do
                         ! Zero out remaining entries if M_tapw < size(E,1)
                         if (M_tapw < size(E,1)) then
