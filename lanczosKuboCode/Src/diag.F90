@@ -362,7 +362,11 @@ subroutine DiagPDOS()
    real(dp) :: ELoc(nAt)
    complex(dp) :: HLoc(nAt, nAt)
    real(dp) :: pipj, vectormultip
-   complex(dp), pointer :: HStore(:,:,:)=>NULL()
+   ! energies and layer weights of every state: weight of state n at k on layer L = sum over the
+   ! atoms i of layer L of |psi_n(i)|^2 (the eigenvectors are the columns of HLoc)
+   real(dp), allocatable :: EStoreS(:,:,:), WStore(:,:,:,:)
+   real(dp) :: w, dEgrid
+   integer :: l
 
    integer :: omp_get_thread_num, omp_get_max_threads, index_ii
 
@@ -381,8 +385,6 @@ subroutine DiagPDOS()
    call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
    call MIO_Allocate(E,Epts,'E','diag')
    ptot = nk(1)*nk(2)*nk(3)
-   call MIO_Allocate(EStore,[ptot,nAt],'DOS','diag')
-   call MIO_Allocate(HStore,[ptot,nAt,nAt],'DOS','diag')
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
@@ -397,75 +399,48 @@ subroutine DiagPDOS()
    do i2=1,Epts
         E(i2) = E1 + (E2-E1)*(i2-1)/(Epts-1)
    end do
+   call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
+   allocate(EStoreS(nAt,ptot,nspin), WStore(numberOfLayers,nAt,ptot,nspin))
+   WStore = 0.0_dp
    do is=1,nspin
       call DiagCheckThreads('DiagPDOS')
-      !$OMP PARALLEL DO PRIVATE(ELoc, KptsLoc, ik, HLoc), REDUCTION(min:Emin), REDUCTION(max:Emax), &
-      !$OMP& SHARED(E, nAt, nspin, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell)
+      !$OMP PARALLEL DO PRIVATE(ELoc, KptsLoc, ik, HLoc, i1, ivec, l), REDUCTION(min:Emin), REDUCTION(max:Emax), &
+      !$OMP& SHARED(EStoreS, WStore, is, nAt, nspin, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, numberOfLayers)
       do ik=1,ptot
          KptsLoc = Kgrid(:,ik)
          ELoc = 0.0_dp
          HLoc = 0.0_dp
-         !if (modulo(ik,int(ptot/10)).eq.0) print*, "progress is: ", ik/int(ptot/10)*10, "percent"
          call DiagHamPDOS(nAt,nspin,is,HLoc,ELoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-         !Eig(:,is) = Eig(:,is)*g0
          ELoc = ELoc*g0
-         !      DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
          Emin = min(Emin,ELoc(1))
          Emax = max(Emax,ELoc(nAt))
-         !      DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-ELoc(i1))**2/(2.0_dp*eps**2))
-         do i1=1,nAt
-            EStore(ik,i1) = ELoc(i1)
-            do i1bis=1,nAt
-              HStore(ik,i1,i1bis)=HLoc(i1,i1bis)
+         do i1=1,nAt ! state
+            EStoreS(i1,ik,is) = ELoc(i1)
+            do ivec=1,nAt ! atom
+               l = layerIndex(ivec)
+               if (l >= 1 .and. l <= numberOfLayers) WStore(l,i1,ik,is) = WStore(l,i1,ik,is) + abs(HLoc(ivec,i1))**2
             end do
          end do
       end do
       !$OMP END PARALLEL DO
    end do
-   call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
    do PDOSLayerIndex=1,numberOfLayers
       flnm = trim(prefix)//'.diag.DOS.Layer'//trim(num2str(PDOSLayerIndex))
       call file%Open(name=flnm,serial=.true.)
       u = file%GetUnit()
       call MIO_Allocate(DOS,[Epts,nspin],'DOS','diag')
-      call MIO_Allocate(DOS_thread,[Epts,nspin,omp_get_max_threads()],'DOS','diag')
       DOS = 0.0_dp
-      DOS_thread = 0.0_dp
       do is=1,nspin
-         do ik = 1,ptot ! Loop over k
-            do i1=1,nAt ! Loop over atoms (same as number of bands here)
-               if (layerIndex(i1).eq.PDOSLayerIndex) then
-                  do i2=1,Epts
-                     DOS(i2,is) = 0.0_dp
-                     do ivec=1,nAt ! add this for the vector multiplication projection operator
-                         !$OMP PARALLEL DO PRIVATE(vectormultip, pipj), &
-                         !$OMP& SHARED(E, EStore, eps, DOS_thread)
-                         do ivec2=1,nAt ! add this for the vector multiplication projection operator
-                     ! outer product between vector multiplication of two eigenvectors
-                     ! and the eigenenergy vector. The outer product is thus over the
-                     ! eigenenergies
-                           vectormultip=conjg(HStore(ik,ivec,i1))*HStore(ik,ivec2,i1) !
-                           pipj=EStore(ik,i1)*vectormultip
-                           DOS_thread(i2,is,omp_get_thread_num()+1) = DOS_thread(i2,is,omp_get_thread_num()+1) &
-                                 + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2)) * pipj
-                           !DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2)) * pipj
-                         end do
-                         !$OMP END PARALLEL DO
-                     end do
-                  end do
-               end if
+         do ik = 1,ptot
+            do i1=1,nAt
+               w = WStore(PDOSLayerIndex,i1,ik,is)
+               if (w == 0.0_dp) cycle
+               do i2=1,Epts
+                  DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStoreS(i1,ik,is))**2/(2.0_dp*eps**2)) * w
+               end do
             end do
          end do
       end do
-      ! TO DO, add OMP parallelisaton here if it works without
-      DO index_ii = 1,omp_get_max_threads()
-         do is=1,nspin
-            do i2=1,Epts
-               DOS(i2,is) = DOS(i2,is) + DOS_thread(i2,is,index_ii)
-            enddo
-         enddo
-      ENDDO
-      call MIO_Deallocate(DOS_thread,'DOS','diag')
       if (nspin==1) then
          DOS = 2.0_dp*DOS/(eps*sqrt(twopi)*ptot)
       else
@@ -475,16 +450,14 @@ subroutine DiagPDOS()
          write(u,*) E(i1), (DOS(i1,is),is=1,nspin)
       end do
       call file%Close()
-      call MIO_Deallocate(Eig,'Eig','diag')
-      call MIO_Deallocate(H,'H','diag')
       call MIO_Print('Emin: '//trim(num2str(Emin,4))//', Emax: '//trim(num2str(Emax,4)),'diag')
-      eps = (E2-E1)/(Epts-1)
+      dEgrid = (E2-E1)/(Epts-1)
       sp = 0.0_dp
       Ep = Emin
       do ik=1,Epts-2*intorder
          s = 0.0_dp
          do is=1,nspin
-            s = s + TrapezoidalInt(DOS(:intorder*2+ik,is),intorder*2+ik,eps,intorder)
+            s = s + TrapezoidalInt(DOS(:intorder*2+ik,is),intorder*2+ik,dEgrid,intorder)
          end do
          if (s>=nEl) then
             Efermi = (E(intorder*2+ik)+Ep)/2.0_dp
@@ -500,6 +473,9 @@ subroutine DiagPDOS()
       call MIO_Print('')
       call MIO_Deallocate(DOS,'DOS','diag')
    end do
+   deallocate(EStoreS, WStore)
+   call MIO_Deallocate(Eig,'Eig','diag')
+   call MIO_Deallocate(H,'H','diag')
 
 #ifdef TIMER
    call MIO_TimerStop('diag')
