@@ -2210,6 +2210,10 @@ subroutine HamOnSiteMoirePotential()
 
       else if (l) then
          call MIO_Print('Moire Trilayer','ham')
+         ! A, B and C (the defaults of PotA1..PotB2, and the constant term) are read only with Moire.Sachs
+         call MIO_InputParameter('Moire.Sachs',w,.false.)
+         if (.not. w) call MIO_Kill('Moire.Trilayer uses the amplitudes Moire.PotA, Moire.PotB and Moire.PotC, '// &
+              'which are read only with Moire.Sachs .true.; without it they were never set.','ham','HamOnSite')
          call MIO_InputParameter('Moire.PotA1',A1,A)
          call MIO_InputParameter('Moire.PotB1',B1,B)
          call MIO_InputParameter('Moire.PotA2',A2,A)
@@ -2218,6 +2222,8 @@ subroutine HamOnSiteMoirePotential()
          call MIO_InputParameter('Moire.Trim1',m1,0)
          call MIO_InputParameter('Moire.Trin2',n2,0)
          call MIO_InputParameter('Moire.Trim2',m2,0)
+         if (m1 == 0 .or. m2 == 0) call MIO_Kill('Moire.Trilayer needs non-zero Moire.Trim1 and Moire.Trim2 '// &
+              '(the two moire periods are n1*aG/m1 and n1*n2*aG/m2).','ham','HamOnSite')
          call MIO_Print('  A1: '//trim(num2str(A1,4)),'ham')
          call MIO_Print('  B1: '//trim(num2str(B1,4)),'ham')
          call MIO_Print('  A2: '//trim(num2str(A2,4)),'ham')
