@@ -4752,14 +4752,11 @@ subroutine harmonicApprox(dx,dy,A,B,C, Hjj)
     real(dp), intent(in) :: dx, dy, A, B, C
     real(dp), intent(out) :: Hjj
     real(dp) :: x1, y1, x2, y2, G1, m1, m2, a1, a2, a3, a4, alpha, beta, gammma
-    real(dp) :: delta, Ax, Ay, acc, f1, D, c0, c1, phi
+    real(dp) :: delta, Ax, Ay, acc, f1, D, c0, c1, phi, p, q
+    logical :: singular
 
-    if (abs(B-C) < 0.0000001) then
-        call MIO_Print("WARNING: we have a singularity",'ham')
-        D = (A-B)/(10**(-16))
-    else
-        D = (A-B)/(B-C)
-    end if
+    singular = abs(B-C) < 1.0e-7_dp
+    if (.not. singular) D = (A-B)/(B-C)
 
     x1 = 0.0_dp
     y1 = 1.0_dp/sqrt(3.0_dp)
@@ -4787,11 +4784,16 @@ subroutine harmonicApprox(dx,dy,A,B,C, Hjj)
     a2 = sin(G1*y1) - sin(G1*y2)
     a4 = 2.0_dp*sin(G1*y1/2.0_dp) * m1 - 2.0_dp*sin(G1*y2/2.0_dp)* m2
     delta = a2 - a4
-    phi = atan((1.0_dp/(delta/beta*D-1.0_dp)*((delta*alpha-beta*gammma)/(beta*delta)))-(gammma)/(delta))
-    if (abs(B-C) < 0.0000001_dp) then
-        c1 = (10**(-16))/(2.0_dp*(gammma*cos(phi)+delta*sin(phi)))
-        call MIO_Print("WARNING: we have a singularity2",'ham')
+    if (singular) then
+        ! B = C: D and the phase formula below are singular. The fit is linear in
+        ! p = c1 cos(phi), q = c1 sin(phi): A - B = 2 (p alpha + q beta),
+        ! B - C = 2 (p gammma + q delta); solve it directly.
+        p = (A-B)/2.0_dp*delta/(alpha*delta-beta*gammma) - (B-C)/2.0_dp*beta/(alpha*delta-beta*gammma)
+        q = (B-C)/2.0_dp*alpha/(alpha*delta-beta*gammma) - (A-B)/2.0_dp*gammma/(alpha*delta-beta*gammma)
+        c1 = sqrt(p**2 + q**2)
+        phi = atan2(q, p)
     else
+        phi = atan((1.0_dp/(delta/beta*D-1.0_dp)*((delta*alpha-beta*gammma)/(beta*delta)))-(gammma)/(delta))
         c1= (B-C)/(2.0*(gammma*cos(phi)+delta*sin(phi)))
     end if
     Ax = 0.0_dp
