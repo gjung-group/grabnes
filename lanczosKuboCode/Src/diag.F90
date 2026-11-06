@@ -8980,6 +8980,12 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
   ! Select G-vectors inside triangular boundary (Python: G_bounds.contains_point)
   call select_G_vectors_in_triangle(G_frac, total_G, BZ_triangle, G_selected)
 
+  ! The triangle's corners are graphene Gamma points and the test is inclusive, so up to three Gamma
+  ! copies were kept, by roundoff. On the lattice sites they are one plane wave (a constant phase per
+  ! sublattice): X had null vectors and X^dag H X exact zero eigenvalues. Keep the first of any G equal
+  ! to an earlier selected one modulo the graphene reciprocal lattice rG.
+  call tapw_drop_graphene_lattice_copies(G_frac, total_G, bMvec, rG, G_selected)
+
   ! Count selected G-vectors
   selected_count = count(G_selected)
 
@@ -9111,6 +9117,37 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
   deallocate(G_frac, G_selected)
 
 end subroutine generate_triangular_G_list
+
+subroutine tapw_drop_graphene_lattice_copies(G_frac, total_G, bMvec, rG, G_selected)
+  ! Unselect every G equal to an earlier selected G modulo the graphene reciprocal lattice
+  ! (tolerance 1e-3 in units of rG, wider than the TAPW.aG default mismatch). Prints how many.
+  implicit none
+  integer, intent(in) :: total_G
+  double precision, intent(in) :: G_frac(2,total_G), bMvec(2,2), rG(2,2)
+  logical, intent(inout) :: G_selected(total_G)
+  double precision :: rGinv(2,2), d(2), c(2), det
+  integer :: i, j, ndrop
+
+  det = rG(1,1)*rG(2,2) - rG(1,2)*rG(2,1)
+  rGinv(1,1) =  rG(2,2)/det;  rGinv(1,2) = -rG(1,2)/det
+  rGinv(2,1) = -rG(2,1)/det;  rGinv(2,2) =  rG(1,1)/det
+  ndrop = 0
+  do i = 1, total_G
+     if (.not. G_selected(i)) cycle
+     do j = 1, i - 1
+        if (.not. G_selected(j)) cycle
+        d = matmul(bMvec, G_frac(:,i) - G_frac(:,j))
+        c = matmul(rGinv, d)
+        if (all(abs(c - nint(c)) < 1.0d-3)) then
+           G_selected(i) = .false.
+           ndrop = ndrop + 1
+           exit
+        end if
+     end do
+  end do
+  if (ndrop > 0) call MIO_Print('Triangular truncation: dropped '//trim(num2str(ndrop))// &
+       ' G equal to another selected G modulo the graphene reciprocal lattice (Gamma copies at the corners)','diag')
+end subroutine tapw_drop_graphene_lattice_copies
 
 subroutine select_G_vectors_in_triangle(G_frac, total_G, BZ_corners, G_selected)
   ! Select G-vectors that lie within the triangular boundary
