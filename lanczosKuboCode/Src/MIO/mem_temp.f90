@@ -24,7 +24,8 @@ subroutine Alloc[_TYPE]_c(array,szl,szu,name,routine,save)
    [TYPETMP], pointer :: tmp([RANK_DEC])
    character(len=32) :: arrname, rname
    logical :: copy, dealloc, alloc
-   integer :: arrSz, oldSz, i
+   integer(8) :: arrSz, oldSz
+   integer :: i
    integer :: prevBounds([RANK]*2), cpBnd([RANK]*2), indx([RANK]*2)
 
    call MemGetName(arrname,rname,name,routine)
@@ -32,7 +33,7 @@ subroutine Alloc[_TYPE]_c(array,szl,szu,name,routine,save)
    indx(1:[RANK]) = szl
    indx([RANK]+1:2*[RANK]) = szu
    if (associated(array)) then
-      oldSz = size(array)*[TYPESZ]
+      oldSz = size(array,kind=8)*int([TYPESZ],8)
       if (present(save)) then
          copy = save
       end if
@@ -56,7 +57,7 @@ subroutine Alloc[_TYPE]_c(array,szl,szu,name,routine,save)
    if (alloc) then
       allocate(array([BOUNDS]),STAT=istat)
       call SysIOErr(istat)
-      arrSz = size(array)*[TYPESZ]
+      arrSz = size(array,kind=8)*int([TYPESZ],8)
       call MemCount(arrSz,arrname,rname)
       array = [INIT]
    end if
@@ -100,11 +101,11 @@ subroutine Dealloc[_TYPE](array,name,routine)
    character(len=*), intent(in), optional :: routine, name
 
    character(len=32) :: arrname, rname
-   integer :: arrSz
+   integer(8) :: arrSz
 
    call MemGetName(arrname,rname,name,routine)
    if (associated(array)) then
-      arrSz = size(array)*[TYPESZ]
+      arrSz = size(array,kind=8)*int([TYPESZ],8)
       deallocate(array,STAT=istat)
       call SysIOErr(istat)
       call MemCount(-arrSz,arrname,rname)

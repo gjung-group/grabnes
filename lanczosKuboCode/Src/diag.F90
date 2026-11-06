@@ -220,7 +220,7 @@ subroutine DiagDOS()
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
       Kgrid(:,ik) = rcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
+        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i3-nk(3)-1)/(2.0_dp*nk(3))
    end do; end do; end do
    call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
    call MIO_Allocate(Eig,[nAt,nspin],'Eig','diag')
@@ -362,7 +362,11 @@ subroutine DiagPDOS()
    real(dp) :: ELoc(nAt)
    complex(dp) :: HLoc(nAt, nAt)
    real(dp) :: pipj, vectormultip
-   complex(dp), pointer :: HStore(:,:,:)=>NULL()
+   ! energies and layer weights of every state: weight of state n at k on layer L = sum over the
+   ! atoms i of layer L of |psi_n(i)|^2 (the eigenvectors are the columns of HLoc)
+   real(dp), allocatable :: EStoreS(:,:,:), WStore(:,:,:,:)
+   real(dp) :: w, dEgrid
+   integer :: l
 
    integer :: omp_get_thread_num, omp_get_max_threads, index_ii
 
@@ -381,14 +385,12 @@ subroutine DiagPDOS()
    call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
    call MIO_Allocate(E,Epts,'E','diag')
    ptot = nk(1)*nk(2)*nk(3)
-   call MIO_Allocate(EStore,[ptot,nAt],'DOS','diag')
-   call MIO_Allocate(HStore,[ptot,nAt,nAt],'DOS','diag')
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
       Kgrid(:,ik) = rcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
+        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i3-nk(3)-1)/(2.0_dp*nk(3))
    end do; end do; end do
    call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
    call MIO_Allocate(Eig,[nAt,nspin],'Eig','diag')
@@ -397,75 +399,48 @@ subroutine DiagPDOS()
    do i2=1,Epts
         E(i2) = E1 + (E2-E1)*(i2-1)/(Epts-1)
    end do
+   call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
+   allocate(EStoreS(nAt,ptot,nspin), WStore(numberOfLayers,nAt,ptot,nspin))
+   WStore = 0.0_dp
    do is=1,nspin
       call DiagCheckThreads('DiagPDOS')
-      !$OMP PARALLEL DO PRIVATE(ELoc, KptsLoc, ik, HLoc), REDUCTION(min:Emin), REDUCTION(max:Emax), &
-      !$OMP& SHARED(E, nAt, nspin, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell)
+      !$OMP PARALLEL DO PRIVATE(ELoc, KptsLoc, ik, HLoc, i1, ivec, l), REDUCTION(min:Emin), REDUCTION(max:Emax), &
+      !$OMP& SHARED(EStoreS, WStore, is, nAt, nspin, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, numberOfLayers)
       do ik=1,ptot
          KptsLoc = Kgrid(:,ik)
          ELoc = 0.0_dp
          HLoc = 0.0_dp
-         !if (modulo(ik,int(ptot/10)).eq.0) print*, "progress is: ", ik/int(ptot/10)*10, "percent"
          call DiagHamPDOS(nAt,nspin,is,HLoc,ELoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
-         !Eig(:,is) = Eig(:,is)*g0
          ELoc = ELoc*g0
-         !      DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-Eig(i1,is))**2/(2.0_dp*eps**2))
          Emin = min(Emin,ELoc(1))
          Emax = max(Emax,ELoc(nAt))
-         !      DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-ELoc(i1))**2/(2.0_dp*eps**2))
-         do i1=1,nAt
-            EStore(ik,i1) = ELoc(i1)
-            do i1bis=1,nAt
-              HStore(ik,i1,i1bis)=HLoc(i1,i1bis)
+         do i1=1,nAt ! state
+            EStoreS(i1,ik,is) = ELoc(i1)
+            do ivec=1,nAt ! atom
+               l = layerIndex(ivec)
+               if (l >= 1 .and. l <= numberOfLayers) WStore(l,i1,ik,is) = WStore(l,i1,ik,is) + abs(HLoc(ivec,i1))**2
             end do
          end do
       end do
       !$OMP END PARALLEL DO
    end do
-   call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
    do PDOSLayerIndex=1,numberOfLayers
       flnm = trim(prefix)//'.diag.DOS.Layer'//trim(num2str(PDOSLayerIndex))
       call file%Open(name=flnm,serial=.true.)
       u = file%GetUnit()
       call MIO_Allocate(DOS,[Epts,nspin],'DOS','diag')
-      call MIO_Allocate(DOS_thread,[Epts,nspin,omp_get_max_threads()],'DOS','diag')
       DOS = 0.0_dp
-      DOS_thread = 0.0_dp
       do is=1,nspin
-         do ik = 1,ptot ! Loop over k
-            do i1=1,nAt ! Loop over atoms (same as number of bands here)
-               if (layerIndex(i1).eq.PDOSLayerIndex) then
-                  do i2=1,Epts
-                     DOS(i2,is) = 0.0_dp
-                     do ivec=1,nAt ! add this for the vector multiplication projection operator
-                         !$OMP PARALLEL DO PRIVATE(vectormultip, pipj), &
-                         !$OMP& SHARED(E, EStore, eps, DOS_thread)
-                         do ivec2=1,nAt ! add this for the vector multiplication projection operator
-                     ! outer product between vector multiplication of two eigenvectors
-                     ! and the eigenenergy vector. The outer product is thus over the
-                     ! eigenenergies
-                           vectormultip=conjg(HStore(ik,ivec,i1))*HStore(ik,ivec2,i1) !
-                           pipj=EStore(ik,i1)*vectormultip
-                           DOS_thread(i2,is,omp_get_thread_num()+1) = DOS_thread(i2,is,omp_get_thread_num()+1) &
-                                 + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2)) * pipj
-                           !DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStore(ik,i1))**2/(2.0_dp*eps**2)) * pipj
-                         end do
-                         !$OMP END PARALLEL DO
-                     end do
-                  end do
-               end if
+         do ik = 1,ptot
+            do i1=1,nAt
+               w = WStore(PDOSLayerIndex,i1,ik,is)
+               if (w == 0.0_dp) cycle
+               do i2=1,Epts
+                  DOS(i2,is) = DOS(i2,is) + exp(-(E(i2)-EStoreS(i1,ik,is))**2/(2.0_dp*eps**2)) * w
+               end do
             end do
          end do
       end do
-      ! TO DO, add OMP parallelisaton here if it works without
-      DO index_ii = 1,omp_get_max_threads()
-         do is=1,nspin
-            do i2=1,Epts
-               DOS(i2,is) = DOS(i2,is) + DOS_thread(i2,is,index_ii)
-            enddo
-         enddo
-      ENDDO
-      call MIO_Deallocate(DOS_thread,'DOS','diag')
       if (nspin==1) then
          DOS = 2.0_dp*DOS/(eps*sqrt(twopi)*ptot)
       else
@@ -475,16 +450,14 @@ subroutine DiagPDOS()
          write(u,*) E(i1), (DOS(i1,is),is=1,nspin)
       end do
       call file%Close()
-      call MIO_Deallocate(Eig,'Eig','diag')
-      call MIO_Deallocate(H,'H','diag')
       call MIO_Print('Emin: '//trim(num2str(Emin,4))//', Emax: '//trim(num2str(Emax,4)),'diag')
-      eps = (E2-E1)/(Epts-1)
+      dEgrid = (E2-E1)/(Epts-1)
       sp = 0.0_dp
       Ep = Emin
       do ik=1,Epts-2*intorder
          s = 0.0_dp
          do is=1,nspin
-            s = s + TrapezoidalInt(DOS(:intorder*2+ik,is),intorder*2+ik,eps,intorder)
+            s = s + TrapezoidalInt(DOS(:intorder*2+ik,is),intorder*2+ik,dEgrid,intorder)
          end do
          if (s>=nEl) then
             Efermi = (E(intorder*2+ik)+Ep)/2.0_dp
@@ -500,6 +473,9 @@ subroutine DiagPDOS()
       call MIO_Print('')
       call MIO_Deallocate(DOS,'DOS','diag')
    end do
+   deallocate(EStoreS, WStore)
+   call MIO_Deallocate(Eig,'Eig','diag')
+   call MIO_Deallocate(H,'H','diag')
 
 #ifdef TIMER
    call MIO_TimerStop('diag')
@@ -551,7 +527,7 @@ subroutine Diag3DBands()
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
       Kgrid(:,ik) = rcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
+        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i3-nk(3)-1)/(2.0_dp*nk(3))
    end do; end do; end do
    call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
    call MIO_Allocate(Eig,[nAt,nspin],'Eig','diag')
@@ -563,7 +539,7 @@ subroutine Diag3DBands()
    write(uu,'(3i8)') nAt, nspin, ptot
    do is=1,nspin
       do ik=1,ptot
-         if (modulo(ik,int(ptot/10)).eq.0) call MIO_Print('progress is: '//trim(num2str((ik/ptot/10.0_dp*10.0_dp),4)) &
+         if (modulo(ik,max(1,ptot/10)).eq.0) call MIO_Print('progress is: '//trim(num2str(100.0_dp*ik/ptot,4)) &
                //' percent','diag')
          call DiagHam(nAt,nspin,is,H(:,:,is),Eig(:,is),Kgrid(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
          !hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0))
@@ -1049,10 +1025,11 @@ subroutine DiagBands()
          end do
          do ip=1,ptsTot
             if (ip.eq.1) then
+               ! one k point is computed and written here: the header gives that count
                if (useTAPW) then
-                  write(u,'(3i8)') M_tapw, nspin, ptsTot+1  ! TAPW: M eigenvalues
+                  write(u,'(3i8)') M_tapw, nspin, ptsTot  ! TAPW: M eigenvalues
                else
-                  write(u,'(3i8)') nAt, nspin, ptsTot+1     ! Regular: nAt eigenvalues
+                  write(u,'(3i8)') nAt, nspin, ptsTot     ! Regular: nAt eigenvalues
                end if
             end if
             v = Kpts(:,ip) - Kpts(:,max(ip-1,1))
@@ -1074,7 +1051,9 @@ subroutine DiagBands()
       else if (sparseDiagSolver) then
          ! Many k-points, but parallelisation happens inside DiagHamSparse so no OMP here (some obsolete code here, too lazy to
          ! remove the parts that will not be considered because we are only doing the sparseDiagSolver part here
-         do ip = 1, ptsTot
+         ! A path holds ptsTot+1 points (the dense loop computes them all and the band file below writes them all);
+         ! a 3-D grid holds ptsTot.
+         do ip = 1, merge(ptsTot, ptsTot+1, calculate3DTAPWBands)
             ! Progress tracking for TAPW (show every 10%)
             if (useTAPW .and. modulo(ip, max(1, int(ptsTot/10))) == 0 .and. ip <= ptsTot) then
                call MIO_Print('TAPW progress: '//trim(num2str(nint(100.0_dp*ip/ptsTot)))//'% ('// &
@@ -1469,7 +1448,10 @@ subroutine DiagBands()
          call MIO_Print('')
          call MIO_Print('Starting Chern number calculation...','diag')
          call MIO_Print('Note: For Chern calculation, consider setting OMP_NUM_THREADS=1 to avoid MKL/OpenMP conflicts','diag')
-         call CalculateChernTAPW(Kpts, ptsTot, E, nAt, nspin, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, RashbaSOCterm)
+         ! E is allocated with max(nAt,15000) rows and ptsTot+1 points; the routine declares E(nAt,nspin,ptsTot).
+         ! Passing the whole array made E(:,is,ik) point at the wrong data for is > 1 or ik > 1 (sequence association).
+         call CalculateChernTAPW(Kpts, ptsTot, E(1:nAt,:,1:ptsTot), nAt, nspin, ucell, H0, maxNeigh, hopp, NList, Nneigh, &
+              neighCell, RashbaSOCterm)
       end if
 
       call MIO_Print('')
@@ -1559,7 +1541,7 @@ subroutine DiagChern()
       do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
          ik = ik+1
          Kgrid(:,ik) = rcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-           rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
+           rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i3-nk(3)-1)/(2.0_dp*nk(3))
       end do; end do; end do
 
       call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
@@ -5888,8 +5870,10 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        print *, "TAPW:   a2 = cell_real(:,2) =", cell_real(:,2)
     end if
 
+     ! The projected matrix X^H H X is diagonalised densely below: no shift-invert shift belongs in H here
+     ! (Diag.SparseSetShift is in eV and was subtracted from every diagonal entry without being added back).
      call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell_real, row_ptr, &
-           col_ind, values,sigma)
+           col_ind, values,(0.0_dp,0.0_dp))
 #ifdef DEBUG
     call MIO_Print("done",'diag')
 #endif /* DEBUG */
@@ -9986,11 +9970,9 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
     ! First pass to count non-zero elements
     nnz_temp = 0
     do i = 1, N
-        if (useShift) then
-           nnz_temp = nnz_temp + 1
-        else
-           if (H0(i) /= 0.0_dp) nnz_temp = nnz_temp + 1
-        end if
+        ! One diagonal slot per atom: the fill pass below also writes a diagonal entry where H0(i) = 0 but a
+        ! spin term (Zeeman, intrinsic, Ising, PIA) is not; counting only H0(i) /= 0 overflowed the CSR arrays.
+        nnz_temp = nnz_temp + 1
         do j = 1, Nneigh(i)
             if (hopp(j,i) /= 0.0_dp) nnz_temp = nnz_temp + 1
         end do

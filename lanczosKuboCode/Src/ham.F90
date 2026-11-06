@@ -868,7 +868,7 @@ subroutine HamOnSite()
    10 CONTINUE
       if (.not. frac) call AtomsSetFrac()
       !$OMP PARALLEL DO PRIVATE(i)
-      do i = in1,in2
+      do i = 1,nAt
          if (checkerActivate(CEILING(Rat(1,i)*checkerDivider),CEILING(Rat(2,i)*checkerDivider)).eqv.(.true.)) then
                H0(i) = H0(i) + onsiteShift
          else
@@ -892,7 +892,7 @@ subroutine HamOnSite()
       call MIO_InputParameter('Structure.CellSize',n,50)
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i)
-      do i = in1,in2
+      do i = 1,nAt
         H0(i) = H0(i) + sin(sinusNumberOfPeriod*2.0_dp*pi*Rat(1,i)/(n*sCell*aG))
       end do
       !$OMP END PARALLEL DO
@@ -1322,7 +1322,7 @@ subroutine HamOnSiteSquareChecker()
 
       !$OMP PARALLEL DO PRIVATE(i,H)
 
-      do i = in1,in2
+      do i = 1,nAt
       ! >>> unset markers
       h = hamUnset
       ! <<< unset markers
@@ -1367,7 +1367,7 @@ subroutine HamOnSiteZterm1DKink()
       limit3 = (n*sCell*aG)*3.0_dp/4.0_dp
       limit4 = (n*sCell*aG)
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1402,7 +1402,7 @@ subroutine HamOnSiteZterm1D()
       call HamInputEnergyEV('Potential.AmplitudeOfSquare3',Amp3,0.01_dp)
 
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1441,7 +1441,7 @@ subroutine HamOnSiteSquareFunction2()
            if (l) then
 
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1456,7 +1456,7 @@ subroutine HamOnSiteSquareFunction2()
 
       else
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1474,7 +1474,7 @@ subroutine HamOnSiteSquareFunction2()
       call MIO_InputParameter('Potential.ArmChairShape',l,.false.)
       if (l) then
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1489,7 +1489,7 @@ subroutine HamOnSiteSquareFunction2()
 
       else
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1529,7 +1529,7 @@ subroutine HamOnSiteSquareFunction()
            if (l) then
 
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1545,7 +1545,7 @@ subroutine HamOnSiteSquareFunction()
       else
 
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1561,7 +1561,7 @@ subroutine HamOnSiteSquareFunction()
 
       else
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1598,7 +1598,7 @@ subroutine HamOnSitePNPKink()
       limit3 = (n*sCell*aG)*3.0_dp/4.0_dp
       limit4 = (n*sCell*aG)
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -1633,7 +1633,7 @@ subroutine HamOnSitePNP()
       PNPLeft = (n*sCell*aG)/6.0_dp * 2.0_dp
       PNPRight = (n*sCell*aG)/6.0_dp * 4.0_dp
       !$OMP PARALLEL DO PRIVATE(i,H)
-      do i = in1,in2
+      do i = 1,nAt
         ! >>> unset markers
         h = hamUnset
         ! <<< unset markers
@@ -4752,14 +4752,11 @@ subroutine harmonicApprox(dx,dy,A,B,C, Hjj)
     real(dp), intent(in) :: dx, dy, A, B, C
     real(dp), intent(out) :: Hjj
     real(dp) :: x1, y1, x2, y2, G1, m1, m2, a1, a2, a3, a4, alpha, beta, gammma
-    real(dp) :: delta, Ax, Ay, acc, f1, D, c0, c1, phi
+    real(dp) :: delta, Ax, Ay, acc, f1, D, c0, c1, phi, p, q
+    logical :: singular
 
-    if (abs(B-C) < 0.0000001) then
-        call MIO_Print("WARNING: we have a singularity",'ham')
-        D = (A-B)/(10**(-16))
-    else
-        D = (A-B)/(B-C)
-    end if
+    singular = abs(B-C) < 1.0e-7_dp
+    if (.not. singular) D = (A-B)/(B-C)
 
     x1 = 0.0_dp
     y1 = 1.0_dp/sqrt(3.0_dp)
@@ -4787,11 +4784,16 @@ subroutine harmonicApprox(dx,dy,A,B,C, Hjj)
     a2 = sin(G1*y1) - sin(G1*y2)
     a4 = 2.0_dp*sin(G1*y1/2.0_dp) * m1 - 2.0_dp*sin(G1*y2/2.0_dp)* m2
     delta = a2 - a4
-    phi = atan((1.0_dp/(delta/beta*D-1.0_dp)*((delta*alpha-beta*gammma)/(beta*delta)))-(gammma)/(delta))
-    if (abs(B-C) < 0.0000001_dp) then
-        c1 = (10**(-16))/(2.0_dp*(gammma*cos(phi)+delta*sin(phi)))
-        call MIO_Print("WARNING: we have a singularity2",'ham')
+    if (singular) then
+        ! B = C: D and the phase formula below are singular. The fit is linear in
+        ! p = c1 cos(phi), q = c1 sin(phi): A - B = 2 (p alpha + q beta),
+        ! B - C = 2 (p gammma + q delta); solve it directly.
+        p = (A-B)/2.0_dp*delta/(alpha*delta-beta*gammma) - (B-C)/2.0_dp*beta/(alpha*delta-beta*gammma)
+        q = (B-C)/2.0_dp*alpha/(alpha*delta-beta*gammma) - (A-B)/2.0_dp*gammma/(alpha*delta-beta*gammma)
+        c1 = sqrt(p**2 + q**2)
+        phi = atan2(q, p)
     else
+        phi = atan((1.0_dp/(delta/beta*D-1.0_dp)*((delta*alpha-beta*gammma)/(beta*delta)))-(gammma)/(delta))
         c1= (B-C)/(2.0*(gammma*cos(phi)+delta*sin(phi)))
     end if
     Ax = 0.0_dp
@@ -5157,6 +5159,10 @@ subroutine HamHopping
    t6ksl = hamUnset
    t7ksl = hamUnset
    t8ksl = hamUnset
+   tr1 = hamUnset
+   tr2 = hamUnset
+   tr3 = hamUnset
+   tr4 = hamUnset
    x3 = hamUnset
    x6 = hamUnset
    x6b = hamUnset
@@ -5296,8 +5302,15 @@ subroutine HamHopping
          end if
          call MIO_InputParameter('Trilayer.FanZhang',FanZhang,.false.)
          if (FanZhang) then
-             call MIO_InputParameter('Trilayer.Gamma3',tr1,0.0_dp)
              call MIO_InputParameter('Trilayer.Gamma3',tr3,0.0_dp)
+             ! tr1 is the vertical dimer hopping (gamma1). It was read from Trilayer.Gamma3; without the new key
+             ! the old value is kept, with a warning, so that existing inputs give the same result.
+             call MIO_InputParameter('Trilayer.Gamma1',tr1,hamUnset)
+             if (ieee_is_nan(tr1)) then
+                tr1 = tr3
+                call MIO_Print('WARNING: Trilayer.Gamma1 not set: the vertical (dimer) hopping takes the value of '// &
+                   'Trilayer.Gamma3, as before. Set Trilayer.Gamma1 explicitly.','ham')
+             end if
              call MIO_InputParameter('Trilayer.Gamma4',tr4,0.0_dp)
              call MIO_InputParameter('Trilayer.Gamma2',tr2,0.0_dp)
              call MIO_InputParameter('Trilayer.Delta',trDelta,0.0_dp)

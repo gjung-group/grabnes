@@ -193,7 +193,9 @@ subroutine AtomsPos()
           !$OMP END PARALLEL DO
           call MIO_InputParameter('Moire.DistanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
           if (distanceDependentEffectiveModel) then
-             call MIO_Allocate(interlayerDistances,nAt*sCell*sCell,'interlayerDistances','atoms')
+             ! nAt already counts the SuperCell copies here. A larger array was reallocated (and zeroed)
+             ! to nAt in AtomsPos, which put every interlayer distance at 0 for SuperCell > 1.
+             call MIO_Allocate(interlayerDistances,nAt,'interlayerDistances','atoms')
              do i=1,nAt
                 interlayerDistances(i) = 3.35_dp
              end do
@@ -478,7 +480,7 @@ subroutine AtomsPos()
       nAtC1 = size(RatC1,2)
       call MIO_Print('Number of atoms in layer1: '//trim(num2str(nAtC1)),'atoms')
       if (MIO_StringComp(str,'MoireEncapsulatedBilayer')) then
-          yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor
+          yShift = (aG/3.0_dp)/(m(1)*aG)+shiftFactor
       end if
       if (MIO_StringComp(str,'TwistedBilayer')) then
           yShift = (aG/3.0_dp)/(m(1)*aG)+shiftFactor*aG

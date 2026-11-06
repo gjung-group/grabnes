@@ -202,7 +202,7 @@ elemental function num2bytes(num) result(string)
 
    use precision,            only : sp
 
-   integer, intent(in) :: num
+   integer(8), intent(in) :: num
    character(len=30) :: string
 
    character(len=*), parameter :: u(5) = (/'bytes','kB   ','MB   ','GB   ','TB   '/)

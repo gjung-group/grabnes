@@ -232,7 +232,7 @@ subroutine KuboFrac(a,b,nRecurs,norm,eps,nEn,Emin,Emax,name,name2)
    integer :: iE, iR, u, v
    complex(dp) :: z, g
    real(dp) :: D
-   type(cl_file) :: file
+   type(cl_file) :: file, file2
 
 #ifdef DEBUG
    call MIO_Debug('KuboFrac',0)
@@ -246,8 +246,9 @@ subroutine KuboFrac(a,b,nRecurs,norm,eps,nEn,Emin,Emax,name,name2)
    binf=b(nRecurs)
    call file%Open(name=name,serial=.true.)
    u = file%GetUnit()
-   call file%Open(name=name2,serial=.true.)
-   v = file%GetUnit()
+   ! A second file object: opening name2 through 'file' replaced its unit, so the .DOS file was never closed
+   call file2%Open(name=name2,serial=.true.)
+   v = file2%GetUnit()
 #ifdef MPI
    if (IsPNode) then
 #endif /* MPI */
@@ -272,6 +273,7 @@ subroutine KuboFrac(a,b,nRecurs,norm,eps,nEn,Emin,Emax,name,name2)
    end if
 #endif /* MPI */
    call file%Close()
+   call file2%Close()
 #ifdef MPI
    call MPIBarrier()
 #endif /* MPI */

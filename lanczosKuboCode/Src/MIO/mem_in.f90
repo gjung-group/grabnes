@@ -27,7 +27,8 @@ module mem
    integer, public, parameter :: Ssz = [SSZ]
    integer, public, parameter :: Lsz = [LSZ]
 
-   integer, save :: totalMem = 0, peakMem=0
+   ! 64-bit: arrays above 2 GB and totals above 2 GB overflowed a default integer
+   integer(8), save :: totalMem = 0, peakMem=0
    integer :: istat
 
    public :: MemCount
@@ -55,7 +56,7 @@ subroutine MemCount(sz,arrname,rname)
 
     implicit none
 
-    integer, intent(in) :: sz
+    integer(8), intent(in) :: sz
     character(len=*), intent(in) :: arrname, rname
 
     totalMem = totalMem + sz
