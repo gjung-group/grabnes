@@ -12944,8 +12944,10 @@ subroutine compute_TB_hamiltonian_derivatives(dH_TB_dkx, dH_TB_dky, N, KLoc, H0,
             derivative_factor_y = -cmplx_i * R(2) * phase_factor
 
             ! Apply to hopping term: dH/dk = -t_ij * d/dk[exp(-i k·R)]
-            dH_TB_dkx(i, in) = dH_TB_dkx(i, in) - hopp(j, i) * derivative_factor_x
-            dH_TB_dky(i, in) = dH_TB_dky(i, in) - hopp(j, i) * derivative_factor_y
+            ! At (in, i), where transform_dense_hamiltonian_tapw puts this bond's term of H (as the block
+            ! version does). At (i, in) this was dH^T = -dH(-k) for real hoppings: the velocity at G+k.
+            dH_TB_dkx(in, i) = dH_TB_dkx(in, i) - hopp(j, i) * derivative_factor_x
+            dH_TB_dky(in, i) = dH_TB_dky(in, i) - hopp(j, i) * derivative_factor_y
          end if
       end do
    end do
