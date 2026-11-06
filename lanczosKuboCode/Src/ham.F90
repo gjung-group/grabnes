@@ -7131,10 +7131,9 @@ subroutine HamHopSecondMoire()
                     !  (Species(i)==2 .and. Species(NList(j,i))==1)) then
                     !else if ((Species(i)==3 .and. Species(NList(j,i))==4) .or. &
                     !  (Species(i)==4 .and. Species(NList(j,i))==3)) then
-                 else
-                    d = sqrt(dot_product(NeighD(1:2,j,i),NeighD(1:2,j,i)))
-                    hopp(j,i) = hopp(j,i) + cmplx(gIntLay*exp(-d/dIntLay),kind=dp)
                  end if
+                 ! (bonds between layers: left as HamHopping set them; a generic gIntLay*exp(-d/dIntLay)
+                 !  term was added here on top of the interlayer model, i.e. a second time)
               end do
           end do
         !$OMP END PARALLEL DO
