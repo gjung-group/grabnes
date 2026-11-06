@@ -5159,6 +5159,10 @@ subroutine HamHopping
    t6ksl = hamUnset
    t7ksl = hamUnset
    t8ksl = hamUnset
+   tr1 = hamUnset
+   tr2 = hamUnset
+   tr3 = hamUnset
+   tr4 = hamUnset
    x3 = hamUnset
    x6 = hamUnset
    x6b = hamUnset
@@ -5298,8 +5302,15 @@ subroutine HamHopping
          end if
          call MIO_InputParameter('Trilayer.FanZhang',FanZhang,.false.)
          if (FanZhang) then
-             call MIO_InputParameter('Trilayer.Gamma3',tr1,0.0_dp)
              call MIO_InputParameter('Trilayer.Gamma3',tr3,0.0_dp)
+             ! tr1 is the vertical dimer hopping (gamma1). It was read from Trilayer.Gamma3; without the new key
+             ! the old value is kept, with a warning, so that existing inputs give the same result.
+             call MIO_InputParameter('Trilayer.Gamma1',tr1,hamUnset)
+             if (ieee_is_nan(tr1)) then
+                tr1 = tr3
+                call MIO_Print('WARNING: Trilayer.Gamma1 not set: the vertical (dimer) hopping takes the value of '// &
+                   'Trilayer.Gamma3, as before. Set Trilayer.Gamma1 explicitly.','ham')
+             end if
              call MIO_InputParameter('Trilayer.Gamma4',tr4,0.0_dp)
              call MIO_InputParameter('Trilayer.Gamma2',tr2,0.0_dp)
              call MIO_InputParameter('Trilayer.Delta',trDelta,0.0_dp)
