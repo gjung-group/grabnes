@@ -210,10 +210,13 @@ class InputParser:
     schema: Schema
     allow_unknown: bool = False
     warnings: list[str] = field(default_factory=list)
+    # key -> (precedence of the value kept, name as written there); reset by each parse
+    _key_rank: dict[str, tuple[int, str]] = field(default_factory=dict)
 
     def parse_yaml(self, data: Any) -> Model:
         """The nested {section: {key: value}} mapping (or flat full names) to the model."""
         model = new_model()
+        self._key_rank = {}
         if not isinstance(data, dict):
             raise InputFormat('the input must be a mapping of sections and keys')
         for section, content in data.items():
@@ -256,6 +259,14 @@ class InputParser:
             model['order'].append(('blocks', normalize(name)))
             return
         key_info = cast('KeyInfo | None', entry)
+        action = self._repeat(name, fullname, key_info)
+        if action == 'skip':
+            return
+        if action == 'replace':
+            kept = model['keys'][normalize(name)]
+            kept['value'] = self._scalar_value(value, key_info, fullname)
+            kept['comment'] = eol
+            return
         model['keys'][normalize(name)] = {
             'name': name,
             'entry': key_info,
@@ -264,6 +275,28 @@ class InputParser:
             'comment': eol,
         }
         model['order'].append(('keys', normalize(name)))
+
+    def _repeat(self, found: str, written: str, entry: KeyInfo | None) -> str:
+        """'new' for the first line of a key; for a repeat, 'replace' or 'skip' as the solver would."""
+        rank = self._precedence(written, found, entry)
+        used = self._key_rank.get(normalize(found))
+        if used is None:
+            self._key_rank[normalize(found)] = (rank, written)
+            return 'new'
+        used_rank, used_as = used
+        if rank < used_rank:
+            self.warnings.append(
+                f'{found}: given as {used_as} and as {written}; the value of {written} is used'
+            )
+            self._key_rank[normalize(found)] = (rank, written)
+            return 'replace'
+        if rank > used_rank:
+            self.warnings.append(
+                f'{found}: given as {used_as} and as {written}; the value of {used_as} is used'
+            )
+        else:
+            self.warnings.append(f'{found}: appears twice, the first value is used')
+        return 'skip'
 
     def _scalar_value(self, value: Any, entry: KeyInfo | None, fullname: str) -> Value:
         typ = entry['type'] if entry else 'unknown'
@@ -347,11 +380,17 @@ class InputParser:
         return rows
 
     def parse_in(self, text: str, name: str = '<input>') -> Model:
-        """The text of a Gendata.in into the model; first value wins, as in the solver."""
+        """The text of a Gendata.in into the model, with the solver's precedence for repeated keys.
+
+        As in the solver (InputSearchLabel): the present (Section.Name) name of a key wins over its
+        former names wherever it appears, then the former names in the order of the alias table;
+        among lines of the same spelling, the first one wins.
+        """
         model = new_model()
         lines = text.splitlines()
         pending: list[str] = []  # comment lines before the next entry
         seen: set[str] = set()
+        self._key_rank = {}
         i = 0
         while i < len(lines):
             body, comment = split_comment(lines[i])
@@ -420,11 +459,14 @@ class InputParser:
                 self.warnings.append(f'{key}: former name of {canonical}, reading it as {canonical}')
             found = canonical or key
             key_info = cast('KeyInfo | None', entry) if kind == 'key' else None
-            if normalize(found) in seen:
-                self.warnings.append(f'{found}: appears twice, the first value is used')
+            action = self._repeat(found, key, key_info)
+            if action == 'replace':
+                kept = model['keys'][normalize(found)]
+                kept['value'] = self._parse_value(rest, key_info)
+                kept['comment'] = comment
+            if action != 'new':
                 i += 1
                 continue
-            seen.add(normalize(found))
             model['keys'][normalize(found)] = {
                 'name': found,
                 'entry': key_info,
@@ -439,6 +481,14 @@ class InputParser:
             raise InputFormat(f'{name}: no keys found')
         model['trailing'] = pending
         return model
+
+    @staticmethod
+    def _precedence(written: str, found: str, entry: KeyInfo | None) -> int:
+        """0 for the present name of a key, 1, 2, ... for its former names in alias-table order."""
+        if normalize(written) == normalize(found) or entry is None:
+            return 0
+        former = [normalize(x) for x in entry.get('formerNames', [])]
+        return 1 + former.index(normalize(written)) if normalize(written) in former else 1 + len(former)
 
     @staticmethod
     def _parse_value(rest: str, entry: KeyInfo | None) -> Value:
