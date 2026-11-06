@@ -1312,7 +1312,7 @@
   "status": "ok"
  },
  "xyz2_gbn+GBNOffDiag": {
-  "fingerprint": "51b9ddce033902b0",
+  "fingerprint": "b8501f43e2c35014",
   "status": "NONHERM"
  },
  "xyz2_gbn+GBNtwoLayersF2G2s": {
@@ -1360,15 +1360,15 @@
   "status": "ok"
  },
  "xyz2_gbn_relaxed+GBNOffDiag": {
-  "fingerprint": "d6b2b704d735580b",
+  "fingerprint": "2c6b8c9f98c003d3",
   "status": "NONHERM"
  },
  "xyz2_gbn_relaxed+GBNOffDiag+file": {
-  "fingerprint": "cf397a93fa12fc08",
+  "fingerprint": "0f80210e8c65ee59",
   "status": "NONHERM"
  },
  "xyz2_gbn_relaxed+GBNOffDiag+file+harmonic": {
-  "fingerprint": "cf397a93fa12fc08",
+  "fingerprint": "0f80210e8c65ee59",
   "status": "NONHERM"
  },
  "xyz2_gbn_relaxed+GBNuseDisplacementFile": {
