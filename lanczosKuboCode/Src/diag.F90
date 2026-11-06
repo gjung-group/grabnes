@@ -991,6 +991,17 @@ subroutine DiagBands()
                   call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, &
                         Nneigh, neighCell, neig, ip)
                   !$OMP END CRITICAL
+                  ! the block gives the 2M spin-mixed levels of both spins at once: stored in both spin slots, as the
+                  ! k-point loop below does (without this, is = 2 went on to the spinless DiagH0TAPW)
+                  E(1:min(2*M_tapw, nAt), 1, ip) = ELoc(1:min(2*M_tapw, nAt))
+                  E(1:min(2*M_tapw, nAt), 2, ip) = ELoc(1:min(2*M_tapw, nAt))
+                  if (2*M_tapw > nAt) then
+                     E(nAt+1:min(2*M_tapw, size(E,1)), 1, ip) = 0.0_dp
+                     E(nAt+1:min(2*M_tapw, size(E,1)), 2, ip) = 0.0_dp
+                  end if
+                  cycle
+               else if (useTAPW .and. RashbaSOCterm .and. is == 2) then
+                  cycle
                else if (useTAPW) then
                   call DiagH0TAPW(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell,neig, ip)
                else if (RashbaSOCterm .and. is == 1) then
