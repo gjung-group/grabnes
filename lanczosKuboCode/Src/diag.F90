@@ -645,6 +645,11 @@ subroutine DiagBands()
     call MIO_InputParameter('TAPW.Use',useTAPW,.false.)
     call MIO_InputParameter('TAPW.UseDenseMatrix',useDenseMatrixTAPW,.false.)
     call MIO_InputParameter('TAPW.BlockMatrixFree',tapwBlockMatrixFree,.false.)
+    ! Diag.SparseSolver is tested before TAPW.Use in the k loops below: it would replace TAPW with the sparse
+    ! solver on the full Hamiltonian, without a message (the band file then holds no TAPW states)
+    if (useTAPW .and. sparseDiagSolver) call MIO_Kill('TAPW.Use and Diag.SparseSolver cannot be combined: the '// &
+      'sparse solver diagonalises the full Hamiltonian and would replace TAPW. For TAPW on a large cell use '// &
+      'TAPW.UseDenseMatrix .false. (sparse TAPW); otherwise switch one of them off.','diag','DiagBands')
     if (tapwBlockMatrixFree .and. (tapwDebug .or. forceBlockTAPW)) call MIO_Kill('TAPW.BlockMatrixFree: the '// &
       'Diag.TAPWDebug / forceBlockTAPW checks read the dense block - switch them off or use the dense block','diag', &
       'DiagBands')
