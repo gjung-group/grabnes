@@ -576,12 +576,13 @@ subroutine HamInit()
    end if
    call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
-      call MIO_Print('Reading in the (non-remormalized by g0) onsite energies from generate.e','ham')
+      ! generate.e is the file Output.WriteDataFiles writes (HamHopWriteTables): H0 already in units of g0,
+      ! like the hoppings of generate.s
+      call MIO_Print('Reading in the (already g0-renormalized) onsite energies from generate.e','ham')
       call MIO_Allocate(H0,[inode1],[inode2],'H0','ham')
       open(222,FILE="generate.e",STATUS='old')
       do i=1,nAt
          read(222,*) H0(i)
-         H0(i) = H0(i)/g0
       end do
       close(222)
    else
