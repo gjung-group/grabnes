@@ -220,7 +220,7 @@ subroutine DiagDOS()
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
       Kgrid(:,ik) = rcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
+        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i3-nk(3)-1)/(2.0_dp*nk(3))
    end do; end do; end do
    call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
    call MIO_Allocate(Eig,[nAt,nspin],'Eig','diag')
@@ -388,7 +388,7 @@ subroutine DiagPDOS()
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
       Kgrid(:,ik) = rcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
+        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i3-nk(3)-1)/(2.0_dp*nk(3))
    end do; end do; end do
    call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
    call MIO_Allocate(Eig,[nAt,nspin],'Eig','diag')
@@ -551,7 +551,7 @@ subroutine Diag3DBands()
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
       Kgrid(:,ik) = rcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
+        rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i3-nk(3)-1)/(2.0_dp*nk(3))
    end do; end do; end do
    call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
    call MIO_Allocate(Eig,[nAt,nspin],'Eig','diag')
@@ -1559,7 +1559,7 @@ subroutine DiagChern()
       do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
          ik = ik+1
          Kgrid(:,ik) = rcell(:,1)*(2*i1-nk(1)-1)/(2.0_dp*nk(1)) + &
-           rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i2-nk(3)-1)/(2.0_dp*nk(3))
+           rcell(:,2)*(2*i2-nk(2)-1)/(2.0_dp*nk(2)) + rcell(:,3)*(2*i3-nk(3)-1)/(2.0_dp*nk(3))
       end do; end do; end do
 
       call MIO_Allocate(H,[nAt,nAt,nspin],'H','diag')
