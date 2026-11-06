@@ -11599,6 +11599,7 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
    integer :: temp_idx  ! Temporary variable for sorting
    real(dp) :: temp_dist, band_energy_at_gamma  ! Temporary variables
    integer, allocatable :: target_band_indices(:)  ! Actual band indices of target bands
+   integer, allocatable :: target_pos(:)  ! Their positions in band_indices / berry_curv_bands
    real(dp), allocatable :: target_chern_values(:)  ! Chern numbers of target bands
 
    ! Variables for BZ area calculation (following Python approach)
@@ -11873,7 +11874,7 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          chern_bands = 0.0_dp
 
          ! Identify target bands (closest to Fermi energy) for this spin channel
-      allocate(target_band_indices(n_target_bands))
+      allocate(target_band_indices(n_target_bands), target_pos(n_target_bands))
       if (n_target_bands > 0 .and. n_target_bands <= n_bands_near_fermi) then
          ! Find the actual bands closest to Fermi energy from our selected bands
          allocate(fermi_distances(n_bands_near_fermi))
@@ -11901,6 +11902,7 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          ! Store the indices of the closest bands for file naming
          do i = 1, n_target_bands
             target_band_indices(i) = band_indices(sorted_indices(i))
+            target_pos(i) = sorted_indices(i)
          end do
 
          ! Debug: Show target band indices
@@ -11912,8 +11914,9 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          deallocate(fermi_distances, sorted_indices)
       else
          ! Fallback: use first n_target_bands from convergence bands
-         do i = 1, n_target_bands
+         do i = 1, min(n_target_bands, n_bands_near_fermi)
             target_band_indices(i) = band_indices(i)
+            target_pos(i) = i
          end do
       end if
 
@@ -11994,7 +11997,10 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          end if
 
          ! OUTPUT: Write Berry curvature data for hotspot analysis
-         call output_berry_curvature_data(ik, Kpts(:,ik), berry_curv_bands, target_band_indices, n_target_bands)
+         ! the curvature of the bands named in the file, not of window positions 1..n_target_bands
+         if (n_target_bands > 0 .and. n_target_bands <= n_bands_near_fermi) &
+            call output_berry_curvature_data(ik, Kpts(:,ik), berry_curv_bands(target_pos), target_band_indices, &
+                                             n_target_bands, is)
 
          ! Accumulate Chern numbers (BZ integration) for all bands
          ! Python formula: C = np.sum(berry, axis=0) * dkx_dky / (2*np.pi)
@@ -12155,12 +12161,15 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          ! Pass only the target bands (closest to Fermi) to file output
          call write_chern_tapw_results(target_band_indices, target_chern_values, &
                                          chern_total, nk_chern_x, nk_chern_y, fermi_energy, is)
-         deallocate(target_band_indices, target_chern_values)
+         deallocate(target_chern_values)
       else
-         ! Fallback: use first 2 bands if target bands not properly defined
-         call write_chern_tapw_results(band_indices(1:2), chern_bands(1:2), &
+         ! Fallback: use the first (up to) 2 bands if target bands not properly defined
+         call write_chern_tapw_results(band_indices(1:min(2,n_bands_near_fermi)), chern_bands(1:min(2,n_bands_near_fermi)), &
                                          chern_total, nk_chern_x, nk_chern_y, fermi_energy, is)
       end if
+      ! freed on every spin pass (the fallback kept it allocated: spin 2 stopped with "already allocated")
+      if (allocated(target_band_indices)) deallocate(target_band_indices)
+      if (allocated(target_pos)) deallocate(target_pos)
       end do  ! End of spin loop
 
       deallocate(chern_bands, berry_curv_bands)
@@ -15392,13 +15401,13 @@ function is_in_first_BZ(kx_frac, ky_frac) result(in_BZ)
 
 end function is_in_first_BZ
 
-subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band_indices, n_target_bands)
+subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band_indices, n_target_bands, spin_index)
    ! Output Berry curvature data for hotspot analysis
    ! Format: kx, ky, BerryCurvature_band1, BerryCurvature_band2, ...
    implicit none
 
    ! Input parameters
-   integer, intent(in) :: kpoint_index, n_target_bands
+   integer, intent(in) :: kpoint_index, n_target_bands, spin_index
    real(dp), intent(in) :: kpt(3)
    real(dp), intent(in) :: berry_curv_bands(:)
    integer, intent(in) :: band_indices(:)
@@ -15422,6 +15431,8 @@ subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band
       write(filename, '(A,I0,A,I0,A,I0,A)') 'berry_curvature_bands_', band_indices(1), '_to_', &
             band_indices(n_target_bands), '_', n_target_bands, 'bands.dat'
    end if
+   ! spin 2 in its own file (it replaced the spin-1 file before); the spin-1 name is unchanged
+   if (spin_index > 1) filename = filename(1:len_trim(filename)-4)//'_spin'//trim(num2str(spin_index))//'.dat'
 
    ! Open file (append mode for multiple k-points)
    if (kpoint_index == 1) then
