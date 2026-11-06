@@ -52,7 +52,7 @@ subroutine AtomsRotate(angle)
 #endif /* DEBUG */
 
    a = angle*pi/180.0_dp
-   !$OMP PARALLEL DO
+   !$OMP PARALLEL DO PRIVATE(tempRat1)
    do i=1,nAt
         tempRat1 = Rat(1,i)
         Rat(1,i) = Rat(1,i) * cos(a) - Rat(2,i) * sin(a)

@@ -5216,7 +5216,7 @@ subroutine HamHopping
    call MIO_InputParameter('MagField.Integer',mB,1)
    if (moireStrain) then
       if (.not. frac) call AtomsSetFrac()
-      !$OMP PARALLEL DO PRIVATE(v1,v2)
+      !$OMP PARALLEL DO PRIVATE(v1,v2,h1,h2,d)
       do i=1,nAt
          ! >>> unset markers
          v1 = hamUnset
@@ -6990,7 +6990,7 @@ subroutine HamHopSecondMoire()
           call MIO_InputParameter('Moire.LatticePercentFactor',epsFactor,1.0_dp)
 ! ---  Repeat one more time - This time, add only a term delta... ---
           !$OMP PARALLEL DO PRIVATE(d,nlay,delta,del,realH,imagH,Habjj,dx,dy,HBL), &
-          !$OMP& PRIVATE(Cabd), &
+          !$OMP& PRIVATE(Cabd, jj), &
           !$OMP& REDUCTION (+:numberOfDel1,numberOfDel2,numberOfDel3,numberOfInterlayerHoppings)
           do i=1,nAt
               ! >>> unset markers
