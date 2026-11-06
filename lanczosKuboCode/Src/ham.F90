@@ -5438,7 +5438,8 @@ subroutine HamHopping
          call MIO_InputParameter('Structure.InterlayerDistance',interlayerdistance,3.35_dp)
          qsigma = interlayerdistance * 2.218_dp
          call MIO_InputParameter('Moire.DistanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
-         call MIO_InputParameter('Intralayer.F2G2Model',F2G2Model,.true.) ! default true
+         ! (Intralayer.F2G2Model is read once above, unless Intralayer.RemoveF2G2Flag: a second read here
+         !  with default .true. undid that flag)
          call MIO_InputParameter('Intralayer.UseOldGrapheneF2G2',useOldGrapheneF2G2,.false.) ! default true
          call MIO_InputParameter('Interlayer.DeactivateInterlayer',deactivateInterlayer,.false.)
          call MIO_InputParameter('Interlayer.DeactivateInterlayer12',deactivateInterlayer12,.false.)
