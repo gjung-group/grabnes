@@ -23,6 +23,8 @@ Diag.Calc             .true.
 
 - One key per line, followed by its value. Keys are not case sensitive, and
   `_` and `-` inside a key are ignored.
+- `#` or `!` starts a comment anywhere on a line; a line that starts with `*` is
+  a comment too. A line ending in `\` continues on the next line.
 - Logical values: `.true.`, `true`, `t`, `yes`, `y` (and the corresponding
   forms of false).
 - A block starts with `&begin Name N`, where `N` is the number of lines that
