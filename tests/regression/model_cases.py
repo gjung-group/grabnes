@@ -523,34 +523,20 @@ COMPILER_DEPENDENT = {
     'graphene+Bubbles',
     'graphene+GaussDisorder',
     'graphene+MoireStrain',
-    'graphene+PNP',
-    'graphene+SquareChecker2219',
-    'graphene+SquareFunction',
-    'graphene+SquareFunction2',
     'graphene+SublatticeDisorder',
-    'graphene+Zterm1D',
-    'graphene+Zterm1DKink',
-    'graphene+PNPKink',
     'graphene+deltaDisorder',
-    'graphene+sinusModulation',
-    'sys_MoireEncapsulatedBilayer',
-    'sys_MoireEncapsulatedBilayer+removeF2G2Flag',
-    'sys_Trilayer',
-    'sys_Trilayer+TrilayerAddShift',
     'tbg+twistedBLAddShift',
 }
 
-# The on-site potentials that differ with Intel only (sinusModulation, SquareFunction*, SquareChecker2219, PNP,
-# Zterm1D) are functions of the Cartesian x or y of an atom that are not periodic in the hexagonal cell: atoms on
-# the cell boundary are placed on one side or the other depending on rounding, which changes their value.
-# Zterm1DKink and PNPKink use the same x limits; they were refused with every compiler until their boundary atoms
-# were assigned (October 2026), and since then differ between GNU and Intel in the same way.
+# The Cartesian on-site potentials (sinusModulation, SquareFunction*, SquareChecker2219, PNP(+Kink), Zterm1D(+Kink)),
+# MoireEncapsulatedBilayer and TrilayerBasedOnMoireCell were in this list until November 2026. The causes were bugs,
+# not rounding: the on-site loops covered only nAt/threads atoms with Intel OpenMP, MoireEncapsulatedBilayer shifted
+# by an unset variable, and the trilayer used unset hoppings. Since those fixes the checked GNU and the Intel builds
+# give the same status and fingerprint for every one of them, so they are compared again.
 # The BLKaxiras interlayer model on the generated twisted bilayer was in this list until the switches of the
 # Srivani model, which its branch of the loop tests, were read for it as well (October 2026): they were
 # undefined and the leftover memory decided the outcome. Now every compiler refuses these cases in the same
 # way (the model lacks parameters for this configuration).
-# TrilayerBasedOnMoireCell: non-finite hoppings with the optimised GNU build only, and not in every build.
-COMPILER_DEPENDENT |= {c for c in CASES if c.startswith("sys_Trilayer")}
 # realisticBubbles: the number of bubbles is drawn at random. With none the switch does nothing; with one or
 # more the run is refused (the list of bubble centres is never filled). Which of the two happens varies.
 COMPILER_DEPENDENT.add("graphene+realisticBubbles")
