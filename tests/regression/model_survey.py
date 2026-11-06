@@ -192,16 +192,18 @@ def classify(run_dir, rc, timed_out, mode="tables"):
     key = {}
     for e in range(len(t["hop"])):
         key.setdefault((int(t["owner"][e]), int(t["neighbor"][e]), tuple(int(x) for x in t["image"][e])), []).append(e)
+    # H(k) adds every entry of a bond: compare and fingerprint the sum, so that a bond entered twice shows
+    hop = {k: complex(np.sum(t["hop"][es])) for k, es in key.items()}
     asym, unpaired, duplicates = 0.0, 0, sum(len(v) - 1 for v in key.values())
-    for (i, m, r), es in key.items():
-        partner = key.get((m, i, tuple(-x for x in r)))
+    for (i, m, r), value in hop.items():
+        partner = hop.get((m, i, tuple(-x for x in r)))
         if partner is None:
             unpaired += 1
             continue
-        asym = max(asym, abs(t["hop"][es[0]] - np.conj(t["hop"][partner[0]])))
+        asym = max(asym, abs(value - np.conj(partner)))
     info.update(asym=float(asym), unpaired=unpaired)
-    rows = sorted((i, m) + r + (round(float(t["hop"][es[0]].real), DIGITS) + 0.0, round(float(t["hop"][es[0]].imag), DIGITS) + 0.0)
-                  for (i, m, r), es in key.items())
+    rows = sorted((i, m) + r + (round(value.real, DIGITS) + 0.0, round(value.imag, DIGITS) + 0.0)
+                  for (i, m, r), value in hop.items())
     h = hashlib.sha1()
     h.update(repr(rows).encode())
     h.update(repr([round(float(x), DIGITS) + 0.0 for x in t["h0"]]).encode())
