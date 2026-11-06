@@ -701,7 +701,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Strain.RealStrainReferenceLatticeConstantBN` | `realStrainReferenceLatticeConstantBN` |  | `aBN` | ham.F90: HamHopRealStrain |
 | `Strain.ShellsFromRigidPositions` | `shellsFromRigidPositions` | logical | `.false.` | ham.F90: HamHopping |
 | `Strain.ShellsRigidFile` | `shellsRigidFile` | string | `'generateInit.xyz'` | ham.F90: HamHopShellsFromRigid |
-| `Strain.StrainedMoire` | `strainedMoire` | logical | `.false.` | ham.F90: HamHopping |
+| `Strain.StrainedMoire` | `strainedMoire` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping |
 | `Strain.StrainedMoireMaxDisplacement` | `strainedMoireMaxDisplacement` | real | `0.5` | ham.F90: HamHopping |
 | `Structure.AddDisplacements` | `addDisplacements` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
 | `Structure.AtomsOrderDeactivated` | `AtomsOrderDeactivated` | logical | `.true.` | atoms.F90: AtomsOrder |
