@@ -8189,7 +8189,8 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                                  !if (i.eq.1 .and. j.eq.1) print*, "we are assigning the thetas geometrically"
                                  uvec(1) = NeighD(1,j,i)
                                  uvec(2) = NeighD(2,j,i)
-                                 uvec(1) = 0.0_dp
+                                 uvec(3) = 0.0_dp
+                                 vvec(1) = 0.0_dp
                                  vvec(2) = 0.0_dp
                                  vvec(3) = 0.0_dp
                                  ! Attom 1 in top layer (seems like top layer is the unrotated one)
