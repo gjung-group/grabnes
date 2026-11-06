@@ -118,7 +118,8 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Haldane.SpecifyFlux` | `HaldaneSpecifyFlux` | logical | `.false.` | ham.F90: HamHopHaldane; magf.F90: HaldPhaseInit |
 | `Haldane.SpecifyPhase` | `HaldaneSpecifyPhase` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopHaldane; magf.F90: HaldPhaseInit |
 | `Haldane.SpecifyRange` | `HaldaneSpecifyRange` | logical | `.false.` | ham.F90: HamHopHaldane; magf.F90: HaldPhaseInit |
-| `Haldane.T2` | `HaldaneT2` | real | `0.0 (g0)` | ham.F90: HamHopHaldane; tbpar.f90: TBInit |
+| `Haldane.T2` | `HaldaneT2` | real | `0.0` | tbpar.f90: TBInit |
+| `Haldane.T2` | `HaldaneT2` | real | `0.0 (g0)` | ham.F90: HamHopHaldane |
 | `Haldane.T2Complex` | `HaldaneT2Complex` | real | `0.0` | ham.F90: HamHopHaldane |
 | `HaldPhase.FinalInteger` |  | integer | `0` | magf.F90: HaldPhaseInit |
 | `HaldPhase.InitialInteger` |  | integer | `0` | magf.F90: HaldPhaseInit |
@@ -309,7 +310,8 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Kubo.EnergyMax` | `EnergyMax` | real | `4.0` | calc.F90: CalcKubo |
 | `Kubo.EnergyMin` | `EnergyMin` | real | `-4.0` | calc.F90: CalcKubo |
 | `Kubo.Epsilon` | `Epsilon` | real | `0.001` | diag.F90: DiagHamChern |
-| `Kubo.Epsilon` | `Epsilon` | real | `0.01` | calc.F90: CalcKubo; diag.F90: Diag3DBands; diag.F90: DiagDOS; ... (11 places) |
+| `Kubo.Epsilon` | `Epsilon` | real | `0.01` | calc.F90: CalcKubo; diag.F90: Diag3DBands; diag.F90: DiagDOS; ... (4 places) |
+| `Kubo.Epsilon` | `Epsilon` | real | `0.01 (g0)` | diag.F90: DiagSpectralEpsilon |
 | `Kubo.NumberOfBNAtoms1` | `numberOfBNAtoms1` | integer | `5832` | calc.F90: CalcKubo |
 | `Kubo.NumberOfBNAtoms2` | `numberOfBNAtoms2` | integer | `5832` | calc.F90: CalcKubo |
 | `Kubo.NumberOfCAtoms` | `numberOfCAtoms` | integer | `6050` | calc.F90: CalcKubo |
