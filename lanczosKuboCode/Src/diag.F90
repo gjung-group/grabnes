@@ -4880,9 +4880,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
          else
             do iee=1,Epts  ! epsilon
                 write(u,'(3f12.6,f12.6,f12.6)') KptsG(:,ik), Energy(iee), REAL(Ake(ik,iee))
-                write(u1,'(f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake1(ik,iee))
-                write(u2,'(f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake2(ik,iee))
-                write(u3,'(f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake3(ik,iee))
+                write(u1,'(3f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake1(ik,iee))
+                write(u2,'(3f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake2(ik,iee))
+                write(u3,'(3f12.6,f12.6,f22.6)') KptsG(:,ik), Energy(iee), REAL(Ake3(ik,iee))
             end do
          end if
       end do
