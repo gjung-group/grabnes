@@ -182,6 +182,9 @@ subroutine CalcKubo()
    call MIO_Allocate(XpnPsim1,[inode1],[inode2+sz],'XpnPsim1','calc')
    call MIO_Allocate(Psinm1,[inode1],[inode2+sz],'Psinm1','calc')
    call MIO_Allocate(ZUPsi,[inode1],[inode2+sz],'ZUPsi','calc')
+   ! MIO_Allocate keeps the contents when the bounds are unchanged: the second point of a field / Haldane-phase /
+   ! layer-shift sweep started KuboTEvol from the previous point's [U(t),X]Psi instead of 0
+   ZUPsi = (0.0_dp,0.0_dp)
    call MIO_Allocate(H,[inode1],[inode2],'H','calc')
 #ifdef MPI
    if (nProc>1) then
