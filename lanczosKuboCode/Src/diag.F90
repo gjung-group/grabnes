@@ -2926,6 +2926,26 @@ subroutine DiagSpectralFunctionKGridInequivalent()
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
                              Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1B(ik,iee) = Ake1B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,1))**2
+                             Ake2B(ik,iee) = Ake2B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,2))**2
+                             Ake3B(ik,iee) = Ake3B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,3))**2
+                             Ake4B(ik,iee) = Ake4B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,4))**2
+                             Ake2C(ik,iee) = Ake2C(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocC(ie,2))**2
+                             Ake2D(ik,iee) = Ake2D(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocD(ie,2))**2
+                             Ake2E(ik,iee) = Ake2E(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocE(ie,2))**2
+                             Ake2F(ik,iee) = Ake2F(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocF(ie,2))**2
+                             Ake2G(ik,iee) = Ake2G(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocG(ie,2))**2
+                             Ake2H(ik,iee) = Ake2H(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocH(ie,2))**2
                           else
                              if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                                  ! A sublattice
@@ -3424,6 +3444,16 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,2))**2
                              Ake3(ik,iee) = Ake3(ik,iee) + exp(-(ELoc(ie) &
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
+                             Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1B(ik,iee) = Ake1B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,1))**2
+                             Ake2B(ik,iee) = Ake2B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,2))**2
+                             Ake3B(ik,iee) = Ake3B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,3))**2
+                             Ake4B(ik,iee) = Ake4B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,4))**2
                           else if (DirectBand) then
                              if (iee == int(ie-(nAt/2-Epts/2))) then
                                  EAke(ik,iee) = ELoc(ie)
@@ -3921,6 +3951,14 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
                              Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1B(ik,iee) = Ake1B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,1))**2
+                             Ake2B(ik,iee) = Ake2B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,2))**2
+                             Ake3B(ik,iee) = Ake3B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,3))**2
+                             Ake4B(ik,iee) = Ake4B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,4))**2
                           else
                              if(abs(ELoc(ie) - Energy(iee)).lt.(energyGridResolution/g0)) then
                                  ! A sublattice
@@ -4410,6 +4448,14 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,3))**2
                              Ake4(ik,iee) = Ake4(ik,iee) + exp(-(ELoc(ie) &
                                    - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocA(ie,4))**2
+                             Ake1B(ik,iee) = Ake1B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,1))**2
+                             Ake2B(ik,iee) = Ake2B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,2))**2
+                             Ake3B(ik,iee) = Ake3B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,3))**2
+                             Ake4B(ik,iee) = Ake4B(ik,iee) + exp(-(ELoc(ie) &
+                                   - Energy(iee))**2.0/(2.0_dp*eps**2)) * abs(PkcLocB(ie,4))**2
                           else if (DirectBand) then
                              if (iee == int(ie-(nAt/2-Epts/2))) then
                                  EAke(ik,iee) = ELoc(ie)
