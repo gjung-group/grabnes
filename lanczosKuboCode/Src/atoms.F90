@@ -478,7 +478,7 @@ subroutine AtomsPos()
       nAtC1 = size(RatC1,2)
       call MIO_Print('Number of atoms in layer1: '//trim(num2str(nAtC1)),'atoms')
       if (MIO_StringComp(str,'MoireEncapsulatedBilayer')) then
-          yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor
+          yShift = (aG/3.0_dp)/(m(1)*aG)+shiftFactor
       end if
       if (MIO_StringComp(str,'TwistedBilayer')) then
           yShift = (aG/3.0_dp)/(m(1)*aG)+shiftFactor*aG
