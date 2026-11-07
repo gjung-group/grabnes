@@ -169,6 +169,8 @@ describes every check; measured results for both compilers are in
   keys (the names used before October 2026 keep working), and the messages the solver prints about it.
 - [`docs/user-guide/input-keys.md`](docs/user-guide/input-keys.md): every input key with its type,
   default, and the routine that reads it (generated from the source).
+- [`docs/user-guide/stacking-displacements.md`](docs/user-guide/stacking-displacements.md): the stacking
+  displacements of the moiré terms (convention, and computing them from the rigid and relaxed structures).
 - [`docs/user-guide/`](docs/user-guide/) and [`docs/theory/`](docs/theory/):
   notes on TAPW and spin-orbit input (research functionality).
 - [`tools/`](tools/): analysis scripts, including the independent Hamiltonian
