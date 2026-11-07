@@ -10671,7 +10671,7 @@ subroutine DiagHamArpack(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,n
 
 end subroutine DiagHamArpack
 
-subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
+subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,KIn,KGIn,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -10686,8 +10686,10 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
    complex(dp), intent(out) :: Pkc(N)
    complex(dp) :: Pkcaux
    real(dp), intent(out) :: E(N)
-   real(dp), intent(in) :: K(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KIn(3), cell(3,3), H0(N)
+   real(dp) :: K(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -10708,6 +10710,10 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
    integer :: kk
 
 #ifdef DEBUG
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   K = -KIn
+   KG = -KGIn
    call MIO_Debug('DiagSpectralWeightNishi',0)
 #endif /* DEBUG */
 
@@ -10782,7 +10788,7 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
 
 end subroutine DiagSpectralWeightNishi
 
-subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
+subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,KIn,KGIn,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -10797,8 +10803,10 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
    complex(dp), intent(out) :: PkcLoc(N,2)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: E(N)
-   real(dp), intent(in) :: K(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KIn(3), cell(3,3), H0(N)
+   real(dp) :: K(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -10822,6 +10830,10 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
 
    integer :: at1, at2
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   K = -KIn
+   KG = -KGIn
    call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
@@ -10901,7 +10913,7 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
 
 end subroutine DiagSpectralWeightWeiKu
 
-subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLocIn,KGIn,cell,gcell,H0,maxN,hopp,NList, &
       Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
@@ -10917,8 +10929,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
    complex(dp), intent(out) :: PkcLocA(N,3), PkcLocB(N,3)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc(N)
-   real(dp), intent(in) :: KptsLoc(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KptsLocIn(3), cell(3,3), H0(N)
+   real(dp) :: KptsLoc(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -10955,6 +10969,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
 
    logical :: changeExpSign
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   KptsLoc = -KptsLocIn
+   KG = -KGIn
    cellts = gcell ! Lattice vectors of PC (either top or bottom layer)
 
    Hts = 0.0_dp
@@ -11021,7 +11039,7 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
 
 end subroutine DiagSpectralWeightWeiKuInequivalentOld
 
-subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLocIn,KGIn,cell,gcell,H0,maxN,hopp,NList, &
       Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
@@ -11037,8 +11055,10 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
    complex(dp), intent(out) :: PkcLocA(N,4), PkcLocB(N,4)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc(N)
-   real(dp), intent(in) :: KptsLoc(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KptsLocIn(3), cell(3,3), H0(N)
+   real(dp) :: KptsLoc(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -11075,6 +11095,10 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
 
    logical :: changeExpSign
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   KptsLoc = -KptsLocIn
+   KG = -KGIn
    cellts = gcell ! Lattice vectors of PC (either top or bottom layer)
 
    Hts = 0.0_dp
@@ -11146,7 +11170,7 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
 end subroutine DiagSpectralWeightWeiKuInequivalent
 
 subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLocB,PkcLocC,PkcLocD,PkcLocE,PkcLocF, &
-      PkcLocG,PkcLocH,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
+      PkcLocG,PkcLocH,ELoc,KptsLocIn,KGIn,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -11164,8 +11188,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
    complex(dp), intent(out) :: PkcLocG(N,4), PkcLocH(N,4)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc(N)
-   real(dp), intent(in) :: KptsLoc(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KptsLocIn(3), cell(3,3), H0(N)
+   real(dp) :: KptsLoc(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -11202,6 +11228,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
 
    logical :: changeExpSign
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   KptsLoc = -KptsLocIn
+   KG = -KGIn
    cellts = gcell ! Lattice vectors of PC (either top or bottom layer)
 
    Hts = 0.0_dp
@@ -11290,7 +11320,7 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
 
 end subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals
 
-subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,KptsLocIn,KGIn,cell,gcell,H0,maxN,hopp,NList, &
       Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
@@ -11307,8 +11337,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
    complex(dp), intent(out) :: PkcLoc2(N,3)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc(N)
-   real(dp), intent(in) :: KptsLoc(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KptsLocIn(3), cell(3,3), H0(N)
+   real(dp) :: KptsLoc(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -11350,6 +11382,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
    integer :: ix, iy, ncell(3,9)
    real(dp) :: rMinRp(3), v(3), dmin
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   KptsLoc = -KptsLocIn
+   KG = -KGIn
    cellts = cell ! Lattice vectors of PC (either top or bottom layer)
    celltsp = gcell
 
@@ -11457,7 +11493,7 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
 
 end subroutine DiagSpectralWeightWeiKuInequivalentLee
 
-subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,KptsLoc,KG,cell,gcell1,gcell2,H0,maxN, &
+subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,KptsLocIn,KGIn,cell,gcell1,gcell2,H0,maxN, &
       hopp,NList,Nneigh,neighCell)
 
    use constants,             only : cmplx_i
@@ -11473,8 +11509,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    complex(dp), intent(out) :: PkcLoc(N,2)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc1(N), ELoc2(N)
-   real(dp), intent(in) :: KptsLoc(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KptsLocIn(3), cell(3,3), H0(N)
+   real(dp) :: KptsLoc(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell1(3,3)
    real(dp) :: gcell2(3,3)
    real(dp) :: bncell(3,3)
@@ -11510,6 +11548,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    real(dp) :: DWorkLoc1(3*N-2)
    real(dp) :: DWorkLoc2(3*N-2)
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   KptsLoc = -KptsLocIn
+   KG = -KGIn
    cellts = gcell1
    celltsp = gcell2
 
