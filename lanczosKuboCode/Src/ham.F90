@@ -2406,12 +2406,14 @@ subroutine HamOnSiteAtomHarmonicTBG(i, dxTemp, dx, dyTemp, dy, Hjj, CApAp, PhiAp
 
 
                  if (tBGuseDisplacementFile) then
+                    ! the file holds r(layer 2) - r(layer 1), as the GBN files and the analytic d(r) below: layer 1
+                    ! +d, layer 2 -d (until November 2026 the opposite signs here and in HamHopBondTermsTBG)
                     if (layerIndex(i).eq.1) then
-                       dxTemp = -dx/aG
-                       dyTemp = -dy/aG
-                    else if (layerIndex(i).eq.2) then
                        dxTemp = dx/aG
                        dyTemp = dy/aG
+                    else if (layerIndex(i).eq.2) then
+                       dxTemp = -dx/aG
+                       dyTemp = -dy/aG
                     end if
                  else
                     if (layerIndex(i).eq.1) then
@@ -11567,12 +11569,13 @@ subroutine HamHopBondTermsTBG(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
                      dx = displacements(1,i)*cos(GlobalPhi)+displacements(2,i)*sin(GlobalPhi)
                      dy = displacements(2,i)*cos(GlobalPhi)-displacements(1,i)*sin(GlobalPhi)
                  end if
+                 ! r(layer 2) - r(layer 1), the convention of the GBN files and of the analytic branch below
                  if (layerIndex(i).eq.1) then
-                    dxTemp = -dx/aG
-                    dyTemp = -dy/aG
-                 else if (layerIndex(i).eq.2) then
                     dxTemp = dx/aG
                     dyTemp = dy/aG
+                 else if (layerIndex(i).eq.2) then
+                    dxTemp = -dx/aG
+                    dyTemp = -dy/aG
                  end if
               else
                  dx = ((1.0_dp+eps) * cos(tBGAngle) - 1.0_dp) * (Rat(1,i)) &
