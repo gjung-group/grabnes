@@ -11600,8 +11600,11 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
       do j=1,Nneigh(i)
          in = NList(j,i)
          Tm = matmul(cell,neighCell(:,j,i)) ! Corresponds to L in Nishi equation
-         Hts(in,i) = Hts(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(KptsLoc,Tm-RtsVec(i,:))) ! RtsVec is the multiple of ts
-         Htsp(in,i) = Htsp(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(KptsLoc,Tm-RtspVec(i,:)))
+         ! Basis of the sub-cell translations R(i) (Nishi): a unitary change of phase of BOTH atoms of the bond,
+         ! L + R(in) - R(i). Until November 2026 only -R(i) was applied: not a unitary transformation, so ELoc1/2
+         ! were not the levels of H and ZHEEV saw a non-Hermitian matrix.
+         Hts(in,i) = Hts(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(KptsLoc,Tm+RtsVec(in,:)-RtsVec(i,:)))
+         Htsp(in,i) = Htsp(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(KptsLoc,Tm+RtspVec(in,:)-RtspVec(i,:)))
       end do
    end do
    call ZHEEV('V','L',N,Hts,N,ELoc1,ZWorkLoc1,lwork,DWorkLoc1,info)
