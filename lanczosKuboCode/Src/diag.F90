@@ -670,6 +670,19 @@ subroutine DiagBands()
                'diag','DiagBands')
           end if
        end block
+    else
+       block
+          logical :: zeeman, pzeeman
+          call MIO_InputParameter('Zeeman.Term',zeeman,.false.)
+          call MIO_InputParameter('Zeeman.PseudoTerm',pzeeman,.false.)
+          ! the TAPW builders add the Zeeman and Ising terms only when ns == 2
+          if ((zeeman .or. IsingSOCterm) .and. nspin == 1) call MIO_Print('WARNING: ZeemanTerm and IsingSOCterm '// &
+            'act on the two spin sectors and need Zeeman.SpinPolarized .true.; they have NO effect on this '// &
+            'calculation.','diag')
+          ! Zeeman.PseudoFactor is read but never used by any Hamiltonian builder
+          if (pzeeman) call MIO_Print('WARNING: PseudoZeemanTerm is not implemented; it has NO effect on this '// &
+            'calculation.','diag')
+       end block
     end if
     ! Output.KeepWaveFunction is tested before the other solvers in the k loops below: it would replace them
     ! with a dense spinless diagonalisation of the full Hamiltonian, without a message
@@ -1932,6 +1945,11 @@ subroutine DiagBandsG()
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
    gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+   ! the Bloch phases below use gcell with the image indices of the simulation cell: exact only when the simulation
+   ! cell is the graphene primitive cell
+   if (maxval(abs(ucell(1:2,1:2) - gcell(1:2,1:2))) > 1.0e-6_dp*aG) call MIO_Kill('Bands.GrapheneUnitCell needs '// &
+     'the graphene primitive cell (a1 = (aG,0), a2 at 60 degrees, as for CellSize 1): on any other cell its Bloch '// &
+     'phases are wrong. Use Bands.Path for the bands of this cell.','diag','DiagBandsG')
 
    vn = CrossProd(gcell(:,1),gcell(:,2))
    volume = dot_product(gcell(:,3),vn)
@@ -11819,7 +11837,13 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
    if (use_all_occupied_bands) then
       ! Method 1: Include ALL bands below Fermi level (proper total Chern number)
       call MIO_Print('Using ALL occupied bands (E < E_F) for total Chern number','diag')
-      do iband = 1, min(size(E,1), 1000)
+      ! only the stored_M TAPW bands are valid: E is zero-filled beyond them (counted as occupied when E_F > 0)
+      if (stored_M > 0) then
+         max_valid_band = min(stored_M, size(E,1))
+      else
+         max_valid_band = size(E,1)
+      end if
+      do iband = 1, min(max_valid_band, 1000)
          ! Check if this band is below Fermi level at ANY k-point
          do ik = 1, nk
             if (E(iband,1,ik) < fermi_energy_internal) then
