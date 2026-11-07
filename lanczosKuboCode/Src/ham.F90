@@ -3362,17 +3362,34 @@ end subroutine HamOnSiteMoireKekule
 !> On-site energy of every atom from its species and layer (internal procedure of HamOnSite: it uses the variables of that routine)
 subroutine HamOnSiteSpeciesEnergies()
 
+   real(dp) :: eBsite, eNsite
+   character(len=80) :: blSite
+   logical :: bngSite
+
 #ifdef DEBUG
    call MIO_Debug('HamOnSiteSpeciesEnergies',0)
 #endif /* DEBUG */
 
    hamAlignDone = .false.     ! the site energies are set again: HamHopping aligns them again
+   ! TypeOfBL BLKaxiras + Interlayer.UseBNGKaxiras: B and N site energies of Fang et al., PRB 93, 235153 (2016),
+   ! Table II (2.2021, -1.9124 eV from the graphene Dirac point; their Table I puts it at zero), unless
+   ! TB.OnSiteB / TB.OnSiteN are given
+   eBsite = e0_B
+   eNsite = e0_N
+   call MIO_InputParameter('Interlayer.TypeOfBL',blSite,'None')
+   call MIO_InputParameter('Interlayer.UseBNGKaxiras',bngSite,.false.)
+   if (bngSite .and. MIO_StringComp(blSite,'BLKaxiras')) then
+      if (.not. MIO_InputSearchLabel('TB.OnSiteB')) eBsite = 2.2021_dp/g0
+      if (.not. MIO_InputSearchLabel('TB.OnSiteN')) eNsite = -1.9124_dp/g0
+      call MIO_Print('Interlayer.UseBNGKaxiras: site energies B '//trim(num2str(eBsite*g0,4))//' eV, N '// &
+           trim(num2str(eNsite*g0,4))//' eV','ham')
+   end if
    !$OMP PARALLEL DO
    do i=1,nAt
       if (Species(i)==3) then
-         H0(i) = e0_B
+         H0(i) = eBsite
       else if (Species(i)==4) then
-         H0(i) = e0_N
+         H0(i) = eNsite
       else if (hamModelFromTwist .and. (hamAlignModelEnergies .or. e0_C1 .ne. 0.0_dp .or. e0_C2 .ne. 0.0)) then
          ! pair model chosen from the structure: in the AB pairs the two site energies of the bilayer F2G2
          ! model (Jung and MacDonald, PRB 89, 035405: TB.OnSiteC1 = 0.4295 eV on the sites without an atom of
@@ -5068,6 +5085,8 @@ subroutine HamHopping
 
    ! Variables with one copy per thread in the parallel loops
    logical :: checking
+   logical :: fangGhBN             ! C-B/C-N pairs of Interlayer.UseBNGKaxiras (BLKaxiras)
+   real(dp), allocatable :: fangNNVec(:,:)   ! first-neighbour bond of every atom (HamFangFirstNeighbourBonds)
    integer :: firstNN(3), i, iii, j, jj, jj1, jj2, k, kk, kkk, mm, mmm, nlay
    real(dp) :: aval, BLdelta, bval, CabG, d, del(3), delta, dist, distXY, distXYZ, dx, dxTemp, dy, dyTemp, &
          Fc, imagH, kappa0, kappa6, kappa6b, lambda0, lambda3, lambda6, lambda6b, realH, &
@@ -5629,6 +5648,8 @@ subroutine HamHopping
          call MIO_InputParameter('Intralayer.KoshinoIntralayer',KoshinoIntralayer,.false.)
          call MIO_InputParameter('Intralayer.MayouIntralayer',MayouIntralayer,.false.)
          call MIO_InputParameter('Interlayer.UseBNGKaxiras',useBNGKaxiras,.false.)
+         fangGhBN = useBNGKaxiras .and. MIO_StringComp(BilayerModel,'BLKaxiras')
+         if (useBNGKaxiras) call HamFangFirstNeighbourBonds()
          call MIO_InputParameter('Stack.TwoLayers',twoLayers,.false.)
          call MIO_InputParameter('Stack.OneLayer',oneLayer,.false.)
          call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
@@ -7272,10 +7293,14 @@ subroutine HamHopInterlayerParameters()
                 xi3_NC = epsilon3_NC
                 xi3_CN = epsilon3_CN
                 t1K = g0/g0
-                t2KB = -0.0594_dp/g0  ! minus the hopping, as every set here (was the hopping itself until November 2026)
-                t2KN = -0.2276_dp/g0
-                t3K = 0.2163_dp/g0
-            else ! just use GG
+                ! hBN intralayer hoppings and B, N site energies of the same paper: HamFangHBNHop, HamOnSiteSpeciesEnergies.
+                ! (Until November 2026 three of them were written into t2KB, t2KN, t3K, the graphene F2G2 parameters.)
+                call MIO_Print('Interlayer.UseBNGKaxiras: graphene/hBN model of Fang et al., PRB 93, 235153 (2016), '// &
+                     'Table II (C-B and C-N interlayer, hBN intralayer up to the eighth shell); graphene-graphene '// &
+                     'pairs keep the BLKaxiras graphene model','ham')
+            end if
+            ! graphene-graphene pairs (also in a G/hBN stack with Interlayer.UseBNGKaxiras, where they were left unset
+            ! until November 2026)
                 call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
                 if (addPressureDependence) then
                     !
@@ -7328,7 +7353,6 @@ subroutine HamHopInterlayerParameters()
                     xi6 = epsilon6
                     kaxFixed = [lambda0, xi0, kappa0, lambda3, xi3, x3, lambda6, xi6, x6, kappa6, lambda6b, xi6b, x6b, kappa6b]
                end if
-            end if
          else if (MIO_StringComp(BilayerModel,'BLSrivani')) then
             if (useBNGSrivani) then
                 lambda0_CB = 0.3905_dp/g0
@@ -8415,7 +8439,10 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                               dist = sqrt(d122)
                               rbar = dist /aGSrivani
                               if (MIO_StringComp(BilayerModel,'BLKaxiras') .or. MIO_StringComp(BilayerModel,'BLSrivani')) then
-                                   if (useBNGSrivani) then
+                                   if (fangGhBN .and. ((Species(i).ge.3) .neqv. (Species(jj).ge.3))) then
+                                        ! graphene-hBN pair: Fang et al., PRB 93, 235153 (2016), Eq. (4); minus the hopping
+                                        hopp(j,i) = hopp(j,i) - HamFangGhBNHop(i, jj, NeighD(1:2,j,i))
+                                   else if (useBNGSrivani) then
                                             epsKax = -(1.0_dp - abs((NeighD(3,j,i)))/(interlayerdistance))
                                             ! AA'
                                             a0AA = p1a0AA * epsKax**2.0_dp + p2a0AA * epsKax + p3a0AA
@@ -9515,6 +9542,135 @@ subroutine HamHopIntralayerSrivani(dist, j, i)
 
 end subroutine HamHopIntralayerSrivani
 
+!> First-neighbour bond of every atom: the in-plane vector to its nearest neighbour in the same layer (Angstrom).
+!! Used by the graphene/hBN model of Interlayer.UseBNGKaxiras for the angles of Fang et al. and the local bond length.
+!! Internal procedure of HamHopping.
+subroutine HamFangFirstNeighbourBonds()
+
+   integer :: ia, ja
+   real(dp) :: dd, dmin
+
+   if (allocated(fangNNVec)) deallocate(fangNNVec)
+   allocate(fangNNVec(2,nAt))
+   do ia=1,nAt
+      dmin = huge(1.0_dp)
+      fangNNVec(:,ia) = 0.0_dp
+      do ja=1,Nneigh(ia)
+         if (layerIndex(NList(ja,ia)) .ne. layerIndex(ia)) cycle
+         dd = NeighD(1,ja,ia)**2 + NeighD(2,ja,ia)**2
+         if (dd .gt. 0.01_dp .and. dd .lt. dmin) then
+            dmin = dd
+            fangNNVec(:,ia) = NeighD(1:2,ja,ia)
+         end if
+      end do
+      if (dmin .eq. huge(1.0_dp)) call MIO_Kill('Interlayer.UseBNGKaxiras: atom '//trim(num2str(ia))// &
+           ' has no neighbour in its own layer (the model needs its first-neighbour bond)','ham','HamFangFirstNeighbourBonds')
+   end do
+
+end subroutine HamFangFirstNeighbourBonds
+
+!> cos(3 theta) of the angle between the in-plane vector u (from atom ia to its partner) and the first-neighbour
+!! bond of atom ia, from cos(3t) = 4 cos(t)^3 - 3 cos(t). Zero for u = 0 (there r = 0 and the V3 terms vanish).
+real(dp) function HamFangCos3(ia, u)
+
+   integer, intent(in) :: ia
+   real(dp), intent(in) :: u(2)
+
+   real(dp) :: c, nu, nv
+
+   nu = norm2(u)
+   nv = norm2(fangNNVec(:,ia))
+   if (nu .lt. 1.0e-8_dp) then
+      HamFangCos3 = 0.0_dp
+      return
+   end if
+   c = max(-1.0_dp, min(1.0_dp, dot_product(u, fangNNVec(:,ia))/(nu*nv)))
+   HamFangCos3 = 4.0_dp*c**3 - 3.0_dp*c
+
+end function HamFangCos3
+
+!> Graphene-hBN interlayer hopping of Fang et al., PRB 93, 235153 (2016), Eq. (4) and Table II, in units of g0
+!! (the hopping itself; the caller stores minus it):
+!!   t = V0(r) + V3,XC(r) cos(3 theta_XC) + V3,CX(r) cos(3 theta_CX),  X = B or N,
+!!   V0 = lambda0 exp(-xi0 rbar^2) cos(kappa0 rbar),  V3 = lambda3 rbar^2 exp(-xi3 (rbar - x3)^2),  rbar = r/2.46 A,
+!! r the in-plane distance. theta_XC is taken at the hBN atom and theta_CX at the carbon atom, each from that atom's own
+!! first-neighbour bond (the paper does not state it explicitly; see docs). dvec = NeighD(1:2) from atom i to atom jj.
+real(dp) function HamFangGhBNHop(i, jj, dvec)
+
+   integer, intent(in) :: i, jj
+   real(dp), intent(in) :: dvec(2)
+
+   integer :: ix, ic
+   real(dp) :: rb, c3x, c3c, ux(2)
+
+   if (Species(i).ge.3) then
+      ix = i
+      ic = jj
+      ux = dvec
+   else
+      ix = jj
+      ic = i
+      ux = -dvec
+   end if
+   rb = norm2(dvec)/2.46_dp
+   c3x = HamFangCos3(ix, ux)      ! at the hBN atom, towards the carbon atom
+   c3c = HamFangCos3(ic, -ux)     ! at the carbon atom, towards the hBN atom
+   if (Species(ix).eq.3) then
+      HamFangGhBNHop = lambda0_CB*exp(-xi0_CB*rb**2)*cos(kappa0_CB*rb) &
+           + lambda3_BC*rb**2*exp(-xi3_BC*(rb-x3_BC)**2)*c3x &
+           + lambda3_CB*rb**2*exp(-xi3_CB*(rb-x3_CB)**2)*c3c
+   else
+      HamFangGhBNHop = lambda0_CN*exp(-xi0_CN*rb**2)*cos(kappa0_CN*rb) &
+           + lambda3_NC*rb**2*exp(-xi3_NC*(rb-x3_NC)**2)*c3x &
+           + lambda3_CN*rb**2*exp(-xi3_CN*(rb-x3_CN)**2)*c3c
+   end if
+
+end function HamFangGhBNHop
+
+!> hBN intralayer hopping of Fang et al., PRB 93, 235153 (2016), Table II: eight shells (t2, t5, t6 differ on B and N),
+!! returned as minus the hopping in units of g0. The shell is chosen from the in-plane bond length in units of the
+!! atom's own first-neighbour bond (1, sqrt3, 2, sqrt7, 3, 2 sqrt3, sqrt13, 4), with boundaries half way between shells.
+real(dp) function HamFangHBNHop(dist, ia)
+
+   use tbpar,                only : g0
+
+   real(dp), intent(in) :: dist
+   integer, intent(in) :: ia
+
+   real(dp), parameter :: shellR(8) = [1.0_dp, 1.7320508_dp, 2.0_dp, 2.6457513_dp, 3.0_dp, 3.4641016_dp, &
+        3.6055513_dp, 4.0_dp]
+   real(dp), parameter :: tB(8) = [-2.6490_dp, 0.0594_dp, -0.2163_dp, 0.0502_dp, 0.0344_dp, -0.0374_dp, -0.0053_dp, &
+        -0.0133_dp]
+   real(dp), parameter :: tN(8) = [-2.6490_dp, 0.2276_dp, -0.2163_dp, 0.0502_dp, 0.0301_dp, -0.0240_dp, -0.0053_dp, &
+        -0.0133_dp]
+   real(dp) :: ratio, lo, hi
+   integer :: n
+
+   HamFangHBNHop = 0.0_dp
+   ratio = dist/norm2(fangNNVec(:,ia))
+   do n=1,8
+      if (n.eq.1) then
+         lo = 0.5_dp
+      else
+         lo = 0.5_dp*(shellR(n-1)+shellR(n))
+      end if
+      if (n.eq.8) then
+         hi = 4.3_dp
+      else
+         hi = 0.5_dp*(shellR(n)+shellR(n+1))
+      end if
+      if (ratio .ge. lo .and. ratio .lt. hi) then
+         if (Species(ia).eq.3) then
+            HamFangHBNHop = -tB(n)/g0
+         else
+            HamFangHBNHop = -tN(n)/g0
+         end if
+         return
+      end if
+   end do
+
+end function HamFangHBNHop
+
 !> Intralayer hopping for TypeOfBL BLKaxiras and BLSrivani
 !! Internal procedure of HamHopping, called for one bond inside the parallel loop. The variables that are
 !! private to the loop are its arguments; the model parameters and the arrays of the Hamiltonian are those
@@ -9533,20 +9689,9 @@ subroutine HamHopIntralayerKaxirasSrivani(dist, j, i, d, delta, ilvl)
 
 
                            dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
-                           if (useBNGKaxiras) then
-                              if (dist .gt. 0.1_dp .and. dist .lt. aCC*1.1_dp) then
-                                   hopp(j,i) = hopp(j,i)
-                              else if (dist .gt. aCC*1.1_dp .and. dist .lt. aG*1.1_dp) then
-                                   if (Species(i).eq.3) then
-                                       hopp(j,i) = hopp(j,i) + t2KB
-                                   else if (Species(i).eq.4) then
-                                       hopp(j,i) = hopp(j,i) + t2KN
-                                   end if
-                              else if (dist .gt. aG*1.1_dp .and. dist .lt. aCC*2.0_dp*1.1_dp) then
-                                   hopp(j,i) = hopp(j,i) + t3K
-                              else
-                                   hopp(j,i) = hopp(j,i) + 0.0_dp
-                              end if
+                           if (useBNGKaxiras .and. Species(i).ge.3) then
+                              ! hBN of the G/hBN model of Fang et al. (HamFangHBNHop); it replaces the base hopping gn added at the end
+                              hopp(j,i) = hopp(j,i) + HamFangHBNHop(dist, i) - gn(Species(i),Species(NList(j,i)),ilvl)
                            else
                               !if (i.eq.1) print*, counter1
                               if (dist .gt. aCC*0.9_dp .and. dist .lt. aCC*1.1_dp) then
@@ -9806,20 +9951,9 @@ subroutine HamHopIntralayerGraphene(renormalizeHoppingFactorAAp, dist, j, i, vpp
                               end if
                            else
                               dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
-                              if (useBNGKaxiras) then
-                                 if (dist .gt. 0.1_dp .and. dist .lt. aCC*1.1_dp) then
-                                      hopp(j,i) = hopp(j,i)
-                                 else if (dist .gt. aCC*1.1_dp .and. dist .lt. aG*1.1_dp) then
-                                      if (Species(i).eq.3) then
-                                          hopp(j,i) = hopp(j,i) + t2KB
-                                      else if (Species(i).eq.4) then
-                                          hopp(j,i) = hopp(j,i) + t2KN
-                                      end if
-                                 else if (dist .gt. aG*1.1_dp .and. dist .lt. aCC*2.0_dp*1.1_dp) then
-                                      hopp(j,i) = hopp(j,i) + t3K
-                                 else
-                                      hopp(j,i) = hopp(j,i) + 0.0_dp
-                                 end if
+                              if (useBNGKaxiras .and. Species(i).ge.3) then
+                                 ! hBN of the G/hBN model of Fang et al. (HamFangHBNHop); it replaces the base hopping gn added at the end
+                                 hopp(j,i) = hopp(j,i) + HamFangHBNHop(dist, i) - gn(Species(i),Species(NList(j,i)),ilvl)
                               else
                                  if (dist .gt. aCC*0.9_dp .and. dist .lt. aCC*1.1_dp) then
                                       !if (i.eq.1) print*, "assigning intralayer F2G2 terms 1"
