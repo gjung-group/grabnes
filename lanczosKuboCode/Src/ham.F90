@@ -5085,8 +5085,9 @@ subroutine HamHopping
 
    ! Variables with one copy per thread in the parallel loops
    logical :: checking
+   logical :: legacyAngleSearch    ! Interlayer.LegacyAngleSearch: the angle search used before November 2026
    logical :: fangGhBN             ! C-B/C-N pairs of Interlayer.UseBNGKaxiras (BLKaxiras)
-   real(dp), allocatable :: fangNNVec(:,:)   ! first-neighbour bond of every atom (HamFangFirstNeighbourBonds)
+   real(dp), allocatable :: firstNNVec(:,:)   ! first-neighbour bond of every atom (HamFirstNeighbourBonds)
    integer :: firstNN(3), i, iii, j, jj, jj1, jj2, k, kk, kkk, mm, mmm, nlay
    real(dp) :: aval, BLdelta, bval, CabG, d, del(3), delta, dist, distXY, distXYZ, dx, dxTemp, dy, dyTemp, &
          Fc, imagH, kappa0, kappa6, kappa6b, lambda0, lambda3, lambda6, lambda6b, realH, &
@@ -5652,7 +5653,16 @@ subroutine HamHopping
          if (useBNGKaxiras .and. .not. fangGhBN) call MIO_Kill('Interlayer.UseBNGKaxiras is the graphene/hBN model of '// &
               'Fang et al. (PRB 93, 235153) and needs TypeOfBL BLKaxiras: with another interlayer model the hBN layers '// &
               'would get its intralayer set and the graphene-hBN bonds another model','ham','HamHopping')
-         if (useBNGKaxiras) call HamFangFirstNeighbourBonds()
+         call MIO_InputParameter('Interlayer.LegacyAngleSearch',legacyAngleSearch,.false.)
+         if (useBNGKaxiras .or. MIO_StringComp(BilayerModel,'BLKaxiras') .or. MIO_StringComp(BilayerModel,'BLSrivani')) then
+            call HamFirstNeighbourBonds()
+            if (legacyAngleSearch) then
+               call MIO_Print('WARNING: Interlayer.LegacyAngleSearch: interlayer angles from the search used before '// &
+                    'November 2026 (wrong for bonds above 1.43 A, where H is not Hermitian, and in small cells)','ham')
+            else
+               call MIO_Print('Interlayer angles (BLKaxiras/BLSrivani): from the nearest bond of each atom in its layer','ham')
+            end if
+         end if
          call MIO_InputParameter('Stack.TwoLayers',twoLayers,.false.)
          call MIO_InputParameter('Stack.OneLayer',oneLayer,.false.)
          call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
@@ -8364,6 +8374,14 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                                      theta21 = theta21 !- twistAngleGrad
                                  end if
 
+                              else if (.not. legacyAngleSearch) then
+                                 ! angle at each atom between the in-plane bond to its partner and its own nearest bond in
+                                 ! its layer (HamBondAngle). The search below (Interlayer.LegacyAngleSearch, the only one
+                                 ! until November 2026) accepted a first neighbour only below 1.43 A, else used the LAST
+                                 ! same-layer neighbour (two different triangles, H not Hermitian), and found atoms by index
+                                 ! (first periodic image, wrong angles in small cells).
+                                 theta12 = HamBondAngle(jj, -NeighD(1:2,j,i))
+                                 theta21 = HamBondAngle(i, NeighD(1:2,j,i))
                               else
                                  checking = .false.
                                  d232 = 0.0_dp
@@ -9546,49 +9564,62 @@ subroutine HamHopIntralayerSrivani(dist, j, i)
 end subroutine HamHopIntralayerSrivani
 
 !> First-neighbour bond of every atom: the in-plane vector to its nearest neighbour in the same layer (Angstrom).
-!! Used by the graphene/hBN model of Interlayer.UseBNGKaxiras for the angles of Fang et al. and the local bond length.
+!! Used for the interlayer angles of TypeOfBL BLKaxiras/BLSrivani (HamBondAngle) and, with Interlayer.UseBNGKaxiras,
+!! for the local bond length of the hBN shells.
 !! Internal procedure of HamHopping.
-subroutine HamFangFirstNeighbourBonds()
+subroutine HamFirstNeighbourBonds()
 
    integer :: ia, ja
    real(dp) :: dd, dmin
 
-   if (allocated(fangNNVec)) deallocate(fangNNVec)
-   allocate(fangNNVec(2,nAt))
+   if (allocated(firstNNVec)) deallocate(firstNNVec)
+   allocate(firstNNVec(2,nAt))
    do ia=1,nAt
       dmin = huge(1.0_dp)
-      fangNNVec(:,ia) = 0.0_dp
+      firstNNVec(:,ia) = 0.0_dp
       do ja=1,Nneigh(ia)
          if (layerIndex(NList(ja,ia)) .ne. layerIndex(ia)) cycle
          dd = NeighD(1,ja,ia)**2 + NeighD(2,ja,ia)**2
          if (dd .gt. 0.01_dp .and. dd .lt. dmin) then
             dmin = dd
-            fangNNVec(:,ia) = NeighD(1:2,ja,ia)
+            firstNNVec(:,ia) = NeighD(1:2,ja,ia)
          end if
       end do
-      if (dmin .eq. huge(1.0_dp)) call MIO_Kill('Interlayer.UseBNGKaxiras: atom '//trim(num2str(ia))// &
-           ' has no neighbour in its own layer (the model needs its first-neighbour bond)','ham','HamFangFirstNeighbourBonds')
+      if (dmin .eq. huge(1.0_dp)) call MIO_Kill('Atom '//trim(num2str(ia))//' has no neighbour in its own layer: '// &
+           'the Kaxiras/Srivani interlayer angles need its first-neighbour bond','ham','HamFirstNeighbourBonds')
    end do
 
-end subroutine HamFangFirstNeighbourBonds
+end subroutine HamFirstNeighbourBonds
 
-!> cos(3 theta) of the angle between the in-plane vector u (from atom ia to its partner) and the first-neighbour
-!! bond of atom ia, from cos(3t) = 4 cos(t)^3 - 3 cos(t). Zero for u = 0 (there r = 0 and the V3 terms vanish).
+!> Angle (0..pi) between the in-plane vector u (from atom ia to its partner in another layer) and the first-neighbour
+!! bond of atom ia (HamFirstNeighbourBonds): theta12 / theta21 of Fang et al., PRB 93, 235153 (2016). Zero for u = 0.
+real(dp) function HamBondAngle(ia, u)
+
+   integer, intent(in) :: ia
+   real(dp), intent(in) :: u(2)
+
+   real(dp) :: nu
+
+   nu = norm2(u)
+   if (nu .lt. 1.0e-8_dp) then
+      HamBondAngle = 0.0_dp
+      return
+   end if
+   HamBondAngle = acos(max(-1.0_dp, min(1.0_dp, dot_product(u, firstNNVec(:,ia))/(nu*norm2(firstNNVec(:,ia))))))
+
+end function HamBondAngle
+
+!> cos(3 theta) of HamBondAngle; zero for u = 0 (there r = 0 and the V3 terms vanish).
 real(dp) function HamFangCos3(ia, u)
 
    integer, intent(in) :: ia
    real(dp), intent(in) :: u(2)
 
-   real(dp) :: c, nu, nv
-
-   nu = norm2(u)
-   nv = norm2(fangNNVec(:,ia))
-   if (nu .lt. 1.0e-8_dp) then
+   if (norm2(u) .lt. 1.0e-8_dp) then
       HamFangCos3 = 0.0_dp
-      return
+   else
+      HamFangCos3 = cos(3.0_dp*HamBondAngle(ia, u))
    end if
-   c = max(-1.0_dp, min(1.0_dp, dot_product(u, fangNNVec(:,ia))/(nu*nv)))
-   HamFangCos3 = 4.0_dp*c**3 - 3.0_dp*c
 
 end function HamFangCos3
 
@@ -9650,7 +9681,7 @@ real(dp) function HamFangHBNHop(dist, ia)
    integer :: n
 
    HamFangHBNHop = 0.0_dp
-   ratio = dist/norm2(fangNNVec(:,ia))
+   ratio = dist/norm2(firstNNVec(:,ia))
    do n=1,8
       if (n.eq.1) then
          lo = 0.5_dp
