@@ -860,9 +860,10 @@ subroutine HamOnSite()
       allocate(checkerActivate(checkerDivider,checkerDivider))
       activatedCheckers = 0
       call RandSeedFromInput()
-   20 do j = 1,checkerDivider
+   20 activatedCheckers = 0   ! each attempt draws the whole board again
+      checkerActivate = .false.
+      do j = 1,checkerDivider
          do k = 1,checkerDivider
-            checkerActivate(j,k) = .false.
             call random_number(rand)
             if(rand.le.checkerDensity) then
                 checkerActivate(j,k) = .true.
@@ -875,10 +876,15 @@ subroutine HamOnSite()
       end do
       IF (dble(activatedCheckers)/dble(checkerDivider*checkerDivider)-0.01_dp.lt.checkerDensity) GO TO 20
    10 CONTINUE
+      call MIO_Print('Bubbles: '//trim(num2str(activatedCheckers))//' of '// &
+        trim(num2str(checkerDivider*checkerDivider))//' checkerboard cells shifted','ham')
       if (.not. frac) call AtomsSetFrac()
+      ! cell j holds (j-1)/D < f <= j/D; f = 0 is the periodic image of f = 1 (cell D), and coordinates outside
+      ! (0,1] are wrapped the same way (CEILING alone gave index 0 for atoms at f = 0)
       !$OMP PARALLEL DO PRIVATE(i)
       do i = 1,nAt
-         if (checkerActivate(CEILING(Rat(1,i)*checkerDivider),CEILING(Rat(2,i)*checkerDivider)).eqv.(.true.)) then
+         if (checkerActivate(modulo(CEILING(Rat(1,i)*checkerDivider)-1,checkerDivider)+1, &
+               modulo(CEILING(Rat(2,i)*checkerDivider)-1,checkerDivider)+1)) then
                H0(i) = H0(i) + onsiteShift
          else
                H0(i) = H0(i)
