@@ -5054,6 +5054,8 @@ subroutine HamHopping
    ! fixed (distance-independent) Kaxiras/Srivani interlayer set, for HamHopInterlayerKaxirasSrivani: lambda0 xi0
    ! kappa0 lambda3 xi3 x3 lambda6 xi6 x6 kappa6 lambda6b xi6b x6b kappa6b (that function has local copies)
    real(dp) :: kaxFixed(14)
+   ! input values of Interlayer.RenormalizeHoppingFactorAAp/BBp/ABp/BAp (the four names are private in the bond loop)
+   real(dp) :: rhfInput(4)
    real(dp) :: aBN1, aCC, aGSrivani, bubbleR, bubbleSigmaR2, bubbleTheta, c0AAV0, c0ABV0, c10_0, c10_1, &
          c10_2, c11_0, c11_1, c11_2, c12_0, c12_1, c12_2, c13_0, c13_1, c13_2, c14_0, c14_1, c14_2, c1_0, &
          c1_1, c1_2, c1AAV0, c1ABV0, c2_0, c2_1, c2_2, c2AAV0, c2ABV0, c3_0, c3_1, c3_2, c4_0, c4_1, c4_2, &
@@ -5676,6 +5678,8 @@ subroutine HamHopping
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorBBp',renormalizeHoppingFactorBBp,1.0_dp)
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorABp',renormalizeHoppingFactorABp,1.0_dp)
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorBAp',renormalizeHoppingFactorBAp,1.0_dp)
+         rhfInput = [renormalizeHoppingFactorAAp, renormalizeHoppingFactorBBp, renormalizeHoppingFactorABp, &
+                     renormalizeHoppingFactorBAp]
          call MIO_InputParameter('Interlayer.NewFittingFunctions',newFittingFunctions,.false.)
          call MIO_InputParameter('Interlayer.RenormalizeCoupling',renormalizeCoupling,.false.)
          call MIO_InputParameter('Interlayer.CouplingFactor',couplingFactor,1.0_dp)
@@ -5860,10 +5864,12 @@ subroutine HamHopping
             vppsigma = hamUnset
             cabd = hamUnset
             fc = hamUnset
-            renormalizehoppingfactoraap = hamUnset
-            renormalizehoppingfactorbbp = hamUnset
-            renormalizehoppingfactorabp = hamUnset
-            renormalizehoppingfactorbap = hamUnset
+            ! the input values (private copies: until November 2026 they started as not-set markers, so the keys
+            ! never reached the models that use them as given, and TypeOfBL Mayou was refused)
+            renormalizehoppingfactoraap = rhfInput(1)
+            renormalizehoppingfactorbbp = rhfInput(2)
+            renormalizehoppingfactorabp = rhfInput(3)
+            renormalizehoppingfactorbap = rhfInput(4)
             lambda0 = hamUnset
             lambda3 = hamUnset
             lambda6 = hamUnset
