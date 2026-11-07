@@ -58,7 +58,7 @@ subroutine KuboInitWF(Psi)
 
    do i=inode1, inode2
       call random_number(r)
-      Psi(i) = exp(twopi*cmplx_i*r)/sqrt(real(nAt))
+      Psi(i) = exp(twopi*cmplx_i*r)/sqrt(real(nAt,dp))
    end do
 
    cnum = 0.0_dp
@@ -169,7 +169,7 @@ subroutine KuboInitWFLayerDOS(Psi,layerNumber,numberOfLayers,numberOfAtomsInLaye
    do i=1,nAt
       if (layerIndex(i).eq.layerNumber) then
           call random_number(r)
-          Psi(i) = exp(twopi*cmplx_i*r)/sqrt(real(numberOfAtomsInLayer))
+          Psi(i) = exp(twopi*cmplx_i*r)/sqrt(real(numberOfAtomsInLayer,dp))
       else
           Psi(i) = cmplx_0
       end if
@@ -242,7 +242,7 @@ subroutine KuboInitWFLayerAndSpeciesDOS(Psi,layerNumber,speciesNumber,numberOfLa
    do i=1,nAt
       if (layerIndex(i).eq.layerNumber .and. Species(i) .eq. speciesNumber) then
           call random_number(r)
-          Psi(i) = exp(twopi*cmplx_i*r)/sqrt(real(numberOfAtomsInLayer))
+          Psi(i) = exp(twopi*cmplx_i*r)/sqrt(real(numberOfAtomsInLayer,dp))
       else
           Psi(i) = cmplx_0
       end if
