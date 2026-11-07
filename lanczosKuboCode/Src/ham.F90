@@ -582,6 +582,8 @@ subroutine HamInit()
    else
       call NeighList()
    end if
+   ! Structure.DisplacementsFromPositions: stacking displacements from the rigid and relaxed structures
+   call HamDisplacementsFromPositions()
    call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
    if (readDataFiles) then
       ! generate.e is the file Output.WriteDataFiles writes (HamHopWriteTables): H0 already in units of g0,
@@ -12178,6 +12180,136 @@ end function HamHaldaneChirality
 !> Reads an energy that the input file gives in eV and returns it in units of g0. If the input file does not set
 !> the key, value = defaultG0, the former default (already in units of g0), so such runs are unchanged.
 !> These keys were taken in units of g0 before 2026-10-14 (or before the optional date since); when the input sets
+
+!> Structure.DisplacementsFromPositions (with GBN.UseDisplacementFile or TBG.UseDisplacementFile): the local stacking
+!! displacement of every atom, computed from the structure instead of read from a displacements file.
+!! For atom i and an adjacent layer, its partner is the atom of that layer with the same sublattice role (graphene
+!! A-B / hBN B-N: C1-B, C2-N; same material: the same Species), nearest in plane in the RIGID structure
+!! (Structure.ReadRigidXYZ, Structure.RigidPositions = generateInit.xyz). The displacement is the in-plane bond
+!! vector to that partner in the actual (relaxed) structure, oriented as r(hBN side) - r(graphene side) for a
+!! graphene/hBN interface and r(upper layer) - r(lower layer) for two layers of the same material: zero at AA
+!! stacking, the convention of the analytic d(r) = ((1+eps)R - 1) r of the moire terms. It depends neither on the
+!! orientation of the cell nor on its origin, so the frame rotations Stack.GlobalTwist* must stay 0. Stored in
+!! displacements (displacements_b / _t: the two interfaces of the graphene layer of EncapsulatedThreeLayers).
+subroutine HamDisplacementsFromPositions()
+
+   use atoms,                only : nAt, Rat, RatInit, Species, layerIndex, displacements, displacements_b, &
+                                    displacements_t
+   use neigh,                only : NList, Nneigh, NeighD
+   use cell,                 only : ucell
+
+   logical :: l, gbnFile, tbgFile, enc3
+   integer :: i, j, jj, L, Lp, k, nMiss, nAmb, best(2), want
+   real(dp) :: ga(6), det, du(2), f(2), d2, dbest(2), sgn, ddisp(2)
+   integer :: cand(2)
+   logical, allocatable :: present(:)
+
+   call MIO_InputParameter('Structure.DisplacementsFromPositions',l,.false.)
+   if (.not. l) return
+   call MIO_InputParameter('GBN.UseDisplacementFile',gbnFile,.false.)
+   call MIO_InputParameter('TBG.UseDisplacementFile',tbgFile,.false.)
+   if (.not. (gbnFile .or. tbgFile)) call MIO_Kill('Structure.DisplacementsFromPositions replaces the displacements '// &
+        'file of GBN.UseDisplacementFile or TBG.UseDisplacementFile: set one of them','ham','HamInit')
+   if (.not. associated(RatInit)) call MIO_Kill('Structure.DisplacementsFromPositions needs the rigid structure: '// &
+        'Structure.ReadRigidXYZ .true. (file Structure.RigidPositions, default generateInit.xyz)','ham','HamInit')
+   call MIO_InputParameter('Stack.GlobalTwist',ga(1),0.0_dp)
+   call MIO_InputParameter('Stack.GlobalTwist2',ga(2),0.0_dp)
+   call MIO_InputParameter('Stack.GlobalPhiL1',ga(3),0.0_dp)
+   call MIO_InputParameter('Stack.GlobalPhiL2a',ga(4),0.0_dp)
+   call MIO_InputParameter('Stack.GlobalPhiL2b',ga(5),0.0_dp)
+   call MIO_InputParameter('Stack.GlobalPhiL3',ga(6),0.0_dp)
+   if (any(ga /= 0.0_dp)) call MIO_Kill('Structure.DisplacementsFromPositions gives the displacements in the frame of '// &
+        'the structure: Stack.GlobalTwist, GlobalTwist2, GlobalPhiL1, L2a, L2b, L3 must be 0','ham','HamInit')
+   call MIO_InputParameter('Stack.EncapsulatedThreeLayers',enc3,.false.)
+   det = ucell(1,1)*ucell(2,2) - ucell(1,2)*ucell(2,1)
+   allocate(present(0:maxval(layerIndex)+1))
+   present = .false.
+   do i = 1, nAt
+      present(layerIndex(i)) = .true.
+   end do
+   nMiss = 0
+   nAmb = 0
+   do i = 1, nAt
+      L = layerIndex(i)
+      ! partner layers: the adjacent layers; with two of them, the one of the other material (graphene/hBN), and
+      ! both for the graphene layer of EncapsulatedThreeLayers
+      cand = 0
+      k = 0
+      do Lp = L-1, L+1, 2
+         if (present(max(Lp,0))) then
+            k = k + 1
+            cand(k) = Lp
+         end if
+      end do
+      best = 0
+      dbest = huge(1.0_dp)
+      do j = 1, Nneigh(i)
+         jj = NList(j,i)
+         if (layerIndex(jj) /= cand(1) .and. layerIndex(jj) /= cand(2)) cycle
+         if ((Species(i) <= 2) .eqv. (Species(jj) <= 2)) then
+            want = Species(i)
+         else if (Species(i) <= 2) then
+            want = Species(i) + 2
+         else
+            want = Species(i) - 2
+         end if
+         if (Species(jj) /= want) cycle
+         du = RatInit(1:2,jj) - RatInit(1:2,i)
+         f(1) = ( ucell(2,2)*du(1) - ucell(1,2)*du(2))/det
+         f(2) = (-ucell(2,1)*du(1) + ucell(1,1)*du(2))/det
+         f = f - nint(f)
+         du = ucell(1:2,1)*f(1) + ucell(1:2,2)*f(2)
+         d2 = du(1)**2 + du(2)**2
+         k = merge(1, 2, layerIndex(jj) == cand(1))
+         if (d2 < dbest(k)) then
+            dbest(k) = d2
+            best(k) = j
+         end if
+      end do
+      displacements(:,i) = 0.0_dp
+      displacements_b(:,i) = 0.0_dp
+      displacements_t(:,i) = 0.0_dp
+      do k = 1, 2
+         if (cand(k) == 0) cycle
+         if (best(k) == 0) then
+            nMiss = nMiss + 1
+            cycle
+         end if
+         j = best(k)
+         jj = NList(j,i)
+         ! orientation: hBN side minus graphene side; same material: upper minus lower layer
+         if ((Species(i) <= 2) .neqv. (Species(jj) <= 2)) then
+            sgn = merge(1.0_dp, -1.0_dp, Species(i) <= 2)
+         else
+            sgn = merge(1.0_dp, -1.0_dp, layerIndex(jj) > L)
+         end if
+         ddisp = sgn*NeighD(1:2,j,i)
+         if (enc3 .and. Species(i) <= 2) then
+            if (cand(k) < L) displacements_b(1:2,i) = ddisp
+            if (cand(k) > L) displacements_t(1:2,i) = ddisp
+         else if (cand(1) /= 0 .and. cand(2) /= 0) then
+            ! two adjacent layers: keep the interface with the other material; ambiguous if both are the same
+            if ((Species(i) <= 2) .neqv. (Species(jj) <= 2)) then
+               displacements(1:2,i) = ddisp
+            else if (all(displacements(1:2,i) == 0.0_dp)) then
+               nAmb = nAmb + 1
+            end if
+         else
+            displacements(1:2,i) = ddisp
+         end if
+      end do
+      displacements(3,i) = sqrt(displacements(1,i)**2 + displacements(2,i)**2)
+   end do
+   if (nMiss > 0) call MIO_Kill('Structure.DisplacementsFromPositions: '//trim(num2str(nMiss))//' atoms have no '// &
+        'partner atom in an adjacent layer among their neighbours (raise Neigh.LayerDistFactor)','ham','HamInit')
+   if (nAmb > 0) call MIO_Kill('Structure.DisplacementsFromPositions: '//trim(num2str(nAmb))//' atoms lie between two '// &
+        'layers of their own material: which interface their moire term belongs to is not defined','ham','HamInit')
+   call MIO_Print('Structure.DisplacementsFromPositions: stacking displacements of '//trim(num2str(nAt))// &
+        ' atoms from the rigid and actual structures, max |d| = '//trim(num2str(maxval(displacements(3,:)),4))// &
+        ' Angstrom','ham')
+
+end subroutine HamDisplacementsFromPositions
+
 !> one, a warning says so.
 subroutine HamInputEnergyEV(key,value,defaultG0,since)
 
