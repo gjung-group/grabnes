@@ -5079,8 +5079,8 @@ subroutine HamHopping
          p3b6AA, p3b6AB, p3b6BA, p3b6BB, p3c0AA, p3c0AB, p3c0BA, p3c0BB, p3c3AA, p3c3AB, p3c3BA, p3c3BB, &
          p3c6AA, p3c6AB, p3c6BA, p3c6BB, p3d0AA, p3d0AB, p3d0BA, p3d0BB, p3d3AA, p3d3AB, p3d3BA, p3d3BB, &
          p3d6AA, p3d6AB, p3d6BA, p3d6BB, p3h0AA, p3h0AB, p3h0BA, p3h0BB, p3j0AA, p3j0AB, p3k0AA, p3k0AB, &
-         phase, phi2M, qpi, qsigma, rand, rc, refDist, shift2_x, shift2_y, t1K, t2K, t2KN, t6KSL, t7KSL, &
-         t8KSL, tAB, twistAngleGrad2, twistedBilayerAngle, twistedBilayerAngleGrad, x0, x3_BC, x3_CB, x3_CN, &
+         phase, phi2M, qpi, qsigma, rand, rc, refDist, shift2_x, shift2_y, t1K, t2K, t2KN, &
+         tAB, twistAngleGrad2, twistedBilayerAngle, twistedBilayerAngleGrad, x0, x3_BC, x3_CB, x3_CN, &
          x3_NC, x3ABp, x3bABp, x3BAp, x3bBAp, xi0_CB, xi0_CN, xi0AAp, xi0ABp, xi0bAAp, xi0bABp, xi0BAp, &
          xi0bBAp, xi3_BC, xi3_CB, xi3_CN, xi3_NC, xi3ABp, xi3bABp, xi3BAp, xi3bBAp, xShift, yShift
    character(len=200) :: shellSpc
@@ -5196,9 +5196,6 @@ subroutine HamHopping
    renormalizehoppingfactorbbp = hamUnset
    t2k = hamUnset
    t2kn = hamUnset
-   t6ksl = hamUnset
-   t7ksl = hamUnset
-   t8ksl = hamUnset
    tr1 = hamUnset
    tr2 = hamUnset
    tr3 = hamUnset
@@ -7558,7 +7555,10 @@ subroutine HamHopF2G2sParameters()
             t6KSLBNfromGBNB = t6KSLBNfromGBNB/g0
             t7KSLBNfromGBN = t7KSLBNfromGBN/g0
             t8KSLBNfromGBN = t8KSLBNfromGBN/g0
-         else if (F2G2Model) then
+         end if
+         ! The graphene layer of Stack.T2GBN that does not touch hBN (layer 3) uses the single-layer F2G2 set
+         ! with GBNtwoLayersF2G2s as well: until November 2026 it was never assigned in that mode.
+         if (GBNtwoLayersF2G2s .or. F2G2Model) then
             t1K = g0/g0
             if (useOldGrapheneF2G2) then
                 call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSL,-0.21264_dp)
@@ -10208,17 +10208,17 @@ subroutine HamHopIntralayerT2GBN(dist, j, i, countG1, countG2, countG3, countG4,
                                    else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                       countG6 = countG6+1
                                       if (Species(i).eq.1) then
-                                         hopp(j,i) = hopp(j,i) + t6KSL
+                                         hopp(j,i) = hopp(j,i) + t6K
                                       else
-                                         hopp(j,i) = hopp(j,i) + t6KSL
+                                         hopp(j,i) = hopp(j,i) + t6K
                                       end if
                                    else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                          .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                       countG7 = countG7+1
-                                      hopp(j,i) = hopp(j,i) + t7KSL
+                                      hopp(j,i) = hopp(j,i) + t7K
                                    else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                       countG8 = countG8+1
-                                      hopp(j,i) = hopp(j,i) + t8KSL
+                                      hopp(j,i) = hopp(j,i) + t8K
                                    else
                                         hopp(j,i) = hopp(j,i) + 0.0_dp
                                    end if
@@ -10338,17 +10338,17 @@ subroutine HamHopIntralayerBNt2GBN(dist, j, i, countG1, countG2, countG3, countG
                                else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                   countG6 = countG6+1
                                   if (Species(i).eq.1) then
-                                     hopp(j,i) = hopp(j,i) + t6KSL !GfromGBNA
+                                     hopp(j,i) = hopp(j,i) + t6K !GfromGBNA
                                   else
-                                     hopp(j,i) = hopp(j,i) + t6KSL !GfromGBNB
+                                     hopp(j,i) = hopp(j,i) + t6K !GfromGBNB
                                   end if
                                else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                      .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                   countG7 = countG7+1
-                                  hopp(j,i) = hopp(j,i) + t7KSL !GfromGBN
+                                  hopp(j,i) = hopp(j,i) + t7K !GfromGBN
                                else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                   countG8 = countG8+1
-                                  hopp(j,i) = hopp(j,i) + t8KSL !GfromGBN
+                                  hopp(j,i) = hopp(j,i) + t8K !GfromGBN
                                else
                                     hopp(j,i) = hopp(j,i) + 0.0_dp
                                end if
@@ -10379,17 +10379,17 @@ subroutine HamHopIntralayerBNt2GBN(dist, j, i, countG1, countG2, countG3, countG
                                else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                   countG6 = countG6+1
                                   if (Species(i).eq.1) then
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   else
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   end if
                                else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                      .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                   countG7 = countG7+1
-                                  hopp(j,i) = hopp(j,i) + t7KSL
+                                  hopp(j,i) = hopp(j,i) + t7K
                                else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                   countG8 = countG8+1
-                                  hopp(j,i) = hopp(j,i) + t8KSL
+                                  hopp(j,i) = hopp(j,i) + t8K
                                else
                                     hopp(j,i) = hopp(j,i) + 0.0_dp
                                end if
@@ -10509,17 +10509,17 @@ subroutine HamHopIntralayerT3GwithBN(dist, j, i, countG1, countG2, countG3, coun
                                else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                   countG6 = countG6+1
                                   if (Species(i).eq.1) then
-                                     hopp(j,i) = hopp(j,i) + t6KSL !GfromGBNA
+                                     hopp(j,i) = hopp(j,i) + t6K !GfromGBNA
                                   else
-                                     hopp(j,i) = hopp(j,i) + t6KSL !GfromGBNB
+                                     hopp(j,i) = hopp(j,i) + t6K !GfromGBNB
                                   end if
                                else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                      .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                   countG7 = countG7+1
-                                  hopp(j,i) = hopp(j,i) + t7KSL !GfromGBN
+                                  hopp(j,i) = hopp(j,i) + t7K !GfromGBN
                                else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                   countG8 = countG8+1
-                                  hopp(j,i) = hopp(j,i) + t8KSL !GfromGBN
+                                  hopp(j,i) = hopp(j,i) + t8K !GfromGBN
                                else
                                     hopp(j,i) = hopp(j,i) + 0.0_dp
                                end if
@@ -10550,17 +10550,17 @@ subroutine HamHopIntralayerT3GwithBN(dist, j, i, countG1, countG2, countG3, coun
                                else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                   countG6 = countG6+1
                                   if (Species(i).eq.1) then
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   else
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   end if
                                else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                      .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                   countG7 = countG7+1
-                                  hopp(j,i) = hopp(j,i) + t7KSL
+                                  hopp(j,i) = hopp(j,i) + t7K
                                else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                   countG8 = countG8+1
-                                  hopp(j,i) = hopp(j,i) + t8KSL
+                                  hopp(j,i) = hopp(j,i) + t8K
                                else
                                     hopp(j,i) = hopp(j,i) + 0.0_dp
                                end if
@@ -10591,17 +10591,17 @@ subroutine HamHopIntralayerT3GwithBN(dist, j, i, countG1, countG2, countG3, coun
                                else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                   countG6 = countG6+1
                                   if (Species(i).eq.1) then
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   else
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   end if
                                else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                      .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                   countG7 = countG7+1
-                                  hopp(j,i) = hopp(j,i) + t7KSL
+                                  hopp(j,i) = hopp(j,i) + t7K
                                else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                   countG8 = countG8+1
-                                  hopp(j,i) = hopp(j,i) + t8KSL
+                                  hopp(j,i) = hopp(j,i) + t8K
                                else
                                     hopp(j,i) = hopp(j,i) + 0.0_dp
                                end if
