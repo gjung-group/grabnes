@@ -711,7 +711,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Structure.BasedOnMoireCellParameters` | `basedOnMoireCellParameters`, `basedOnMoireCellParamters` | logical | `.false.` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamHopping; ... (4 places) |
 | `Structure.BernalReadXYZ` | `BernalReadXYZ` | logical | `.false.` | ham.F90: HamHopping |
 | `Structure.BernalShift` | `BernalShift` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping |
-| `Structure.BilayerShiftFactor` | `BilayerShiftFactor` | integer | `0` | atoms.F90: AtomsPos |
+| `Structure.BilayerShiftFactor` | `BilayerShiftFactor` | real | `0.0` | atoms.F90: AtomsPos |
 | `Structure.BLDomainBoundaryNRShifts` | `BLDomainBoundaryNRShifts` | integer | `1` | atoms.F90: AtomsPos |
 | `Structure.BLDomainBoundaryTypeArmAA` | `BLDomainBoundaryTypeArmAA` | logical | `.false.` | atoms.F90: AtomsPos |
 | `Structure.BLDomainBoundaryTypeArmSP` | `BLDomainBoundaryTypeArmSP` | logical | `.false.` | atoms.F90: AtomsPos |
@@ -744,7 +744,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Structure.SuperCellX` | `SuperCellX` | integer | `1` | atoms.F90: AtomsPos; ham.F90: HamMoireFourierSetup; ham.F90: HamOnSiteMoireCDW |
 | `Structure.SuperCellY` | `SuperCellY` | integer | `1` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamMoireFourierSetup; ... (4 places) |
 | `Structure.TrilayerAddShift` | `TrilayerAddShift` | logical | `.false.` | atoms.F90: AtomsPos |
-| `Structure.TrilayerShiftFactor` | `TrilayerShiftFactor` | integer | `0` | atoms.F90: AtomsPos |
+| `Structure.TrilayerShiftFactor` | `TrilayerShiftFactor` | real | `0.0` | atoms.F90: AtomsPos |
 | `Structure.TwistedBilayerAngle` | `twistedBilayerAngle` | real | `0.0` | atoms.F90: AtomsPos |
 | `Structure.TwistedBLAddShift` | `twistedBLAddShift` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping |
 | `Structure.UseSublatticeFile` | `useSublatticeFile` | logical | `.true.` | atoms.F90: AtomsPos |
