@@ -1300,12 +1300,12 @@
   "status": "ok"
  },
  "xyz2_bnbn": {
-  "fingerprint": "eaca5b8f8d8a5afe",
-  "status": "ok"
+  "fingerprint": "7beb0e2a0dc52d03",
+  "status": "REFUSED"
  },
  "xyz2_bnbn+BNBNDiag": {
-  "fingerprint": "eaca5b8f8d8a5afe",
-  "status": "INERT"
+  "fingerprint": "7beb0e2a0dc52d03",
+  "status": "REFUSED"
  },
  "xyz2_gbn": {
   "fingerprint": "0b7e6578c4ca8399",
