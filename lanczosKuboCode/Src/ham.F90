@@ -8180,9 +8180,10 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                             else
                                hopp(j,i) = hopp(j,i) + 0.0_dp
                             end if
-                        ! INTERLAYER USING F2G2 model for bottom 2 layers
+                        ! INTERLAYER USING F2G2 model for bottom 2 layers (unless BilayerOneParameter is asked for: F2G2Model is
+                        ! on by default, so until November 2026 the BilayerOneParameter branch below was never reached)
                         else if ((layerIndex(i) .eq. layerIndex(jj) + 1 .or. layerIndex(i).eq. layerIndex(jj)-1) &
-                              .and. F2G2Model) then
+                              .and. F2G2Model .and. .not. BilayerOneParameter) then
                             dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
                             if (dist<0.2_dp) then
                                !if (i.eq.1) print*, "assigning inerlayer F2G2 terms BA 0", delta
