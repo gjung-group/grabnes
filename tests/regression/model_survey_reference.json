@@ -492,8 +492,8 @@
   "status": "ok"
  },
  "graphene+realisticBubbles": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "79bcbaab8043bac3",
+  "status": "REFUSED"
  },
  "graphene+removeF2G2Flag": {
   "fingerprint": "61909524e9c6043c",
