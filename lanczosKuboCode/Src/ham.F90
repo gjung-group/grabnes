@@ -5649,6 +5649,9 @@ subroutine HamHopping
          call MIO_InputParameter('Intralayer.MayouIntralayer',MayouIntralayer,.false.)
          call MIO_InputParameter('Interlayer.UseBNGKaxiras',useBNGKaxiras,.false.)
          fangGhBN = useBNGKaxiras .and. MIO_StringComp(BilayerModel,'BLKaxiras')
+         if (useBNGKaxiras .and. .not. fangGhBN) call MIO_Kill('Interlayer.UseBNGKaxiras is the graphene/hBN model of '// &
+              'Fang et al. (PRB 93, 235153) and needs TypeOfBL BLKaxiras: with another interlayer model the hBN layers '// &
+              'would get its intralayer set and the graphene-hBN bonds another model','ham','HamHopping')
          if (useBNGKaxiras) call HamFangFirstNeighbourBonds()
          call MIO_InputParameter('Stack.TwoLayers',twoLayers,.false.)
          call MIO_InputParameter('Stack.OneLayer',oneLayer,.false.)
