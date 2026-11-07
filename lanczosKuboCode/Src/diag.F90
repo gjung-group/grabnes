@@ -3783,9 +3783,12 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    deltaKz = (K1z2 - K1z1)/nk(3)
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
-      Kgrid(1,ik) = (K1x1 + (i1 * deltaKx))
-      Kgrid(2,ik) = (K1y1 + (i2 * deltaKy))
-      Kgrid(3,ik) = (K1z1 + (i3 * deltaKz))
+      ! cell centres of the box K1 +- gridCut: symmetric about K1, which is on the grid for an odd count
+      ! (until November 2026 the points ran from K1-gridCut+delta to K1+gridCut: with one point K1+gridCut,
+      ! and kz = gridCut on a two-dimensional grid)
+      Kgrid(1,ik) = (K1x1 + ((i1-0.5_dp) * deltaKx))
+      Kgrid(2,ik) = (K1y1 + ((i2-0.5_dp) * deltaKy))
+      Kgrid(3,ik) = (K1z1 + ((i3-0.5_dp) * deltaKz))
    end do; end do; end do
 
       !   !if (MoireBS) then
@@ -4271,9 +4274,12 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    deltaKz = (K1z2 - K1z1)/nk(3)
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
-      Kgrid(1,ik) = (K1x1 + (i1 * deltaKx))
-      Kgrid(2,ik) = (K1y1 + (i2 * deltaKy))
-      Kgrid(3,ik) = (K1z1 + (i3 * deltaKz))
+      ! cell centres of the box K1 +- gridCut: symmetric about K1, which is on the grid for an odd count
+      ! (until November 2026 the points ran from K1-gridCut+delta to K1+gridCut: with one point K1+gridCut,
+      ! and kz = gridCut on a two-dimensional grid)
+      Kgrid(1,ik) = (K1x1 + ((i1-0.5_dp) * deltaKx))
+      Kgrid(2,ik) = (K1y1 + ((i2-0.5_dp) * deltaKy))
+      Kgrid(3,ik) = (K1z1 + ((i3-0.5_dp) * deltaKz))
    end do; end do; end do
 
       !   !if (MoireBS) then
@@ -4747,6 +4753,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    call MIO_InputParameter('Spectral.KGridCutX',gridCutX,0.1_dp)
    call MIO_InputParameter('Spectral.KGridCutY',gridCutY,0.1_dp)
    call MIO_InputParameter('Spectral.KGridLowerGridHalf',lowerGridHalf,.false.)
+   if (nk(2) > 1) call MIO_Print('WARNING: this spectral cut is a line along kx at ky = K_y + Spectral.KGridCutY: '// &
+        'the '//trim(num2str(nk(2)))//' rows of Diag.KGrid along y are identical copies','diag')
    ptot = nk(1)*nk(2)*nk(3)
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
@@ -4777,7 +4785,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       ik = ik+1
       Kgrid(1,ik) = (K1x1 + (i1 * deltaKx))
       Kgrid(2,ik) = K1y1
-      Kgrid(3,ik) = (K1z1 + (i3 * deltaKz))
+      Kgrid(3,ik) = (K1z1 + ((i3-0.5_dp) * deltaKz))  ! kz = K1z for one point (was K1z + gridCut)
    end do; end do; end do
 
       !   !if (MoireBS) then
