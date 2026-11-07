@@ -104,6 +104,9 @@ module ham
    real(dp), save, public :: lambdaIsing   ! Ising SOC parameter (λIsing) - spin-dependent
    real(dp), save, public :: lambdaR       ! Rashba SOC parameter (λR)
    real(dp), save, public :: lambdaPIA     ! Pseudo-inversion asymmetry parameter (λPIA)
+   ! SOC.PIA (since November 2026): Gmitra et al. PRB 93, 155104 (2016), 2i/3 lamPIA^X (s x d)_z on the
+   ! second-neighbour graphene bonds of sublattice X, in the spinful block Hamiltonian (socBond table)
+   real(dp), save, public :: lambdaPIAA = 0.0_dp, lambdaPIAB = 0.0_dp   ! [g0]
 
    ! Spinful bond terms of the block (2N x 2N) Hamiltonian, opt-in (2026-10-16).  All need SOC.RashbaConsistentPhase,
    ! which puts every spin-flip and spin-dependent bond term on the Bloch phase of the spin-diagonal hopping.
@@ -331,9 +334,17 @@ subroutine HamInit()
 
    call MIO_InputParameter('SOC.PIA',PIASOCterm,.false.)
    if (PIASOCterm) then
+      ! [eV]; SOC.LambdaPIAA / SOC.LambdaPIAB per sublattice (default SOC.LambdaPIA for both).
+      ! Until November 2026 the term was a spin-independent on-site shift lambdaPIA (dense paths) plus a
+      ! non-Hermitian first-neighbour term lambdaPIA (d_y + i d_x) on the sparse path.
       call MIO_InputParameter('SOC.LambdaPIA',lambdaPIA,0.0_dp)
-      lambdaPIA = lambdaPIA / g0  ! Normalize by g0 for consistency with other SOC terms
-      call MIO_Print('Pseudo-inversion asymmetry enabled with λPIA = '//trim(num2str(lambdaPIA)),'ham')
+      call MIO_InputParameter('SOC.LambdaPIAA',lambdaPIAA,lambdaPIA)
+      call MIO_InputParameter('SOC.LambdaPIAB',lambdaPIAB,lambdaPIA)
+      call MIO_Print('Pseudo-inversion asymmetry SOC (Gmitra et al. 2016) with lambda_PIA A, B = '// &
+           trim(num2str(lambdaPIAA,6))//', '//trim(num2str(lambdaPIAB,6))//' eV','ham')
+      lambdaPIA = lambdaPIA / g0
+      lambdaPIAA = lambdaPIAA / g0
+      lambdaPIAB = lambdaPIAB / g0
    end if
 
    ! Spinful bond terms of the block Hamiltonian (see the declarations); every default leaves the run unchanged
@@ -352,18 +363,19 @@ subroutine HamInit()
       call MIO_InputParameter('SOC.LambdaInterlayer',lambdaIL,0.0_dp)
       lambdaIL = lambdaIL/g0
    end if
-   if ((KaneMeleSOCterm .or. InterlayerSOCterm .or. rashbaAngle /= 0.0_dp) .and. .not. RashbaConsistentPhase) then
-      call MIO_Kill('SOC.KaneMele, SOC.Interlayer and SOC.RashbaAngle are written in the spin convention and Bloch '// &
+   if ((KaneMeleSOCterm .or. InterlayerSOCterm .or. PIASOCterm .or. rashbaAngle /= 0.0_dp) .and. &
+       .not. RashbaConsistentPhase) then
+      call MIO_Kill('SOC.KaneMele, SOC.Interlayer, SOC.PIA and SOC.RashbaAngle are written in the spin convention and Bloch '// &
         'phase of SOC.RashbaConsistentPhase: set SOC.RashbaConsistentPhase .true.','ham','HamInit')
    end if
-   if (.not. (RashbaSOCterm .or. KaneMeleSOCterm .or. InterlayerSOCterm)) RashbaConsistentPhase = .false.
+   if (.not. (RashbaSOCterm .or. KaneMeleSOCterm .or. InterlayerSOCterm .or. PIASOCterm)) RashbaConsistentPhase = .false.
    if (RashbaSOCterm .and. .not. RashbaConsistentPhase) call MIO_Print('WARNING: SOC.RashbaConsistentPhase .false.: '// &
      'the former Rashba term, whose Bloch phase has the wrong sign of k.d (exact only at K and Gamma) - use it only to '// &
      'reproduce results made before 2026-10-16','ham')
    if (RashbaConsistentPhase) then
-      if (nspin /= 2) call MIO_Kill('The Rashba, Kane-Mele and interlayer SOC terms need a spinful run '// &
+      if (nspin /= 2) call MIO_Kill('The Rashba, Kane-Mele, PIA and interlayer SOC terms need a spinful run '// &
         '(SpinPolarized .true.)','ham','HamInit')
-      if ((KaneMeleSOCterm .or. InterlayerSOCterm) .and. .not. RashbaSOCterm) then
+      if ((KaneMeleSOCterm .or. InterlayerSOCterm .or. PIASOCterm) .and. .not. RashbaSOCterm) then
          ! the spinful bond terms live in the block (2N x 2N) Hamiltonian, which the Rashba switch selects
          RashbaSOCterm = .true.
          lambdaR = 0.0_dp
@@ -12022,8 +12034,8 @@ subroutine HamSOCBondTables()
    use constants,            only : cmplx_i
    use parallel,             only : nDiv
 
-   integer :: i, j, in, k, L, L2, nL, nu, nKM, nIL, nILskip, nR
-   real(dp) :: aCC0, d(3), dxy, dh(2), bi(2), bj(2), c3, cpar, sz, tKM
+   integer :: i, j, in, k, L, L2, nL, nu, nKM, nIL, nILskip, nR, nPIA
+   real(dp) :: aCC0, d(3), dxy, dh(2), bi(2), bj(2), c3, cpar, sz, tKM, tPIA
    real(dp), allocatable :: phi(:), coh(:)
    integer, allocatable :: nBond(:)
    logical, allocatable :: alignedPair(:)
@@ -12072,7 +12084,7 @@ subroutine HamSOCBondTables()
 
    eR = exp(-cmplx_i*rashbaAngle)
    tKM = lambdaKM/(3.0_dp*sqrt(3.0_dp))
-   nKM = 0 ; nIL = 0 ; nILskip = 0 ; nR = 0
+   nKM = 0 ; nIL = 0 ; nILskip = 0 ; nR = 0 ; nPIA = 0
    do i = 1, nAt
       L = layerIndex(i)
       do j = 1, Nneigh(i)
@@ -12102,6 +12114,17 @@ subroutine HamSOCBondTables()
             socBondOn(j,i) = .true.
             nKM = nKM + 1
          end if
+         ! PIA (Gmitra et al. 2016): 2i/3 lamPIA^X (s x d)_z on second-neighbour graphene bonds of sublattice X, in
+         ! the form of the Rashba term above (the same spin matrix, d = unit vector from i to its neighbour)
+         if (PIASOCterm .and. L2 == L .and. Species(i) <= 2 .and. abs(dxy - aG) < 0.1_dp) then
+            if (SOCEnabledForLayer(L)) then
+               tPIA = 2.0_dp/3.0_dp*merge(lambdaPIAA, lambdaPIAB, Species(i) == 1)
+               socBond(1,2,j,i) = socBond(1,2,j,i) - tPIA*cmplx(dh(1),-dh(2),dp)
+               socBond(2,1,j,i) = socBond(2,1,j,i) + tPIA*cmplx(dh(1),dh(2),dp)
+               socBondOn(j,i) = .true.
+               nPIA = nPIA + 1
+            end if
+         end if
          ! interlayer spin flip lambda_4, same sublattice of adjacent untwisted graphene layers, in-plane ~ aCC
          if (InterlayerSOCterm .and. abs(L2 - L) == 1 .and. Species(i) <= 2 .and. Species(in) <= 2) then
             if (.not. alignedPair(min(L,L2))) cycle
@@ -12125,7 +12148,7 @@ subroutine HamSOCBondTables()
       end do
    end do
    call MIO_Print('SOC bond table: '//trim(num2str(nR))//' Rashba, '//trim(num2str(nKM))//' Kane-Mele, '// &
-     trim(num2str(nIL))//' interlayer bonds','ham')
+     trim(num2str(nIL))//' interlayer, '//trim(num2str(nPIA))//' PIA bonds','ham')
    if (nILskip > 0) call MIO_Print('SOC.Interlayer: WARNING '//trim(num2str(nILskip))//' same-sublattice bonds '// &
      'at in-plane ~aCC are neither parallel nor antiparallel to a bond of their atom and were left out','ham')
    if (InterlayerSOCterm .and. nIL == 0) call MIO_Print('SOC.Interlayer: WARNING no bond found - the term is '// &
