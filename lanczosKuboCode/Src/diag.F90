@@ -2217,7 +2217,11 @@ subroutine DiagSpectralFunction()
       is = 1
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       Pkc = 0.0_dp ! spectral weight PkscI(k)
       !$OMP PARALLEL DO PRIVATE (is, ik, nPath, iee, ie)
@@ -2456,7 +2460,11 @@ subroutine DiagSpectralFunctionKGrid()
       is = 1
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       Pkc = 0.0_dp ! spectral weight PkscI(k)
       do ik=1,ptsTot ! k loop
@@ -2877,7 +2885,11 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       call MIO_InputParameter('Spectral.energyGridResolution',energyGridResolution,0.005_dp)
       call DiagSpectralCheckGrid(E1,E2,Epts,energyGridResolution)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       call MIO_Allocate(Ake1,[ptsTot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake1B,[ptsTot,Epts],'Ake1B','diag')
@@ -3413,7 +3425,11 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       call DiagSpectralCheckGrid(E1,E2,Epts,energyGridResolution)
       call MIO_InputParameter('Spectral.DirectBandVal',DirectBand,.false.)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       call MIO_Allocate(Ake1,[ptsTot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake1B,[ptsTot,Epts],'Ake1B','diag')
@@ -3925,7 +3941,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       call DiagSpectralCheckGrid(E1,E2,Epts,energyGridResolution)
       call MIO_InputParameter('Spectral.topBottomRatio',topBottomRatio,1.0_dp)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       call MIO_Allocate(Ake1,[ptot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake2,[ptot,Epts],'Ake2','diag')
@@ -4416,7 +4436,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       call MIO_InputParameter('Spectral.topBottomRatio',topBottomRatio,1.0_dp)
       call MIO_InputParameter('Spectral.DirectBandVal',DirectBand,.false.)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       call MIO_Allocate(Ake1,[ptot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake2,[ptot,Epts],'Ake2','diag')
@@ -4899,7 +4923,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       call DiagSpectralCheckGrid(E1,E2,Epts,energyGridResolution)
       call MIO_InputParameter('Spectral.topBottomRatio',topBottomRatio,1.0_dp)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       call MIO_Allocate(Ake1,[ptot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake2,[ptot,Epts],'Ake2','diag')
