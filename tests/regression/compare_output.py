@@ -118,6 +118,9 @@ def main():
                 if not math.isfinite(value):
                     problems.append(f"data line {number}, column {column}: non-finite value")
                     continue
+                if not math.isfinite(ref):  # |value - nan| > tol is False: it would pass
+                    problems.append(f"data line {number}, column {column}: non-finite reference value")
+                    continue
                 diff = abs(value - ref)
                 if diff > max_abs:
                     max_abs, worst = diff, (number, column, value, ref)
