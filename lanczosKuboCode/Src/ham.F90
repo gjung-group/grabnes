@@ -769,6 +769,9 @@ subroutine HamOnSite()
    call MIO_InputParameter('Stack.GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
    call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
    call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
+   ! Its interlayer routine adds no hopping (only a message) and its intralayer uses the graphene F2G2 values
+   if (BNBNtwoLayers) call MIO_Kill('Stack.BNBNtwoLayers is not implemented: it adds no interlayer hopping and '// &
+        'its intralayer hoppings are the graphene values, not those of hBN.','ham','HamOnSite')
    call MIO_InputParameter('Stack.T2GBN',t2GBN,.false.)
    call MIO_InputParameter('Stack.T2BG',t2BG,.false.)
    call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
