@@ -277,6 +277,9 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+         else
+            call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
+              'without either the shift was never set.','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
@@ -331,6 +334,9 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+         else
+            call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
+              'without either the shift was never set.','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
@@ -444,6 +450,9 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+         else
+            call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
+              'without either the shift was never set.','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
@@ -540,6 +549,9 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+         else
+            call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
+              'without either the shift was never set.','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
@@ -612,6 +624,17 @@ subroutine AtomsPos()
       call MIO_Allocate(RatTemp,[3,nAt],'RatTemp','atoms')
       call MIO_InputParameter('Structure.SuperCellX',SuperCellX,1)
       call MIO_InputParameter('Structure.SuperCellY',SuperCellY,1)
+      call MIO_InputParameter('Structure.ReadLayerIndex',readLayerIndex,.false.)
+      call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
+      ! the per-atom data read from files are replicated only by the SuperCell branch below
+      if (SuperCellX .ne. SuperCellY .and. (readInterlayerDistances .or. GBNuseDisplacementFile .or. &
+            tBGuseDisplacementFile .or. readRigidXYZ)) call MIO_Kill('Structure.SuperCellX /= '// &
+            'SuperCellY does not replicate the per-atom data read from files (ReadInterlayerDistances, '// &
+            'GBN/TBG.UseDisplacementFile, ReadRigidXYZ): use SuperCell, or a structure file of '// &
+            'the whole cell.','atoms','AtomsPos')
+      ! the rigid positions are read only in the SuperCell 1 branch below
+      if (SuperCellX .eq. SuperCellY .and. sCell .ne. 1 .and. readRigidXYZ) call MIO_Kill('Structure.ReadRigidXYZ '// &
+            'is not replicated by SuperCell > 1: use a structure file of the whole cell.','atoms','AtomsPos')
       if (SuperCellX .ne. SuperCellY) then
          call MIO_Allocate(Rat,[3,nAt*SuperCellX*SuperCellY],'Rat','atoms')
          call MIO_Allocate(Species,nAt*SuperCellX*SuperCellY,'Species','atoms')
@@ -683,6 +706,9 @@ subroutine AtomsPos()
       close(9)
       if (SuperCellX .ne. SuperCellY) then
           call MIO_Print('Different number of supercells in X and Y direction','atoms')
+          ! layerIndex.dat holds the original cell: read it, then copy it with the positions below
+          call MIO_Allocate(layerIndex,nAt*SuperCellX*SuperCellY,'layerIndex','atoms')
+          if (readLayerIndex) call AtomsReadLayerIndex()
           kk = 0
           frac = .false.
           call AtomsSetFracTemp()
@@ -694,9 +720,7 @@ subroutine AtomsPos()
                    Rat(2,kk*nAt+i) = RatTemp(2,i)+(jj-1)*1.0
                    Rat(3,kk*nAt+i) = RatTemp(3,i)
                    Species(kk*nAt+i) = SpeciesTemp(i)
-                   if (readInterlayerDistances) then
-                        interlayerDistances(kk*nAt+i) = interlayerDistances(i)
-                   end if
+                   if (readLayerIndex) layerIndex(kk*nAt+i) = layerIndex(i)
                 end do
                 kk = kk + 1
              end do
@@ -742,6 +766,8 @@ subroutine AtomsPos()
                  end if
                  if (GBNuseDisplacementFile .or. tBGuseDisplacementFile) then ! Carr format here
                       displacements(:,kk*nAt+i) = displacements(:,i)
+                      displacements_b(:,kk*nAt+i) = displacements_b(:,i)
+                      displacements_t(:,kk*nAt+i) = displacements_t(:,i)
                  end if
               end do
               kk = kk + 1
@@ -1152,6 +1178,7 @@ subroutine AtomsPos()
           end if
         end do
       end if
+      call AtomsCheckLayers()
    else if (MIO_StringComp(str,'TrilayerBasedOnMoireCell')) then
       call AtomsSetCart()
       do i=1,nAt
@@ -1173,6 +1200,38 @@ subroutine AtomsPos()
 #endif /* DEBUG */
 
 end subroutine AtomsPos
+
+!> Warn when the layer assignment (z windows of the stack flags, or layerIndex.dat) leaves a layer between 1 and the
+!! highest index empty, or gives an index below 1: the windows then miss the structure and the interlayer bonds are
+!! treated as intralayer ones (or the other way round) without any other message.
+subroutine AtomsCheckLayers()
+
+   integer :: l, lmax, n
+
+   lmax = maxval(layerIndex(1:nAt))
+   n = count(layerIndex(1:nAt) < 1)
+   if (n > 0) call MIO_Print('WARNING: '//trim(num2str(n))//' atoms have a layer index below 1: check the '// &
+     'z windows of the stack flag (Stack.*Z*) or layerIndex.dat.','atoms')
+   do l = 1, lmax
+      if (count(layerIndex(1:nAt) == l) == 0) call MIO_Print('WARNING: layer '//trim(num2str(l))//' of '// &
+        trim(num2str(lmax))//' holds no atom: the z windows of the stack flag (Stack.*Z*) or layerIndex.dat do not '// &
+        'match the structure, and bonds between the layers may be treated as intralayer ones.','atoms')
+   end do
+   call MIO_Print('Atoms per layer:'//trim(AtomsLayerCounts(lmax)),'atoms')
+
+contains
+
+   function AtomsLayerCounts(m) result(txt)
+      integer, intent(in) :: m
+      character(len=512) :: txt
+      integer :: k
+      txt = ''
+      do k = 1, min(m, 40)
+         txt = trim(txt)//' '//trim(num2str(count(layerIndex(1:nAt) == k)))
+      end do
+   end function AtomsLayerCounts
+
+end subroutine AtomsCheckLayers
 
 !> Reads layerIndex(1:nAt) from layerIndex.dat: ONE layer number per line, line i = atom i.
 !! A line with more than one value is refused: a file written as "index layer" (the format of
@@ -1357,11 +1416,9 @@ subroutine AtomsConstructAsymm(X,mm,mm2,angle,label,d,yShift)
    basis(:2,:) = matmul(ucell(:2,:2),bss)
    n1 = gcd(m(1,1),m(2,1))
    n2 = ncell/n1
-   if (n2 > n1) then
-      i1 = n1
-      n1 = n2
-      n2 = i1
-   end if
+   ! m is diagonal here (CellSize*SuperCell along a1, CellSize*SuperCellY along a2): the lattice points are n1 along
+   ! a1 and n2 along a2. Swapping them (as AtomsConstruct does for its general cells) put n2 > n1 points along a1,
+   ! which fold onto each other, and left part of the cell empty.
    write(str,'(a,i0,a,i0)') 'Size of '//trim(label)//' layer:  ',n1,' x ',n2
    call MIO_Print(str,'atoms')
    !$OMP PARALLEL DO
@@ -1632,6 +1689,12 @@ subroutine AtomsOrder()
 #endif /* DEBUG */
    call MIO_InputParameter('Structure.AtomsOrderDeactivated',AtomsOrderDeactivated,.true.)
    if (.NOT. AtomsOrderDeactivated)then
+      ! the per-atom files of ReadXYZ (layer index, sublattices, displacements, rigid positions, Hamiltonian dumps)
+      ! are in file order, and some are read after this point
+      call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+      if (MIO_StringComp(str,'ReadXYZ')) call MIO_Kill('Structure.AtomsOrderDeactivated .false. reorders the '// &
+        'atoms, but the per-atom files of TypeOfSystem ReadXYZ are in the order of the structure file: keep the '// &
+        'default (.true.).','atoms','AtomsOrder')
       call AtomsSort(secAt,procAt,Rat,Species)
    end if
 #ifdef DEBUG
