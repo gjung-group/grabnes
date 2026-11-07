@@ -101,6 +101,8 @@ subroutine CellGet()
           ucell(:,1) = [aG,0.0_dp,0.0_dp]
           ucell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
             ucell = ucell*n
+          ! SuperCellAsymmetric: the atoms are built on CellSize*SuperCell x CellSize*SuperCellY (AtomsConstructAsymm)
+          if (l) ucell(:,2) = ucell(:,2)/sCell*sCell2
           ucell(:,3) = [0.0_dp,0.0_dp,h]
           aBN = aG
       end if

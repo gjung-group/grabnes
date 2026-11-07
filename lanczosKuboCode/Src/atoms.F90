@@ -1357,11 +1357,9 @@ subroutine AtomsConstructAsymm(X,mm,mm2,angle,label,d,yShift)
    basis(:2,:) = matmul(ucell(:2,:2),bss)
    n1 = gcd(m(1,1),m(2,1))
    n2 = ncell/n1
-   if (n2 > n1) then
-      i1 = n1
-      n1 = n2
-      n2 = i1
-   end if
+   ! m is diagonal here (CellSize*SuperCell along a1, CellSize*SuperCellY along a2): the lattice points are n1 along
+   ! a1 and n2 along a2. Swapping them (as AtomsConstruct does for its general cells) put n2 > n1 points along a1,
+   ! which fold onto each other, and left part of the cell empty.
    write(str,'(a,i0,a,i0)') 'Size of '//trim(label)//' layer:  ',n1,' x ',n2
    call MIO_Print(str,'atoms')
    !$OMP PARALLEL DO
