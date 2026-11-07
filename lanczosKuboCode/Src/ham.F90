@@ -5051,6 +5051,9 @@ subroutine HamHopping
    ! Other local variables
    logical :: saidHTCBNBN, saidHTCGBN
    integer :: clock, counter1, ii, ilvl, lllll, n1, n2, nImp, nLayers, nnnnn, nshellDiff, totImp, u
+   ! fixed (distance-independent) Kaxiras/Srivani interlayer set, for HamHopInterlayerKaxirasSrivani: lambda0 xi0
+   ! kappa0 lambda3 xi3 x3 lambda6 xi6 x6 kappa6 lambda6b xi6b x6b kappa6b (that function has local copies)
+   real(dp) :: kaxFixed(14)
    real(dp) :: aBN1, aCC, aGSrivani, bubbleR, bubbleSigmaR2, bubbleTheta, c0AAV0, c0ABV0, c10_0, c10_1, &
          c10_2, c11_0, c11_1, c11_2, c12_0, c12_1, c12_2, c13_0, c13_1, c13_2, c14_0, c14_1, c14_2, c1_0, &
          c1_1, c1_2, c1AAV0, c1ABV0, c2_0, c2_1, c2_2, c2AAV0, c2ABV0, c3_0, c3_1, c3_2, c4_0, c4_1, c4_2, &
@@ -7279,6 +7282,7 @@ subroutine HamHopInterlayerParameters()
                     xi0 = epsilon0
                     xi3 = epsilon3
                     xi6 = epsilon6
+                    kaxFixed = [lambda0, xi0, kappa0, lambda3, xi3, x3, lambda6, xi6, x6, kappa6, lambda6b, xi6b, x6b, kappa6b]
                end if
             end if
          else if (MIO_StringComp(BilayerModel,'BLSrivani')) then
@@ -7461,6 +7465,7 @@ subroutine HamHopInterlayerParameters()
                     xi3 = epsilon3
                     xi6 = epsilon6
                     xi6b = epsilon6b
+                    kaxFixed = [lambda0, xi0, kappa0, lambda3, xi3, x3, lambda6, xi6, x6, kappa6, lambda6b, xi6b, x6b, kappa6b]
                        lambda0AAp     = 0.3777452105728493_dp/g0
                        xi0AAp         =  1.673723757628059_dp
                        kappa0AAp      = -1.9375254860531055_dp
@@ -8603,6 +8608,14 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                                             renormalizeHoppingFactorABp  = exp((abs(NeighD(3,j,i))-bval)/aval)
                                             renormalizeHoppingFactorBAp  = exp((abs(NeighD(3,j,i))-bval)/aval)
 
+                                        else
+                                            ! the fixed set (these names are local to this function: until November 2026
+                                            ! they kept their not-set markers here, so every run without pressure was refused)
+                                            lambda0 = kaxFixed(1); xi0 = kaxFixed(2); kappa0 = kaxFixed(3)
+                                            lambda3 = kaxFixed(4); xi3 = kaxFixed(5); x3 = kaxFixed(6)
+                                            lambda6 = kaxFixed(7); xi6 = kaxFixed(8); x6 = kaxFixed(9); kappa6 = kaxFixed(10)
+                                            lambda6b = kaxFixed(11); xi6b = kaxFixed(12); x6b = kaxFixed(13)
+                                            kappa6b = kaxFixed(14)
                                         end if
                                             V0 = lambda0 * exp(-xi0*rbar**2.0_dp) * cos(kappa0 * rbar)
                                             V3 = lambda3 * rbar**2.0_dp * exp(-xi3*(rbar-x3)**2.0_dp)
