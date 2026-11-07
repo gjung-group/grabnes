@@ -159,18 +159,31 @@ function HamRigidBondXY(i, jj, bond) result(d)
    real(dp), intent(in) :: bond(3)
 
    ! Other local variables
-   real(dp) :: d, det, du(2), f(2)
+   real(dp) :: d, du(2)
 
 
    du = (Rat(1:2,jj) - RshellRig(1:2,jj)) - (Rat(1:2,i) - RshellRig(1:2,i))
+   du = HamMinImageXY(du)
+   d = sqrt((bond(1)-du(1))**2 + (bond(2)-du(2))**2)
+
+end function HamRigidBondXY
+
+!> Minimum image of an in-plane displacement du(1:2) with respect to the in-plane cell vectors
+!! (fractional components reduced to [-1/2, 1/2]).
+function HamMinImageXY(du) result(dm)
+
+   use cell,   only : ucell
+
+   real(dp), intent(in) :: du(2)
+   real(dp) :: dm(2), det, f(2)
+
    det = ucell(1,1)*ucell(2,2) - ucell(1,2)*ucell(2,1)
    f(1) = ( ucell(2,2)*du(1) - ucell(1,2)*du(2))/det
    f(2) = (-ucell(2,1)*du(1) + ucell(1,1)*du(2))/det
    f = f - nint(f)
-   du = ucell(1:2,1)*f(1) + ucell(1:2,2)*f(2)
-   d = sqrt((bond(1)-du(1))**2 + (bond(2)-du(2))**2)
+   dm = ucell(1:2,1)*f(1) + ucell(1:2,2)*f(2)
 
-end function HamRigidBondXY
+end function HamMinImageXY
 
 !> Unstrained length of an intralayer bond, for the strain law t = t0 exp(-beta (d/d0 - 1)) (Structure.RealStrain).
 !!
@@ -5059,6 +5072,7 @@ subroutine HamHopping
    real(dp) :: kaxFixed(14)
    ! input values of Interlayer.RenormalizeHoppingFactorAAp/BBp/ABp/BAp (the four names are private in the bond loop)
    real(dp) :: rhfInput(4)
+   real(dp) :: mid2(2)
    real(dp) :: aBN1, aCC, aGSrivani, bubbleR, bubbleSigmaR2, bubbleTheta, c0AAV0, c0ABV0, c10_0, c10_1, &
          c10_2, c11_0, c11_1, c11_2, c12_0, c12_1, c12_2, c13_0, c13_1, c13_2, c14_0, c14_1, c14_2, c1_0, &
          c1_1, c1_2, c1AAV0, c1ABV0, c2_0, c2_1, c2_2, c2AAV0, c2ABV0, c3_0, c3_1, c3_2, c4_0, c4_1, c4_2, &
@@ -6545,6 +6559,9 @@ subroutine HamHopRealisticBubbles()
       call MIO_InputParameter('Strain.BigBubble',bigBubble,.false.)
       call MIO_InputParameter('Strain.ManyBubbles',manyBubbles,.false.)
       call MIO_InputParameter('Strain.BubbleInPlaneStrain',bubbleInPlaneStrain,.false.)
+      if (.not. (bigBubble .or. manyBubbles)) call MIO_Kill('Strain.RealisticBubbles needs Strain.BigBubble or '// &
+           'Strain.ManyBubbles (where the bubbles are); without either the number of bubbles was never set.', &
+           'ham','HamHopping')
       if (bigBubble) then
          call MIO_Print('We add a single bubble','ham')
          if (.not. frac) call AtomsSetFrac()
@@ -6554,12 +6571,14 @@ subroutine HamHopRealisticBubbles()
          call MIO_Allocate(indxImp,totImp,'indxImp','gauss')
          call MIO_Allocate(bubbleCenterX,totImp,'bubbleCenterX','gauss')
          call MIO_Allocate(bubbleCenterY,totImp,'bubbleCenterY','gauss')
+         ! centre: the atom nearest to the middle of the cell (fractional (0.5, 0.5)). Until November 2026 only an
+         ! atom within 0.01 of it in both coordinates was taken, and without one the index stayed 0.
+         minDiffBubbleX = huge(1.0_dp)
+         indxImp(1) = inode1
          do i=inode1,inode2
-            diffBubbleX = abs(Rat(1,i) - 0.5d0)
-            diffBubbleY = abs(Rat(2,i) - 0.5d0)
-            if (diffBubbleX.lt.minDiffBubbleX .and. diffBubbleY.lt.minDiffBubbleY) then
+            diffBubbleX = (Rat(1,i) - 0.5d0)**2 + (Rat(2,i) - 0.5d0)**2
+            if (diffBubbleX < minDiffBubbleX) then
                 minDiffBubbleX = diffBubbleX
-                minDiffBubbleY = diffBubbleY
                 indxImp(1) = i
             end if
          end do
@@ -6626,7 +6645,8 @@ subroutine HamHopRealisticBubbles()
       bubbleSigmaR2 = bubbleSigmaR**2.0d0
       call MIO_InputParameter('Strain.BubbleC',bubbleC,1.42_dp)
 
-      call MIO_InputParameter('Strain.BubbleShift',bubbleShift,0.07_dp)
+      ! on-site shift inside a bubble [eV] (in units of g0 before; absent = the former 0.07 g0)
+      call HamInputEnergyEV('Strain.BubbleShift',bubbleShift,0.07_dp,since='2026-11-07')
       call MIO_InputParameter('Strain.BubbleRadius',bubbleRadius,100.0_dp)
       call MIO_Allocate(onsiteShift,nAt,'onsiteShift','ham')
 
@@ -6640,7 +6660,7 @@ subroutine HamHopRealisticBubbles()
          end if
       end if
       do ii=1,totImp
-        !$OMP PARALLEL DO PRIVATE(dx,dy,dist2,bubbleR,bubbleTheta,dlij)
+        !$OMP PARALLEL DO PRIVATE(dx,dy,dist2,bubbleR,bubbleTheta,dlij,diffx,diffy,mid2)
         do i=1,nAt
           ! >>> unset markers
           dx = hamUnset
@@ -6672,8 +6692,14 @@ subroutine HamHopRealisticBubbles()
              !!        fprimey(i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/sqrt(3.0_dp))
              !!    end if
              !!end if
-             bubbleR = sqrt((Rat(1,i)-bubbleCenterX(ii))**2.0d0 + (Rat(2,i)-bubbleCenterY(ii))**2.0d0)
-             bubbleTheta = atan2(Rat(2,i)-bubbleCenterY(ii),Rat(1,i)-bubbleCenterX(ii))
+             ! strain of the bond at its midpoint, the same for both directions of the bond (it was taken at atom i:
+             ! H(i,j) /= conjg(H(j,i)) until November 2026)
+             mid2 = HamMinImageXY([Rat(1,i) + NeighD(1,j,i)/2.0_dp - bubbleCenterX(ii), &
+                                   Rat(2,i) + NeighD(2,j,i)/2.0_dp - bubbleCenterY(ii)])
+             diffx = mid2(1)
+             diffy = mid2(2)
+             bubbleR = sqrt(diffx**2.0d0 + diffy**2.0d0)
+             bubbleTheta = atan2(diffy,diffx)
              if (bubbleInPlaneStrain) then
                 if (bubbleR.gt.bubbleRadius) then
                   epsxx(j,i) = bubbleC*2.0d0 * bubbleR *  sin(bubbleTheta) &

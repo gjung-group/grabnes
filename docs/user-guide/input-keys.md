@@ -685,7 +685,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Strain.BubblePercentage` | `bubblePercentage` | real | `10.0` | ham.F90: HamHopRealisticBubbles |
 | `Strain.BubbleRadius` | `bubbleRadius` | real | `100.0` | ham.F90: HamHopRealisticBubbles |
 | `Strain.Bubbles` | `Bubbles` | logical | `.false.` | ham.F90: HamOnSite |
-| `Strain.BubbleShift` | `bubbleShift` | real | `0.07` | ham.F90: HamHopRealisticBubbles |
+| `Strain.BubbleShift` | `bubbleShift` | real | `0.07 (g0)` | ham.F90: HamHopRealisticBubbles |
 | `Strain.BubbleSigmaR` | `bubbleSigmaR` | real | `1.0` | ham.F90: HamInit |
 | `Strain.BubbleSigmaR` | `bubbleSigmaR` | real | `1.42` | ham.F90: HamHopRealisticBubbles |
 | `Strain.GaussHeightPercentage` | `GaussHeightPercentage` | real | `1.0` | gauss.F90: GaussHeight |
