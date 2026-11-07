@@ -1741,6 +1741,14 @@ subroutine HamOnSiteLayerPotential()
 #endif /* DEBUG */
 
       call MIO_Print('Adding a energy shift beteen both layers in the bilayer graphene','ham')
+      ! stacks without a profile of their own below get the two-layer step
+      if (.not. (fourLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. BNt2GBN .or. threeLayers .or. &
+            fiveLayersSandwiched .or. sixLayersSandwiched .or. t3BG .or. twentyLayersSandwiched)) then
+         if (maxval(layerIndex(1:nAt)) > 2) call MIO_Print('WARNING: MoireBilayerElectricField on '// &
+           trim(num2str(maxval(layerIndex(1:nAt))))//' layers without a profile for this stack: layer 1 is put at '// &
+           '-Shift/2 and EVERY other layer at +Shift/2 (a step, not a linear profile). Use '// &
+           'Potential.FourLayerOnsiteShifts or a stack flag with its own profile if that is not intended.','ham')
+      end if
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i, EFactor)
       do i=1,nAt
