@@ -860,9 +860,10 @@ subroutine HamOnSite()
       allocate(checkerActivate(checkerDivider,checkerDivider))
       activatedCheckers = 0
       call RandSeedFromInput()
-   20 do j = 1,checkerDivider
+   20 activatedCheckers = 0   ! each attempt draws the whole board again
+      checkerActivate = .false.
+      do j = 1,checkerDivider
          do k = 1,checkerDivider
-            checkerActivate(j,k) = .false.
             call random_number(rand)
             if(rand.le.checkerDensity) then
                 checkerActivate(j,k) = .true.
@@ -875,10 +876,15 @@ subroutine HamOnSite()
       end do
       IF (dble(activatedCheckers)/dble(checkerDivider*checkerDivider)-0.01_dp.lt.checkerDensity) GO TO 20
    10 CONTINUE
+      call MIO_Print('Bubbles: '//trim(num2str(activatedCheckers))//' of '// &
+        trim(num2str(checkerDivider*checkerDivider))//' checkerboard cells shifted','ham')
       if (.not. frac) call AtomsSetFrac()
+      ! cell j holds (j-1)/D < f <= j/D; f = 0 is the periodic image of f = 1 (cell D), and coordinates outside
+      ! (0,1] are wrapped the same way (CEILING alone gave index 0 for atoms at f = 0)
       !$OMP PARALLEL DO PRIVATE(i)
       do i = 1,nAt
-         if (checkerActivate(CEILING(Rat(1,i)*checkerDivider),CEILING(Rat(2,i)*checkerDivider)).eqv.(.true.)) then
+         if (checkerActivate(modulo(CEILING(Rat(1,i)*checkerDivider)-1,checkerDivider)+1, &
+               modulo(CEILING(Rat(2,i)*checkerDivider)-1,checkerDivider)+1)) then
                H0(i) = H0(i) + onsiteShift
          else
                H0(i) = H0(i)
@@ -1018,7 +1024,7 @@ subroutine HamOnSite()
    call MIO_InputParameter('Disorder.SublatticeDisorder',l,.false.)
    if (l) then
       call RandSeedFromInput()
-      call MIO_InputParameter('Disorder.SublattAmp',A,2.0_dp)
+      call HamInputEnergyEV('Disorder.SublattAmp',A,2.0_dp,since='2026-11-07')
       call MIO_InputParameter('Disorder.SublattPct',pct,0.1_dp)
       call MIO_Print('Sublattice disorder','ham')
       call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
@@ -1034,7 +1040,7 @@ subroutine HamOnSite()
    call MIO_InputParameter('Disorder.Anderson',l,.false.)
    if (l) then
       call RandSeedFromInput()
-      call MIO_InputParameter('Disorder.AndersonAmp',A,1.0_dp)
+      call HamInputEnergyEV('Disorder.AndersonAmp',A,1.0_dp,since='2026-11-07')
       call MIO_Print('Anderson disorder','ham')
       call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
       call MIO_Print('')
@@ -1047,7 +1053,8 @@ subroutine HamOnSite()
    if (l) call HamOnSiteDeltaDisorder()
    call MIO_InputParameter('Disorder.GaussDisorder',l,.false.)
    if (l) then
-      call GaussPot(H0)
+      call HamInputEnergyEV('Disorder.GaussPotStrength',A,1.0_dp,since='2026-11-07')
+      call GaussPot(H0,A)
    end if
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    if (Zterm .or. PZterm) then
@@ -1735,6 +1742,14 @@ subroutine HamOnSiteLayerPotential()
 #endif /* DEBUG */
 
       call MIO_Print('Adding a energy shift beteen both layers in the bilayer graphene','ham')
+      ! stacks without a profile of their own below get the two-layer step
+      if (.not. (fourLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. BNt2GBN .or. threeLayers .or. &
+            fiveLayersSandwiched .or. sixLayersSandwiched .or. t3BG .or. twentyLayersSandwiched)) then
+         if (maxval(layerIndex(1:nAt)) > 2) call MIO_Print('WARNING: MoireBilayerElectricField on '// &
+           trim(num2str(maxval(layerIndex(1:nAt))))//' layers without a profile for this stack: layer 1 is put at '// &
+           '-Shift/2 and EVERY other layer at +Shift/2 (a step, not a linear profile). Use '// &
+           'Potential.FourLayerOnsiteShifts or a stack flag with its own profile if that is not intended.','ham')
+      end if
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i, EFactor)
       do i=1,nAt
@@ -2210,6 +2225,10 @@ subroutine HamOnSiteMoirePotential()
 
       else if (l) then
          call MIO_Print('Moire Trilayer','ham')
+         ! A, B and C (the defaults of PotA1..PotB2, and the constant term) are read only with Moire.Sachs
+         call MIO_InputParameter('Moire.Sachs',w,.false.)
+         if (.not. w) call MIO_Kill('Moire.Trilayer uses the amplitudes Moire.PotA, Moire.PotB and Moire.PotC, '// &
+              'which are read only with Moire.Sachs .true.; without it they were never set.','ham','HamOnSite')
          call MIO_InputParameter('Moire.PotA1',A1,A)
          call MIO_InputParameter('Moire.PotB1',B1,B)
          call MIO_InputParameter('Moire.PotA2',A2,A)
@@ -2218,6 +2237,8 @@ subroutine HamOnSiteMoirePotential()
          call MIO_InputParameter('Moire.Trim1',m1,0)
          call MIO_InputParameter('Moire.Trin2',n2,0)
          call MIO_InputParameter('Moire.Trim2',m2,0)
+         if (m1 == 0 .or. m2 == 0) call MIO_Kill('Moire.Trilayer needs non-zero Moire.Trim1 and Moire.Trim2 '// &
+              '(the two moire periods are n1*aG/m1 and n1*n2*aG/m2).','ham','HamOnSite')
          call MIO_Print('  A1: '//trim(num2str(A1,4)),'ham')
          call MIO_Print('  B1: '//trim(num2str(B1,4)),'ham')
          call MIO_Print('  A2: '//trim(num2str(A2,4)),'ham')
@@ -6171,6 +6192,14 @@ subroutine HamHopping
         ! counted in the Bernal and encapsulated branches only: a zero would say nothing about the other models
         if (numberOfInterlayerHoppings > 0) call MIO_Print(' Number of interlayer hoppings '// &
            trim(num2str(numberOfInterlayerHoppings)),'HamHopping')
+        ! the Bernal, encapsulated-bilayer and trilayer interlayer branches set their hoppings before the
+        ! renormalizeCoupling block and never reach it
+        if (renormalizeCoupling .and. (MIO_StringComp(str,'MoireEncapsulatedBilayer') &
+              .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') .or. BernalReadXYZ &
+              .or. MIO_StringComp(str,'TrilayerBasedOnMoireCell'))) &
+           call MIO_Print('WARNING: Interlayer.RenormalizeCoupling is set, but the interlayer hoppings of '// &
+              'TypeOfSystem '//trim(str)//' (or Structure.BernalReadXYZ) do not use Interlayer.CouplingFactor '// &
+              'or CouplingFactor2: they are not scaled.','ham')
    end if
 
    call MIO_InputParameter('Strain.RandomStrain',randomStrain,.false.)
