@@ -72,6 +72,12 @@ def collect():
                         EV_KEYS.add(key.lower())
                     rows.setdefault((key.lower(), default, ev), [key, default, kind(raw), [], ev])[3].append(
                         f"{name}: {routine}")
+                # HamInputHBN('new key', 'former shared key', variable, default): the hBN value of an F2G2 set
+                for m in re.finditer(r"HamInputHBN\s*\(\s*'([^']+)'\s*,\s*'[^']+'\s*,\s*[^,]+?\s*,(.*)", code, re.I):
+                    key, raw = m.group(1), split_default(m.group(2))
+                    default = re.sub(r"_dp\b", "", raw)
+                    rows.setdefault((key.lower(), default, False), [key, default, kind(raw), [], False])[3].append(
+                        f"{name}: {routine}")
                 for m in BLOCK.finditer(code):
                     blocks.setdefault(m.group(1).lower(), [m.group(1), []])[1].append(f"{name}: {routine}")
     return rows, blocks
