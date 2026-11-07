@@ -670,6 +670,19 @@ subroutine DiagBands()
                'diag','DiagBands')
           end if
        end block
+    else
+       block
+          logical :: zeeman, pzeeman
+          call MIO_InputParameter('Zeeman.Term',zeeman,.false.)
+          call MIO_InputParameter('Zeeman.PseudoTerm',pzeeman,.false.)
+          ! the TAPW builders add the Zeeman and Ising terms only when ns == 2
+          if ((zeeman .or. IsingSOCterm) .and. nspin == 1) call MIO_Print('WARNING: ZeemanTerm and IsingSOCterm '// &
+            'act on the two spin sectors and need Zeeman.SpinPolarized .true.; they have NO effect on this '// &
+            'calculation.','diag')
+          ! Zeeman.PseudoFactor is read but never used by any Hamiltonian builder
+          if (pzeeman) call MIO_Print('WARNING: PseudoZeemanTerm is not implemented; it has NO effect on this '// &
+            'calculation.','diag')
+       end block
     end if
     ! Output.KeepWaveFunction is tested before the other solvers in the k loops below: it would replace them
     ! with a dense spinless diagonalisation of the full Hamiltonian, without a message
