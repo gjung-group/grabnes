@@ -87,7 +87,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Diag.UseKprimeValley` |  | logical | `.false.` | calc.F90: CalcDiag |
 | `Diag.UseRigidPositions` |  | logical | `.false.` | calc.F90: CalcDiag |
 | `Disorder.Anderson` | `Anderson` | logical | `.false.` | ham.F90: HamOnSite |
-| `Disorder.AndersonAmp` | `AndersonAmp` | real | `1.0` | ham.F90: HamOnSite |
+| `Disorder.AndersonAmp` | `AndersonAmp` | real | `1.0 (g0)` | ham.F90: HamOnSite |
 | `Disorder.CheckerDensity` | `checkerDensity` | real | `0.1` | ham.F90: HamOnSite |
 | `Disorder.CheckerDivider` | `checkerDivider` | integer | `10` | ham.F90: HamOnSite |
 | `Disorder.DeltaAmp` | `deltaAmp` | real | `1.0 (g0)` | ham.F90: HamOnSiteDeltaDisorder |
@@ -96,9 +96,9 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Disorder.GaussDisorder` | `GaussDisorder` | logical | `.false.` | ham.F90: HamOnSite |
 | `Disorder.GaussPotPercentage` | `GaussPotPercentage` | real | `1.0` | gauss.F90: GaussPot |
 | `Disorder.GaussPotRange` | `GaussPotRange` | real | `1.0` | gauss.F90: GaussPot |
-| `Disorder.GaussPotStrength` | `GaussPotStrength` | real | `1.0` | gauss.F90: GaussPot |
+| `Disorder.GaussPotStrength` | `GaussPotStrength` | real | `1.0 (g0)` | ham.F90: HamOnSite |
 | `Disorder.OnsiteShift` | `onsiteShift` | real | `0.1 (g0)` | ham.F90: HamOnSite |
-| `Disorder.SublattAmp` | `SublattAmp` | real | `2.0` | ham.F90: HamOnSite |
+| `Disorder.SublattAmp` | `SublattAmp` | real | `2.0 (g0)` | ham.F90: HamOnSite |
 | `Disorder.SublatticeDisorder` | `SublatticeDisorder` | logical | `.false.` | ham.F90: HamOnSite |
 | `Disorder.SublattPct` | `SublattPct` | real | `0.1` | ham.F90: HamOnSite |
 | `DOS.Emax` |  | real | `10.0` | diag.F90: Diag3DBands; diag.F90: DiagDOS; diag.F90: DiagPDOS |
@@ -529,7 +529,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Random.TestNumber` | `RandomTestNumber` | integer | `100` | random_old.F90: RandInit |
 | `Run.Description` | `Description` | string | `''` | grabnes_start.F90: GrabnesStart |
 | `Run.Prefix` | `Prefix` | string | `'grabnes'` | grabnes_start.F90: GrabnesStart |
-| `Run.TypeOfSystem` | `TypeOfSystem` | string | `'Graphene'` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamHopping; ... (13 places) |
+| `Run.TypeOfSystem` | `TypeOfSystem` | string | `'Graphene'` | atoms.F90: AtomsOrder; atoms.F90: AtomsPos; cell.F90: CellGet; ... (14 places) |
 | `SOC.Interlayer` |  | logical | `.false.` | ham.F90: HamInit |
 | `SOC.Intrinsic` | `IntrinsicSOCterm` | logical | `.false.` | ham.F90: HamInit |
 | `SOC.Ising` | `IsingSOCterm` | logical | `.false.` | ham.F90: HamInit |
