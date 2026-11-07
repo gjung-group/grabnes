@@ -111,8 +111,8 @@ elemental function num2strd(num,dec) result(string)
    integer, intent(in), optional :: dec
 
    character(len=strlen) :: s
-   integer :: i, prec
-   real(dp) :: n
+   character(len=16) :: fmt
+   integer :: prec
 
    if (present(dec)) then
       prec = dec
@@ -124,19 +124,18 @@ elemental function num2strd(num,dec) result(string)
    elseif (prec > 15) then
       prec = 15
    end if
-   write(s,'(f25.16)') num
+   ! Rounded to prec decimals by the Fortran edit descriptor. Until November 2026 the value was truncated: the
+   ! rounding increment 5*10**(-prec-1) was an integer expression (= 0) and only digits 6-9 triggered it.
+   write(fmt,'(a,i0,a)') '(f0.', prec, ')'
+   write(s,fmt) num
    s = adjustl(s)
-   i = index(s,'.')
-   i = i+prec
-   string = s(1:i)
-   if (ichar(s(i+1:i+1))>53) then
-      n = num + 5*10**(-prec-1)
-      write(s,'(f25.16)') n
-      s = adjustl(s)
-      i = index(s,'.')
-      i = i+prec
-      string = s(1:i)
+   ! f0.d may omit the zero before the decimal point (compiler-dependent)
+   if (s(1:1) == '.') then
+      s = '0'//s
+   else if (s(1:2) == '-.') then
+      s = '-0'//s(2:)
    end if
+   string = s
 
 end function num2strd
 !******************************************************************************

@@ -284,8 +284,8 @@
   "status": "ok"
  },
  "graphene+PIASOCterm": {
-  "fingerprint": "61909524e9c6043c",
-  "status": "INERT"
+  "fingerprint": "1883516ab6314ffe",
+  "status": "REFUSED"
  },
  "graphene+PNP": {
   "fingerprint": "dc361044ab4cf5af",
@@ -304,7 +304,7 @@
   "status": "REFUSED"
  },
  "graphene+RashbaSOCterm": {
-  "fingerprint": "52368365dc431721",
+  "fingerprint": "1883516ab6314ffe",
   "status": "REFUSED"
  },
  "graphene+SOCLayerControl": {
@@ -492,8 +492,8 @@
   "status": "ok"
  },
  "graphene+realisticBubbles": {
-  "fingerprint": "",
-  "status": "UNDEFINED"
+  "fingerprint": "79bcbaab8043bac3",
+  "status": "REFUSED"
  },
  "graphene+removeF2G2Flag": {
   "fingerprint": "61909524e9c6043c",
@@ -568,15 +568,15 @@
   "status": "ok"
  },
  "graphene_small@bands+PIASOCterm": {
-  "fingerprint": "0524f60767eb6573",
-  "status": "ok"
+  "fingerprint": "1883516ab6314ffe",
+  "status": "REFUSED"
  },
  "graphene_small@bands+PseudoZeemanTerm": {
   "fingerprint": "0b96e1d2ad48f31f",
   "status": "INERT"
  },
  "graphene_small@bands+RashbaSOCterm": {
-  "fingerprint": "52368365dc431721",
+  "fingerprint": "1883516ab6314ffe",
   "status": "REFUSED"
  },
  "graphene_small@bands+SOCLayerControl": {
@@ -712,64 +712,64 @@
   "status": "ok"
  },
  "tbg+BLKaxiras+BilayerOneParameter": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "92667d8f322c972d",
+  "status": "ok"
  },
  "tbg+BLKaxiras+BilayerThreeParameters": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "92667d8f322c972d",
+  "status": "ok"
  },
  "tbg+BLKaxiras+addExponentialDecayForDihedral": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "693fea41af682529",
+  "status": "ok"
  },
  "tbg+BLKaxiras+addPressureDependence=F": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "c96127c2046d471d",
+  "status": "ok"
  },
  "tbg+BLKaxiras+changeLatticeParameterForSrivaniModel": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "0459863fd86dfbf0",
+  "status": "ok"
  },
  "tbg+BLKaxiras+deactivateV3": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "0cbffee6646ba6f3",
+  "status": "ok"
  },
  "tbg+BLKaxiras+deactivateV6": {
   "fingerprint": "8cf33a52cbf353bd",
   "status": "ok"
  },
  "tbg+BLKaxiras+findThetasGeometrically": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "1099e61bcd979066",
+  "status": "ok"
  },
  "tbg+BLKaxiras+newFittingFunctions": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "92667d8f322c972d",
+  "status": "ok"
  },
  "tbg+BLKaxiras+oldParameterSet": {
   "fingerprint": "92667d8f322c972d",
   "status": "ok"
  },
  "tbg+BLKaxiras+onlyV0": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "92667d8f322c972d",
+  "status": "ok"
  },
  "tbg+BLKaxiras+oppositedxdy": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "92667d8f322c972d",
+  "status": "ok"
  },
  "tbg+BLKaxiras+sublatticeDependent": {
   "fingerprint": "",
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+sublatticeIndependent": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "92667d8f322c972d",
+  "status": "ok"
  },
  "tbg+BLKaxiras+switchV3Sign": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "aea01d746bf0e825",
+  "status": "ok"
  },
  "tbg+BLKaxiras+useBNGKaxiras": {
   "fingerprint": "72b4f9b504efbe94",
@@ -780,16 +780,16 @@
   "status": "ok"
  },
  "tbg+BLKaxiras+useOnlyVAB": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "92667d8f322c972d",
+  "status": "ok"
  },
  "tbg+BLKaxiras+useTheta": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "f4b21431947004d8",
+  "status": "ok"
  },
  "tbg+BLKaxiras+useThetaIJ": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "92667d8f322c972d",
+  "status": "ok"
  },
  "tbg+BLSrivani+BilayerOneParameter": {
   "fingerprint": "13eeec627497171f",
@@ -804,8 +804,8 @@
   "status": "ok"
  },
  "tbg+BLSrivani+addPressureDependence=F": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "e8313931b44540b7",
+  "status": "ok"
  },
  "tbg+BLSrivani+changeLatticeParameterForSrivaniModel": {
   "fingerprint": "1f40900018b871ad",
@@ -840,8 +840,8 @@
   "status": "ok"
  },
  "tbg+BLSrivani+sublatticeDependent": {
-  "fingerprint": "",
-  "status": "REFUSED"
+  "fingerprint": "23535b5f730103a2",
+  "status": "ok"
  },
  "tbg+BLSrivani+sublatticeIndependent": {
   "fingerprint": "13eeec627497171f",
@@ -1000,16 +1000,16 @@
   "status": "INERT"
  },
  "tbg+RashbaSOCterm": {
-  "fingerprint": "52368365dc431721",
+  "fingerprint": "1883516ab6314ffe",
   "status": "REFUSED"
  },
  "tbg+TypeOfBL_BLKaxiras": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "92667d8f322c972d",
+  "status": "ok"
  },
  "tbg+TypeOfBL_BLKaxiras+NeighLevels1": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "679e491076904298",
+  "status": "ok"
  },
  "tbg+TypeOfBL_BLSrivani": {
   "fingerprint": "13eeec627497171f",
@@ -1028,8 +1028,8 @@
   "status": "REFUSED"
  },
  "tbg+TypeOfBL_Mayou": {
-  "fingerprint": "b40e00abad277c26",
-  "status": "REFUSED"
+  "fingerprint": "79b1e1e78212f85c",
+  "status": "ok"
  },
  "tbg+TypeOfBL_None": {
   "fingerprint": "5f69a76f4d2ddd8b",
@@ -1200,15 +1200,15 @@
   "status": "ok"
  },
  "tbg_small@bands+PIASOCterm": {
-  "fingerprint": "75a7389c24b19fc1",
-  "status": "ok"
+  "fingerprint": "1883516ab6314ffe",
+  "status": "REFUSED"
  },
  "tbg_small@bands+PseudoZeemanTerm": {
   "fingerprint": "ccc9a20dc32553c5",
   "status": "INERT"
  },
  "tbg_small@bands+RashbaSOCterm": {
-  "fingerprint": "52368365dc431721",
+  "fingerprint": "1883516ab6314ffe",
   "status": "REFUSED"
  },
  "tbg_small@bands+SOCLayerControl": {
@@ -1300,12 +1300,12 @@
   "status": "ok"
  },
  "xyz2_bnbn": {
-  "fingerprint": "eaca5b8f8d8a5afe",
-  "status": "ok"
+  "fingerprint": "7beb0e2a0dc52d03",
+  "status": "REFUSED"
  },
  "xyz2_bnbn+BNBNDiag": {
-  "fingerprint": "eaca5b8f8d8a5afe",
-  "status": "INERT"
+  "fingerprint": "7beb0e2a0dc52d03",
+  "status": "REFUSED"
  },
  "xyz2_gbn": {
   "fingerprint": "0b7e6578c4ca8399",
@@ -1516,8 +1516,8 @@
   "status": "ok"
  },
  "xyz3_enc+GBNOffDiag": {
-  "fingerprint": "452b7845ab22ba79",
-  "status": "REFUSED"
+  "fingerprint": "d6ccf8985667cda1",
+  "status": "NONHERM"
  },
  "xyz3_enc+deactivateInterlayerBG": {
   "fingerprint": "9d10314bb5a79bc8",
@@ -1683,6 +1683,10 @@
   "fingerprint": "df935aeccf639879",
   "status": "ok"
  },
+ "xyz5_enc+GBNOffDiag": {
+  "fingerprint": "ec9289e560118b2f",
+  "status": "NONHERM"
+ },
  "xyz6": {
   "fingerprint": "b9aade57bd720b8c",
   "status": "ok"
@@ -1690,6 +1694,10 @@
  "xyz6_enc": {
   "fingerprint": "5110085d0c3226cd",
   "status": "ok"
+ },
+ "xyz6_enc+GBNOffDiag": {
+  "fingerprint": "4ef213130b7e1321",
+  "status": "NONHERM"
  },
  "xyz6_t3BG": {
   "fingerprint": "1475beb57093588d",
@@ -1722,6 +1730,10 @@
  "xyz7_enc": {
   "fingerprint": "b9091d5321431004",
   "status": "ok"
+ },
+ "xyz7_enc+GBNOffDiag": {
+  "fingerprint": "ac90c52fceb7df65",
+  "status": "NONHERM"
  },
  "xyz8": {
   "fingerprint": "dc64825878253103",

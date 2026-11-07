@@ -87,7 +87,8 @@ subroutine AtomsPos()
    character(len=80) :: str, str2, str3, str4, str5
 
    ! Model parameters read from the input
-   integer :: m(2), n(4), nBN, nC, numberOfShifts, shiftFactor, SuperCellX, SuperCellY
+   integer :: m(2), n(4), nBN, nC, numberOfShifts, SuperCellX, SuperCellY
+   real(dp) :: shiftA
    real(dp) :: BLAngle, boundaryWidth, eightLayersZ1, eightLayersZ2, eightLayersZ3, eightLayersZ4, &
          eightLayersZ5, eightLayersZ6, eightLayersZ7, eightLayersZ8, fiveLayersZ1, fiveLayersZ2, &
          fiveLayersZ3, fiveLayersZ4, fiveLayersZ5, fourLayersZ1, fourLayersZ2, fourLayersZ3, fourLayersZ4, h, &
@@ -271,12 +272,12 @@ subroutine AtomsPos()
       call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
       call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
       call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
-      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftFactor,0)
+      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftA,0.0_dp)
       if (addShift) then
          if (Bernal) then
-            yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+            yShift = (aG/3.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,n(1),n(2))
          else if (bridge) then
-            yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+            yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,n(1),n(2))
          else
             call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
               'without either the shift was never set.','atoms','AtomsPos')
@@ -328,12 +329,12 @@ subroutine AtomsPos()
       call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
       call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
       call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
-      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftFactor,0)
+      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftA,0.0_dp)
       if (addShift) then
          if (Bernal) then
-            yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+            yShift = (aG/3.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,n(1),n(2))
          else if (bridge) then
-            yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+            yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,n(1),n(2))
          else
             call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
               'without either the shift was never set.','atoms','AtomsPos')
@@ -444,12 +445,12 @@ subroutine AtomsPos()
       call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
       call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
       call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
-      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftFactor,0)
+      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftA,0.0_dp)
       if (addShift) then
          if (Bernal) then
-            yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+            yShift = (aG/3.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,n(1),n(2))
          else if (bridge) then
-            yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+            yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,n(1),n(2))
          else
             call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
               'without either the shift was never set.','atoms','AtomsPos')
@@ -481,7 +482,7 @@ subroutine AtomsPos()
       call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
       call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
       call MIO_InputParameter('Structure.TwistedBilayerAngle',BLAngle,0.0_dp) ! Ref. PRB 76, 73103
-      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftFactor,0) ! Ref. PRB 76, 73103
+      call MIO_InputParameter('Structure.BilayerShiftFactor',shiftA,0.0_dp) ! [Angstrom]
       m(1) = m(1)*sCell
       m(2) = 0
       g = dIntLay/(2.0_dp*h)
@@ -489,10 +490,10 @@ subroutine AtomsPos()
       nAtC1 = size(RatC1,2)
       call MIO_Print('Number of atoms in layer1: '//trim(num2str(nAtC1)),'atoms')
       if (MIO_StringComp(str,'MoireEncapsulatedBilayer')) then
-          yShift = (aG/3.0_dp)/(m(1)*aG)+shiftFactor
+          yShift = (aG/3.0_dp)/(m(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,m(1),m(2))
       end if
       if (MIO_StringComp(str,'TwistedBilayer')) then
-          yShift = (aG/3.0_dp)/(m(1)*aG)+shiftFactor*aG
+          yShift = (aG/3.0_dp)/(m(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,m(1),m(2))
       end if
       ncell = m(1)**2 + m(1)*m(2) + m(2)**2
       call AtomsConstruct(RatC2,m,BLAngle,'graphene',-g, yShift)
@@ -543,12 +544,12 @@ subroutine AtomsPos()
       call MIO_InputParameter('Structure.TrilayerAddShift',addShift,.false.)
       call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
       call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
-      call MIO_InputParameter('Structure.TrilayerShiftFactor',shiftFactor,0)
+      call MIO_InputParameter('Structure.TrilayerShiftFactor',shiftA,0.0_dp)
       if (addShift) then
          if (Bernal) then
-            yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+            yShift = (aG/3.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.TrilayerShiftFactor',shiftA,n(1),n(2))
          else if (bridge) then
-            yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+            yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.TrilayerShiftFactor',shiftA,n(1),n(2))
          else
             call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
               'without either the shift was never set.','atoms','AtomsPos')
@@ -1266,6 +1267,26 @@ subroutine AtomsReadLayerIndex()
    close(987)
 
 end subroutine AtomsReadLayerIndex
+
+!> Extra in-plane shift d [Angstrom] of a layer (the value of key), along a1+a2 of the cell (the direction
+!! of the Bernal and bridge shifts: a_cc = aG/sqrt(3) on an aligned cell is the Bernal shift), returned as the
+!! fractional value AtomsConstruct adds to both coordinates. (n1,n2) are the cell indices in the graphene basis.
+!! Until November 2026 the key was an integer added to fractional coordinates (no effect, or n*aG in TwistedBilayer).
+function AtomsShiftFrac(key,d,n1,n2) result(s)
+
+   use cell,                 only : aG
+
+   character(len=*), intent(in) :: key
+   real(dp), intent(in) :: d
+   integer, intent(in) :: n1, n2
+   real(dp) :: s
+
+   s = d/(sqrt(3.0_dp)*aG*sqrt(real(n1*n1 + n1*n2 + n2*n2,dp)))
+   if (d /= 0.0_dp) call MIO_Print(trim(key)//': layer shifted by '//trim(num2str(d,4))// &
+        ' Angstrom along a1+a2 (in Angstrom since November 2026; before, an integer that had no effect, '// &
+        'or n*aG cells in TwistedBilayer)','atoms')
+
+end function AtomsShiftFrac
 
 subroutine AtomsConstruct(X,mm,angle,label,d,yShift)
 

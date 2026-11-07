@@ -1327,35 +1327,37 @@ subroutine DiagBands()
                   ! For forceBlockTAPW (no SOC), we have 2M_tapw eigenvalues in degenerate pairs (λ₁,λ₁), (λ₂,λ₂), ...
                   ! Store eigenvalues for both spins (they're spin-mixed, but we need to populate E array)
                   ! ELoc contains min(2*M_tapw, nAt) eigenvalues, so we need to be careful with bounds
+                  ! E has a spin-2 slot only with nspin = 2: forceBlockTAPW on a spinless run wrote past it
+                  ! (out of bounds; the Intel build crashed at the end of DiagBands)
                   if (M_tapw > 0) then
                      if (forceBlockTAPW .and. .not. RashbaSOCterm) then
                         ! No SOC: DiagH0TAPW_withBlockH has already kept one level of each degenerate pair
                         ! (ELoc(1:M), M_tapw = M); taking every second one again dropped half the bands
                         do i_eig = 1, min(M_tapw, size(E,1))
                            E(i_eig, 1, ip) = ELoc(i_eig)
-                           E(i_eig, 2, ip) = ELoc(i_eig)  ! Same for both spins (degenerate)
+                           if (size(E,2) >= 2) E(i_eig, 2, ip) = ELoc(i_eig)  ! Same for both spins (degenerate)
                         end do
                         ! Zero out remaining entries if M_tapw < size(E,1)
                         if (M_tapw < size(E,1)) then
                            E(M_tapw+1:size(E,1), 1, ip) = 0.0_dp
-                           E(M_tapw+1:size(E,1), 2, ip) = 0.0_dp
+                           if (size(E,2) >= 2) E(M_tapw+1:size(E,1), 2, ip) = 0.0_dp
                         end if
                      else
                         ! For Rashba SOC: use all 2M_tapw eigenvalues (spin-mixed)
                         ! Use min(2*M_tapw, nAt) since ELoc now contains 2M_tapw eigenvalues from block projection
                         E(1:min(2*M_tapw, nAt), 1, ip) = ELoc(1:min(2*M_tapw, nAt))
                         ! For Rashba, spin 2 uses the same eigenvalues (they're spin-mixed)
-                        E(1:min(2*M_tapw, nAt), 2, ip) = ELoc(1:min(2*M_tapw, nAt))
+                        if (size(E,2) >= 2) E(1:min(2*M_tapw, nAt), 2, ip) = ELoc(1:min(2*M_tapw, nAt))
                         ! If 2*M_tapw > nAt, zero out the remaining entries
                         if (2*M_tapw > nAt) then
                            E(nAt+1:min(2*M_tapw, size(E,1)), 1, ip) = 0.0_dp
-                           E(nAt+1:min(2*M_tapw, size(E,1)), 2, ip) = 0.0_dp
+                           if (size(E,2) >= 2) E(nAt+1:min(2*M_tapw, size(E,1)), 2, ip) = 0.0_dp
                         end if
                      end if
                   else
                      ! Fallback if M_tapw not set
                      E(1:nAt, 1, ip) = ELoc(1:nAt)
-                     E(1:nAt, 2, ip) = ELoc(1:nAt)
+                     if (size(E,2) >= 2) E(1:nAt, 2, ip) = ELoc(1:nAt)
                   end if
                   ! Skip the regular eigenvalue copying section
                   cycle
@@ -2217,7 +2219,11 @@ subroutine DiagSpectralFunction()
       is = 1
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       Pkc = 0.0_dp ! spectral weight PkscI(k)
       !$OMP PARALLEL DO PRIVATE (is, ik, nPath, iee, ie)
@@ -2456,7 +2462,11 @@ subroutine DiagSpectralFunctionKGrid()
       is = 1
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       Pkc = 0.0_dp ! spectral weight PkscI(k)
       do ik=1,ptsTot ! k loop
@@ -2637,7 +2647,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
-   call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
+   call MIO_InputParameter('Spectral.FoldByZero',foldByZero,.false.)
    call MIO_InputParameter('Spectral.UseCoordinates',useCoordinates,.false.)
    if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
        call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
@@ -2877,7 +2887,11 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       call MIO_InputParameter('Spectral.energyGridResolution',energyGridResolution,0.005_dp)
       call DiagSpectralCheckGrid(E1,E2,Epts,energyGridResolution)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       call MIO_Allocate(Ake1,[ptsTot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake1B,[ptsTot,Epts],'Ake1B','diag')
@@ -3187,7 +3201,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
-   call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
+   call MIO_InputParameter('Spectral.FoldByZero',foldByZero,.false.)
    call MIO_InputParameter('Spectral.UseCoordinates',useCoordinates,.false.)
    if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
        call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
@@ -3413,7 +3427,11 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       call DiagSpectralCheckGrid(E1,E2,Epts,energyGridResolution)
       call MIO_InputParameter('Spectral.DirectBandVal',DirectBand,.false.)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       call MIO_Allocate(Ake1,[ptsTot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake1B,[ptsTot,Epts],'Ake1B','diag')
@@ -3696,7 +3714,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
 
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
-   call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
+   call MIO_InputParameter('Spectral.FoldByZero',foldByZero,.false.)
    if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
        call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
        call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
@@ -3781,9 +3799,12 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    deltaKz = (K1z2 - K1z1)/nk(3)
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
-      Kgrid(1,ik) = (K1x1 + (i1 * deltaKx))
-      Kgrid(2,ik) = (K1y1 + (i2 * deltaKy))
-      Kgrid(3,ik) = (K1z1 + (i3 * deltaKz))
+      ! cell centres of the box K1 +- gridCut: symmetric about K1, which is on the grid for an odd count
+      ! (until November 2026 the points ran from K1-gridCut+delta to K1+gridCut: with one point K1+gridCut,
+      ! and kz = gridCut on a two-dimensional grid)
+      Kgrid(1,ik) = (K1x1 + ((i1-0.5_dp) * deltaKx))
+      Kgrid(2,ik) = (K1y1 + ((i2-0.5_dp) * deltaKy))
+      Kgrid(3,ik) = (K1z1 + ((i3-0.5_dp) * deltaKz))
    end do; end do; end do
 
       !   !if (MoireBS) then
@@ -3925,7 +3946,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       call DiagSpectralCheckGrid(E1,E2,Epts,energyGridResolution)
       call MIO_InputParameter('Spectral.topBottomRatio',topBottomRatio,1.0_dp)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       call MIO_Allocate(Ake1,[ptot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake2,[ptot,Epts],'Ake2','diag')
@@ -4168,7 +4193,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    print*, rcell(:,3)
 
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
-   call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
+   call MIO_InputParameter('Spectral.FoldByZero',foldByZero,.false.)
    if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
        call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
        call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
@@ -4269,9 +4294,12 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    deltaKz = (K1z2 - K1z1)/nk(3)
    do i3=1,nk(3); do i2=1,nk(2); do i1=1,nk(1)
       ik = ik+1
-      Kgrid(1,ik) = (K1x1 + (i1 * deltaKx))
-      Kgrid(2,ik) = (K1y1 + (i2 * deltaKy))
-      Kgrid(3,ik) = (K1z1 + (i3 * deltaKz))
+      ! cell centres of the box K1 +- gridCut: symmetric about K1, which is on the grid for an odd count
+      ! (until November 2026 the points ran from K1-gridCut+delta to K1+gridCut: with one point K1+gridCut,
+      ! and kz = gridCut on a two-dimensional grid)
+      Kgrid(1,ik) = (K1x1 + ((i1-0.5_dp) * deltaKx))
+      Kgrid(2,ik) = (K1y1 + ((i2-0.5_dp) * deltaKy))
+      Kgrid(3,ik) = (K1z1 + ((i3-0.5_dp) * deltaKz))
    end do; end do; end do
 
       !   !if (MoireBS) then
@@ -4416,7 +4444,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       call MIO_InputParameter('Spectral.topBottomRatio',topBottomRatio,1.0_dp)
       call MIO_InputParameter('Spectral.DirectBandVal',DirectBand,.false.)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       call MIO_Allocate(Ake1,[ptot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake2,[ptot,Epts],'Ake2','diag')
@@ -4682,7 +4714,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
 
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
-   call MIO_InputParameter('Spectral.FoldByOne',foldByZero,.false.)
+   call MIO_InputParameter('Spectral.FoldByZero',foldByZero,.false.)
    if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
        call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
        call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
@@ -4745,6 +4777,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    call MIO_InputParameter('Spectral.KGridCutX',gridCutX,0.1_dp)
    call MIO_InputParameter('Spectral.KGridCutY',gridCutY,0.1_dp)
    call MIO_InputParameter('Spectral.KGridLowerGridHalf',lowerGridHalf,.false.)
+   if (nk(2) > 1) call MIO_Print('WARNING: this spectral cut is a line along kx at ky = K_y + Spectral.KGridCutY: '// &
+        'the '//trim(num2str(nk(2)))//' rows of Diag.KGrid along y are identical copies','diag')
    ptot = nk(1)*nk(2)*nk(3)
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
@@ -4775,7 +4809,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       ik = ik+1
       Kgrid(1,ik) = (K1x1 + (i1 * deltaKx))
       Kgrid(2,ik) = K1y1
-      Kgrid(3,ik) = (K1z1 + (i3 * deltaKz))
+      Kgrid(3,ik) = (K1z1 + ((i3-0.5_dp) * deltaKz))  ! kz = K1z for one point (was K1z + gridCut)
    end do; end do; end do
 
       !   !if (MoireBS) then
@@ -4899,7 +4933,11 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       call DiagSpectralCheckGrid(E1,E2,Epts,energyGridResolution)
       call MIO_InputParameter('Spectral.topBottomRatio',topBottomRatio,1.0_dp)
       do iee=1,Epts2
-          gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          if (Epts2 <= Epts) then
+             gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
+          else ! window narrower than 6 eps: the kernel is longer than the grid (it read past Energy)
+             gaussian(iee) = exp(-((iee-Epts2/2)*(E2-E1)/(Epts-1))**2/(2.0_dp*eps**2))
+          end if
       end do
       call MIO_Allocate(Ake1,[ptot,Epts],'Ake1','diag')
       call MIO_Allocate(Ake2,[ptot,Epts],'Ake2','diag')
@@ -10203,11 +10241,6 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
               end if
            end if
 
-           ! Apply Pseudo-inversion asymmetry (λPIA) - onsite component
-           if (PIASOCterm .and. SOCEnabledForLayer(layerIndex(i))) then
-              ! PIA is spin-independent onsite term
-              soc_diagonal_contrib = soc_diagonal_contrib + lambdaPIA
-           end if
         end if
 
         ! Add SCF terms if spin-polarized (matches DiagHam implementation)
@@ -10270,20 +10303,6 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
                       values(l) = -conjg(hopp(j, i)) * exp(cmplx_i * dot_product(KLoc, R))
                       col_ind(l) = in
                       l = l + 1
-                  end if
-                  ! Apply PIA hopping terms if enabled (matches DiagHam implementation)
-                  if (PIASOCterm) then
-                     ! PIA hopping adds imaginary off-diagonal terms
-                     ! Note: This modifies the value we just added, so we need to get the correct index
-                     ! Find the index in values array for this off-diagonal element
-                     do k = row_ptr(i), l - 1
-                        if (col_ind(k) == in) then
-                           ! Apply PIA hopping: lambdaPIA * (neighD_y + i*neighD_x)
-                           ! Note: NeighD is from i to j, matching ApplyPIAHopping convention
-                           values(k) = values(k) + lambdaPIA * cmplx(NeighD(2, j, i), NeighD(1, j, i), dp)
-                           exit
-                        end if
-                     end do
                   end if
                end if
            end do
@@ -10689,7 +10708,7 @@ subroutine DiagHamArpack(N,ns,is,HLoc,ELoc,KLoc,cell,H0,maxN,hopp,NList,Nneigh,n
 
 end subroutine DiagHamArpack
 
-subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
+subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,KIn,KGIn,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -10704,8 +10723,10 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
    complex(dp), intent(out) :: Pkc(N)
    complex(dp) :: Pkcaux
    real(dp), intent(out) :: E(N)
-   real(dp), intent(in) :: K(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KIn(3), cell(3,3), H0(N)
+   real(dp) :: K(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -10726,6 +10747,10 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
    integer :: kk
 
 #ifdef DEBUG
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   K = -KIn
+   KG = -KGIn
    call MIO_Debug('DiagSpectralWeightNishi',0)
 #endif /* DEBUG */
 
@@ -10800,7 +10825,7 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,K,KG,cell,H0,maxN,hopp,NList,Nn
 
 end subroutine DiagSpectralWeightNishi
 
-subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
+subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,KIn,KGIn,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -10815,8 +10840,10 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
    complex(dp), intent(out) :: PkcLoc(N,2)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: E(N)
-   real(dp), intent(in) :: K(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KIn(3), cell(3,3), H0(N)
+   real(dp) :: K(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -10840,6 +10867,10 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
 
    integer :: at1, at2
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   K = -KIn
+   KG = -KGIn
    call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
@@ -10919,7 +10950,7 @@ subroutine DiagSpectralWeightWeiKu(N,ns,is,PkcLoc,E,K,KG,cell,H0,maxN,hopp,NList
 
 end subroutine DiagSpectralWeightWeiKu
 
-subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLocIn,KGIn,cell,gcell,H0,maxN,hopp,NList, &
       Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
@@ -10935,8 +10966,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
    complex(dp), intent(out) :: PkcLocA(N,3), PkcLocB(N,3)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc(N)
-   real(dp), intent(in) :: KptsLoc(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KptsLocIn(3), cell(3,3), H0(N)
+   real(dp) :: KptsLoc(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -10973,6 +11006,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
 
    logical :: changeExpSign
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   KptsLoc = -KptsLocIn
+   KG = -KGIn
    cellts = gcell ! Lattice vectors of PC (either top or bottom layer)
 
    Hts = 0.0_dp
@@ -11039,7 +11076,7 @@ subroutine DiagSpectralWeightWeiKuInequivalentOld(N,ns,is,PkcLocA,PkcLocB,ELoc,K
 
 end subroutine DiagSpectralWeightWeiKuInequivalentOld
 
-subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,KptsLocIn,KGIn,cell,gcell,H0,maxN,hopp,NList, &
       Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
@@ -11055,8 +11092,10 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
    complex(dp), intent(out) :: PkcLocA(N,4), PkcLocB(N,4)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc(N)
-   real(dp), intent(in) :: KptsLoc(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KptsLocIn(3), cell(3,3), H0(N)
+   real(dp) :: KptsLoc(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -11093,6 +11132,10 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
 
    logical :: changeExpSign
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   KptsLoc = -KptsLocIn
+   KG = -KGIn
    cellts = gcell ! Lattice vectors of PC (either top or bottom layer)
 
    Hts = 0.0_dp
@@ -11164,7 +11207,7 @@ subroutine DiagSpectralWeightWeiKuInequivalent(N,ns,is,PkcLocA,PkcLocB,ELoc,Kpts
 end subroutine DiagSpectralWeightWeiKuInequivalent
 
 subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLocB,PkcLocC,PkcLocD,PkcLocE,PkcLocF, &
-      PkcLocG,PkcLocH,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
+      PkcLocG,PkcLocH,ELoc,KptsLocIn,KGIn,cell,gcell,H0,maxN,hopp,NList,Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
    use interface,             only : edgeHopp, nEdgeN, edgeH, nQ, edgeIndx, NeI, NedgeCell
@@ -11182,8 +11225,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
    complex(dp), intent(out) :: PkcLocG(N,4), PkcLocH(N,4)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc(N)
-   real(dp), intent(in) :: KptsLoc(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KptsLocIn(3), cell(3,3), H0(N)
+   real(dp) :: KptsLoc(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -11220,6 +11265,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
 
    logical :: changeExpSign
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   KptsLoc = -KptsLocIn
+   KG = -KGIn
    cellts = gcell ! Lattice vectors of PC (either top or bottom layer)
 
    Hts = 0.0_dp
@@ -11308,7 +11357,7 @@ subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals(N,ns,is,PkcLocA,PkcLo
 
 end subroutine DiagSpectralWeightWeiKuInequivalentMoreOrbitals
 
-subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,KptsLoc,KG,cell,gcell,H0,maxN,hopp,NList, &
+subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,KptsLocIn,KGIn,cell,gcell,H0,maxN,hopp,NList, &
       Nneigh,neighCell,topBottomRatio)
 
    use constants,             only : cmplx_i
@@ -11325,8 +11374,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
    complex(dp), intent(out) :: PkcLoc2(N,3)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc(N)
-   real(dp), intent(in) :: KptsLoc(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KptsLocIn(3), cell(3,3), H0(N)
+   real(dp) :: KptsLoc(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell(3,3)
    real(dp) :: bncell(3,3)
    real(dp) :: cellts(3,3)
@@ -11368,6 +11419,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
    integer :: ix, iy, ncell(3,9)
    real(dp) :: rMinRp(3), v(3), dmin
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   KptsLoc = -KptsLocIn
+   KG = -KGIn
    cellts = cell ! Lattice vectors of PC (either top or bottom layer)
    celltsp = gcell
 
@@ -11475,7 +11530,7 @@ subroutine DiagSpectralWeightWeiKuInequivalentLee(N,ns,is,PkcLoc1,PkcLoc2,ELoc,K
 
 end subroutine DiagSpectralWeightWeiKuInequivalentLee
 
-subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,KptsLoc,KG,cell,gcell1,gcell2,H0,maxN, &
+subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,KptsLocIn,KGIn,cell,gcell1,gcell2,H0,maxN, &
       hopp,NList,Nneigh,neighCell)
 
    use constants,             only : cmplx_i
@@ -11491,8 +11546,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    complex(dp), intent(out) :: PkcLoc(N,2)
    complex(dp) :: Pkcaux, Pkcaux1, Pkcaux3
    real(dp), intent(out) :: ELoc1(N), ELoc2(N)
-   real(dp), intent(in) :: KptsLoc(3), cell(3,3), H0(N)
-   real(dp), intent(in) :: KG(3)
+   real(dp), intent(in) :: KptsLocIn(3), cell(3,3), H0(N)
+   real(dp) :: KptsLoc(3)
+   real(dp), intent(in) :: KGIn(3)
+   real(dp) :: KG(3)
    real(dp) :: gcell1(3,3)
    real(dp) :: gcell2(3,3)
    real(dp) :: bncell(3,3)
@@ -11528,6 +11585,10 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    real(dp) :: DWorkLoc1(3*N-2)
    real(dp) :: DWorkLoc2(3*N-2)
 
+   ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
+   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   KptsLoc = -KptsLocIn
+   KG = -KGIn
    cellts = gcell1
    celltsp = gcell2
 
@@ -15026,11 +15087,6 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
               end if
            end if
 
-           ! Apply Pseudo-inversion asymmetry (λPIA) - onsite component
-           if (PIASOCterm .and. SOCEnabledForLayer(layerIndex(i))) then
-              ! PIA is spin-independent onsite term
-              soc_diagonal_contrib = soc_diagonal_contrib + lambdaPIA
-           end if
         end if
 
         ! Add SCF terms if spin-polarized (matches DiagHam implementation)
@@ -15686,11 +15742,6 @@ subroutine ApplySOCtoHamiltonian(i, is, ns, HLoc)
       end if
    end if
 
-   ! Apply Pseudo-inversion asymmetry (λPIA) - onsite component
-   if (PIASOCterm .and. SOCEnabledForLayer(layerIndex(i))) then
-      ! PIA is spin-independent onsite term
-      HLoc(i,i) = HLoc(i,i) + lambdaPIA
-   end if
 
    ! Note: Rashba SOC (λR) requires block Hamiltonian and is handled separately
 
@@ -16274,11 +16325,6 @@ subroutine SOCOnsiteAdd(i, hup, hdn)
       end if
    end if
 
-   ! Apply Pseudo-inversion asymmetry
-   if (PIASOCterm .and. SOCEnabledForLayer(layerIndex(i))) then
-      hup = hup + lambdaPIA
-      hdn = hdn + lambdaPIA
-   end if
 
 end subroutine SOCOnsiteAdd
 

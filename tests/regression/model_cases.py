@@ -276,6 +276,10 @@ xyz_case("xyz6", "x6", sixLayersSandwiched=T, middleTwist=T)
 xyz_case("xyz6_enc", "x6", encapsulatedSixLayers=T)
 xyz_case("xyz7", "x7", sevenLayersSandwiched=T, middleTwist=T)
 xyz_case("xyz7_enc", "x7", encapsulatedSevenLayers=T)
+# GBN.OffDiag on five to seven layers: refused until November 2026 (moire term only set for four layers)
+toggles("xyz5_enc", ["GBNOffDiag"], "x5")
+toggles("xyz6_enc", ["GBNOffDiag"], "x6")
+toggles("xyz7_enc", ["GBNOffDiag"], "x7")
 xyz_case("xyz8", "x8", eightLayersSandwiched=T, middleTwist=T)
 xyz_case("xyz10", "x10", tenLayersSandwiched=T, middleTwist=T)
 xyz_case("xyz20", "x20", twentyLayersSandwiched=T, middleTwist=T)
@@ -538,9 +542,8 @@ COMPILER_DEPENDENT = {
 # only with Moire.Sachs, so without it they were leftover memory. Such a run is now refused.
 # TwistedBLAddShift without BernalShift or BridgeShift was in this list until November 2026: the shift was never set
 # (leftover memory). Such a run is now refused.
-# realisticBubbles: the number of bubbles is drawn at random. With none the switch does nothing; with one or
-# more the run is refused (the list of bubble centres is never filled). Which of the two happens varies.
-COMPILER_DEPENDENT.add("graphene+realisticBubbles")
+# realisticBubbles was in this list until November 2026 (number of bubbles never set without BigBubble or
+# ManyBubbles); such a run is now refused.
 
 # Refused in every run, but the number of non-finite entries in the refusal message varies from run to run (74, 98, 100
 # measured in November 2026): the pressure path of these interlayer models leaves the sublattice-dependent parameters
