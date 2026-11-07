@@ -1178,6 +1178,7 @@ subroutine AtomsPos()
           end if
         end do
       end if
+      call AtomsCheckLayers()
    else if (MIO_StringComp(str,'TrilayerBasedOnMoireCell')) then
       call AtomsSetCart()
       do i=1,nAt
@@ -1199,6 +1200,38 @@ subroutine AtomsPos()
 #endif /* DEBUG */
 
 end subroutine AtomsPos
+
+!> Warn when the layer assignment (z windows of the stack flags, or layerIndex.dat) leaves a layer between 1 and the
+!! highest index empty, or gives an index below 1: the windows then miss the structure and the interlayer bonds are
+!! treated as intralayer ones (or the other way round) without any other message.
+subroutine AtomsCheckLayers()
+
+   integer :: l, lmax, n
+
+   lmax = maxval(layerIndex(1:nAt))
+   n = count(layerIndex(1:nAt) < 1)
+   if (n > 0) call MIO_Print('WARNING: '//trim(num2str(n))//' atoms have a layer index below 1: check the '// &
+     'z windows of the stack flag (Stack.*Z*) or layerIndex.dat.','atoms')
+   do l = 1, lmax
+      if (count(layerIndex(1:nAt) == l) == 0) call MIO_Print('WARNING: layer '//trim(num2str(l))//' of '// &
+        trim(num2str(lmax))//' holds no atom: the z windows of the stack flag (Stack.*Z*) or layerIndex.dat do not '// &
+        'match the structure, and bonds between the layers may be treated as intralayer ones.','atoms')
+   end do
+   call MIO_Print('Atoms per layer:'//trim(AtomsLayerCounts(lmax)),'atoms')
+
+contains
+
+   function AtomsLayerCounts(m) result(txt)
+      integer, intent(in) :: m
+      character(len=512) :: txt
+      integer :: k
+      txt = ''
+      do k = 1, min(m, 40)
+         txt = trim(txt)//' '//trim(num2str(count(layerIndex(1:nAt) == k)))
+      end do
+   end function AtomsLayerCounts
+
+end subroutine AtomsCheckLayers
 
 !> Reads layerIndex(1:nAt) from layerIndex.dat: ONE layer number per line, line i = atom i.
 !! A line with more than one value is refused: a file written as "index layer" (the format of
