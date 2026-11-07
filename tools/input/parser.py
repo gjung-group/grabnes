@@ -211,13 +211,16 @@ def map_comments(m: Any) -> dict[Any, tuple[list[str], str | None]]:
                 pre += comment_lines_of(value)
             for value in comment_tokens(slot[1] if len(slot) > 1 else None):
                 pre += comment_lines_of(value)
-            if len(slot) > 2 and slot[2] is not None:
-                if slot[2].value.startswith('\n'):
-                    carry = comment_lines_of(slot[2].value)
+            # slots 2 and 3 hold a token or (after a load of a file with several comment lines) a list of them
+            for value in comment_tokens(slot[2] if len(slot) > 2 else None):
+                if value.startswith('\n'):
+                    carry += comment_lines_of(value)
+                elif eol is None:
+                    eol = clean_comment(value)
                 else:
-                    eol = clean_comment(slot[2].value)
-            if len(slot) > 3 and slot[3] is not None:
-                carry += comment_lines_of(slot[3].value)
+                    carry += comment_lines_of(value)
+            for value in comment_tokens(slot[3] if len(slot) > 3 else None):
+                carry += comment_lines_of(value)
         out[key] = (pre, eol)
     return out
 
