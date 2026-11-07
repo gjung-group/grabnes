@@ -277,6 +277,9 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+         else
+            call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
+              'without either the shift was never set.','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
@@ -331,6 +334,9 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+         else
+            call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
+              'without either the shift was never set.','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
@@ -444,6 +450,9 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+         else
+            call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
+              'without either the shift was never set.','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
@@ -540,6 +549,9 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp)/(n(1)*aG)+shiftFactor!*aG !
          else if (bridge) then
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+shiftFactor!*aG !
+         else
+            call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
+              'without either the shift was never set.','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp

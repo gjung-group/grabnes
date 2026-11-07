@@ -523,7 +523,6 @@ COMPILER_DEPENDENT = {
     'graphene+GaussDisorder',
     'graphene+SublatticeDisorder',
     'graphene+deltaDisorder',
-    'tbg+twistedBLAddShift',
 }
 
 # The Cartesian on-site potentials (sinusModulation, SquareFunction*, SquareChecker2219, PNP(+Kink), Zterm1D(+Kink)),
@@ -537,6 +536,8 @@ COMPILER_DEPENDENT = {
 # way (the model lacks parameters for this configuration).
 # Moire.Trilayer (effective model) was in this list until November 2026: its amplitudes Moire.PotA/B/C are read
 # only with Moire.Sachs, so without it they were leftover memory. Such a run is now refused.
+# TwistedBLAddShift without BernalShift or BridgeShift was in this list until November 2026: the shift was never set
+# (leftover memory). Such a run is now refused.
 # realisticBubbles: the number of bubbles is drawn at random. With none the switch does nothing; with one or
 # more the run is refused (the list of bubble centres is never filled). Which of the two happens varies.
 COMPILER_DEPENDENT.add("graphene+realisticBubbles")
