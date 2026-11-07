@@ -5051,6 +5051,11 @@ subroutine HamHopping
    ! Other local variables
    logical :: saidHTCBNBN, saidHTCGBN
    integer :: clock, counter1, ii, ilvl, lllll, n1, n2, nImp, nLayers, nnnnn, nshellDiff, totImp, u
+   ! fixed (distance-independent) Kaxiras/Srivani interlayer set, for HamHopInterlayerKaxirasSrivani: lambda0 xi0
+   ! kappa0 lambda3 xi3 x3 lambda6 xi6 x6 kappa6 lambda6b xi6b x6b kappa6b (that function has local copies)
+   real(dp) :: kaxFixed(14)
+   ! input values of Interlayer.RenormalizeHoppingFactorAAp/BBp/ABp/BAp (the four names are private in the bond loop)
+   real(dp) :: rhfInput(4)
    real(dp) :: aBN1, aCC, aGSrivani, bubbleR, bubbleSigmaR2, bubbleTheta, c0AAV0, c0ABV0, c10_0, c10_1, &
          c10_2, c11_0, c11_1, c11_2, c12_0, c12_1, c12_2, c13_0, c13_1, c13_2, c14_0, c14_1, c14_2, c1_0, &
          c1_1, c1_2, c1AAV0, c1ABV0, c2_0, c2_1, c2_2, c2AAV0, c2ABV0, c3_0, c3_1, c3_2, c4_0, c4_1, c4_2, &
@@ -5673,6 +5678,8 @@ subroutine HamHopping
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorBBp',renormalizeHoppingFactorBBp,1.0_dp)
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorABp',renormalizeHoppingFactorABp,1.0_dp)
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorBAp',renormalizeHoppingFactorBAp,1.0_dp)
+         rhfInput = [renormalizeHoppingFactorAAp, renormalizeHoppingFactorBBp, renormalizeHoppingFactorABp, &
+                     renormalizeHoppingFactorBAp]
          call MIO_InputParameter('Interlayer.NewFittingFunctions',newFittingFunctions,.false.)
          call MIO_InputParameter('Interlayer.RenormalizeCoupling',renormalizeCoupling,.false.)
          call MIO_InputParameter('Interlayer.CouplingFactor',couplingFactor,1.0_dp)
@@ -5857,10 +5864,12 @@ subroutine HamHopping
             vppsigma = hamUnset
             cabd = hamUnset
             fc = hamUnset
-            renormalizehoppingfactoraap = hamUnset
-            renormalizehoppingfactorbbp = hamUnset
-            renormalizehoppingfactorabp = hamUnset
-            renormalizehoppingfactorbap = hamUnset
+            ! the input values (private copies: until November 2026 they started as not-set markers, so the keys
+            ! never reached the models that use them as given, and TypeOfBL Mayou was refused)
+            renormalizehoppingfactoraap = rhfInput(1)
+            renormalizehoppingfactorbbp = rhfInput(2)
+            renormalizehoppingfactorabp = rhfInput(3)
+            renormalizehoppingfactorbap = rhfInput(4)
             lambda0 = hamUnset
             lambda3 = hamUnset
             lambda6 = hamUnset
@@ -7279,6 +7288,7 @@ subroutine HamHopInterlayerParameters()
                     xi0 = epsilon0
                     xi3 = epsilon3
                     xi6 = epsilon6
+                    kaxFixed = [lambda0, xi0, kappa0, lambda3, xi3, x3, lambda6, xi6, x6, kappa6, lambda6b, xi6b, x6b, kappa6b]
                end if
             end if
          else if (MIO_StringComp(BilayerModel,'BLSrivani')) then
@@ -7461,6 +7471,13 @@ subroutine HamHopInterlayerParameters()
                     xi3 = epsilon3
                     xi6 = epsilon6
                     xi6b = epsilon6b
+                    kaxFixed = [lambda0, xi0, kappa0, lambda3, xi3, x3, lambda6, xi6, x6, kappa6, lambda6b, xi6b, x6b, kappa6b]
+               end if
+                ! sublattice-dependent terms (Interlayer.SublatticeDependent): the 2020 set. It has no pressure fit; until
+                ! November 2026 it was set only without Interlayer.AddPressureDependence, so the pressure path was refused.
+                if (sublatticeDependent .and. addPressureDependence) call MIO_Print('Interlayer.SublatticeDependent '// &
+                     'with AddPressureDependence: the sublattice-dependent terms use the fixed 2020 Srivani set '// &
+                     '(no pressure fit exists for them)','ham')
                        lambda0AAp     = 0.3777452105728493_dp/g0
                        xi0AAp         =  1.673723757628059_dp
                        kappa0AAp      = -1.9375254860531055_dp
@@ -7495,7 +7512,6 @@ subroutine HamHopInterlayerParameters()
                        lambda3bBAp     =  -0.13763943627632735_dp/g0
                        xi3bBAp         =  2.5155817180683107_dp
                        x3bBAp        =  0.6618620509164502_dp
-               end if
             end if
          end if
 
@@ -8603,6 +8619,14 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                                             renormalizeHoppingFactorABp  = exp((abs(NeighD(3,j,i))-bval)/aval)
                                             renormalizeHoppingFactorBAp  = exp((abs(NeighD(3,j,i))-bval)/aval)
 
+                                        else
+                                            ! the fixed set (these names are local to this function: until November 2026
+                                            ! they kept their not-set markers here, so every run without pressure was refused)
+                                            lambda0 = kaxFixed(1); xi0 = kaxFixed(2); kappa0 = kaxFixed(3)
+                                            lambda3 = kaxFixed(4); xi3 = kaxFixed(5); x3 = kaxFixed(6)
+                                            lambda6 = kaxFixed(7); xi6 = kaxFixed(8); x6 = kaxFixed(9); kappa6 = kaxFixed(10)
+                                            lambda6b = kaxFixed(11); xi6b = kaxFixed(12); x6b = kaxFixed(13)
+                                            kappa6b = kaxFixed(14)
                                         end if
                                             V0 = lambda0 * exp(-xi0*rbar**2.0_dp) * cos(kappa0 * rbar)
                                             V3 = lambda3 * rbar**2.0_dp * exp(-xi3*(rbar-x3)**2.0_dp)
@@ -8634,7 +8658,10 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                                             V6ABp = 0.0_dp
                                             V6BAp = 0.0_dp
                                             !    call V6  =
-                                            if (oldParameterSet) then
+                                            ! Fang and Kaxiras, PRB 93, 235153 (2016): V6 = lambda6 exp(-xi6 (rbar-x6)^2) sin(kappa6 rbar).
+                                            ! BLKaxiras used the Srivani form (extra rbar and lambda6b term, never set for it) until
+                                            ! November 2026, so its pressure path was refused.
+                                            if (oldParameterSet .or. MIO_StringComp(BilayerModel,'BLKaxiras')) then
                                                 V6 = lambda6 * exp(-xi6*(rbar-x6)**2.0_dp) * sin(kappa6 * rbar)
                                             else if (deactivateV6) then
                                                 V6 = lambda6 * exp(-xi6*(rbar-x6)**2.0_dp) * sin(kappa6 * rbar)
