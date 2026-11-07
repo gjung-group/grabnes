@@ -1516,8 +1516,8 @@
   "status": "ok"
  },
  "xyz3_enc+GBNOffDiag": {
-  "fingerprint": "452b7845ab22ba79",
-  "status": "REFUSED"
+  "fingerprint": "d6ccf8985667cda1",
+  "status": "NONHERM"
  },
  "xyz3_enc+deactivateInterlayerBG": {
   "fingerprint": "9d10314bb5a79bc8",
@@ -1683,6 +1683,10 @@
   "fingerprint": "df935aeccf639879",
   "status": "ok"
  },
+ "xyz5_enc+GBNOffDiag": {
+  "fingerprint": "ec9289e560118b2f",
+  "status": "NONHERM"
+ },
  "xyz6": {
   "fingerprint": "b9aade57bd720b8c",
   "status": "ok"
@@ -1690,6 +1694,10 @@
  "xyz6_enc": {
   "fingerprint": "5110085d0c3226cd",
   "status": "ok"
+ },
+ "xyz6_enc+GBNOffDiag": {
+  "fingerprint": "4ef213130b7e1321",
+  "status": "NONHERM"
  },
  "xyz6_t3BG": {
   "fingerprint": "1475beb57093588d",
@@ -1722,6 +1730,10 @@
  "xyz7_enc": {
   "fingerprint": "b9091d5321431004",
   "status": "ok"
+ },
+ "xyz7_enc+GBNOffDiag": {
+  "fingerprint": "ac90c52fceb7df65",
+  "status": "NONHERM"
  },
  "xyz8": {
   "fingerprint": "dc64825878253103",
