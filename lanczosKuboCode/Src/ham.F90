@@ -6174,6 +6174,14 @@ subroutine HamHopping
         ! counted in the Bernal and encapsulated branches only: a zero would say nothing about the other models
         if (numberOfInterlayerHoppings > 0) call MIO_Print(' Number of interlayer hoppings '// &
            trim(num2str(numberOfInterlayerHoppings)),'HamHopping')
+        ! the Bernal, encapsulated-bilayer and trilayer interlayer branches set their hoppings before the
+        ! renormalizeCoupling block and never reach it
+        if (renormalizeCoupling .and. (MIO_StringComp(str,'MoireEncapsulatedBilayer') &
+              .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') .or. BernalReadXYZ &
+              .or. MIO_StringComp(str,'TrilayerBasedOnMoireCell'))) &
+           call MIO_Print('WARNING: Interlayer.RenormalizeCoupling is set, but the interlayer hoppings of '// &
+              'TypeOfSystem '//trim(str)//' (or Structure.BernalReadXYZ) do not use Interlayer.CouplingFactor '// &
+              'or CouplingFactor2: they are not scaled.','ham')
    end if
 
    call MIO_InputParameter('Strain.RandomStrain',randomStrain,.false.)
