@@ -10241,11 +10241,6 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
               end if
            end if
 
-           ! Apply Pseudo-inversion asymmetry (λPIA) - onsite component
-           if (PIASOCterm .and. SOCEnabledForLayer(layerIndex(i))) then
-              ! PIA is spin-independent onsite term
-              soc_diagonal_contrib = soc_diagonal_contrib + lambdaPIA
-           end if
         end if
 
         ! Add SCF terms if spin-polarized (matches DiagHam implementation)
@@ -10308,20 +10303,6 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
                       values(l) = -conjg(hopp(j, i)) * exp(cmplx_i * dot_product(KLoc, R))
                       col_ind(l) = in
                       l = l + 1
-                  end if
-                  ! Apply PIA hopping terms if enabled (matches DiagHam implementation)
-                  if (PIASOCterm) then
-                     ! PIA hopping adds imaginary off-diagonal terms
-                     ! Note: This modifies the value we just added, so we need to get the correct index
-                     ! Find the index in values array for this off-diagonal element
-                     do k = row_ptr(i), l - 1
-                        if (col_ind(k) == in) then
-                           ! Apply PIA hopping: lambdaPIA * (neighD_y + i*neighD_x)
-                           ! Note: NeighD is from i to j, matching ApplyPIAHopping convention
-                           values(k) = values(k) + lambdaPIA * cmplx(NeighD(2, j, i), NeighD(1, j, i), dp)
-                           exit
-                        end if
-                     end do
                   end if
                end if
            end do
@@ -15106,11 +15087,6 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
               end if
            end if
 
-           ! Apply Pseudo-inversion asymmetry (λPIA) - onsite component
-           if (PIASOCterm .and. SOCEnabledForLayer(layerIndex(i))) then
-              ! PIA is spin-independent onsite term
-              soc_diagonal_contrib = soc_diagonal_contrib + lambdaPIA
-           end if
         end if
 
         ! Add SCF terms if spin-polarized (matches DiagHam implementation)
@@ -15766,11 +15742,6 @@ subroutine ApplySOCtoHamiltonian(i, is, ns, HLoc)
       end if
    end if
 
-   ! Apply Pseudo-inversion asymmetry (λPIA) - onsite component
-   if (PIASOCterm .and. SOCEnabledForLayer(layerIndex(i))) then
-      ! PIA is spin-independent onsite term
-      HLoc(i,i) = HLoc(i,i) + lambdaPIA
-   end if
 
    ! Note: Rashba SOC (λR) requires block Hamiltonian and is handled separately
 
@@ -16354,11 +16325,6 @@ subroutine SOCOnsiteAdd(i, hup, hdn)
       end if
    end if
 
-   ! Apply Pseudo-inversion asymmetry
-   if (PIASOCterm .and. SOCEnabledForLayer(layerIndex(i))) then
-      hup = hup + lambdaPIA
-      hdn = hdn + lambdaPIA
-   end if
 
 end subroutine SOCOnsiteAdd
 

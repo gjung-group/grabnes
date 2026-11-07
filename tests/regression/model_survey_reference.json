@@ -284,8 +284,8 @@
   "status": "ok"
  },
  "graphene+PIASOCterm": {
-  "fingerprint": "61909524e9c6043c",
-  "status": "INERT"
+  "fingerprint": "1883516ab6314ffe",
+  "status": "REFUSED"
  },
  "graphene+PNP": {
   "fingerprint": "dc361044ab4cf5af",
@@ -568,8 +568,8 @@
   "status": "ok"
  },
  "graphene_small@bands+PIASOCterm": {
-  "fingerprint": "0524f60767eb6573",
-  "status": "ok"
+  "fingerprint": "1883516ab6314ffe",
+  "status": "REFUSED"
  },
  "graphene_small@bands+PseudoZeemanTerm": {
   "fingerprint": "0b96e1d2ad48f31f",
@@ -1200,8 +1200,8 @@
   "status": "ok"
  },
  "tbg_small@bands+PIASOCterm": {
-  "fingerprint": "75a7389c24b19fc1",
-  "status": "ok"
+  "fingerprint": "1883516ab6314ffe",
+  "status": "REFUSED"
  },
  "tbg_small@bands+PseudoZeemanTerm": {
   "fingerprint": "ccc9a20dc32553c5",
