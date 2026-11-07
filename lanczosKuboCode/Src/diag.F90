@@ -2645,6 +2645,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+       gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
    if (alignRefSystem .eqv. .true.) then
@@ -3195,6 +3196,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+       gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
    if (alignRefSystem .eqv. .true.) then
@@ -3708,6 +3710,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+       gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
    if (alignRefSystem .eqv. .true.) then
@@ -4184,6 +4187,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+       gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
    if (alignRefSystem .eqv. .true.) then
@@ -4694,6 +4698,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+       gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
    if (alignRefSystem .eqv. .true.) then
@@ -11617,11 +11622,12 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
        ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
        do in=1,N
            do inn=1,N
-                  if (layerIndex(in).eq.1 .and. layerIndex(inn).eq.1) then
+                  ! Nishi: a sum over orbitals of |sum over sub-cells|^2, so only pairs of the same sublattice
+                  if (layerIndex(in).eq.1 .and. layerIndex(inn).eq.1 .and. Species(in).eq.Species(inn)) then
                       ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
                       PkcLoc(j,1) = PkcLoc(j,1) + exp(cmplx_i*dot_product(KG, &
                             (RtsVec(in,:)-RtsVec(inn,:)))) * conjg(Hts(in,j)) * Hts(inn,j)
-                  else if (layerIndex(in).eq.2 .and. layerIndex(inn).eq.2) then
+                  else if (layerIndex(in).eq.2 .and. layerIndex(inn).eq.2 .and. Species(in).eq.Species(inn)) then
                       ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
                       PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, &
                             (RtspVec(in,:)-RtspVec(inn,:)))) * conjg(Htsp(in,j)) * Htsp(inn,j)
