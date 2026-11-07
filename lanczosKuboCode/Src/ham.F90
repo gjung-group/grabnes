@@ -104,6 +104,9 @@ module ham
    real(dp), save, public :: lambdaIsing   ! Ising SOC parameter (λIsing) - spin-dependent
    real(dp), save, public :: lambdaR       ! Rashba SOC parameter (λR)
    real(dp), save, public :: lambdaPIA     ! Pseudo-inversion asymmetry parameter (λPIA)
+   ! SOC.PIA (since November 2026): Gmitra et al. PRB 93, 155104 (2016), 2i/3 lamPIA^X (s x d)_z on the
+   ! second-neighbour graphene bonds of sublattice X, in the spinful block Hamiltonian (socBond table)
+   real(dp), save, public :: lambdaPIAA = 0.0_dp, lambdaPIAB = 0.0_dp   ! [g0]
 
    ! Spinful bond terms of the block (2N x 2N) Hamiltonian, opt-in (2026-10-16).  All need SOC.RashbaConsistentPhase,
    ! which puts every spin-flip and spin-dependent bond term on the Bloch phase of the spin-diagonal hopping.
@@ -159,18 +162,31 @@ function HamRigidBondXY(i, jj, bond) result(d)
    real(dp), intent(in) :: bond(3)
 
    ! Other local variables
-   real(dp) :: d, det, du(2), f(2)
+   real(dp) :: d, du(2)
 
 
    du = (Rat(1:2,jj) - RshellRig(1:2,jj)) - (Rat(1:2,i) - RshellRig(1:2,i))
+   du = HamMinImageXY(du)
+   d = sqrt((bond(1)-du(1))**2 + (bond(2)-du(2))**2)
+
+end function HamRigidBondXY
+
+!> Minimum image of an in-plane displacement du(1:2) with respect to the in-plane cell vectors
+!! (fractional components reduced to [-1/2, 1/2]).
+function HamMinImageXY(du) result(dm)
+
+   use cell,   only : ucell
+
+   real(dp), intent(in) :: du(2)
+   real(dp) :: dm(2), det, f(2)
+
    det = ucell(1,1)*ucell(2,2) - ucell(1,2)*ucell(2,1)
    f(1) = ( ucell(2,2)*du(1) - ucell(1,2)*du(2))/det
    f(2) = (-ucell(2,1)*du(1) + ucell(1,1)*du(2))/det
    f = f - nint(f)
-   du = ucell(1:2,1)*f(1) + ucell(1:2,2)*f(2)
-   d = sqrt((bond(1)-du(1))**2 + (bond(2)-du(2))**2)
+   dm = ucell(1:2,1)*f(1) + ucell(1:2,2)*f(2)
 
-end function HamRigidBondXY
+end function HamMinImageXY
 
 !> Unstrained length of an intralayer bond, for the strain law t = t0 exp(-beta (d/d0 - 1)) (Structure.RealStrain).
 !!
@@ -331,9 +347,17 @@ subroutine HamInit()
 
    call MIO_InputParameter('SOC.PIA',PIASOCterm,.false.)
    if (PIASOCterm) then
+      ! [eV]; SOC.LambdaPIAA / SOC.LambdaPIAB per sublattice (default SOC.LambdaPIA for both).
+      ! Until November 2026 the term was a spin-independent on-site shift lambdaPIA (dense paths) plus a
+      ! non-Hermitian first-neighbour term lambdaPIA (d_y + i d_x) on the sparse path.
       call MIO_InputParameter('SOC.LambdaPIA',lambdaPIA,0.0_dp)
-      lambdaPIA = lambdaPIA / g0  ! Normalize by g0 for consistency with other SOC terms
-      call MIO_Print('Pseudo-inversion asymmetry enabled with λPIA = '//trim(num2str(lambdaPIA)),'ham')
+      call MIO_InputParameter('SOC.LambdaPIAA',lambdaPIAA,lambdaPIA)
+      call MIO_InputParameter('SOC.LambdaPIAB',lambdaPIAB,lambdaPIA)
+      call MIO_Print('Pseudo-inversion asymmetry SOC (Gmitra et al. 2016) with lambda_PIA A, B = '// &
+           trim(num2str(lambdaPIAA,6))//', '//trim(num2str(lambdaPIAB,6))//' eV','ham')
+      lambdaPIA = lambdaPIA / g0
+      lambdaPIAA = lambdaPIAA / g0
+      lambdaPIAB = lambdaPIAB / g0
    end if
 
    ! Spinful bond terms of the block Hamiltonian (see the declarations); every default leaves the run unchanged
@@ -352,18 +376,19 @@ subroutine HamInit()
       call MIO_InputParameter('SOC.LambdaInterlayer',lambdaIL,0.0_dp)
       lambdaIL = lambdaIL/g0
    end if
-   if ((KaneMeleSOCterm .or. InterlayerSOCterm .or. rashbaAngle /= 0.0_dp) .and. .not. RashbaConsistentPhase) then
-      call MIO_Kill('SOC.KaneMele, SOC.Interlayer and SOC.RashbaAngle are written in the spin convention and Bloch '// &
+   if ((KaneMeleSOCterm .or. InterlayerSOCterm .or. PIASOCterm .or. rashbaAngle /= 0.0_dp) .and. &
+       .not. RashbaConsistentPhase) then
+      call MIO_Kill('SOC.KaneMele, SOC.Interlayer, SOC.PIA and SOC.RashbaAngle are written in the spin convention and Bloch '// &
         'phase of SOC.RashbaConsistentPhase: set SOC.RashbaConsistentPhase .true.','ham','HamInit')
    end if
-   if (.not. (RashbaSOCterm .or. KaneMeleSOCterm .or. InterlayerSOCterm)) RashbaConsistentPhase = .false.
+   if (.not. (RashbaSOCterm .or. KaneMeleSOCterm .or. InterlayerSOCterm .or. PIASOCterm)) RashbaConsistentPhase = .false.
    if (RashbaSOCterm .and. .not. RashbaConsistentPhase) call MIO_Print('WARNING: SOC.RashbaConsistentPhase .false.: '// &
      'the former Rashba term, whose Bloch phase has the wrong sign of k.d (exact only at K and Gamma) - use it only to '// &
      'reproduce results made before 2026-10-16','ham')
    if (RashbaConsistentPhase) then
-      if (nspin /= 2) call MIO_Kill('The Rashba, Kane-Mele and interlayer SOC terms need a spinful run '// &
+      if (nspin /= 2) call MIO_Kill('The Rashba, Kane-Mele, PIA and interlayer SOC terms need a spinful run '// &
         '(SpinPolarized .true.)','ham','HamInit')
-      if ((KaneMeleSOCterm .or. InterlayerSOCterm) .and. .not. RashbaSOCterm) then
+      if ((KaneMeleSOCterm .or. InterlayerSOCterm .or. PIASOCterm) .and. .not. RashbaSOCterm) then
          ! the spinful bond terms live in the block (2N x 2N) Hamiltonian, which the Rashba switch selects
          RashbaSOCterm = .true.
          lambdaR = 0.0_dp
@@ -769,6 +794,9 @@ subroutine HamOnSite()
    call MIO_InputParameter('Stack.GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
    call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
    call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
+   ! Its interlayer routine adds no hopping (only a message) and its intralayer uses the graphene F2G2 values
+   if (BNBNtwoLayers) call MIO_Kill('Stack.BNBNtwoLayers is not implemented: it adds no interlayer hopping and '// &
+        'its intralayer hoppings are the graphene values, not those of hBN.','ham','HamOnSite')
    call MIO_InputParameter('Stack.T2GBN',t2GBN,.false.)
    call MIO_InputParameter('Stack.T2BG',t2BG,.false.)
    call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
@@ -5051,6 +5079,12 @@ subroutine HamHopping
    ! Other local variables
    logical :: saidHTCBNBN, saidHTCGBN
    integer :: clock, counter1, ii, ilvl, lllll, n1, n2, nImp, nLayers, nnnnn, nshellDiff, totImp, u
+   ! fixed (distance-independent) Kaxiras/Srivani interlayer set, for HamHopInterlayerKaxirasSrivani: lambda0 xi0
+   ! kappa0 lambda3 xi3 x3 lambda6 xi6 x6 kappa6 lambda6b xi6b x6b kappa6b (that function has local copies)
+   real(dp) :: kaxFixed(14)
+   ! input values of Interlayer.RenormalizeHoppingFactorAAp/BBp/ABp/BAp (the four names are private in the bond loop)
+   real(dp) :: rhfInput(4)
+   real(dp) :: mid2(2)
    real(dp) :: aBN1, aCC, aGSrivani, bubbleR, bubbleSigmaR2, bubbleTheta, c0AAV0, c0ABV0, c10_0, c10_1, &
          c10_2, c11_0, c11_1, c11_2, c12_0, c12_1, c12_2, c13_0, c13_1, c13_2, c14_0, c14_1, c14_2, c1_0, &
          c1_1, c1_2, c1AAV0, c1ABV0, c2_0, c2_1, c2_2, c2AAV0, c2ABV0, c3_0, c3_1, c3_2, c4_0, c4_1, c4_2, &
@@ -5076,8 +5110,8 @@ subroutine HamHopping
          p3b6AA, p3b6AB, p3b6BA, p3b6BB, p3c0AA, p3c0AB, p3c0BA, p3c0BB, p3c3AA, p3c3AB, p3c3BA, p3c3BB, &
          p3c6AA, p3c6AB, p3c6BA, p3c6BB, p3d0AA, p3d0AB, p3d0BA, p3d0BB, p3d3AA, p3d3AB, p3d3BA, p3d3BB, &
          p3d6AA, p3d6AB, p3d6BA, p3d6BB, p3h0AA, p3h0AB, p3h0BA, p3h0BB, p3j0AA, p3j0AB, p3k0AA, p3k0AB, &
-         phase, phi2M, qpi, qsigma, rand, rc, refDist, shift2_x, shift2_y, t1K, t2K, t2KN, t6KSL, t7KSL, &
-         t8KSL, tAB, twistAngleGrad2, twistedBilayerAngle, twistedBilayerAngleGrad, x0, x3_BC, x3_CB, x3_CN, &
+         phase, phi2M, qpi, qsigma, rand, rc, refDist, shift2_x, shift2_y, t1K, t2K, t2KN, &
+         tAB, twistAngleGrad2, twistedBilayerAngle, twistedBilayerAngleGrad, x0, x3_BC, x3_CB, x3_CN, &
          x3_NC, x3ABp, x3bABp, x3BAp, x3bBAp, xi0_CB, xi0_CN, xi0AAp, xi0ABp, xi0bAAp, xi0bABp, xi0BAp, &
          xi0bBAp, xi3_BC, xi3_CB, xi3_CN, xi3_NC, xi3ABp, xi3bABp, xi3BAp, xi3bBAp, xShift, yShift
    character(len=200) :: shellSpc
@@ -5193,9 +5227,6 @@ subroutine HamHopping
    renormalizehoppingfactorbbp = hamUnset
    t2k = hamUnset
    t2kn = hamUnset
-   t6ksl = hamUnset
-   t7ksl = hamUnset
-   t8ksl = hamUnset
    tr1 = hamUnset
    tr2 = hamUnset
    tr3 = hamUnset
@@ -5673,6 +5704,8 @@ subroutine HamHopping
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorBBp',renormalizeHoppingFactorBBp,1.0_dp)
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorABp',renormalizeHoppingFactorABp,1.0_dp)
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorBAp',renormalizeHoppingFactorBAp,1.0_dp)
+         rhfInput = [renormalizeHoppingFactorAAp, renormalizeHoppingFactorBBp, renormalizeHoppingFactorABp, &
+                     renormalizeHoppingFactorBAp]
          call MIO_InputParameter('Interlayer.NewFittingFunctions',newFittingFunctions,.false.)
          call MIO_InputParameter('Interlayer.RenormalizeCoupling',renormalizeCoupling,.false.)
          call MIO_InputParameter('Interlayer.CouplingFactor',couplingFactor,1.0_dp)
@@ -5857,10 +5890,12 @@ subroutine HamHopping
             vppsigma = hamUnset
             cabd = hamUnset
             fc = hamUnset
-            renormalizehoppingfactoraap = hamUnset
-            renormalizehoppingfactorbbp = hamUnset
-            renormalizehoppingfactorabp = hamUnset
-            renormalizehoppingfactorbap = hamUnset
+            ! the input values (private copies: until November 2026 they started as not-set markers, so the keys
+            ! never reached the models that use them as given, and TypeOfBL Mayou was refused)
+            renormalizehoppingfactoraap = rhfInput(1)
+            renormalizehoppingfactorbbp = rhfInput(2)
+            renormalizehoppingfactorabp = rhfInput(3)
+            renormalizehoppingfactorbap = rhfInput(4)
             lambda0 = hamUnset
             lambda3 = hamUnset
             lambda6 = hamUnset
@@ -6536,6 +6571,9 @@ subroutine HamHopRealisticBubbles()
       call MIO_InputParameter('Strain.BigBubble',bigBubble,.false.)
       call MIO_InputParameter('Strain.ManyBubbles',manyBubbles,.false.)
       call MIO_InputParameter('Strain.BubbleInPlaneStrain',bubbleInPlaneStrain,.false.)
+      if (.not. (bigBubble .or. manyBubbles)) call MIO_Kill('Strain.RealisticBubbles needs Strain.BigBubble or '// &
+           'Strain.ManyBubbles (where the bubbles are); without either the number of bubbles was never set.', &
+           'ham','HamHopping')
       if (bigBubble) then
          call MIO_Print('We add a single bubble','ham')
          if (.not. frac) call AtomsSetFrac()
@@ -6545,12 +6583,14 @@ subroutine HamHopRealisticBubbles()
          call MIO_Allocate(indxImp,totImp,'indxImp','gauss')
          call MIO_Allocate(bubbleCenterX,totImp,'bubbleCenterX','gauss')
          call MIO_Allocate(bubbleCenterY,totImp,'bubbleCenterY','gauss')
+         ! centre: the atom nearest to the middle of the cell (fractional (0.5, 0.5)). Until November 2026 only an
+         ! atom within 0.01 of it in both coordinates was taken, and without one the index stayed 0.
+         minDiffBubbleX = huge(1.0_dp)
+         indxImp(1) = inode1
          do i=inode1,inode2
-            diffBubbleX = abs(Rat(1,i) - 0.5d0)
-            diffBubbleY = abs(Rat(2,i) - 0.5d0)
-            if (diffBubbleX.lt.minDiffBubbleX .and. diffBubbleY.lt.minDiffBubbleY) then
+            diffBubbleX = (Rat(1,i) - 0.5d0)**2 + (Rat(2,i) - 0.5d0)**2
+            if (diffBubbleX < minDiffBubbleX) then
                 minDiffBubbleX = diffBubbleX
-                minDiffBubbleY = diffBubbleY
                 indxImp(1) = i
             end if
          end do
@@ -6617,7 +6657,8 @@ subroutine HamHopRealisticBubbles()
       bubbleSigmaR2 = bubbleSigmaR**2.0d0
       call MIO_InputParameter('Strain.BubbleC',bubbleC,1.42_dp)
 
-      call MIO_InputParameter('Strain.BubbleShift',bubbleShift,0.07_dp)
+      ! on-site shift inside a bubble [eV] (in units of g0 before; absent = the former 0.07 g0)
+      call HamInputEnergyEV('Strain.BubbleShift',bubbleShift,0.07_dp,since='2026-11-07')
       call MIO_InputParameter('Strain.BubbleRadius',bubbleRadius,100.0_dp)
       call MIO_Allocate(onsiteShift,nAt,'onsiteShift','ham')
 
@@ -6631,7 +6672,7 @@ subroutine HamHopRealisticBubbles()
          end if
       end if
       do ii=1,totImp
-        !$OMP PARALLEL DO PRIVATE(dx,dy,dist2,bubbleR,bubbleTheta,dlij)
+        !$OMP PARALLEL DO PRIVATE(dx,dy,dist2,bubbleR,bubbleTheta,dlij,diffx,diffy,mid2)
         do i=1,nAt
           ! >>> unset markers
           dx = hamUnset
@@ -6663,8 +6704,14 @@ subroutine HamHopRealisticBubbles()
              !!        fprimey(i) = -(Rat(3,NList(j,i)) - Rat(3,i))/(aG/sqrt(3.0_dp))
              !!    end if
              !!end if
-             bubbleR = sqrt((Rat(1,i)-bubbleCenterX(ii))**2.0d0 + (Rat(2,i)-bubbleCenterY(ii))**2.0d0)
-             bubbleTheta = atan2(Rat(2,i)-bubbleCenterY(ii),Rat(1,i)-bubbleCenterX(ii))
+             ! strain of the bond at its midpoint, the same for both directions of the bond (it was taken at atom i:
+             ! H(i,j) /= conjg(H(j,i)) until November 2026)
+             mid2 = HamMinImageXY([Rat(1,i) + NeighD(1,j,i)/2.0_dp - bubbleCenterX(ii), &
+                                   Rat(2,i) + NeighD(2,j,i)/2.0_dp - bubbleCenterY(ii)])
+             diffx = mid2(1)
+             diffy = mid2(2)
+             bubbleR = sqrt(diffx**2.0d0 + diffy**2.0d0)
+             bubbleTheta = atan2(diffy,diffx)
              if (bubbleInPlaneStrain) then
                 if (bubbleR.gt.bubbleRadius) then
                   epsxx(j,i) = bubbleC*2.0d0 * bubbleR *  sin(bubbleTheta) &
@@ -7279,6 +7326,7 @@ subroutine HamHopInterlayerParameters()
                     xi0 = epsilon0
                     xi3 = epsilon3
                     xi6 = epsilon6
+                    kaxFixed = [lambda0, xi0, kappa0, lambda3, xi3, x3, lambda6, xi6, x6, kappa6, lambda6b, xi6b, x6b, kappa6b]
                end if
             end if
          else if (MIO_StringComp(BilayerModel,'BLSrivani')) then
@@ -7461,6 +7509,13 @@ subroutine HamHopInterlayerParameters()
                     xi3 = epsilon3
                     xi6 = epsilon6
                     xi6b = epsilon6b
+                    kaxFixed = [lambda0, xi0, kappa0, lambda3, xi3, x3, lambda6, xi6, x6, kappa6, lambda6b, xi6b, x6b, kappa6b]
+               end if
+                ! sublattice-dependent terms (Interlayer.SublatticeDependent): the 2020 set. It has no pressure fit; until
+                ! November 2026 it was set only without Interlayer.AddPressureDependence, so the pressure path was refused.
+                if (sublatticeDependent .and. addPressureDependence) call MIO_Print('Interlayer.SublatticeDependent '// &
+                     'with AddPressureDependence: the sublattice-dependent terms use the fixed 2020 Srivani set '// &
+                     '(no pressure fit exists for them)','ham')
                        lambda0AAp     = 0.3777452105728493_dp/g0
                        xi0AAp         =  1.673723757628059_dp
                        kappa0AAp      = -1.9375254860531055_dp
@@ -7495,7 +7550,6 @@ subroutine HamHopInterlayerParameters()
                        lambda3bBAp     =  -0.13763943627632735_dp/g0
                        xi3bBAp         =  2.5155817180683107_dp
                        x3bBAp        =  0.6618620509164502_dp
-               end if
             end if
          end if
 
@@ -7535,16 +7589,16 @@ subroutine HamHopF2G2sParameters()
             t6KSLGfromGBNB = t6KSLGfromGBNB/g0
             t7KSLGfromGBN = t7KSLGfromGBN/g0
             t8KSLGfromGBN = t8KSLGfromGBN/g0
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBNfromGBNA,-0.081055_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBNfromGBNB,-0.24562_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLBNfromGBN,0.15399_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLBNfromGBN,-0.0_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBNfromGBNA,-0.065654_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBNfromGBNB,-0.04892_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLBNfromGBNA,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLBNfromGBNB,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK7A',t7KSLBNfromGBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK8A',t8KSLBNfromGBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt2B','Intralayer.SingleLayert2KSL',t2KSLBNfromGBNA,-0.081055_dp)
+            call HamInputHBN('Intralayer.hBNt2N','Intralayer.SingleLayert2KSL',t2KSLBNfromGBNB,-0.24562_dp)
+            call HamInputHBN('Intralayer.hBNt3','Intralayer.SingleLayert3K',t3KSLBNfromGBN,0.15399_dp)
+            call HamInputHBN('Intralayer.hBNt4','Intralayer.SingleLayert4K',t4KSLBNfromGBN,-0.0_dp)
+            call HamInputHBN('Intralayer.hBNt5B','Intralayer.SingleLayert5KSL',t5KSLBNfromGBNA,-0.065654_dp)
+            call HamInputHBN('Intralayer.hBNt5N','Intralayer.SingleLayert5KSL',t5KSLBNfromGBNB,-0.04892_dp)
+            call HamInputHBN('Intralayer.hBNt6','Intralayer.BilayertK6A',t6KSLBNfromGBNA,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt6','Intralayer.BilayertK6A',t6KSLBNfromGBNB,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt7','Intralayer.BilayertK7A',t7KSLBNfromGBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt8','Intralayer.BilayertK8A',t8KSLBNfromGBN,0.0_dp)
             t2KSLBNfromGBNA = t2KSLBNfromGBNA/g0
             t2KSLBNfromGBNB = t2KSLBNfromGBNB/g0
             t3KSLBNfromGBN = t3KSLBNfromGBN/g0
@@ -7555,7 +7609,10 @@ subroutine HamHopF2G2sParameters()
             t6KSLBNfromGBNB = t6KSLBNfromGBNB/g0
             t7KSLBNfromGBN = t7KSLBNfromGBN/g0
             t8KSLBNfromGBN = t8KSLBNfromGBN/g0
-         else if (F2G2Model) then
+         end if
+         ! The graphene layer of Stack.T2GBN that does not touch hBN (layer 3) uses the single-layer F2G2 set
+         ! with GBNtwoLayersF2G2s as well: until November 2026 it was never assigned in that mode.
+         if (GBNtwoLayersF2G2s .or. F2G2Model) then
             t1K = g0/g0
             if (useOldGrapheneF2G2) then
                 call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSL,-0.21264_dp)
@@ -7582,15 +7639,15 @@ subroutine HamHopF2G2sParameters()
             t7K = t7K/g0
             t8K = t8K/g0
             ! BNBN F2G2
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBN_B,-0.0542_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBN_N,-0.2228_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLBN,0.1329_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBN_B,-0.0566_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBN_N,-0.0429_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK7A',t7KBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK8A',t8KBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt2B','Intralayer.SingleLayert2KSL',t2KSLBN_B,-0.0542_dp)
+            call HamInputHBN('Intralayer.hBNt2N','Intralayer.SingleLayert2KSL',t2KSLBN_N,-0.2228_dp)
+            call HamInputHBN('Intralayer.hBNt3','Intralayer.SingleLayert3K',t3KSLBN,0.1329_dp)
+            call HamInputHBN('Intralayer.hBNt4','Intralayer.SingleLayert4K',t4KSLBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt5B','Intralayer.SingleLayert5KSL',t5KSLBN_B,-0.0566_dp)
+            call HamInputHBN('Intralayer.hBNt5N','Intralayer.SingleLayert5KSL',t5KSLBN_N,-0.0429_dp)
+            call HamInputHBN('Intralayer.hBNt6','Intralayer.BilayertK6A',t6KBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt7','Intralayer.BilayertK7A',t7KBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt8','Intralayer.BilayertK8A',t8KBN,0.0_dp)
             t2KSLBN_B = t2KSLBN_B/g0
             t2KSLBN_N = t2KSLBN_N/g0
             t3KSLBN = t3KSLBN/g0
@@ -8603,6 +8660,14 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                                             renormalizeHoppingFactorABp  = exp((abs(NeighD(3,j,i))-bval)/aval)
                                             renormalizeHoppingFactorBAp  = exp((abs(NeighD(3,j,i))-bval)/aval)
 
+                                        else
+                                            ! the fixed set (these names are local to this function: until November 2026
+                                            ! they kept their not-set markers here, so every run without pressure was refused)
+                                            lambda0 = kaxFixed(1); xi0 = kaxFixed(2); kappa0 = kaxFixed(3)
+                                            lambda3 = kaxFixed(4); xi3 = kaxFixed(5); x3 = kaxFixed(6)
+                                            lambda6 = kaxFixed(7); xi6 = kaxFixed(8); x6 = kaxFixed(9); kappa6 = kaxFixed(10)
+                                            lambda6b = kaxFixed(11); xi6b = kaxFixed(12); x6b = kaxFixed(13)
+                                            kappa6b = kaxFixed(14)
                                         end if
                                             V0 = lambda0 * exp(-xi0*rbar**2.0_dp) * cos(kappa0 * rbar)
                                             V3 = lambda3 * rbar**2.0_dp * exp(-xi3*(rbar-x3)**2.0_dp)
@@ -8634,7 +8699,10 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                                             V6ABp = 0.0_dp
                                             V6BAp = 0.0_dp
                                             !    call V6  =
-                                            if (oldParameterSet) then
+                                            ! Fang and Kaxiras, PRB 93, 235153 (2016): V6 = lambda6 exp(-xi6 (rbar-x6)^2) sin(kappa6 rbar).
+                                            ! BLKaxiras used the Srivani form (extra rbar and lambda6b term, never set for it) until
+                                            ! November 2026, so its pressure path was refused.
+                                            if (oldParameterSet .or. MIO_StringComp(BilayerModel,'BLKaxiras')) then
                                                 V6 = lambda6 * exp(-xi6*(rbar-x6)**2.0_dp) * sin(kappa6 * rbar)
                                             else if (deactivateV6) then
                                                 V6 = lambda6 * exp(-xi6*(rbar-x6)**2.0_dp) * sin(kappa6 * rbar)
@@ -10205,17 +10273,17 @@ subroutine HamHopIntralayerT2GBN(dist, j, i, countG1, countG2, countG3, countG4,
                                    else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                       countG6 = countG6+1
                                       if (Species(i).eq.1) then
-                                         hopp(j,i) = hopp(j,i) + t6KSL
+                                         hopp(j,i) = hopp(j,i) + t6K
                                       else
-                                         hopp(j,i) = hopp(j,i) + t6KSL
+                                         hopp(j,i) = hopp(j,i) + t6K
                                       end if
                                    else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                          .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                       countG7 = countG7+1
-                                      hopp(j,i) = hopp(j,i) + t7KSL
+                                      hopp(j,i) = hopp(j,i) + t7K
                                    else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                       countG8 = countG8+1
-                                      hopp(j,i) = hopp(j,i) + t8KSL
+                                      hopp(j,i) = hopp(j,i) + t8K
                                    else
                                         hopp(j,i) = hopp(j,i) + 0.0_dp
                                    end if
@@ -10335,17 +10403,17 @@ subroutine HamHopIntralayerBNt2GBN(dist, j, i, countG1, countG2, countG3, countG
                                else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                   countG6 = countG6+1
                                   if (Species(i).eq.1) then
-                                     hopp(j,i) = hopp(j,i) + t6KSL !GfromGBNA
+                                     hopp(j,i) = hopp(j,i) + t6K !GfromGBNA
                                   else
-                                     hopp(j,i) = hopp(j,i) + t6KSL !GfromGBNB
+                                     hopp(j,i) = hopp(j,i) + t6K !GfromGBNB
                                   end if
                                else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                      .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                   countG7 = countG7+1
-                                  hopp(j,i) = hopp(j,i) + t7KSL !GfromGBN
+                                  hopp(j,i) = hopp(j,i) + t7K !GfromGBN
                                else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                   countG8 = countG8+1
-                                  hopp(j,i) = hopp(j,i) + t8KSL !GfromGBN
+                                  hopp(j,i) = hopp(j,i) + t8K !GfromGBN
                                else
                                     hopp(j,i) = hopp(j,i) + 0.0_dp
                                end if
@@ -10376,17 +10444,17 @@ subroutine HamHopIntralayerBNt2GBN(dist, j, i, countG1, countG2, countG3, countG
                                else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                   countG6 = countG6+1
                                   if (Species(i).eq.1) then
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   else
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   end if
                                else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                      .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                   countG7 = countG7+1
-                                  hopp(j,i) = hopp(j,i) + t7KSL
+                                  hopp(j,i) = hopp(j,i) + t7K
                                else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                   countG8 = countG8+1
-                                  hopp(j,i) = hopp(j,i) + t8KSL
+                                  hopp(j,i) = hopp(j,i) + t8K
                                else
                                     hopp(j,i) = hopp(j,i) + 0.0_dp
                                end if
@@ -10506,17 +10574,17 @@ subroutine HamHopIntralayerT3GwithBN(dist, j, i, countG1, countG2, countG3, coun
                                else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                   countG6 = countG6+1
                                   if (Species(i).eq.1) then
-                                     hopp(j,i) = hopp(j,i) + t6KSL !GfromGBNA
+                                     hopp(j,i) = hopp(j,i) + t6K !GfromGBNA
                                   else
-                                     hopp(j,i) = hopp(j,i) + t6KSL !GfromGBNB
+                                     hopp(j,i) = hopp(j,i) + t6K !GfromGBNB
                                   end if
                                else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                      .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                   countG7 = countG7+1
-                                  hopp(j,i) = hopp(j,i) + t7KSL !GfromGBN
+                                  hopp(j,i) = hopp(j,i) + t7K !GfromGBN
                                else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                   countG8 = countG8+1
-                                  hopp(j,i) = hopp(j,i) + t8KSL !GfromGBN
+                                  hopp(j,i) = hopp(j,i) + t8K !GfromGBN
                                else
                                     hopp(j,i) = hopp(j,i) + 0.0_dp
                                end if
@@ -10547,17 +10615,17 @@ subroutine HamHopIntralayerT3GwithBN(dist, j, i, countG1, countG2, countG3, coun
                                else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                   countG6 = countG6+1
                                   if (Species(i).eq.1) then
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   else
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   end if
                                else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                      .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                   countG7 = countG7+1
-                                  hopp(j,i) = hopp(j,i) + t7KSL
+                                  hopp(j,i) = hopp(j,i) + t7K
                                else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                   countG8 = countG8+1
-                                  hopp(j,i) = hopp(j,i) + t8KSL
+                                  hopp(j,i) = hopp(j,i) + t8K
                                else
                                     hopp(j,i) = hopp(j,i) + 0.0_dp
                                end if
@@ -10588,17 +10656,17 @@ subroutine HamHopIntralayerT3GwithBN(dist, j, i, countG1, countG2, countG3, coun
                                else if (dist .gt. 2.0_dp*aG*0.97_dp .and. dist .lt. 2.0_dp*aG*1.03_dp) then
                                   countG6 = countG6+1
                                   if (Species(i).eq.1) then
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   else
-                                     hopp(j,i) = hopp(j,i) + t6KSL
+                                     hopp(j,i) = hopp(j,i) + t6K
                                   end if
                                else if (dist .gt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *0.9_dp &
                                      .and. dist .lt. dsqrt((2.0_dp*aG)**2.0_dp + (aCC**2.0_dp)) *1.1_dp) then
                                   countG7 = countG7+1
-                                  hopp(j,i) = hopp(j,i) + t7KSL
+                                  hopp(j,i) = hopp(j,i) + t7K
                                else if (dist .gt. 4.0_dp*aCC*0.97_dp .and. dist .lt. 4.0_dp*aCC*1.03_dp) then
                                   countG8 = countG8+1
-                                  hopp(j,i) = hopp(j,i) + t8KSL
+                                  hopp(j,i) = hopp(j,i) + t8K
                                else
                                     hopp(j,i) = hopp(j,i) + 0.0_dp
                                end if
@@ -11263,6 +11331,7 @@ subroutine HamHopBondTermsGBN(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
    real(dp) :: dx_b, dx_t, dxTemp_b, dxTemp_t, dy_b, dy_t, dyTemp_b, dyTemp_t, imagH_b, imagH_t, realH_b, &
          realH_t
    complex*16 :: Habjj_b, Habjj_t
+   integer :: nEnc, lay
 
 
    dx_b = hamUnset
@@ -11280,6 +11349,16 @@ subroutine HamHopBondTermsGBN(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
    realH_t = hamUnset
    imagH_t = hamUnset
 
+                ! Encapsulated stacks (HamHopIntralayerEncapsulated): hBN in layers 1 and nEnc, graphene in 2..nEnc-1.
+                ! The moire term acts on the hBN layers and on the graphene layers next to them (2 and nEnc-1;
+                ! with three layers, layer 2 has both interfaces). Middle graphene layers get none.
+                nEnc = 0
+                if (encapsulatedThreeLayers) nEnc = 3
+                if (encapsulatedFourLayers) nEnc = 4
+                if (encapsulatedFiveLayers) nEnc = 5
+                if (encapsulatedSixLayers) nEnc = 6
+                if (encapsulatedSevenLayers) nEnc = 7
+                lay = layerIndex(i)
                 ! Amplitude of the graphene-layer term: MoirePotCabG (the tBGOffDiag block sets it otherwise)
                 if (.not. tBGOffDiag) CabG = CabG_global/g0
                 if (GBNuseDisplacementFile) then
@@ -11316,19 +11395,11 @@ subroutine HamHopBondTermsGBN(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
                          dxTemp = -dx/aBN
                          dyTemp = -dy/aBN
                       end if
-                   else if (encapsulatedFourLayers) then
-                      if (layerIndex(i).eq.2 .or. layerIndex(i).eq.3) then
+                   else if (nEnc >= 4) then
+                      if (lay == 2 .or. lay == nEnc-1) then
                          dxTemp = dx/aG
                          dyTemp = dy/aG
-                      else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.4) then
-                         dxTemp = -dx/aBN
-                         dyTemp = -dy/aBN
-                      end if
-                   else if (encapsulatedFiveLayers) then
-                      if (layerIndex(i).eq.2 .or. layerIndex(i).eq.4) then
-                         dxTemp = dx/aG
-                         dyTemp = dy/aG
-                      else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.5) then
+                      else if (lay == 1 .or. lay == nEnc) then
                          dxTemp = -dx/aBN
                          dyTemp = -dy/aBN
                       end if
@@ -11371,26 +11442,21 @@ subroutine HamHopBondTermsGBN(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
                          dyTemp = -dy/aBN
                       end if
                    else if (encapsulatedThreeLayers) then
-                      if (layerIndex(i).eq.2 .or. layerIndex(i).eq.3) then
-                         dxTemp = dx/aG
-                         dyTemp = dy/aG
-                      else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.4) then
+                      ! both hBN layers carry the same analytic moire (one GBNAngle, one eps)
+                      if (lay == 2) then
+                         dxTemp_b = dx/aG
+                         dyTemp_b = dy/aG
+                         dxTemp_t = dx/aG
+                         dyTemp_t = dy/aG
+                      else if (lay == 1 .or. lay == 3) then
                          dxTemp = -dx/aBN
                          dyTemp = -dy/aBN
                       end if
-                   else if (encapsulatedFourLayers) then
-                      if (layerIndex(i).eq.2 .or. layerIndex(i).eq.3) then
+                   else if (nEnc >= 4) then
+                      if (lay == 2 .or. lay == nEnc-1) then
                          dxTemp = dx/aG
                          dyTemp = dy/aG
-                      else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.4) then
-                         dxTemp = -dx/aBN
-                         dyTemp = -dy/aBN
-                      end if
-                   else if (encapsulatedFiveLayers) then
-                      if (layerIndex(i).eq.2 .or. layerIndex(i).eq.3) then
-                         dxTemp = dx/aG
-                         dyTemp = dy/aG
-                      else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.4) then
+                      else if (lay == 1 .or. lay == nEnc) then
                          dxTemp = -dx/aBN
                          dyTemp = -dy/aBN
                       end if
@@ -11433,17 +11499,13 @@ subroutine HamHopBondTermsGBN(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
                    else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.3) then
                       call offdiagoGBN(Habjj,dxTemp,dyTemp,CabBN,PhiabBN)
                    end if
-                else if (encapsulatedFourLayers) then
-                   if (layerIndex(i).eq.2 .or. layerIndex(i).eq.3) then ! graphene
+                else if (nEnc >= 4) then
+                   if (lay == 2 .or. lay == nEnc-1) then ! graphene next to hBN
                       call offdiagoGBN(Habjj,dxTemp,dyTemp,CabG,PhiabG)
-                   else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.4) then
+                   else if (lay == 1 .or. lay == nEnc) then
                       call offdiagoGBN(Habjj,dxTemp,dyTemp,CabBN,PhiabBN)
-                   end if
-                else if (encapsulatedFiveLayers) then
-                   if (layerIndex(i).eq.2 .or. layerIndex(i).eq.4) then ! graphene
-                      call offdiagoGBN(Habjj,dxTemp,dyTemp,CabG,PhiabG)
-                   else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.5) then
-                      call offdiagoGBN(Habjj,dxTemp,dyTemp,CabBN,PhiabBN)
+                   else ! middle graphene layer: no hBN interface
+                      Habjj = (0.0_dp, 0.0_dp)
                    end if
                 else if (t3GwithBN) then
                    if (layerIndex(i).eq.4 .or. layerIndex(i).eq.3 .or. layerIndex(i).eq.2) then ! graphene
@@ -12022,8 +12084,8 @@ subroutine HamSOCBondTables()
    use constants,            only : cmplx_i
    use parallel,             only : nDiv
 
-   integer :: i, j, in, k, L, L2, nL, nu, nKM, nIL, nILskip, nR
-   real(dp) :: aCC0, d(3), dxy, dh(2), bi(2), bj(2), c3, cpar, sz, tKM
+   integer :: i, j, in, k, L, L2, nL, nu, nKM, nIL, nILskip, nR, nPIA
+   real(dp) :: aCC0, d(3), dxy, dh(2), bi(2), bj(2), c3, cpar, sz, tKM, tPIA
    real(dp), allocatable :: phi(:), coh(:)
    integer, allocatable :: nBond(:)
    logical, allocatable :: alignedPair(:)
@@ -12072,7 +12134,7 @@ subroutine HamSOCBondTables()
 
    eR = exp(-cmplx_i*rashbaAngle)
    tKM = lambdaKM/(3.0_dp*sqrt(3.0_dp))
-   nKM = 0 ; nIL = 0 ; nILskip = 0 ; nR = 0
+   nKM = 0 ; nIL = 0 ; nILskip = 0 ; nR = 0 ; nPIA = 0
    do i = 1, nAt
       L = layerIndex(i)
       do j = 1, Nneigh(i)
@@ -12102,6 +12164,17 @@ subroutine HamSOCBondTables()
             socBondOn(j,i) = .true.
             nKM = nKM + 1
          end if
+         ! PIA (Gmitra et al. 2016): 2i/3 lamPIA^X (s x d)_z on second-neighbour graphene bonds of sublattice X, in
+         ! the form of the Rashba term above (the same spin matrix, d = unit vector from i to its neighbour)
+         if (PIASOCterm .and. L2 == L .and. Species(i) <= 2 .and. abs(dxy - aG) < 0.1_dp) then
+            if (SOCEnabledForLayer(L)) then
+               tPIA = 2.0_dp/3.0_dp*merge(lambdaPIAA, lambdaPIAB, Species(i) == 1)
+               socBond(1,2,j,i) = socBond(1,2,j,i) - tPIA*cmplx(dh(1),-dh(2),dp)
+               socBond(2,1,j,i) = socBond(2,1,j,i) + tPIA*cmplx(dh(1),dh(2),dp)
+               socBondOn(j,i) = .true.
+               nPIA = nPIA + 1
+            end if
+         end if
          ! interlayer spin flip lambda_4, same sublattice of adjacent untwisted graphene layers, in-plane ~ aCC
          if (InterlayerSOCterm .and. abs(L2 - L) == 1 .and. Species(i) <= 2 .and. Species(in) <= 2) then
             if (.not. alignedPair(min(L,L2))) cycle
@@ -12125,7 +12198,7 @@ subroutine HamSOCBondTables()
       end do
    end do
    call MIO_Print('SOC bond table: '//trim(num2str(nR))//' Rashba, '//trim(num2str(nKM))//' Kane-Mele, '// &
-     trim(num2str(nIL))//' interlayer bonds','ham')
+     trim(num2str(nIL))//' interlayer, '//trim(num2str(nPIA))//' PIA bonds','ham')
    if (nILskip > 0) call MIO_Print('SOC.Interlayer: WARNING '//trim(num2str(nILskip))//' same-sublattice bonds '// &
      'at in-plane ~aCC are neither parallel nor antiparallel to a bond of their atom and were left out','ham')
    if (InterlayerSOCterm .and. nIL == 0) call MIO_Print('SOC.Interlayer: WARNING no bond found - the term is '// &
@@ -12178,6 +12251,25 @@ end function HamHaldaneChirality
 !> Reads an energy that the input file gives in eV and returns it in units of g0. If the input file does not set
 !> the key, value = defaultG0, the former default (already in units of g0), so such runs are unchanged.
 !> These keys were taken in units of g0 before 2026-10-14 (or before the optional date since); when the input sets
+!> Intralayer hopping of hBN in the F2G2 sets: read from its own key newKey [eV] when present. Until November
+!! 2026 the graphene key oldKey set the graphene AND the hBN value at once; without newKey that is kept, with
+!! a note when oldKey is given.
+subroutine HamInputHBN(newKey,oldKey,value,default)
+
+   character(len=*), intent(in) :: newKey, oldKey
+   real(dp), intent(out) :: value
+   real(dp), intent(in) :: default
+
+   if (MIO_InputSearchLabel(newKey)) then
+      call MIO_InputParameter(newKey,value,default)
+   else
+      call MIO_InputParameter(oldKey,value,default)
+      if (MIO_InputSearchLabel(oldKey)) call MIO_Print('Note: '//oldKey//' also sets the hBN hopping '// &
+           '(set '//newKey//' to give hBN its own value)','ham')
+   end if
+
+end subroutine HamInputHBN
+
 !> one, a warning says so.
 subroutine HamInputEnergyEV(key,value,defaultG0,since)
 
