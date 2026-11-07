@@ -1314,35 +1314,37 @@ subroutine DiagBands()
                   ! For forceBlockTAPW (no SOC), we have 2M_tapw eigenvalues in degenerate pairs (λ₁,λ₁), (λ₂,λ₂), ...
                   ! Store eigenvalues for both spins (they're spin-mixed, but we need to populate E array)
                   ! ELoc contains min(2*M_tapw, nAt) eigenvalues, so we need to be careful with bounds
+                  ! E has a spin-2 slot only with nspin = 2: forceBlockTAPW on a spinless run wrote past it
+                  ! (out of bounds; the Intel build crashed at the end of DiagBands)
                   if (M_tapw > 0) then
                      if (forceBlockTAPW .and. .not. RashbaSOCterm) then
                         ! No SOC: DiagH0TAPW_withBlockH has already kept one level of each degenerate pair
                         ! (ELoc(1:M), M_tapw = M); taking every second one again dropped half the bands
                         do i_eig = 1, min(M_tapw, size(E,1))
                            E(i_eig, 1, ip) = ELoc(i_eig)
-                           E(i_eig, 2, ip) = ELoc(i_eig)  ! Same for both spins (degenerate)
+                           if (size(E,2) >= 2) E(i_eig, 2, ip) = ELoc(i_eig)  ! Same for both spins (degenerate)
                         end do
                         ! Zero out remaining entries if M_tapw < size(E,1)
                         if (M_tapw < size(E,1)) then
                            E(M_tapw+1:size(E,1), 1, ip) = 0.0_dp
-                           E(M_tapw+1:size(E,1), 2, ip) = 0.0_dp
+                           if (size(E,2) >= 2) E(M_tapw+1:size(E,1), 2, ip) = 0.0_dp
                         end if
                      else
                         ! For Rashba SOC: use all 2M_tapw eigenvalues (spin-mixed)
                         ! Use min(2*M_tapw, nAt) since ELoc now contains 2M_tapw eigenvalues from block projection
                         E(1:min(2*M_tapw, nAt), 1, ip) = ELoc(1:min(2*M_tapw, nAt))
                         ! For Rashba, spin 2 uses the same eigenvalues (they're spin-mixed)
-                        E(1:min(2*M_tapw, nAt), 2, ip) = ELoc(1:min(2*M_tapw, nAt))
+                        if (size(E,2) >= 2) E(1:min(2*M_tapw, nAt), 2, ip) = ELoc(1:min(2*M_tapw, nAt))
                         ! If 2*M_tapw > nAt, zero out the remaining entries
                         if (2*M_tapw > nAt) then
                            E(nAt+1:min(2*M_tapw, size(E,1)), 1, ip) = 0.0_dp
-                           E(nAt+1:min(2*M_tapw, size(E,1)), 2, ip) = 0.0_dp
+                           if (size(E,2) >= 2) E(nAt+1:min(2*M_tapw, size(E,1)), 2, ip) = 0.0_dp
                         end if
                      end if
                   else
                      ! Fallback if M_tapw not set
                      E(1:nAt, 1, ip) = ELoc(1:nAt)
-                     E(1:nAt, 2, ip) = ELoc(1:nAt)
+                     if (size(E,2) >= 2) E(1:nAt, 2, ip) = ELoc(1:nAt)
                   end if
                   ! Skip the regular eigenvalue copying section
                   cycle
