@@ -11554,9 +11554,12 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    real(dp) :: DWorkLoc2(3*N-2)
 
    ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
-   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   ! so H is evaluated at -k: H(k) in the convention of generate.bands. In the basis sum_L exp(ik.(L+R(a)))|a,L>
+   ! the overlap with the primitive Bloch state at the unfolded k_p is sum_a c_a exp(-i(k_p-k).R(a)), so the
+   ! weight below uses KG = k_p - k (a supercell reciprocal vector). Until November 2026 it used -k_p: weight
+   ! at the wrong momentum, extra peaks.
    KptsLoc = -KptsLocIn
-   KG = -KGIn
+   KG = KGIn - KptsLocIn
    cellts = gcell1
    celltsp = gcell2
 
@@ -11573,30 +11576,16 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    do i=1,N
        ll = (Rat(1,i)*G10(2)/G10(1) - Rat(2,i)) / (G01(1)*G10(2)/G10(1) - G01(2))
        kk = (Rat(1,i) - ll * G01(1)) / G10(1)
-       if (kk.gt.0) then
-           kk = floor(kk)
-       else
-           kk = ceiling(kk)
-       end if
-       if (ll.gt.0) then
-           ll = floor(ll)
-       else
-           ll = ceiling(ll)
-       end if
+       ! floor, not truncation towards zero: every atom of one orbital must keep the same offset r - R
+       kk = floor(kk + 1.0e-6_dp)
+       ll = floor(ll + 1.0e-6_dp)
        RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
 
        ll = (Rat(1,i)*G10p(2)/G10p(1) - Rat(2,i)) / (G01p(1)*G10p(2)/G10p(1) - G01p(2))
        kk = (Rat(1,i) - ll * G01p(1)) / G10p(1)
-       if (kk.gt.0) then
-           kk = floor(kk)
-       else
-           kk = ceiling(kk)
-       end if
-       if (ll.gt.0) then
-           ll = floor(ll)
-       else
-           ll = ceiling(ll)
-       end if
+       ! floor, not truncation towards zero: every atom of one orbital must keep the same offset r - R
+       kk = floor(kk + 1.0e-6_dp)
+       ll = floor(ll + 1.0e-6_dp)
        RtspVec(i,:) = matmul(celltsp,[int(kk),int(ll),0]) ! Moire
    end do
    do i=1,N
