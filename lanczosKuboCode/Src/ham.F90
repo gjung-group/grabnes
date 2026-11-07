@@ -7432,6 +7432,12 @@ subroutine HamHopInterlayerParameters()
                     xi3 = epsilon3
                     xi6 = epsilon6
                     xi6b = epsilon6b
+               end if
+                ! sublattice-dependent terms (Interlayer.SublatticeDependent): the 2020 set. It has no pressure fit; until
+                ! November 2026 it was set only without Interlayer.AddPressureDependence, so the pressure path was refused.
+                if (sublatticeDependent .and. addPressureDependence) call MIO_Print('Interlayer.SublatticeDependent '// &
+                     'with AddPressureDependence: the sublattice-dependent terms use the fixed 2020 Srivani set '// &
+                     '(no pressure fit exists for them)','ham')
                        lambda0AAp     = 0.3777452105728493_dp/g0
                        xi0AAp         =  1.673723757628059_dp
                        kappa0AAp      = -1.9375254860531055_dp
@@ -7466,7 +7472,6 @@ subroutine HamHopInterlayerParameters()
                        lambda3bBAp     =  -0.13763943627632735_dp/g0
                        xi3bBAp         =  2.5155817180683107_dp
                        x3bBAp        =  0.6618620509164502_dp
-               end if
             end if
          end if
 
