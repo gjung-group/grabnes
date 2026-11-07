@@ -12189,9 +12189,10 @@ end function HamHaldaneChirality
 !! For atom i and an adjacent layer, its partner is the atom of that layer with the same sublattice role (graphene
 !! A-B / hBN B-N: C1-B, C2-N; same material: the same Species), nearest in plane in the RIGID structure
 !! (Structure.ReadRigidXYZ, Structure.RigidPositions = generateInit.xyz). The displacement is the in-plane bond
-!! vector to that partner in the actual (relaxed) structure, oriented as r(hBN side) - r(graphene side) for a
-!! graphene/hBN interface and r(upper layer) - r(lower layer) for two layers of the same material: zero at AA
-!! stacking, the convention of the analytic d(r) = ((1+eps)R - 1) r of the moire terms. It depends neither on the
+!! vector to that partner in the actual (relaxed) structure, oriented as r(graphene side) - r(hBN side) for a
+!! graphene/hBN interface and r(lower layer) - r(upper layer) for two layers of the same material: zero at AA
+!! stacking, the convention of the analytic d(r) = ((1+eps)R - 1) r of the moire terms (eps < 0 for G/hBN;
+!! measured on the rigid 14.5 nm G/hBN cell: d = -r/58 exactly, up to hBN lattice vectors). It depends neither on the
 !! orientation of the cell nor on its origin, so the frame rotations Stack.GlobalTwist* must stay 0. Stored in
 !! displacements (displacements_b / _t: the two interfaces of the graphene layer of EncapsulatedThreeLayers).
 subroutine HamDisplacementsFromPositions()
@@ -12280,11 +12281,11 @@ subroutine HamDisplacementsFromPositions()
          end if
          j = best(k)
          jj = NList(j,i)
-         ! orientation: hBN side minus graphene side; same material: upper minus lower layer
+         ! orientation: graphene side minus hBN side; same material: lower minus upper layer (NeighD = partner - i)
          if ((Species(i) <= 2) .neqv. (Species(jj) <= 2)) then
-            sgn = merge(1.0_dp, -1.0_dp, Species(i) <= 2)
+            sgn = merge(-1.0_dp, 1.0_dp, Species(i) <= 2)
          else
-            sgn = merge(1.0_dp, -1.0_dp, layerIndex(jj) > L)
+            sgn = merge(-1.0_dp, 1.0_dp, layerIndex(jj) > L)
          end if
          ddisp = sgn*NeighD(1:2,j,i)
          if (enc3 .and. Species(i) <= 2) then
