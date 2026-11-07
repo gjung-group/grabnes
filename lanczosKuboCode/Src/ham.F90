@@ -12203,7 +12203,7 @@ subroutine HamDisplacementsFromPositions()
    use cell,                 only : ucell
 
    logical :: l, gbnFile, tbgFile, enc3
-   integer :: i, j, jj, L, Lp, k, nMiss, nAmb, best(2), want
+   integer :: i, j, jj, Lme, Lp, k, nMiss, nAmb, best(2), want
    real(dp) :: ga(6), det, du(2), f(2), d2, dbest(2), sgn, ddisp(2)
    integer :: cand(2)
    logical, allocatable :: present(:)
@@ -12234,12 +12234,12 @@ subroutine HamDisplacementsFromPositions()
    nMiss = 0
    nAmb = 0
    do i = 1, nAt
-      L = layerIndex(i)
+      Lme = layerIndex(i)
       ! partner layers: the adjacent layers; with two of them, the one of the other material (graphene/hBN), and
       ! both for the graphene layer of EncapsulatedThreeLayers
       cand = 0
       k = 0
-      do Lp = L-1, L+1, 2
+      do Lp = Lme-1, Lme+1, 2
          if (present(max(Lp,0))) then
             k = k + 1
             cand(k) = Lp
@@ -12285,12 +12285,12 @@ subroutine HamDisplacementsFromPositions()
          if ((Species(i) <= 2) .neqv. (Species(jj) <= 2)) then
             sgn = merge(-1.0_dp, 1.0_dp, Species(i) <= 2)
          else
-            sgn = merge(-1.0_dp, 1.0_dp, layerIndex(jj) > L)
+            sgn = merge(-1.0_dp, 1.0_dp, layerIndex(jj) > Lme)
          end if
          ddisp = sgn*NeighD(1:2,j,i)
          if (enc3 .and. Species(i) <= 2) then
-            if (cand(k) < L) displacements_b(1:2,i) = ddisp
-            if (cand(k) > L) displacements_t(1:2,i) = ddisp
+            if (cand(k) < Lme) displacements_b(1:2,i) = ddisp
+            if (cand(k) > Lme) displacements_t(1:2,i) = ddisp
          else if (cand(1) /= 0 .and. cand(2) /= 0) then
             ! two adjacent layers: keep the interface with the other material; ambiguous if both are the same
             if ((Species(i) <= 2) .neqv. (Species(jj) <= 2)) then
