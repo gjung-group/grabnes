@@ -1248,8 +1248,8 @@
   "status": "ok"
  },
  "xyz2+AtomsOrderDeactivated": {
-  "fingerprint": "e3e21724c3c5fd8a",
-  "status": "ok"
+  "fingerprint": "f2f4f8910ccb5ee8",
+  "status": "REFUSED"
  },
  "xyz2+BernalReadXYZ": {
   "fingerprint": "6fe002cfdadc57de",

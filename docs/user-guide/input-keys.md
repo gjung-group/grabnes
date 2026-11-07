@@ -524,7 +524,7 @@ name (if both are given, the present name is used and the solver prints a warnin
 | `Random.TestNumber` | `RandomTestNumber` | integer | `100` | random_old.F90: RandInit |
 | `Run.Description` | `Description` | string | `''` | grabnes_start.F90: GrabnesStart |
 | `Run.Prefix` | `Prefix` | string | `'grabnes'` | grabnes_start.F90: GrabnesStart |
-| `Run.TypeOfSystem` | `TypeOfSystem` | string | `'Graphene'` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamHopping; ... (13 places) |
+| `Run.TypeOfSystem` | `TypeOfSystem` | string | `'Graphene'` | atoms.F90: AtomsOrder; atoms.F90: AtomsPos; cell.F90: CellGet; ... (14 places) |
 | `SOC.Interlayer` |  | logical | `.false.` | ham.F90: HamInit |
 | `SOC.Intrinsic` | `IntrinsicSOCterm` | logical | `.false.` | ham.F90: HamInit |
 | `SOC.Ising` | `IsingSOCterm` | logical | `.false.` | ham.F90: HamInit |

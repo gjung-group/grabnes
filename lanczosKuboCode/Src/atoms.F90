@@ -1656,6 +1656,12 @@ subroutine AtomsOrder()
 #endif /* DEBUG */
    call MIO_InputParameter('Structure.AtomsOrderDeactivated',AtomsOrderDeactivated,.true.)
    if (.NOT. AtomsOrderDeactivated)then
+      ! the per-atom files of ReadXYZ (layer index, sublattices, displacements, rigid positions, Hamiltonian dumps)
+      ! are in file order, and some are read after this point
+      call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+      if (MIO_StringComp(str,'ReadXYZ')) call MIO_Kill('Structure.AtomsOrderDeactivated .false. reorders the '// &
+        'atoms, but the per-atom files of TypeOfSystem ReadXYZ are in the order of the structure file: keep the '// &
+        'default (.true.).','atoms','AtomsOrder')
       call AtomsSort(secAt,procAt,Rat,Species)
    end if
 #ifdef DEBUG
