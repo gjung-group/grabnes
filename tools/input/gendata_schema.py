@@ -177,13 +177,13 @@ def _git_describe() -> str | None:
 def generate(src: str | None = None) -> Schema:
     """The schema of the source tree `src` (default: lanczosKuboCode/Src of this checkout)."""
     src = src or os.path.join(ROOT, 'lanczosKuboCode', 'Src')
-    rows: dict[tuple[str, str], list[Any]]
+    rows: dict[tuple[str, str, bool], list[Any]]
     rawblocks: dict[str, list[Any]]
     rows, rawblocks = collect()
     former: dict[str, list[str]] = former_names()
 
     keys: dict[str, dict[str, Any]] = {}
-    for (_k, _default), (key, dflt, _kind, where) in rows.items():
+    for _rowkey, (key, dflt, _kind, where, *_ev) in rows.items():
         n = normalize(key)
         typ = _kind_of_default(dflt)
         entry = keys.setdefault(
