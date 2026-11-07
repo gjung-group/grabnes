@@ -205,6 +205,10 @@ subroutine CalcKubo()
         call MIO_InputParameter('Kubo.PDOSByNumber',PDOSByNumber,.false.)
         call MIO_InputParameter('Kubo.PDOSIgnoreLayer1and4',PDOSIgnoreLayer1and4,.false.)
         call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
+        if ((PDOSLayer .or. PDOSLayerAndSpecies) .and. numberOfLayers < maxval(layerIndex(1:nAt))) &
+          call MIO_Print('WARNING: Kubo.NumberOfLayers is '//trim(num2str(numberOfLayers))//' but the structure has '// &
+            trim(num2str(maxval(layerIndex(1:nAt))))//' layers: the layer DOS of layers above '// &
+            trim(num2str(numberOfLayers))//' is not written.','calc')
         call MIO_InputParameter('Kubo.NumberOfBNAtoms1',numberOfBNAtoms1,5832)
         call MIO_InputParameter('Kubo.NumberOfBNAtoms2',numberOfBNAtoms2,5832)
         call MIO_InputParameter('Kubo.NumberOfCAtoms',numberOfCAtoms,6050)
