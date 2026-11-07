@@ -772,8 +772,8 @@
   "status": "ok"
  },
  "tbg+BLKaxiras+useBNGKaxiras": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "92667d8f322c972d",
+  "status": "ok"
  },
  "tbg+BLKaxiras+useBNGSrivani": {
   "fingerprint": "2980973abce42fa7",
@@ -852,7 +852,7 @@
   "status": "ok"
  },
  "tbg+BLSrivani+useBNGKaxiras": {
-  "fingerprint": "e324dddda8bf8c12",
+  "fingerprint": "d70cb7a923458438",
   "status": "REFUSED"
  },
  "tbg+BLSrivani+useBNGSrivani": {
@@ -1156,7 +1156,7 @@
   "status": "REFUSED"
  },
  "tbg+useBNGKaxiras": {
-  "fingerprint": "e324dddda8bf8c12",
+  "fingerprint": "d70cb7a923458438",
   "status": "REFUSED"
  },
  "tbg+useLayerSpecificOnsiteEnergyTerms": {
@@ -1348,8 +1348,8 @@
   "status": "ok"
  },
  "xyz2_gbn+useBNGKaxiras": {
-  "fingerprint": "0b7e6578c4ca8399",
-  "status": "INERT"
+  "fingerprint": "d70cb7a923458438",
+  "status": "REFUSED"
  },
  "xyz2_gbn+useBNGSrivani": {
   "fingerprint": "0b7e6578c4ca8399",
