@@ -15,7 +15,7 @@ module gauss
 
 contains
 
-subroutine GaussPot(H)
+subroutine GaussPot(H,strength)
    use random,               only : RandSeedFromInput
 
    use atoms,                only : inode1, inode2, in1, in2, nAt, Rat
@@ -24,6 +24,7 @@ subroutine GaussPot(H)
    use parallel,             only : nDiv, procID
 
    real(dp), intent(inout) :: H(inode1:)
+   real(dp), intent(in) :: strength  ! [g0], Disorder.GaussPotStrength read by the caller
 
    real(dp) :: per, sigma, w, rand
    real(dp) :: dist2ref, dx, dy, dist2
@@ -45,7 +46,7 @@ subroutine GaussPot(H)
    if (frac) call AtomsSetCart()
    call MIO_InputParameter('Disorder.GaussPotPercentage',per,1.0_dp)
    call MIO_InputParameter('Disorder.GaussPotRange',sigma,1.0_dp)
-   call MIO_InputParameter('Disorder.GaussPotStrength',w,1.0_dp)
+   w = strength
    call MIO_Print('')
    call MIO_Print('Gaussian potential','ham')
    call MIO_Print('  percentage: '//trim(num2str(per,3))//'%')
