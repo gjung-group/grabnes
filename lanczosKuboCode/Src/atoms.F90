@@ -81,7 +81,7 @@ subroutine AtomsPos()
          distanceDependentEffectiveModel, eightLayersSandwiched, encapsulatedFourLayers, &
          encapsulatedThreeLayers, fiveLayersSandwiched, fourLayers, fourLayersSandwiched, GBNtwoLayers, &
          GBNuseDisplacementFile, helicalTwistedMBM, invertDisplacements, l, ll, oneLayer, &
-         readInterlayerDistances, readLayerIndex, readRigidXYZ, sevenLayersSandwiched, sixLayersSandwiched, &
+         readInterlayerDistances, readLayerIndex, readRigidXYZ, dispFromPos, sevenLayersSandwiched, sixLayersSandwiched, &
          t2BG, t2GBN, t3BG, tBGuseDisplacementFile, tenLayersSandwiched, threeLayers, twentyLayersSandwiched, &
          twoLayers, useSublatticeFile
    character(len=80) :: str, str2, str3, str4, str5
@@ -614,7 +614,9 @@ subroutine AtomsPos()
       end if
       call MIO_InputParameter('GBN.UseDisplacementFile',GBNuseDisplacementFile,.false.)
       call MIO_InputParameter('TBG.UseDisplacementFile',tBGuseDisplacementFile,.false.)
-      if (GBNuseDisplacementFile .or. tBGuseDisplacementFile) then ! Carr format here
+      ! Structure.DisplacementsFromPositions: computed from the rigid and actual structures (HamInit), no file
+      call MIO_InputParameter('Structure.DisplacementsFromPositions',dispFromPos,.false.)
+      if ((GBNuseDisplacementFile .or. tBGuseDisplacementFile) .and. .not. dispFromPos) then ! Carr format here
          call MIO_InputParameter('Structure.DisplacementsFile',str4,'displacements.txt')
          open(4,FILE=str4,STATUS='old')
       end if
@@ -674,7 +676,7 @@ subroutine AtomsPos()
             end if
          end if
       end do
-      if (GBNuseDisplacementFile .or. tBGuseDisplacementFile) then ! Carr format here
+      if ((GBNuseDisplacementFile .or. tBGuseDisplacementFile) .and. .not. dispFromPos) then ! Carr format here
          do i=1,nAt
             if (encapsulatedThreeLayers .and. (SpeciesTemp(i).eq.1 .or. SpeciesTemp(i).eq.2)) then
                read(4,*) displacements_b(1,i), displacements_b(2,i), displacements_b(3,i), displacements_t(1,i), &
