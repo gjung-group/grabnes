@@ -7506,16 +7506,16 @@ subroutine HamHopF2G2sParameters()
             t6KSLGfromGBNB = t6KSLGfromGBNB/g0
             t7KSLGfromGBN = t7KSLGfromGBN/g0
             t8KSLGfromGBN = t8KSLGfromGBN/g0
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBNfromGBNA,-0.081055_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBNfromGBNB,-0.24562_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLBNfromGBN,0.15399_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLBNfromGBN,-0.0_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBNfromGBNA,-0.065654_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBNfromGBNB,-0.04892_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLBNfromGBNA,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLBNfromGBNB,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK7A',t7KSLBNfromGBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK8A',t8KSLBNfromGBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt2B','Intralayer.SingleLayert2KSL',t2KSLBNfromGBNA,-0.081055_dp)
+            call HamInputHBN('Intralayer.hBNt2N','Intralayer.SingleLayert2KSL',t2KSLBNfromGBNB,-0.24562_dp)
+            call HamInputHBN('Intralayer.hBNt3','Intralayer.SingleLayert3K',t3KSLBNfromGBN,0.15399_dp)
+            call HamInputHBN('Intralayer.hBNt4','Intralayer.SingleLayert4K',t4KSLBNfromGBN,-0.0_dp)
+            call HamInputHBN('Intralayer.hBNt5B','Intralayer.SingleLayert5KSL',t5KSLBNfromGBNA,-0.065654_dp)
+            call HamInputHBN('Intralayer.hBNt5N','Intralayer.SingleLayert5KSL',t5KSLBNfromGBNB,-0.04892_dp)
+            call HamInputHBN('Intralayer.hBNt6','Intralayer.BilayertK6A',t6KSLBNfromGBNA,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt6','Intralayer.BilayertK6A',t6KSLBNfromGBNB,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt7','Intralayer.BilayertK7A',t7KSLBNfromGBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt8','Intralayer.BilayertK8A',t8KSLBNfromGBN,0.0_dp)
             t2KSLBNfromGBNA = t2KSLBNfromGBNA/g0
             t2KSLBNfromGBNB = t2KSLBNfromGBNB/g0
             t3KSLBNfromGBN = t3KSLBNfromGBN/g0
@@ -7553,15 +7553,15 @@ subroutine HamHopF2G2sParameters()
             t7K = t7K/g0
             t8K = t8K/g0
             ! BNBN F2G2
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBN_B,-0.0542_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLBN_N,-0.2228_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLBN,0.1329_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBN_B,-0.0566_dp)
-            call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLBN_N,-0.0429_dp)
-            call MIO_InputParameter('Intralayer.BilayertK6A',t6KBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK7A',t7KBN,0.0_dp)
-            call MIO_InputParameter('Intralayer.BilayertK8A',t8KBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt2B','Intralayer.SingleLayert2KSL',t2KSLBN_B,-0.0542_dp)
+            call HamInputHBN('Intralayer.hBNt2N','Intralayer.SingleLayert2KSL',t2KSLBN_N,-0.2228_dp)
+            call HamInputHBN('Intralayer.hBNt3','Intralayer.SingleLayert3K',t3KSLBN,0.1329_dp)
+            call HamInputHBN('Intralayer.hBNt4','Intralayer.SingleLayert4K',t4KSLBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt5B','Intralayer.SingleLayert5KSL',t5KSLBN_B,-0.0566_dp)
+            call HamInputHBN('Intralayer.hBNt5N','Intralayer.SingleLayert5KSL',t5KSLBN_N,-0.0429_dp)
+            call HamInputHBN('Intralayer.hBNt6','Intralayer.BilayertK6A',t6KBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt7','Intralayer.BilayertK7A',t7KBN,0.0_dp)
+            call HamInputHBN('Intralayer.hBNt8','Intralayer.BilayertK8A',t8KBN,0.0_dp)
             t2KSLBN_B = t2KSLBN_B/g0
             t2KSLBN_N = t2KSLBN_N/g0
             t3KSLBN = t3KSLBN/g0
@@ -12149,6 +12149,25 @@ end function HamHaldaneChirality
 !> Reads an energy that the input file gives in eV and returns it in units of g0. If the input file does not set
 !> the key, value = defaultG0, the former default (already in units of g0), so such runs are unchanged.
 !> These keys were taken in units of g0 before 2026-10-14 (or before the optional date since); when the input sets
+!> Intralayer hopping of hBN in the F2G2 sets: read from its own key newKey [eV] when present. Until November
+!! 2026 the graphene key oldKey set the graphene AND the hBN value at once; without newKey that is kept, with
+!! a note when oldKey is given.
+subroutine HamInputHBN(newKey,oldKey,value,default)
+
+   character(len=*), intent(in) :: newKey, oldKey
+   real(dp), intent(out) :: value
+   real(dp), intent(in) :: default
+
+   if (MIO_InputSearchLabel(newKey)) then
+      call MIO_InputParameter(newKey,value,default)
+   else
+      call MIO_InputParameter(oldKey,value,default)
+      if (MIO_InputSearchLabel(oldKey)) call MIO_Print('Note: '//oldKey//' also sets the hBN hopping '// &
+           '(set '//newKey//' to give hBN its own value)','ham')
+   end if
+
+end subroutine HamInputHBN
+
 !> one, a warning says so.
 subroutine HamInputEnergyEV(key,value,defaultG0,since)
 
