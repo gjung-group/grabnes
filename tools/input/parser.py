@@ -219,8 +219,11 @@ def map_comments(m: Any) -> dict[Any, tuple[list[str], str | None]]:
                     eol = clean_comment(value)
                 else:
                     carry += comment_lines_of(value)
-            for value in comment_tokens(slot[3] if len(slot) > 3 else None):
-                carry += comment_lines_of(value)
+            # for a section (a mapping value) slot 3 holds the comment before its first key, which the
+            # section's own map also carries: passing it on to the next key would write it twice
+            if not isinstance(m[key], dict):
+                for value in comment_tokens(slot[3] if len(slot) > 3 else None):
+                    carry += comment_lines_of(value)
         out[key] = (pre, eol)
     return out
 

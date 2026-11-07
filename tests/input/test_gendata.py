@@ -283,7 +283,8 @@ class TestCli:
         )
         assert result.exit_code == 0, result.output
         text = back.read_text()
-        assert 'Output.WriteDataFiles' in text and 'WritePos' in text and 'MagField.IntegerStep 10' in text
+        assert 'Output.WriteDataFiles' in text and 'writepos' in text.lower()
+        assert text.count('MagField.IntegerStep 10') == 1, text
 
     def test_unknown_key_fails_with_suggestion(self, schema_file: str, tmp_path: Path) -> None:
         config = tmp_path / 'config.yaml'
