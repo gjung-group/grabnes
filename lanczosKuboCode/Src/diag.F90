@@ -2673,6 +2673,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+       gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
    if (alignRefSystem .eqv. .true.) then
@@ -3227,6 +3228,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+       gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
    if (alignRefSystem .eqv. .true.) then
@@ -3744,6 +3746,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+       gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
    if (alignRefSystem .eqv. .true.) then
@@ -4227,6 +4230,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+       gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
    if (alignRefSystem .eqv. .true.) then
@@ -4744,6 +4748,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+       gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
    if (alignRefSystem .eqv. .true.) then
@@ -11586,9 +11591,12 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    real(dp) :: DWorkLoc2(3*N-2)
 
    ! The band paths use H(k) = sum -hopp exp(-ik.T) (DiagHam); this routine is written with exp(+ik.T),
-   ! so it is evaluated at (-k, -KG): A(k) in the convention of generate.bands (until November 2026 A(-k))
+   ! so H is evaluated at -k: H(k) in the convention of generate.bands. In the basis sum_L exp(ik.(L+R(a)))|a,L>
+   ! the overlap with the primitive Bloch state at the unfolded k_p is sum_a c_a exp(-i(k_p-k).R(a)), so the
+   ! weight below uses KG = k_p - k (a supercell reciprocal vector). Until November 2026 it used -k_p: weight
+   ! at the wrong momentum, extra peaks.
    KptsLoc = -KptsLocIn
-   KG = -KGIn
+   KG = KGIn - KptsLocIn
    cellts = gcell1
    celltsp = gcell2
 
@@ -11605,30 +11613,16 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
    do i=1,N
        ll = (Rat(1,i)*G10(2)/G10(1) - Rat(2,i)) / (G01(1)*G10(2)/G10(1) - G01(2))
        kk = (Rat(1,i) - ll * G01(1)) / G10(1)
-       if (kk.gt.0) then
-           kk = floor(kk)
-       else
-           kk = ceiling(kk)
-       end if
-       if (ll.gt.0) then
-           ll = floor(ll)
-       else
-           ll = ceiling(ll)
-       end if
+       ! floor, not truncation towards zero: every atom of one orbital must keep the same offset r - R
+       kk = floor(kk + 1.0e-6_dp)
+       ll = floor(ll + 1.0e-6_dp)
        RtsVec(i,:) = matmul(cellts,[int(kk),int(ll),0]) ! Moire
 
        ll = (Rat(1,i)*G10p(2)/G10p(1) - Rat(2,i)) / (G01p(1)*G10p(2)/G10p(1) - G01p(2))
        kk = (Rat(1,i) - ll * G01p(1)) / G10p(1)
-       if (kk.gt.0) then
-           kk = floor(kk)
-       else
-           kk = ceiling(kk)
-       end if
-       if (ll.gt.0) then
-           ll = floor(ll)
-       else
-           ll = ceiling(ll)
-       end if
+       ! floor, not truncation towards zero: every atom of one orbital must keep the same offset r - R
+       kk = floor(kk + 1.0e-6_dp)
+       ll = floor(ll + 1.0e-6_dp)
        RtspVec(i,:) = matmul(celltsp,[int(kk),int(ll),0]) ! Moire
    end do
    do i=1,N
@@ -11637,8 +11631,11 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
       do j=1,Nneigh(i)
          in = NList(j,i)
          Tm = matmul(cell,neighCell(:,j,i)) ! Corresponds to L in Nishi equation
-         Hts(in,i) = Hts(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(KptsLoc,Tm-RtsVec(i,:))) ! RtsVec is the multiple of ts
-         Htsp(in,i) = Htsp(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(KptsLoc,Tm-RtspVec(i,:)))
+         ! Basis of the sub-cell translations R(i) (Nishi): a unitary change of phase of BOTH atoms of the bond,
+         ! L + R(in) - R(i). Until November 2026 only -R(i) was applied: not a unitary transformation, so ELoc1/2
+         ! were not the levels of H and ZHEEV saw a non-Hermitian matrix.
+         Hts(in,i) = Hts(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(KptsLoc,Tm+RtsVec(in,:)-RtsVec(i,:)))
+         Htsp(in,i) = Htsp(in,i) - hopp(j,i)*exp(cmplx_i*dot_product(KptsLoc,Tm+RtspVec(in,:)-RtspVec(i,:)))
       end do
    end do
    call ZHEEV('V','L',N,Hts,N,ELoc1,ZWorkLoc1,lwork,DWorkLoc1,info)
@@ -11651,11 +11648,12 @@ subroutine DiagSpectralWeightWeiKuInequivalentNishi(N,ns,is,PkcLoc,ELoc1, ELoc2,
        ! NOT the sum over eigenvectors. Pick one eigenvector and then sum over its coefficients. Each coefficient corresponds to one orbital in Wannier (or TB) basis.
        do in=1,N
            do inn=1,N
-                  if (layerIndex(in).eq.1 .and. layerIndex(inn).eq.1) then
+                  ! Nishi: a sum over orbitals of |sum over sub-cells|^2, so only pairs of the same sublattice
+                  if (layerIndex(in).eq.1 .and. layerIndex(inn).eq.1 .and. Species(in).eq.Species(inn)) then
                       ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
                       PkcLoc(j,1) = PkcLoc(j,1) + exp(cmplx_i*dot_product(KG, &
                             (RtsVec(in,:)-RtsVec(inn,:)))) * conjg(Hts(in,j)) * Hts(inn,j)
-                  else if (layerIndex(in).eq.2 .and. layerIndex(inn).eq.2) then
+                  else if (layerIndex(in).eq.2 .and. layerIndex(inn).eq.2 .and. Species(in).eq.Species(inn)) then
                       ! j is the eigenvector J, is the coeff of orbital N. Order: (in,j)
                       PkcLoc(j,2) = PkcLoc(j,2) + exp(cmplx_i*dot_product(KG, &
                             (RtspVec(in,:)-RtspVec(inn,:)))) * conjg(Htsp(in,j)) * Htsp(inn,j)
