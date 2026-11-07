@@ -269,6 +269,23 @@ class TestCli:
         assert result.exit_code == 0, result.output
         assert 'typeOfSystem: Graphene' in back.read_text()
 
+    def test_unpacked_comments_pack_again(self, schema_file: str, tmp_path: Path) -> None:
+        # a comment before a key followed by an unknown key: ruamel then keeps a list of tokens in the
+        # comment slot, which pack read as a single token (AttributeError)
+        infile = tmp_path / 'Gendata.in'
+        infile.write_text('#MagField.IntegerStep 10\nWriteDataFiles .true.\nWritePos .true.\n')
+        config = tmp_path / 'config.yaml'
+        result = CliRunner().invoke(main, ['unpack', str(infile), '--schema', schema_file, '-o', str(config)])
+        assert result.exit_code == 0, result.output
+        back = tmp_path / 'back.in'
+        result = CliRunner().invoke(
+            main, ['pack', str(config), '--schema', schema_file, '--allow-unknown', '-o', str(back)]
+        )
+        assert result.exit_code == 0, result.output
+        text = back.read_text()
+        assert 'Output.WriteDataFiles' in text and 'writepos' in text.lower()
+        assert text.count('MagField.IntegerStep 10') == 1, text
+
     def test_unknown_key_fails_with_suggestion(self, schema_file: str, tmp_path: Path) -> None:
         config = tmp_path / 'config.yaml'
         config.write_text('moire:\n  twistAngleX: 1.05\n')
