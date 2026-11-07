@@ -628,8 +628,8 @@
   "status": "ok"
  },
  "sys_MoireEncapsulatedBilayer+removeF2G2Flag": {
-  "fingerprint": "424803eb0a39bb62",
-  "status": "ok"
+  "fingerprint": "",
+  "status": "REFUSED"
  },
  "sys_MoireEncapsulatedBilayerMC": {
   "fingerprint": "36285816e66cbe0c",
