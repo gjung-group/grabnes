@@ -38,6 +38,10 @@ subroutine MagfInit()
       mBi = nint(area*1.0d-20*Bmag/(fluxq))
       mBf = mBi
       call MIO_Print('Magnetic field '//trim(num2str(Bmag,5))//' T, flux index '//trim(num2str(mBf)),'magf')
+      ! the field is rounded to an integer number of flux quanta through the cell
+      if (mBi == 0 .and. Bmag /= 0.0_dp) call MIO_Print('WARNING: MagField.Value '//trim(num2str(Bmag,5))// &
+        ' T is below half a flux quantum through this cell ('//trim(num2str(fluxq/(area*1.0d-20),5))// &
+        ' T per flux quantum): the run has NO magnetic field.','magf')
    else if (MIO_InputSearchLabel('MagField.Integer',line,id)) then
       call MIO_InputParameter('MagField.Integer',mBi,0)
       mBf = mBi
@@ -47,17 +51,13 @@ subroutine MagfInit()
          mBi = nint(area*1.0d-20*Bmag/(fluxq))
          call MIO_InputParameter('MagField.FinalB',Bmag,0.0_dp)
          mBf = nint(area*1.0d-20*Bmag/(fluxq))
-         if (mBi>mBf) then
-            mBi = 0
-            mBf = 0
-         end if
+         if (mBi>mBf) call MIO_Kill('MagField.InitialB is above MagField.FinalB: the sweep would run without any '// &
+           'field. Give the range in increasing order.','magf','MagfInit')
       else if (MIO_InputSearchLabel('MagField.InitialInteger',line,id)) then
          call MIO_InputParameter('MagField.InitialInteger',mBi,0)
          call MIO_InputParameter('MagField.FinalInteger',mBf,0)
-         if (mBi>mBf) then
-            mBi = 0
-            mBf = 0
-         end if
+         if (mBi>mBf) call MIO_Kill('MagField.InitialInteger is above MagField.FinalInteger: the sweep would '// &
+           'run without any field. Give the range in increasing order.','magf','MagfInit')
       else
          mBi = 0
          mBf = 0
@@ -161,10 +161,13 @@ subroutine HaldPhaseInit()
       if (lll) then
          call MIO_InputParameter('HaldPhase.InitialInteger',mPhii,0)
          call MIO_InputParameter('HaldPhase.FinalInteger',mPhif,0)
-         if (mPhii>mPhif) then
-            mPhii = 0
-            mPhif = 0
-         end if
+         ! the phase of step m is m*2*pi/(FinalInteger - InitialInteger)
+         if (mPhii == mPhif .and. mPhii /= 0) call MIO_Kill('Haldane.SpecifyRange: HaldPhase.InitialInteger = '// &
+           'HaldPhase.FinalInteger divides the phase step by zero. For one phase use Haldane.SpecifyPhase and '// &
+           'Haldane.Phase.','magf','HaldPhaseInit')
+         if (mPhii>mPhif) call MIO_Kill('Haldane.SpecifyRange: HaldPhase.InitialInteger is above '// &
+           'HaldPhase.FinalInteger: the sweep would run without any phase. Give the range in increasing order.', &
+           'magf','HaldPhaseInit')
       end if
    end if
    if (mPhii==0 .and. mPhif==0) then
