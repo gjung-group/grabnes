@@ -12,7 +12,7 @@ module atoms
    integer, public, save :: nAt, nAtC, nAtBN, nAtC1, nAtC2, nAtC3
    integer, public, pointer :: indxDiv(:), procAt(:), indxNode(:), secAt(:)
    integer, public, pointer :: Species(:), SpeciesTemp(:)
-   integer, public, pointer :: layerIndex(:)
+   integer, public, pointer :: layerIndex(:)=>NULL()
    real(dp), public, pointer :: interlayerDistances(:)=>NULL(), displacements(:,:)=>NULL()
    real(dp), public, pointer :: displacements_b(:,:), displacements_t(:,:)
    real(dp), public :: dIntLay, nEl
@@ -1603,6 +1603,7 @@ subroutine AtomsOrder()
    real(dp) :: dx, dy, a, d
    character(len=80) :: str
    logical :: AtomsOrderDeactivated
+   integer, allocatable :: perm(:)
 #ifdef MPI
    integer, pointer :: displ(:)
 #endif /* MPI */
@@ -1632,7 +1633,25 @@ subroutine AtomsOrder()
 #endif /* DEBUG */
    call MIO_InputParameter('Structure.AtomsOrderDeactivated',AtomsOrderDeactivated,.true.)
    if (.NOT. AtomsOrderDeactivated)then
-      call AtomsSort(secAt,procAt,Rat,Species)
+      ! the per-atom files of ReadXYZ (layer index, sublattices, displacements, rigid positions, Hamiltonian dumps)
+      ! are in file order, and some are read after this point
+      call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+      if (MIO_StringComp(str,'ReadXYZ')) call MIO_Kill('Structure.AtomsOrderDeactivated .false. reorders the '// &
+        'atoms, but the per-atom files of TypeOfSystem ReadXYZ are in the order of the structure file: keep the '// &
+        'default (.true.).','atoms','AtomsOrder')
+      ! sort a permutation with the positions (same keys, same order of Rat), then apply it to every per-atom
+      ! array already set: before, only Rat and Species moved and the layer index stayed with the old numbering
+      allocate(perm(nAt))
+      perm = [(i, i=1,nAt)]
+      call AtomsSort(secAt,procAt,Rat,perm)
+      Species(1:nAt) = Species(perm)
+      if (associated(layerIndex)) then
+         if (size(layerIndex) >= nAt) layerIndex(1:nAt) = layerIndex(perm)
+      end if
+      if (associated(interlayerDistances)) then
+         if (size(interlayerDistances) >= nAt) interlayerDistances(1:nAt) = interlayerDistances(perm)
+      end if
+      deallocate(perm)
    end if
 #ifdef DEBUG
    call MIO_Debug('AtomsSort',1)
