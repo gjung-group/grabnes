@@ -11266,6 +11266,7 @@ subroutine HamHopBondTermsGBN(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
    real(dp) :: dx_b, dx_t, dxTemp_b, dxTemp_t, dy_b, dy_t, dyTemp_b, dyTemp_t, imagH_b, imagH_t, realH_b, &
          realH_t
    complex*16 :: Habjj_b, Habjj_t
+   integer :: nEnc, lay
 
 
    dx_b = hamUnset
@@ -11283,6 +11284,16 @@ subroutine HamHopBondTermsGBN(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
    realH_t = hamUnset
    imagH_t = hamUnset
 
+                ! Encapsulated stacks (HamHopIntralayerEncapsulated): hBN in layers 1 and nEnc, graphene in 2..nEnc-1.
+                ! The moire term acts on the hBN layers and on the graphene layers next to them (2 and nEnc-1;
+                ! with three layers, layer 2 has both interfaces). Middle graphene layers get none.
+                nEnc = 0
+                if (encapsulatedThreeLayers) nEnc = 3
+                if (encapsulatedFourLayers) nEnc = 4
+                if (encapsulatedFiveLayers) nEnc = 5
+                if (encapsulatedSixLayers) nEnc = 6
+                if (encapsulatedSevenLayers) nEnc = 7
+                lay = layerIndex(i)
                 ! Amplitude of the graphene-layer term: MoirePotCabG (the tBGOffDiag block sets it otherwise)
                 if (.not. tBGOffDiag) CabG = CabG_global/g0
                 if (GBNuseDisplacementFile) then
@@ -11319,19 +11330,11 @@ subroutine HamHopBondTermsGBN(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
                          dxTemp = -dx/aBN
                          dyTemp = -dy/aBN
                       end if
-                   else if (encapsulatedFourLayers) then
-                      if (layerIndex(i).eq.2 .or. layerIndex(i).eq.3) then
+                   else if (nEnc >= 4) then
+                      if (lay == 2 .or. lay == nEnc-1) then
                          dxTemp = dx/aG
                          dyTemp = dy/aG
-                      else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.4) then
-                         dxTemp = -dx/aBN
-                         dyTemp = -dy/aBN
-                      end if
-                   else if (encapsulatedFiveLayers) then
-                      if (layerIndex(i).eq.2 .or. layerIndex(i).eq.4) then
-                         dxTemp = dx/aG
-                         dyTemp = dy/aG
-                      else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.5) then
+                      else if (lay == 1 .or. lay == nEnc) then
                          dxTemp = -dx/aBN
                          dyTemp = -dy/aBN
                       end if
@@ -11374,26 +11377,21 @@ subroutine HamHopBondTermsGBN(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
                          dyTemp = -dy/aBN
                       end if
                    else if (encapsulatedThreeLayers) then
-                      if (layerIndex(i).eq.2 .or. layerIndex(i).eq.3) then
-                         dxTemp = dx/aG
-                         dyTemp = dy/aG
-                      else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.4) then
+                      ! both hBN layers carry the same analytic moire (one GBNAngle, one eps)
+                      if (lay == 2) then
+                         dxTemp_b = dx/aG
+                         dyTemp_b = dy/aG
+                         dxTemp_t = dx/aG
+                         dyTemp_t = dy/aG
+                      else if (lay == 1 .or. lay == 3) then
                          dxTemp = -dx/aBN
                          dyTemp = -dy/aBN
                       end if
-                   else if (encapsulatedFourLayers) then
-                      if (layerIndex(i).eq.2 .or. layerIndex(i).eq.3) then
+                   else if (nEnc >= 4) then
+                      if (lay == 2 .or. lay == nEnc-1) then
                          dxTemp = dx/aG
                          dyTemp = dy/aG
-                      else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.4) then
-                         dxTemp = -dx/aBN
-                         dyTemp = -dy/aBN
-                      end if
-                   else if (encapsulatedFiveLayers) then
-                      if (layerIndex(i).eq.2 .or. layerIndex(i).eq.3) then
-                         dxTemp = dx/aG
-                         dyTemp = dy/aG
-                      else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.4) then
+                      else if (lay == 1 .or. lay == nEnc) then
                          dxTemp = -dx/aBN
                          dyTemp = -dy/aBN
                       end if
@@ -11436,17 +11434,13 @@ subroutine HamHopBondTermsGBN(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
                    else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.3) then
                       call offdiagoGBN(Habjj,dxTemp,dyTemp,CabBN,PhiabBN)
                    end if
-                else if (encapsulatedFourLayers) then
-                   if (layerIndex(i).eq.2 .or. layerIndex(i).eq.3) then ! graphene
+                else if (nEnc >= 4) then
+                   if (lay == 2 .or. lay == nEnc-1) then ! graphene next to hBN
                       call offdiagoGBN(Habjj,dxTemp,dyTemp,CabG,PhiabG)
-                   else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.4) then
+                   else if (lay == 1 .or. lay == nEnc) then
                       call offdiagoGBN(Habjj,dxTemp,dyTemp,CabBN,PhiabBN)
-                   end if
-                else if (encapsulatedFiveLayers) then
-                   if (layerIndex(i).eq.2 .or. layerIndex(i).eq.4) then ! graphene
-                      call offdiagoGBN(Habjj,dxTemp,dyTemp,CabG,PhiabG)
-                   else if (layerIndex(i).eq.1 .or. layerIndex(i).eq.5) then
-                      call offdiagoGBN(Habjj,dxTemp,dyTemp,CabBN,PhiabBN)
+                   else ! middle graphene layer: no hBN interface
+                      Habjj = (0.0_dp, 0.0_dp)
                    end if
                 else if (t3GwithBN) then
                    if (layerIndex(i).eq.4 .or. layerIndex(i).eq.3 .or. layerIndex(i).eq.2) then ! graphene
