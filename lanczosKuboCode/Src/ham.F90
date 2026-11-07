@@ -7196,9 +7196,9 @@ subroutine HamHopInterlayerParameters()
                 xi3_NC = epsilon3_NC
                 xi3_CN = epsilon3_CN
                 t1K = g0/g0
-                t2KB = 0.0594_dp/g0
-                t2KN = 0.2276_dp/g0
-                t3K = -0.2163_dp/g0
+                t2KB = -0.0594_dp/g0  ! minus the hopping, as every set here (was the hopping itself until November 2026)
+                t2KN = -0.2276_dp/g0
+                t3K = 0.2163_dp/g0
             else ! just use GG
                 call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
                 if (addPressureDependence) then
@@ -7279,9 +7279,9 @@ subroutine HamHopInterlayerParameters()
                 xi3_NC = epsilon3_NC
                 xi3_CN = epsilon3_CN
                 t1K = g0/g0
-                t2KB = 0.0594_dp/g0
-                t2KN = 0.2276_dp/g0
-                t3K = -0.2163_dp/g0
+                t2KB = -0.0594_dp/g0  ! minus the hopping, as every set here (was the hopping itself until November 2026)
+                t2KN = -0.2276_dp/g0
+                t3K = 0.2163_dp/g0
             else
                 call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
                 call MIO_InputParameter('Interlayer.OldParameterSet',oldParameterSet,.false.)
