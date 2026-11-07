@@ -1945,6 +1945,11 @@ subroutine DiagBandsG()
    gcell(:,1) = [aG,0.0_dp,0.0_dp]
    gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
    gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
+   ! the Bloch phases below use gcell with the image indices of the simulation cell: exact only when the simulation
+   ! cell is the graphene primitive cell
+   if (maxval(abs(ucell(1:2,1:2) - gcell(1:2,1:2))) > 1.0e-6_dp*aG) call MIO_Kill('Bands.GrapheneUnitCell needs '// &
+     'the graphene primitive cell (a1 = (aG,0), a2 at 60 degrees, as for CellSize 1): on any other cell its Bloch '// &
+     'phases are wrong. Use Bands.Path for the bands of this cell.','diag','DiagBandsG')
 
    vn = CrossProd(gcell(:,1),gcell(:,2))
    volume = dot_product(gcell(:,3),vn)
