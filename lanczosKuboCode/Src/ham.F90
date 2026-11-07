@@ -8634,7 +8634,10 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                                             V6ABp = 0.0_dp
                                             V6BAp = 0.0_dp
                                             !    call V6  =
-                                            if (oldParameterSet) then
+                                            ! Fang and Kaxiras, PRB 93, 235153 (2016): V6 = lambda6 exp(-xi6 (rbar-x6)^2) sin(kappa6 rbar).
+                                            ! BLKaxiras used the Srivani form (extra rbar and lambda6b term, never set for it) until
+                                            ! November 2026, so its pressure path was refused.
+                                            if (oldParameterSet .or. MIO_StringComp(BilayerModel,'BLKaxiras')) then
                                                 V6 = lambda6 * exp(-xi6*(rbar-x6)**2.0_dp) * sin(kappa6 * rbar)
                                             else if (deactivateV6) then
                                                 V6 = lambda6 * exp(-xi6*(rbar-x6)**2.0_dp) * sin(kappa6 * rbar)
