@@ -165,10 +165,9 @@ subroutine HaldPhaseInit()
          if (mPhii == mPhif .and. mPhii /= 0) call MIO_Kill('Haldane.SpecifyRange: HaldPhase.InitialInteger = '// &
            'HaldPhase.FinalInteger divides the phase step by zero. For one phase use Haldane.SpecifyPhase and '// &
            'Haldane.Phase.','magf','HaldPhaseInit')
-         if (mPhii>mPhif) then
-            mPhii = 0
-            mPhif = 0
-         end if
+         if (mPhii>mPhif) call MIO_Kill('Haldane.SpecifyRange: HaldPhase.InitialInteger is above '// &
+           'HaldPhase.FinalInteger: the sweep would run without any phase. Give the range in increasing order.', &
+           'magf','HaldPhaseInit')
       end if
    end if
    if (mPhii==0 .and. mPhif==0) then
