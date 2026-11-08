@@ -640,6 +640,12 @@ subroutine CalcDiag()
    call MIO_InputParameter('Calculate.PDOS',PDOS,.false.)
    call MIO_InputParameter('Calculate.Bands',bands,.false.)
    call MIO_InputParameter('Calculate.Chern',chern,.false.)
+   ! DiagChern / DiagHamChern (dense finite differences) never computed a Chern number: dH/dkx is taken from an
+   ! array that is never filled, the "velocity" is an element-wise product i*H*dH, the projection uses the
+   ! transpose instead of the adjoint, and every band gets the same double sum
+   if (chern) call MIO_Kill('Calculate.Chern (dense finite-difference route, DiagChern) does not compute a Chern '// &
+     'number and is refused. Use Diag.ChernCalculation (TAPW Kubo route, CalculateChernTAPW) instead.', &
+     'calc','CalcDiag')
    call MIO_InputParameter('Diag.RashbaCalculation',RashbaCalculation,.false.)
    call MIO_InputParameter('Diag.MoireAngle',moireAngle,-33.004491598883078_dp)
    call MIO_InputParameter('Diag.GGridRotationAngle',gGridRotationAngle,0.0_dp)
