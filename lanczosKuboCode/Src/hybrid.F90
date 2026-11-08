@@ -96,7 +96,7 @@ loop: do
                   else if (Species(i)==2) then
                      Species(i)= 4
                   else
-                     call MIO_Kill('Wrong species to change.','hybrid','HybridGen')
+                     call MIO_Kill('wrong species to change','hybrid','HybridGen')
                   end if
                end if
                nBN = nBN + 1

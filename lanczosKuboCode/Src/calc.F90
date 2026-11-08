@@ -72,7 +72,7 @@ subroutine CalcSelect()
           do mPhi=mPhii,mPhif,mPhiStep
              call HaldPhaseValue(mPhi)
              if (readDataFiles) then
-                 call MIO_Print('Reading in the (already g0-renormalized) hopping terms from generate.s','ham')
+                 call MIO_Print('Hoppings read from generate.s (in units of g0)','calc')
                  open(222,FILE="generate.s",STATUS='old')
                  do i=1,nAt
                     do j=1,Nneigh(i)
@@ -87,9 +87,8 @@ subroutine CalcSelect()
                     !         !print*, "phase= ", phase, v1, v2
                        if (frac) call AtomsSetCart()
                        flux = Bmag*pi/fluxq
-#ifdef DEBUG
-                       print*, "flux, B, pi, fluxq", flux, Bmag, pi, fluxq
-#endif /* DEBUG */
+                       call MIO_PrintDebug('Peierls flux = '//trim(num2str(flux,10))//', B = '// &
+                         trim(num2str(Bmag,6))//' T','calc')
                        ! the same phases as HamHopping, including the corner term of the periodic gauge
                        call HamPeierlsPeriodicGauge(flux)
                  end if
@@ -156,6 +155,10 @@ subroutine CalcKubo()
    call MIO_InputParameter('Kubo.WriteNumberofSteps',nWr,10)
    call MIO_InputParameter('Kubo.EnergyMin',Emin,-4.0_dp)
    call MIO_InputParameter('Kubo.EnergyMax',Emax,4.0_dp)
+   call MIO_Section('Recursion (Kubo) calculation','calc')
+   call MIO_Print('Kubo.RecursionNumber: '//trim(num2str(nRecurs)),'calc')
+   call MIO_Print('Energy window: '//trim(num2str(Emin,4))//' to '//trim(num2str(Emax,4))//' eV, '// &
+     trim(num2str(nEn))//' points, broadening '//trim(num2str(eps,4))//' eV','calc')
    eps = eps/g0
    Emin = Emin/g0
    Emax = Emax/g0
@@ -206,9 +209,9 @@ subroutine CalcKubo()
         call MIO_InputParameter('Kubo.PDOSIgnoreLayer1and4',PDOSIgnoreLayer1and4,.false.)
         call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
         if ((PDOSLayer .or. PDOSLayerAndSpecies) .and. numberOfLayers < maxval(layerIndex(1:nAt))) &
-          call MIO_Print('WARNING: Kubo.NumberOfLayers is '//trim(num2str(numberOfLayers))//' but the structure has '// &
+          call MIO_Warning('Kubo.NumberOfLayers is '//trim(num2str(numberOfLayers))//' but the structure has '// &
             trim(num2str(maxval(layerIndex(1:nAt))))//' layers: the layer DOS of layers above '// &
-            trim(num2str(numberOfLayers))//' is not written.','calc')
+            trim(num2str(numberOfLayers))//' is not written','calc')
         call MIO_InputParameter('Kubo.NumberOfBNAtoms1',numberOfBNAtoms1,5832)
         call MIO_InputParameter('Kubo.NumberOfBNAtoms2',numberOfBNAtoms2,5832)
         call MIO_InputParameter('Kubo.NumberOfCAtoms',numberOfCAtoms,6050)
@@ -232,7 +235,7 @@ subroutine CalcKubo()
           if (frac) call AtomsSetCart()
           do i=1, numberOfLayers
              write(prefix,'(a4,a6,I2.2)') 'PDOS','_layer', i
-             call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
+             call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'calc')
              prefix = './'//trim(prefix)
              call system('mkdir '//trim(prefix))
              !call file%Open(name=coordinates,serial=.true.)
@@ -274,13 +277,13 @@ subroutine CalcKubo()
                    end if
                 end do
                 if (numberOfAtomsInLayer.eq.0) then
-                   call MIO_Print("Warning: No atoms found for layer "//trim(num2str(i))//" species "//trim(num2str(ii)) &
-                         //", skipping",'PDOS')
+                   call MIO_Print("No atoms in layer "//trim(num2str(i))//", species "//trim(num2str(ii)) &
+                         //": skipped",'calc')
                    cycle
                 end if
                 write(prefix,'(a4,a6,I2.2,a4,I2.2)') 'PDOS','_layer', i, '_sub',ii
-                call MIO_Print("Writing files in folder '"//trim(prefix)//"' for "//trim(num2str(numberOfAtomsInLayer)) &
-                      //" atoms",'PDOS')
+                call MIO_Print("Writing files in folder '"//trim(prefix)//"' ("//trim(num2str(numberOfAtomsInLayer)) &
+                      //" atoms)",'calc')
                 prefix = './'//trim(prefix)
                 call system('mkdir '//trim(prefix))
                 !call file%Open(name=coordinates,serial=.true.)
@@ -296,7 +299,7 @@ subroutine CalcKubo()
             if(Rat(1,i) .gt. PDOSxmin .and. Rat(1,i) .lt. PDOSxmax .and.                        &
               Rat(2,i) .gt. PDOSymin .and. Rat(2,i) .lt. PDOSymax .and. i.ge.PDOSMinValue) then
                 write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
-                call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
+                call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'calc')
                 prefix = './'//trim(prefix)
                 call system('mkdir '//trim(prefix))
                 coordinates = trim(prefix)//'/'//'coords'
@@ -318,7 +321,7 @@ subroutine CalcKubo()
                else
                    if (frac) call AtomsSetCart()
                    write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
-                   call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
+                   call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'calc')
                    prefix = './'//trim(prefix)
                    call system('mkdir '//trim(prefix))
                    coordinates = trim(prefix)//'/'//'coords'
@@ -340,7 +343,7 @@ subroutine CalcKubo()
                   .and. i.ge.PDOSMinValue)) then
                if (frac) call AtomsSetCart()
                write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
-               call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
+               call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'calc')
                prefix = './'//trim(prefix)
                call system('mkdir '//trim(prefix))
                coordinates = trim(prefix)//'/'//'coords'
@@ -363,7 +366,7 @@ subroutine CalcKubo()
                   .and. (i.ge.PDOSMinValue))) then
                if (frac) call AtomsSetCart()
                write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
-               call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
+               call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'calc')
                prefix = './'//trim(prefix)
                call system('mkdir '//trim(prefix))
                coordinates = trim(prefix)//'/'//'coords'
@@ -386,7 +389,7 @@ subroutine CalcKubo()
                   .and. (i.ge.PDOSMinValue))) then
                if (frac) call AtomsSetCart()
                write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
-               call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
+               call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'calc')
                prefix = './'//trim(prefix)
                call system('mkdir '//trim(prefix))
                coordinates = trim(prefix)//'/'//'coords'
@@ -404,7 +407,7 @@ subroutine CalcKubo()
           do j=1,size(PDOSList)
             i = PDOSList(j)
             write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
-            call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
+            call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'calc')
             prefix = './'//trim(prefix)
             call system('mkdir '//trim(prefix))
             coordinates = trim(prefix)//'/'//'coords'
@@ -432,9 +435,9 @@ subroutine CalcKubo()
             if ((Rat(1,i) .gt. limit1) .and. (Rat(1,i) .lt. limit1+aCC) .and. flag1.eq.0) then
                flag1 = 1
                write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
-               call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
-               call MIO_Print("limit1 = "//trim(num2str(limit1))//" and chosen atom X = "//trim(num2str(Rat(1,i))),'PDOS')
-               call MIO_Print("atom i = "//trim(num2str(i)),'PDOS')
+               call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'calc')
+               call MIO_Print("  Atom "//trim(num2str(i))//" at x = "//trim(num2str(Rat(1,i),4))//" Ang (limit "// &
+                 trim(num2str(limit1,4))//" Ang)",'calc')
                prefix = './'//trim(prefix)
                call system('mkdir '//trim(prefix))
                coordinates = trim(prefix)//'/'//'coords'
@@ -449,8 +452,9 @@ subroutine CalcKubo()
             if ((Rat(1,i) .gt. limit1+delta*2.0_dp) .and. (Rat(1,i) .lt. limit1+delta*2.0_dp+aCC) .and. flag2.eq.0) then
                flag2 = 1
                write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
-               call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'PDOS')
-               call MIO_Print("limit1 = "//trim(num2str(limit1))//" and chosen atom X = "//trim(num2str(Rat(1,i))),'PDOS')
+               call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'calc')
+               call MIO_Print("  Atom "//trim(num2str(i))//" at x = "//trim(num2str(Rat(1,i),4))//" Ang (limit "// &
+                 trim(num2str(limit1,4))//" Ang)",'calc')
                prefix = './'//trim(prefix)
                call system('mkdir '//trim(prefix))
                coordinates = trim(prefix)//'/'//'coords'
@@ -545,16 +549,10 @@ subroutine CalcTunn()
    call MIO_InputParameter('Tunn.BigKVecX',bigKVecX,0.0_dp) ! give the coordinates of K like for the k-path, one by one
    call MIO_InputParameter('Tunn.BigKVecY',bigKVecY,0.0_dp)
    call MIO_InputParameter('Tunn.BigKVecZ',bigKVecZ,0.0_dp)
-#ifdef DEBUG
-   print*, bigKVecX
-   print*, bigKVecY
-   print*, bigKVecZ
-#endif /* DEBUG */
    bigKVec = [bigKVecX,bigKVecY,bigKVecZ]
    bigKVec = bigKVec(1)*rcell(:,1) + bigKVec(2)*rcell(:,2) + bigKVec(3)*rcell(:,3)
-#ifdef DEBUG
-   print*, "bigKVec: ", bigKVec
-#endif /* DEBUG */
+   call MIO_PrintDebug('Tunn.BigKVec (Cartesian, 1/Ang): '//trim(num2str(bigKVec(1),6))//' '// &
+     trim(num2str(bigKVec(2),6))//' '//trim(num2str(bigKVec(3),6)),'calc')
    call MIO_InputParameter('Tunn.NumberOfMoires',numberOfMoires,1)
    call file1%Open(name=trim(prefix)//'.'//'TunnAAR',serial=.true.)
    u1 = file1%GetUnit()
@@ -636,6 +634,7 @@ subroutine CalcDiag()
    call MIO_Debug('CalcDiag',0)
 #endif /* DEBUG */
 
+   call MIO_Section('Diagonalisation','calc')
    call MIO_InputParameter('Calculate.DOS',dos,.false.)
    call MIO_InputParameter('Calculate.PDOS',PDOS,.false.)
    call MIO_InputParameter('Calculate.Bands',bands,.false.)
@@ -669,7 +668,7 @@ subroutine CalcDiag()
    ! Diagnostic: drop the K-K' block again (must reproduce the two one-valley runs).
    call MIO_InputParameter('Diag.TAPWValleyDecouple',tapwValleyDecouple,.false.)
    if (tapwValleyDecouple .and. .not. tapwBothValleys) &
-        call MIO_Print('Diag.TAPWValleyDecouple ignored: needs Diag.TAPWBothValleys','calc')
+        call MIO_Warning('Diag.TAPWValleyDecouple is ignored: it needs Diag.TAPWBothValleys','calc')
    call MIO_InputParameter('Diag.Calculate3DTAPWBands',calculate3DTAPWBands,.false.)
    ! Default .true.: Monkhorst-Pack sits half a grid step off every high-
    ! symmetry point (measured: 0.492 steps from moire K'), which turns a band
@@ -717,11 +716,11 @@ subroutine CalcDiag()
          ! tested and ends with a segmentation fault. Stop with an explanation.
          call MIO_Kill('Spin-polarized calculations with the self-consistent Hubbard module (EnableSCF, on by '// &
            'default) are not supported at present: the module is unfinished and untested. Set EnableSCF .false. '// &
-           'to run a two-spin calculation without self-consistency.','calc','CalcDiag')
+           'to run a two-spin calculation without self-consistency','calc','CalcDiag')
          call SCFGetCharge()
       else if (nspin==2 .and. .not. enableSCF) then
          ! Initialize arrays needed for two-spin calculations without SCF
-         call MIO_Print('Running two-spin calculation without SCF','calc')
+         call MIO_Print('Two spin sectors, no self-consistency (Hubbard.EnableSCF .false.)','calc')
          ! Call SCFInit to allocate workspace arrays needed for diagonalization
          call SCFInit(nAt)
          ! Allocate charge array that diag.F90 needs (even without SCF)

@@ -58,7 +58,7 @@ subroutine KuboRecursion(Psi,Psin,Psinm1,nRecurs,a,b,H,H0,hopp,NList,wr,name,sto
    !$OMP END PARALLEL
 
    if (present(overlaps) .neqv. present(overlapWith)) then
-      call MIO_Kill('overlaps and overlapWith must be given together','kubosubs','KuboRecursion')
+      call MIO_Kill('overlaps and overlapWith must be given together','kubo','KuboRecursion')
    end if
    call KuboRecursionKeep(1,Psi)
    call KuboUpdate(Psi,tempZ)
@@ -318,7 +318,7 @@ subroutine KuboInterval(nRecurs,a,b,ac,bc)
    call MPIBCast(info,1,MPI_INTEGER)
 #endif /* MPI */
    if (info /= 0) then
-      call MIO_Kill('Interval: Error in diagonalization','kubo','KuboInterval')
+      call MIO_Kill('the diagonalisation of the tridiagonal matrix failed (spectral interval)','kubo','KuboInterval')
    end if
 #ifdef MPI
    if (IsPnode) then
@@ -338,7 +338,7 @@ subroutine KuboInterval(nRecurs,a,b,ac,bc)
    call MPIBCast(ac,1,MPI_DOUBLE_PRECISION)
    call MPIBCast(bc,1,MPI_DOUBLE_PRECISION)
 #endif /* MPI */
-   call MIO_Print('ac: '//trim(num2str(ac,12))//', bc: '//trim(num2str(bc,12)),'kubo')
+   call MIO_Print('Spectral centre and half-width (g0): ac = '//trim(num2str(ac,12))//', bc = '//trim(num2str(bc,12)),'kubo')
 
 #ifdef TIMER
    call MIO_TimerStop('kubo')
@@ -401,7 +401,7 @@ subroutine KuboCn(dT,ac,bc,nPol,c)
    call MPIBCast(info,1,MPI_INTEGER)
 #endif /* MPI */
    if (info /= 0) then
-      call MIO_Kill('Cn: Error in diagonalization','kubo','KuboCn')
+      call MIO_Kill('the diagonalisation for the Chebyshev coefficients failed','kubo','KuboCn')
    end if
 #ifdef MPI
    call MPIBCast(c,nPol,MPI_DOUBLE_COMPLEX)
@@ -539,7 +539,7 @@ subroutine KuboEvol(Psi,ZUPsi,Psin,Psinm1,XpnPsi,XpnPsim1,c,H0,hopp,NList,NeighD
       call MPIAllRedSum(cnum,cnum2,1,MPI_DOUBLE_COMPLEX)
       cnum = cnum2
 #endif /* MPI */
-      call MIO_Print('Psi norm: '//num2str(sqrt(abs(cnum)),12))
+      call MIO_Print('  Norm of the wave function: '//trim(num2str(sqrt(abs(cnum)),12)),'kubo')
    end if
 
 #ifdef TIMER
@@ -712,8 +712,7 @@ subroutine KuboFermi(npts)
          end if
       end if
    end do
-   call MIO_Print('Efermi: '//trim(num2str(Efermi,5)),'kubo')
-   call MIO_Print('')
+   call MIO_Print('Fermi energy (energy unit of DAT.FERMI): '//trim(num2str(Efermi,5)),'kubo')
    call file%Close()
 
 #ifdef DEBUG

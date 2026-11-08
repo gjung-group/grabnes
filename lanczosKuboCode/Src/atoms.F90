@@ -114,6 +114,7 @@ subroutine AtomsPos()
    call MIO_TimerCount('atoms')
 #endif /* TIMER */
 
+   call MIO_Section('Atoms','atoms')
    call MIO_InputParameter('Stack.EncapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    frac = .true.
@@ -141,12 +142,12 @@ subroutine AtomsPos()
           g = dIntLay/(2.0_dp*h)
           call AtomsConstruct(RatC,n(1:2),0.0_dp,'graphene',g, 0.0_dp)
           nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
-          call MIO_Print('Atoms of C:  '//trim(num2str(nAtC)),'atoms')
+          call MIO_Print('Carbon atoms: '//trim(num2str(nAtC)),'atoms')
           phiForEffectiveModel = -phi*180.0_dp/pi
           nAt = nAtC
           call MIO_Allocate(Rat,[3,nAt],'Rat','atoms')
           Rat(:,1:nAtC) = RatC
-          call MIO_Print('Total number of atoms: '//trim(num2str(nAt)),'atoms')
+          call MIO_Print('Number of atoms: '//trim(num2str(nAt)),'atoms')
           call MIO_Allocate(Species,nAt,'Species','atoms')
           call MIO_Allocate(layerIndex,nAt,'layerIndex','atoms')
           !$OMP PARALLEL DO
@@ -223,15 +224,15 @@ subroutine AtomsPos()
       g = dIntLay/(2.0_dp*h)
       call AtomsConstruct(RatC,n(1:2),0.0_dp,'graphene',g, 0.0_dp)
       nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
-      call MIO_Print('Atoms of C:  '//trim(num2str(nAtC)),'atoms')
+      call MIO_Print('Carbon atoms: '//trim(num2str(nAtC)),'atoms')
       call AtomsConstruct(RatBN,n(3:4),-phi*180.0_dp/pi,'BN',-g, 0.0_dp)
       nAtBN = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
-      call MIO_Print('Atoms of BN: '//trim(num2str(nAtBN)),'atoms')
+      call MIO_Print('Boron and nitrogen atoms: '//trim(num2str(nAtBN)),'atoms')
       nAt = nAtC + nAtBN
       call MIO_Allocate(Rat,[3,nAt],'Rat','atoms')
       Rat(:,1:nAtC) = RatC
       Rat(:,nAtC+1:nAt) = RatBN
-      call MIO_Print('Total number of atoms: '//trim(num2str(nAt)),'atoms')
+      call MIO_Print('Number of atoms: '//trim(num2str(nAt)),'atoms')
       call MIO_Allocate(Species,nAt,'Species','atoms')
       !$OMP PARALLEL DO
       do i=1,nAtC
@@ -265,10 +266,10 @@ subroutine AtomsPos()
       call AtomsConstruct(RatC,n(1:2),0.0_dp,'graphene',g, 0.0_dp)
       nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
       nAtC2 = nAtC
-      call MIO_Print('Atoms of C:  '//trim(num2str(nAtC)),'atoms')
+      call MIO_Print('Carbon atoms: '//trim(num2str(nAtC)),'atoms')
       call AtomsConstruct(RatBN,n(3:4),-phi*180.0_dp/pi,'BN',-g, 0.0_dp)
       nAtBN = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
-      call MIO_Print('Atoms of BN: '//trim(num2str(nAtBN)),'atoms')
+      call MIO_Print('Boron and nitrogen atoms: '//trim(num2str(nAtBN)),'atoms')
       call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
       call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
       call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
@@ -280,7 +281,7 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,n(1),n(2))
          else
             call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
-              'without either the shift was never set.','atoms','AtomsPos')
+              'without either the shift was never set','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
@@ -291,7 +292,7 @@ subroutine AtomsPos()
       Rat(:,1:nAtC) = RatC
       Rat(:,nAtC+1:nAtC+nAtBN) = RatBN
       Rat(:,nAtC+nAtBN+1:nAt) = RatC2
-      call MIO_Print('Total number of atoms: '//trim(num2str(nAt)),'atoms')
+      call MIO_Print('Number of atoms: '//trim(num2str(nAt)),'atoms')
       call MIO_Allocate(Species,nAt,'Species','atoms')
       !$OMP PARALLEL DO
       do i=1,nAtC
@@ -325,7 +326,7 @@ subroutine AtomsPos()
       g = dIntLay/(2.0_dp*h)
       call AtomsConstruct(RatC,n(1:2),0.0_dp,'graphene',g, 0.0_dp)
       nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
-      call MIO_Print('Atoms of C:  '//trim(num2str(nAtC)),'atoms')
+      call MIO_Print('Carbon atoms: '//trim(num2str(nAtC)),'atoms')
       call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
       call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
       call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
@@ -337,14 +338,14 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,n(1),n(2))
          else
             call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
-              'without either the shift was never set.','atoms','AtomsPos')
+              'without either the shift was never set','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
       end if
       call AtomsConstruct(RatBN,n(3:4),-phi*180.0_dp/pi,'graphene',-g, yShift)
       nAtBN = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
-      call MIO_Print('Atoms of BN: '//trim(num2str(nAtBN)),'atoms')
+      call MIO_Print('Boron and nitrogen atoms: '//trim(num2str(nAtBN)),'atoms')
       nAt = nAtC + nAtBN
       call MIO_Allocate(Rat,[3,nAt],'Rat','atoms')
       Rat(:,1:nAtC) = RatC
@@ -407,7 +408,7 @@ subroutine AtomsPos()
             end if
           end do
       end if
-      call MIO_Print('Total number of atoms: '//trim(num2str(nAt)),'atoms')
+      call MIO_Print('Number of atoms: '//trim(num2str(nAt)),'atoms')
       call MIO_Allocate(Species,nAt,'Species','atoms')
       !$OMP PARALLEL DO
       do i=1,nAtC
@@ -441,7 +442,7 @@ subroutine AtomsPos()
       g = dIntLay/(2.0_dp*h)
       call AtomsConstruct(RatC,n(1:2),0.0_dp,'graphene',g, 0.0_dp)
       nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
-      call MIO_Print('Atoms of C:  '//trim(num2str(nAtC)),'atoms')
+      call MIO_Print('Carbon atoms: '//trim(num2str(nAtC)),'atoms')
       call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
       call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
       call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
@@ -453,19 +454,19 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,n(1),n(2))
          else
             call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
-              'without either the shift was never set.','atoms','AtomsPos')
+              'without either the shift was never set','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
       end if
       call AtomsConstruct(RatBN,n(3:4),-phi*180.0_dp/pi,'graphene',-g, yShift)
       nAtBN = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
-      call MIO_Print('Atoms of BN: '//trim(num2str(nAtBN)),'atoms')
+      call MIO_Print('Boron and nitrogen atoms: '//trim(num2str(nAtBN)),'atoms')
       nAt = nAtC + nAtBN
       call MIO_Allocate(Rat,[3,nAt],'Rat','atoms')
       Rat(:,1:nAtC) = RatC
       Rat(:,nAtC+1:nAt) = RatBN
-      call MIO_Print('Total number of atoms: '//trim(num2str(nAt)),'atoms')
+      call MIO_Print('Number of atoms: '//trim(num2str(nAt)),'atoms')
       call MIO_Allocate(Species,nAt,'Species','atoms')
       !$OMP PARALLEL DO
       do i=1,nAtC
@@ -488,7 +489,7 @@ subroutine AtomsPos()
       g = dIntLay/(2.0_dp*h)
       call AtomsConstruct(RatC1,m,0.0_dp,'graphene',g, 0.0_dp)
       nAtC1 = size(RatC1,2)
-      call MIO_Print('Number of atoms in layer1: '//trim(num2str(nAtC1)),'atoms')
+      call MIO_Print('Atoms in layer 1: '//trim(num2str(nAtC1)),'atoms')
       if (MIO_StringComp(str,'MoireEncapsulatedBilayer')) then
           yShift = (aG/3.0_dp)/(m(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,m(1),m(2))
       end if
@@ -498,13 +499,13 @@ subroutine AtomsPos()
       ncell = m(1)**2 + m(1)*m(2) + m(2)**2
       call AtomsConstruct(RatC2,m,BLAngle,'graphene',-g, yShift)
       nAtC2 = size(RatC2,2)
-      call MIO_Print('Number of atoms in layer2: '//trim(num2str(nAtC2)),'atoms')
+      call MIO_Print('Atoms in layer 2: '//trim(num2str(nAtC2)),'atoms')
       sh = 1
       nAt = nAtC1 + nAtC2
       call MIO_Allocate(Rat,[3,nAt],'Rat','atoms')
       Rat(:,1:nAtC1) = RatC1
       Rat(:,nAtC1+1:nAt) = RatC2
-      call MIO_Print('Total number of atoms: '//trim(num2str(nAt)),'atoms')
+      call MIO_Print('Number of atoms: '//trim(num2str(nAt)),'atoms')
       call MIO_Allocate(Species,nAt,'Species','atoms')
       if (frac) then
           call AtomsSetCart()
@@ -540,7 +541,7 @@ subroutine AtomsPos()
       g = dIntLay/(2.0_dp*h)
       call AtomsConstruct(RatC,n(1:2),0.0_dp,'graphene',g, 0.0_dp)
       nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
-      call MIO_Print('Atoms of C:  '//trim(num2str(nAtC)),'atoms')
+      call MIO_Print('Carbon atoms: '//trim(num2str(nAtC)),'atoms')
       call MIO_InputParameter('Structure.TrilayerAddShift',addShift,.false.)
       call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
       call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
@@ -552,25 +553,25 @@ subroutine AtomsPos()
             yShift = (aG/3.0_dp/2.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.TrilayerShiftFactor',shiftA,n(1),n(2))
          else
             call MIO_Kill('TwistedBLAddShift needs BernalShift or BridgeShift to say which shift is added; '// &
-              'without either the shift was never set.','atoms','AtomsPos')
+              'without either the shift was never set','atoms','AtomsPos')
          end if
       else
          yShift = 0.0_dp
       end if
       call AtomsConstruct(RatC2,n(3:4),-phi*180.0_dp/pi,'graphene',-g, yShift)
       nAtC2 = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
-      call MIO_Print('Atoms of C2: '//trim(num2str(nAtC2)),'atoms')
+      call MIO_Print('Carbon atoms, layer 2: '//trim(num2str(nAtC2)),'atoms')
 
       call AtomsConstruct(RatC3,n(3:4),-phi*180.0_dp/pi,'graphene',-g*3.0, 2.0*yShift)
       nAtC3 = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
-      call MIO_Print('Atoms of C3: '//trim(num2str(nAtC3)),'atoms')
+      call MIO_Print('Carbon atoms, layer 3: '//trim(num2str(nAtC3)),'atoms')
 
       nAt = nAtC + nAtC2 + nAtC3
       call MIO_Allocate(Rat,[3,nAt],'Rat','atoms')
       Rat(:,1:nAtC) = RatC
       Rat(:,nAtC+1:nAtC+nAtC2) = RatC2
       Rat(:,nAtC+nAtC2+1:nAt) = RatC3
-      call MIO_Print('Total number of atoms: '//trim(num2str(nAt)),'atoms')
+      call MIO_Print('Number of atoms: '//trim(num2str(nAt)),'atoms')
       call MIO_Allocate(Species,nAt,'Species','atoms')
       !$OMP PARALLEL DO
       do i=1,nAtC
@@ -602,13 +603,14 @@ subroutine AtomsPos()
       open(1,FILE=str,STATUS='old')
       call MIO_InputParameter('Structure.UseSublatticeFile',useSublatticeFile,.true.)
       if (useSublatticeFile) then
-         call MIO_Print('Let us read in the sublattice file, must be sorted after LAMMPS calculation','atoms')
+         call MIO_Print('Sublattices read from Structure.SublatticeFile (same atom order as the structure file)','atoms')
          call MIO_InputParameter('Structure.SublatticeFile',str2,'sublatticesSorted.dat')
          open(2,FILE=str2,STATUS='old')
       end if
       call MIO_InputParameter('Structure.ReadInterlayerDistances',readInterlayerDistances,.false.)
       if (readInterlayerDistances) then
-         call MIO_Print('Let us read in the interlayerDistance and displacements files, must be sorted after LAMMPS calculation','atoms')
+         call MIO_Print('Interlayer distances and displacements read from files (same atom order as the structure file)', &
+           'atoms')
          call MIO_InputParameter('Structure.InterlayerDistanceFile',str3,'interlayerDistances.dat')
          open(3,FILE=str3,STATUS='old')
       end if
@@ -708,7 +710,7 @@ subroutine AtomsPos()
       close(1)
       close(9)
       if (SuperCellX .ne. SuperCellY) then
-          call MIO_Print('Different number of supercells in X and Y direction','atoms')
+          call MIO_Print('Supercell: different repetitions along a1 and a2','atoms')
           ! layerIndex.dat holds the original cell: read it, then copy it with the positions below
           call MIO_Allocate(layerIndex,nAt*SuperCellX*SuperCellY,'layerIndex','atoms')
           if (readLayerIndex) call AtomsReadLayerIndex()
@@ -745,7 +747,8 @@ subroutine AtomsPos()
           call MIO_InputParameter('Structure.ReadLayerIndex',readLayerIndex,.false.)
           if (readLayerIndex) call AtomsReadLayerIndex()
       else
-        call MIO_Print('We repeat the ReadXYZ several times using the supercell flag','atoms')
+        call MIO_Print('Structure file repeated '//trim(num2str(sCell))//' x '//trim(num2str(sCell))// &
+          ' times (Structure.SuperCell)','atoms')
         kk = 0
         frac = .false.
         call AtomsSetFracTemp()
@@ -936,7 +939,7 @@ subroutine AtomsPos()
       call MIO_InputParameter('Stack.EncapsulatedFourLayers',encapsulatedFourLayers,.false.)
       call MIO_InputParameter('Structure.ReadLayerIndex',readLayerIndex,.false.)
       if (readLayerIndex) then
-          call MIO_Print('We read the layer indices from an external file, make sure to provide it','atoms')
+          call MIO_Print('Layer indices read from layerIndex.dat (Structure.ReadLayerIndex)','atoms')
       else if (fourLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. encapsulatedFourLayers) then
         do i=1,nAt
           ! we first start by considering only the atoms in the bottom layer
@@ -1213,14 +1216,14 @@ subroutine AtomsCheckLayers()
 
    lmax = maxval(layerIndex(1:nAt))
    n = count(layerIndex(1:nAt) < 1)
-   if (n > 0) call MIO_Print('WARNING: '//trim(num2str(n))//' atoms have a layer index below 1: check the '// &
-     'z windows of the stack flag (Stack.*Z*) or layerIndex.dat.','atoms')
+   if (n > 0) call MIO_Warning(trim(num2str(n))//' atoms have a layer index below 1: check the '// &
+     'z windows of the stack flag (Stack.*Z*) or layerIndex.dat','atoms')
    do l = 1, lmax
-      if (count(layerIndex(1:nAt) == l) == 0) call MIO_Print('WARNING: layer '//trim(num2str(l))//' of '// &
+      if (count(layerIndex(1:nAt) == l) == 0) call MIO_Warning('layer '//trim(num2str(l))//' of '// &
         trim(num2str(lmax))//' holds no atom: the z windows of the stack flag (Stack.*Z*) or layerIndex.dat do not '// &
-        'match the structure, and bonds between the layers may be treated as intralayer ones.','atoms')
+        'match the structure, and bonds between the layers may be treated as intralayer ones','atoms')
    end do
-   call MIO_Print('Atoms per layer:'//trim(AtomsLayerCounts(lmax)),'atoms')
+   call MIO_Print('Atoms per layer: '//trim(adjustl(AtomsLayerCounts(lmax))),'atoms')
 
 contains
 
@@ -1285,7 +1288,7 @@ function AtomsShiftFrac(key,d,n1,n2) result(s)
 
    s = d/(sqrt(3.0_dp)*aG*sqrt(real(n1*n1 + n1*n2 + n2*n2,dp)))
    if (d /= 0.0_dp) call MIO_Print(trim(key)//': layer shifted by '//trim(num2str(d,4))// &
-        ' Angstrom along a1+a2 (in Angstrom since November 2026; before, an integer that had no effect, '// &
+        ' Ang along a1+a2 (in Ang since November 2026; before, an integer that had no effect, '// &
         'or n*aG cells in TwistedBilayer)','atoms')
 
 end function AtomsShiftFrac
@@ -1342,7 +1345,7 @@ subroutine AtomsConstruct(X,mm,angle,label,d,yShift)
       n1 = n2
       n2 = i1
    end if
-   write(str,'(a,i0,a,i0)') 'Size of '//trim(label)//' layer:  ',n1,' x ',n2
+   write(str,'(a,i0,a,i0,a)') 'Size of the '//trim(label)//' layer: ',n1,' x ',n2,' unit cells'
    call MIO_Print(str,'atoms')
    !$OMP PARALLEL DO
    do i2=0,n2-1; do i1=0,n1-1
@@ -1442,7 +1445,7 @@ subroutine AtomsConstructAsymm(X,mm,mm2,angle,label,d,yShift)
    ! m is diagonal here (CellSize*SuperCell along a1, CellSize*SuperCellY along a2): the lattice points are n1 along
    ! a1 and n2 along a2. Swapping them (as AtomsConstruct does for its general cells) put n2 > n1 points along a1,
    ! which fold onto each other, and left part of the cell empty.
-   write(str,'(a,i0,a,i0)') 'Size of '//trim(label)//' layer:  ',n1,' x ',n2
+   write(str,'(a,i0,a,i0,a)') 'Size of the '//trim(label)//' layer: ',n1,' x ',n2,' unit cells'
    call MIO_Print(str,'atoms')
    !$OMP PARALLEL DO
    do i2=0,n2-1; do i1=0,n1-1
@@ -1753,14 +1756,14 @@ subroutine AtomsOrder()
    call MPIAllGatherV(MPI_IN_PLACE,0,indxDiv,nTh,displ,MPI_INTEGER)
    deallocate(displ)
 #endif /* MPI */
-   call MIO_Print('')
-   call MIO_Print('Atoms distribution:','atoms')
-   call MIO_Print('ProcessID   Num. of atoms           Indx1           Indx2','atoms')
-   do ix=1,nDiv
-      write(str,'(i8,i16,2i16)') ix, indxDiv(ix+1)-indxDiv(ix), indxDiv(ix), indxDiv(ix+1)-1
-      call MIO_Print(str,'atoms')
-   end do
-   call MIO_Print('')
+   if (nDiv > 1 .or. MIO_Debugging('atoms')) then
+      call MIO_Print('Distribution of the atoms:','atoms')
+      call MIO_Print('   Domain           Atoms           First            Last','atoms')
+      do ix=1,nDiv
+         write(str,'(i9,i16,2i16)') ix, indxDiv(ix+1)-indxDiv(ix), indxDiv(ix), indxDiv(ix+1)-1
+         call MIO_Print(str,'atoms')
+      end do
+   end if
 #ifdef DEBUG
    call MIO_Debug('AtomsOrder',1)
 #endif /* DEBUG */

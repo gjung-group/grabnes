@@ -38,10 +38,7 @@ subroutine SCFGetCharge
    call MIO_TimerCount('scf')
 #endif /* TIMER */
 
-   call MIO_Print('==============================================','scf')
-   call MIO_Print('            SCF charge calculation','scf')
-   call MIO_Print('==============================================','scf')
-   call MIO_Print('')
+   call MIO_Section('Self-consistent Hubbard charges','scf')
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Hubbard.SCFMaxIterations',nIt,100)
    call MIO_InputParameter('Hubbard.SCFTolerance',tol,0.0001_dp)
@@ -122,7 +119,7 @@ subroutine SCFGetCharge
          enddo
       enddo
       write(str,'(i4)') it
-      call MIO_Print('Iteration no. '//str//'   dq='//trim(num2str(deltaq,5)),'scf')
+      call MIO_Print('Iteration '//str//': dq = '//trim(num2str(deltaq,5)),'scf')
       if (deltaq<tol) exit
       chargePrev = charge
       chTemp = 0.0_dp
@@ -158,7 +155,6 @@ subroutine SCFGetCharge
    call MIO_Deallocate(Kgrid,'Kgrid','scf')
    call MIO_Deallocate(DWork,'DWork','scf')
    call MIO_Deallocate(ZWork,'ZWork','scf')
-   call MIO_Print('')
 
 #ifdef TIMER
    call MIO_TimerStop('scf')
@@ -197,7 +193,7 @@ subroutine SCFHam0(N,H,E,K,cell,H0,maxN,hopp,NList,Nneigh,neighCell)
    end do
    call ZHEEV('V','L',N,H,N,E,ZWork,lwork,DWork,info)
    if (info/=0) then
-      call MIO_Kill('Error in diagonalization','scf','SCFHam0')
+      call MIO_Kill('the diagonalisation (ZHEEV) failed','scf','SCFHam0')
    end if
 
 #ifdef DEBUG
@@ -240,7 +236,7 @@ subroutine SCFHam(N,H,E,charge,ns,K,cell,H0,maxN,hopp,NList,Nneigh,neighCell,Spe
    end do
    call ZHEEV('V','L',N,H,N,E,ZWork,lwork,DWork,info)
    if (info/=0) then
-      call MIO_Kill('Error in diagonalization','scf','SCFHam')
+      call MIO_Kill('the diagonalisation (ZHEEV) failed','scf','SCFHam')
    end if
 
 #ifdef DEBUG
@@ -262,7 +258,7 @@ subroutine SCFInit(N)
 #endif /* DEBUG */
 
    call ZHEEV('N','L',N,A,N,W,OPT,-1,W2,INFO)
-   if (INFO /= 0) call MIO_Kill('Error in workspace query for SCF diagonalization','scf','SCFInit')
+   if (INFO /= 0) call MIO_Kill('the workspace query of the SCF diagonalisation failed','scf','SCFInit')
    lwork = int(OPT(1))
    call MIO_Allocate(ZWork,lwork,'ZWork','scf')
    call MIO_Allocate(DWork,3*N-2,'DWork','scf')

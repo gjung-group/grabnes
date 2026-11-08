@@ -47,11 +47,10 @@ subroutine GaussPot(H,strength)
    call MIO_InputParameter('Disorder.GaussPotPercentage',per,1.0_dp)
    call MIO_InputParameter('Disorder.GaussPotRange',sigma,1.0_dp)
    w = strength
-   call MIO_Print('')
-   call MIO_Print('Gaussian potential','ham')
-   call MIO_Print('  percentage: '//trim(num2str(per,3))//'%')
-   call MIO_Print('  range     : '//trim(num2str(sigma,3))//' Ang')
-   call MIO_Print('  strength  : '//trim(num2str(w,3))//' gamma0')
+   call MIO_Subsection('Gaussian potential','gauss')
+   call MIO_Print('  Percentage: '//trim(num2str(per,3))//'%','gauss')
+   call MIO_Print('  Range: '//trim(num2str(sigma,3))//' Ang','gauss')
+   call MIO_Print('  Strength: '//trim(num2str(w,3))//' g0','gauss')
    per = per/100.0_dp
    call MIO_Allocate(def,[inode1],[inode2],'def','gauss')
    def = .false.
@@ -79,9 +78,8 @@ subroutine GaussPot(H,strength)
    totImp = sum(impNd)
 #endif /* MPI */
    per = totImp*100.0_dp/nAt
-   call MIO_Print('')
-   call MIO_Print('  final percentage          : '//trim(num2str(per,3))//'%')
-   call MIO_Print('  total number of impurities: '//trim(num2str(totImp)))
+   call MIO_Print('  Final percentage: '//trim(num2str(per,3))//'%','gauss')
+   call MIO_Print('  Total number of impurities: '//trim(num2str(totImp)),'gauss')
    call MIO_Allocate(indxImp,totImp,'indxImp','gauss')
    nImp = 0
    do i=inode1,inode2
@@ -171,10 +169,9 @@ subroutine GaussPotDefinedPositions(H)
    if (frac) call AtomsSetCart()
    call MIO_InputParameter('Strain.BubbleGaussPotRange',sigma,1.0_dp)
    call MIO_InputParameter('Strain.BubbleGaussPotStrength',w,1.0_dp)
-   call MIO_Print('')
-   call MIO_Print('Gaussian potential','ham')
-   call MIO_Print('  range     : '//trim(num2str(sigma,3))//' Ang')
-   call MIO_Print('  strength  : '//trim(num2str(w,3))//' gamma0')
+   call MIO_Subsection('Gaussian potential','gauss')
+   call MIO_Print('  Range: '//trim(num2str(sigma,3))//' Ang','gauss')
+   call MIO_Print('  Strength: '//trim(num2str(w,3))//' g0','gauss')
 
    call RandSeedFromInput()
 
@@ -243,11 +240,10 @@ subroutine GaussHeight()
    call MIO_InputParameter('Strain.GaussHeightPercentage',per,1.0_dp)
    call MIO_InputParameter('Strain.GaussHeightRange',sigma,1.0_dp)
    call MIO_InputParameter('Strain.GaussHeightStrength',w,1.0_dp)
-   call MIO_Print('')
-   call MIO_Print('Gaussian height','ham')
-   call MIO_Print('  percentage: '//trim(num2str(per,3))//'%')
-   call MIO_Print('  range     : '//trim(num2str(sigma,3))//' Ang')
-   call MIO_Print('  strength  : '//trim(num2str(w,3))//' gamma0')
+   call MIO_Subsection('Gaussian height','gauss')
+   call MIO_Print('  Percentage: '//trim(num2str(per,3))//'%','gauss')
+   call MIO_Print('  Range: '//trim(num2str(sigma,3))//' Ang','gauss')
+   call MIO_Print('  Strength: '//trim(num2str(w,3))//' g0','gauss')
    per = per/100.0_dp
    def = .false.
    totImp = 0
@@ -274,9 +270,8 @@ subroutine GaussHeight()
    totImp = sum(impNd)
 #endif /* MPI */
    per = totImp*100.0_dp/nAt
-   call MIO_Print('')
-   call MIO_Print('  final percentage          : '//trim(num2str(per,3))//'%')
-   call MIO_Print('  total number of impurities: '//trim(num2str(totImp)))
+   call MIO_Print('  Final percentage: '//trim(num2str(per,3))//'%','gauss')
+   call MIO_Print('  Total number of impurities: '//trim(num2str(totImp)),'gauss')
    nImp = 0
    do i=inode1,inode2
       if (def(i)) then

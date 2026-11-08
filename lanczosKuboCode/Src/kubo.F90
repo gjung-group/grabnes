@@ -50,7 +50,7 @@ subroutine KuboInitWF(Psi)
    call MIO_InputParameter('Kubo.SeedValue',seedValue,123456)
    if (setSeed) then
        seed = seedValue
-       call MIO_Print('seedValue considered from Gendata','kubo')
+       call MIO_Print('Random seed taken from the input (Kubo.SeedValue)','kubo')
    else
        seed = clock + 37 * (/ (i - 1, i = 1, n) /)
    end if
@@ -71,7 +71,7 @@ subroutine KuboInitWF(Psi)
    call MPIRedSum(cnum,s,1,MPI_DOUBLE_COMPLEX)
    cnum = s
 #endif /* MPI */
-   call MIO_Print('Initial norm of wave function: '//num2str(sqrt(abs(cnum)),12),'kubo')
+   call MIO_Print('Initial norm of the wave function: '//trim(num2str(sqrt(abs(cnum)),12)),'kubo')
 
 #ifdef TIMER
    call MIO_TimerStop('kubo')
@@ -124,7 +124,7 @@ subroutine KuboInitWFPDOS(Psi,PDOSAtomNumber)
    call MPIRedSum(cnum,s,1,MPI_DOUBLE_COMPLEX)
    cnum = s
 #endif /* MPI */
-   call MIO_Print('Initial norm of wave function: '//num2str(sqrt(abs(cnum)),12),'kubo')
+   call MIO_Print('Initial norm of the wave function: '//trim(num2str(sqrt(abs(cnum)),12)),'kubo')
 
 #ifdef TIMER
    call MIO_TimerStop('kubo')
@@ -185,12 +185,12 @@ subroutine KuboInitWFLayerDOS(Psi,layerNumber,numberOfLayers,numberOfAtomsInLaye
    call MPIRedSum(cnum,s,1,MPI_DOUBLE_COMPLEX)
    cnum = s
 #endif /* MPI */
-   call MIO_Print('Initial norm of wave function: '//num2str(sqrt(abs(cnum)),12),'kubo')
+   call MIO_Print('Initial norm of the wave function: '//trim(num2str(sqrt(abs(cnum)),12)),'kubo')
    ! KuboRecursion assumes <Psi|Psi> = 1. numberOfAtomsInLayer is an estimate (nAt/numberOfLayers unless
    ! a stack flag gives the counts), so a layer of another size gave a start vector of the wrong norm and a
    ! wrong continued fraction (not only a rescaled one). Normalise; a correct count is left untouched.
    if (real(cnum,dp) <= 0.0_dp) then
-      call MIO_Print('WARNING: layer '//trim(num2str(layerNumber))//' has no atoms: its DOS is undefined','kubo')
+      call MIO_Warning('layer '//trim(num2str(layerNumber))//' has no atoms: its DOS is undefined','kubo')
    else if (abs(real(cnum,dp) - 1.0_dp) > 1.0e-6_dp) then
       call MIO_Print('Layer '//trim(num2str(layerNumber))//': start vector normalised (assumed '// &
          trim(num2str(numberOfAtomsInLayer))//' atoms in the layer)','kubo')
@@ -258,7 +258,7 @@ subroutine KuboInitWFLayerAndSpeciesDOS(Psi,layerNumber,speciesNumber,numberOfLa
    call MPIRedSum(cnum,s,1,MPI_DOUBLE_COMPLEX)
    cnum = s
 #endif /* MPI */
-   call MIO_Print('Initial norm of wave function: '//num2str(sqrt(abs(cnum)),12),'kubo')
+   call MIO_Print('Initial norm of the wave function: '//trim(num2str(sqrt(abs(cnum)),12)),'kubo')
 
 #ifdef TIMER
    call MIO_TimerStop('kubo')
@@ -296,15 +296,14 @@ subroutine KuboDOS(Psi,Psin,Psinm1,a,b,H,H0,hopp,NList,nRecurs,eps,nEn,Emin,Emax
    call MIO_TimerCount('kubo')
 #endif /* TIMER */
 
-   call MIO_print('Calculating DOS by recursion','kubo')
+   call MIO_Print('Recursion: '//trim(num2str(nRecurs))//' Lanczos steps','kubo')
    call KuboRecursion(Psi,Psin,Psinm1,nRecurs,a,b,H,H0,hopp,nList,.true.,trim(prefix))
    ! DOS for all energy range to obtain Fermi energy
    ! The DOS with more resoulution in the range specified
    flnm = trim(prefix)//'.DOS'
    flnm2 = trim(prefix)//'.AB'
    call KuboFrac(a,b,nRecurs,1.0_dp,eps,nEn,Emin,Emax,flnm,flnm2)
-   call MIO_Print('DOS written','kubo')
-   call MIO_Print('')
+   call MIO_Print('DOS written to '//trim(flnm)//' and '//trim(flnm2),'kubo')
 
 #ifdef TIMER
    call MIO_TimerStop('kubo')
@@ -345,13 +344,11 @@ subroutine KuboTEvol(Psi,ZUPsi,Psin,Psinm1,XpnPsi,XpnPsim1,c,dT,nT,az,bz,H,H0,ho
 #endif /* TIMER */
 
    prnt = .false.
-   call MIO_Print('')
-   call MIO_Print('Time evolution of wave function','kubo')
-   call MIO_Print('')
+   call MIO_Subsection('Time evolution of the wave function','kubo')
    do iT=1,nT
       if (mod(iT,nWr)==0) then
          prnt = .true.
-         write(str,'(a,i5,a)') '   *** Time Step ', iT, ' ***'
+         write(str,'(a,i6,a,i6)') 'Time step ', iT, ' of ', nT
          call MIO_Print(trim(str),'kubo')
       end if
       call KuboEvol(Psi,ZUPsi,Psin,Psinm1,XpnPsi,XpnPsim1,c,H0,hopp,NList,NeighD,ac,bc,nPol,prnt)

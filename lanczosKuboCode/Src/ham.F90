@@ -299,6 +299,7 @@ subroutine HamInit()
    call MIO_TimerCount('ham')
 #endif /* TIMER */
 
+   call MIO_Section('Hamiltonian','ham')
    call MIO_InputParameter('Zeeman.Term',Zterm,.false.)
    call MIO_InputParameter('Zeeman.PseudoTerm',PZterm,.false.)
    if (Zterm) then
@@ -310,7 +311,7 @@ subroutine HamInit()
       end if
       call MIO_InputParameter('Zeeman.Factor',gZeeman,0.00033_dp)
       gZeeman = gZeeman/g0
-      call MIO_Print('Calculation for spin '//trim(num2str(spin))//'/2','ham')
+      call MIO_Print('Zeeman term: spin sector '//trim(num2str(spin))//'/2','ham')
    end if
    if (PZterm) then
       call MIO_InputParameter('Zeeman.PseudoFactor',gPZeeman,0.00016_dp)
@@ -328,21 +329,21 @@ subroutine HamInit()
    if (IntrinsicSOCterm) then
       call MIO_InputParameter('SOC.LambdaI',lambdaI,0.0_dp)
       lambdaI = lambdaI / g0  ! Normalize by g0 for consistency with other SOC terms
-      call MIO_Print('Intrinsic SOC enabled with λI = '//trim(num2str(lambdaI)),'ham')
+      call MIO_Print('Intrinsic SOC (sublattice mass): lambda_I = '//trim(num2str(lambdaI,6)),'ham')
    end if
 
    call MIO_InputParameter('SOC.Ising',IsingSOCterm,.false.)
    if (IsingSOCterm) then
       call MIO_InputParameter('SOC.LambdaIsing',lambdaIsing,0.0_dp)
       lambdaIsing = lambdaIsing / g0  ! Normalize by g0 for consistency with other SOC terms
-      call MIO_Print('Ising SOC enabled with λIsing = '//trim(num2str(lambdaIsing)),'ham')
+      call MIO_Print('Ising SOC: lambda_Ising = '//trim(num2str(lambdaIsing,6)),'ham')
    end if
 
    call MIO_InputParameter('SOC.Rashba',RashbaSOCterm,.false.)
    if (RashbaSOCterm) then
       call MIO_InputParameter('SOC.LambdaR',lambdaR,0.0_dp)
       lambdaR = lambdaR / g0  ! Normalize by g0 for consistency with other SOC terms
-      call MIO_Print('Rashba SOC enabled with λR = '//trim(num2str(lambdaR)),'ham')
+      call MIO_Print('Rashba SOC: lambda_R = '//trim(num2str(lambdaR,6)),'ham')
    end if
 
    call MIO_InputParameter('SOC.PIA',PIASOCterm,.false.)
@@ -382,7 +383,7 @@ subroutine HamInit()
         'phase of SOC.RashbaConsistentPhase: set SOC.RashbaConsistentPhase .true.','ham','HamInit')
    end if
    if (.not. (RashbaSOCterm .or. KaneMeleSOCterm .or. InterlayerSOCterm .or. PIASOCterm)) RashbaConsistentPhase = .false.
-   if (RashbaSOCterm .and. .not. RashbaConsistentPhase) call MIO_Print('WARNING: SOC.RashbaConsistentPhase .false.: '// &
+   if (RashbaSOCterm .and. .not. RashbaConsistentPhase) call MIO_Warning('SOC.RashbaConsistentPhase .false.: '// &
      'the former Rashba term, whose Bloch phase has the wrong sign of k.d (exact only at K and Gamma) - use it only to '// &
      'reproduce results made before 2026-10-16','ham')
    if (RashbaConsistentPhase) then
@@ -416,7 +417,7 @@ subroutine HamInit()
          SOCLayersArray = tempSOCLayers(1:nSOCLayersRead)
 
          ! Print detailed output
-         call MIO_Print('SOC layer control enabled. Successfully parsed layers for SOC corrections:', 'ham')
+         call MIO_Print('SOC.LayerControl: SOC terms on the listed layers only', 'ham')
          SOCLayersString = ''
          do i = 1, nSOCLayersRead
             if (i == 1) then
@@ -426,18 +427,17 @@ subroutine HamInit()
             end if
          end do
          call MIO_Print('  Layers: '//trim(SOCLayersString), 'ham')
-         call MIO_Print('SOC corrections will ONLY be applied to the above '//trim(num2str(nSOCLayersRead))//' layer(s).', 'ham')
       else
          ! No layers found - this could mean user forgot to specify or parsing failed
-         call MIO_Print('WARNING: SOCLayerControl is enabled but no valid layers were found in SOCLayers parameter.', 'ham')
-         call MIO_Print('Expected format: space-separated integers (e.g., "1 5" or "1, 5")', 'ham')
+         call MIO_Warning('SOC.LayerControl is on but SOC.Layers holds no valid layer (expected integers such as '// &
+           '"1 5" or "1, 5")', 'ham')
          allocate(SOCLayersArray(0))  ! Empty array
       end if
    else
       ! SOCLayerControl disabled - allocate empty array (means apply to all layers)
       allocate(SOCLayersArray(0))
       if (IntrinsicSOCterm .or. IsingSOCterm .or. RashbaSOCterm .or. PIASOCterm) &
-         call MIO_Print('SOC layer control disabled. SOC will be applied to all layers.','ham')
+         call MIO_Print('SOC terms on every layer','ham')
    end if
 
    if (Zterm .and. SOCLayerControl) then
@@ -460,7 +460,7 @@ subroutine HamInit()
          HaldaneLayersArray = tempHaldaneLayers(1:nHaldaneLayersRead)
 
          ! Print detailed output
-         call MIO_Print('Haldane layer control enabled. Successfully parsed layers for Haldane corrections:', 'ham')
+         call MIO_Print('Haldane.LayerControl: Haldane term on the listed layers only', 'ham')
          HaldaneLayersString = ''
          do i = 1, nHaldaneLayersRead
             if (i == 1) then
@@ -470,29 +470,28 @@ subroutine HamInit()
             end if
          end do
          call MIO_Print('  Layers: '//trim(HaldaneLayersString), 'ham')
-         call MIO_Print('Haldane corrections will ONLY be applied to the above '//trim(num2str(nHaldaneLayersRead)) &
-               //' layer(s).', 'ham')
       else
          ! No layers found - this could mean user forgot to specify or parsing failed
-         call MIO_Print('WARNING: HaldaneLayerControl is enabled but no valid layers were found in HaldaneLayers parameter.', 'ham')
-         call MIO_Print('Expected format: space-separated integers (e.g., "1 5" or "1, 5")', 'ham')
+         call MIO_Warning('Haldane.LayerControl is on but Haldane.Layers holds no valid layer (expected integers '// &
+           'such as "1 5" or "1, 5")', 'ham')
          allocate(HaldaneLayersArray(0))  ! Empty array
       end if
    else
       ! HaldaneLayerControl disabled - allocate empty array (means apply to all layers)
       allocate(HaldaneLayersArray(0))
       call MIO_InputParameter('Haldane.NNN',haldaneOn,.false.)
-      if (haldaneOn) call MIO_Print('Haldane layer control disabled. Haldane will be applied to all layers.','ham')
+      if (haldaneOn) call MIO_Print('Haldane term on every layer','ham')
    end if
 
    ! Start with finding all the neighbors. This routine will use one of the
    ! possible routines. The standard, best tested one, is Neigh.fastNNnotsquare.
    ! It is based on a binning approach.
+   call MIO_Subsection('Neighbour search','neigh')
    call MIO_InputParameter('Neigh.fastNN',l,.false.)
    call MIO_InputParameter('Neigh.fastNNnotsquare',ll,.true.)
-   call MIO_Print('We use Neigh.fastNNnotsquare by default. This one works as long as the system size is large enough. Otherwise, one has to use one of the specialized routines, for instance when working on commensurate cells that contain less than 10 atoms.','ham')
    call MIO_InputParameter('Neigh.fastNNnotsquareNotRectangle',lll,.false.)
-   call MIO_Print('aG ='//trim(num2str(aG)),'ham')
+   if (ll) call MIO_Print('Search: binned (Neigh.fastNNnotsquare, the default)','neigh')
+   call MIO_Print('Graphene lattice parameter aG: '//trim(num2str(aG,5))//' Ang','neigh')
    if (l .or. ((.not. ll) .and. lll)) then
       ! fastNN and fastNNnotsquareNotRectangle store the binned atoms in arrays
       ! of fixed capacity and read past their end as soon as a bin is full,
@@ -508,7 +507,7 @@ subroutine HamInit()
       A2 = ucell(:,2)
       maxnn = 20 !to be adjsuted for accuracy
       call fastNN(nAt, Rat(1,:),Rat(2,:),Rat(3,:), aCC,cutoff, A1,A2, maxnn) ! change cutoff compared to other one
-      call MIO_Print('fastNN finished','ham')
+      call MIO_PrintDebug('fastNN finished','neigh')
    else if (ll) then
       aCC = aG/sqrt(3.0_dp)
       ! TB.NeighLevels is the number of intralayer neighbour shells. It sets
@@ -519,7 +518,7 @@ subroutine HamInit()
       if (cutAtNN3) then
          ! Legacy flag: it limited the search to three shells when
          ! TB.NeighLevels was larger than 2.
-         call MIO_Print('Neigh.CutAtNN3 is deprecated; use TB.NeighLevels 3 instead','ham')
+         call MIO_Print('Neigh.CutAtNN3 is deprecated; use TB.NeighLevels 3 instead','neigh')
          nShells = min(nShells,3)
       end if
       cutoff2 = NeighShellCutoff2(nShells,aCC)
@@ -534,15 +533,15 @@ subroutine HamInit()
          NeighIntraWarn2 = (0.98_dp*intraRadius)**2
       end if
       call MIO_Print('Intralayer neighbours: '//trim(num2str(nShells))//' shell(s), in-plane radius '// &
-        trim(num2str(sqrt(cutoff2),4))//' Ang','ham')
-      if (intraRadius > 0.0_dp) call MIO_Print('Intralayer radius set by Neigh.IntralayerRadius','ham')
+        trim(num2str(sqrt(cutoff2),4))//' Ang','neigh')
+      if (intraRadius > 0.0_dp) call MIO_Print('  (radius set by Neigh.IntralayerRadius)','neigh')
       call MIO_InputParameter('Intralayer.F2G2Model',F2G2Model,.true.)
       modelShells = 8
       if (F2G2Model) modelShells = 5
       if (nShells < modelShells) then
          call MIO_Print('Intralayer hopping terms beyond shell '//trim(num2str(nShells))// &
            ' are not included (the intralayer models reach shell '//trim(num2str(modelShells))// &
-           '); raise TB.NeighLevels to include them','ham')
+           '); raise TB.NeighLevels to include them','neigh')
       end if
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,0)
       call MIO_InputParameter('Stack.Bulk',bulk,.false.)
@@ -550,11 +549,11 @@ subroutine HamInit()
       call MIO_InputParameter('Stack.NonBulkSmall',small,.false.)
       call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       if (outplaneNeigh/=0) then
-         call MIO_Print('There are out of plane neighbors','ham')
+         call MIO_Print('Interlayer neighbours: searched (Neigh.LayerNeighbors)','neigh')
          call MIO_InputParameter('Neigh.LayerDistFactor',distFact,1.0_dp) ! to increase the cutoff for outerlayer neighbors
          cutoff2bis = (aG/sqrt(3.0_dp)*1.1_dp*distFact)**2.0_dp
       else
-         call MIO_Print('There are NO out of plane neighbors','ham')
+         call MIO_Print('Interlayer neighbours: none (Neigh.LayerNeighbors 0)','neigh')
          cutoff2bis = 1.0_dp
       end if
       A1 = ucell(:,1)
@@ -576,7 +575,7 @@ subroutine HamInit()
             call fastNNnotsquare(nAt,Rat(1,:),Rat(2,:),Rat(3,:),cutoff2,cutoff2bis,A1,A2)
          end if
       end if
-      call MIO_Print('fastNNnotsquare finished','ham')
+      call MIO_PrintDebug('fastNNnotsquare finished','neigh')
    else if (lll) then
       aCC = aG/sqrt(3.0_dp)
       if (tbnn==1) then
@@ -589,11 +588,11 @@ subroutine HamInit()
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,0)
       call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
       if (outplaneNeigh/=0) then
-         call MIO_Print('There are out of plane neighbors','ham')
+         call MIO_Print('Interlayer neighbours: searched (Neigh.LayerNeighbors)','neigh')
          call MIO_InputParameter('Neigh.LayerDistFactor',distFact,1.0_dp) ! to increase the cutoff for outerlayer neighbors
          cutoff2bis = (aG/sqrt(3.0_dp)*1.1_dp*distFact)**2.0_dp
       else
-         call MIO_Print('There are NO out of plane neighbors','ham')
+         call MIO_Print('Interlayer neighbours: none (Neigh.LayerNeighbors 0)','neigh')
          cutoff2bis = 1.0_dp
       end if
       A1 = ucell(:,1)
@@ -603,7 +602,7 @@ subroutine HamInit()
       if (.not. frac) call AtomsSetFrac()
       call fastNNnotsquareNotRectangle(nAt,Rat(1,:),Rat(2,:),Rat(3,:),aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
       if (frac) call AtomsSetCart()
-      call MIO_Print('fastNNnotsquareNotRectangle finished','ham')
+      call MIO_PrintDebug('fastNNnotsquareNotRectangle finished','neigh')
    else
       call NeighList()
    end if
@@ -613,7 +612,8 @@ subroutine HamInit()
    if (readDataFiles) then
       ! generate.e is the file Output.WriteDataFiles writes (HamHopWriteTables): H0 already in units of g0,
       ! like the hoppings of generate.s
-      call MIO_Print('Reading in the (already g0-renormalized) onsite energies from generate.e','ham')
+      call MIO_Subsection('On-site energies','ham')
+      call MIO_Print('On-site energies read from generate.e (in units of g0)','ham')
       call MIO_Allocate(H0,[inode1],[inode2],'H0','ham')
       open(222,FILE="generate.e",STATUS='old')
       do i=1,nAt
@@ -621,6 +621,7 @@ subroutine HamInit()
       end do
       close(222)
    else
+       call MIO_Subsection('On-site energies','ham')
        call HamOnSite()
    end if
    call MIO_Allocate(hopp,[1,inode1],[maxNeigh,inode2],'hopp','ham')
@@ -630,9 +631,7 @@ subroutine HamInit()
    if (moireStrain) then
       call MIO_InputParameter('Moire.StrainFactor',strFactor,3.37_dp)
       call MIO_InputParameter('Moire.HeightAmp',hStr,0.1_dp)
-      call MIO_Print('Hopping modified by moire strain','ham')
-      call MIO_Print('Factor: '//trim(num2str(strFactor,2)),'ham')
-      call MIO_Print('')
+      call MIO_Print('Moire.Strain: hoppings modified by the moire strain, factor '//trim(num2str(strFactor,2)),'ham')
       dCC = aG/sqrt(3.0_dp)
    end if
    call MIO_InputParameter('Strain.RandomStrain',randomStrain,.false.)
@@ -831,7 +830,8 @@ subroutine HamOnSite()
    call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
    call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
 #ifdef DEBUG
-   print*, "onsite, B, N, C1, C2", e0_B, e0_N, e0_C1, e0_C2
+   call MIO_Print('On-site energies B, N, C1, C2 [g0]: '//trim(num2str(e0_B,6))//' '//trim(num2str(e0_N,6))//' '// &
+     trim(num2str(e0_C1,6))//' '//trim(num2str(e0_C2,6)),'ham')
 #endif /* DEBUG */
    ! orientation of the layers and twist of the interfaces (opt-in; needed before the on-site terms)
    call HamMeasureLayerTwist()
@@ -876,7 +876,7 @@ subroutine HamOnSite()
    call MIO_InputParameter('Potential.OnsiteEnergyShift',onsiteEnergyShift,0.150_dp)
    onsiteEnergyShift = onsiteEnergyShift/g0
    if (u) then
-      call MIO_Print('Adding an onsite energy shift','ham')
+      call MIO_Print('Disorder.OnsiteShift: on-site energy shift added','ham')
       !$OMP PARALLEL DO PRIVATE(i)
       do i=1,nAt
          H0(i) = H0(i) + onsiteEnergyShift
@@ -1058,9 +1058,7 @@ subroutine HamOnSite()
       call RandSeedFromInput()
       call HamInputEnergyEV('Disorder.SublattAmp',A,2.0_dp,since='2026-11-07')
       call MIO_InputParameter('Disorder.SublattPct',pct,0.1_dp)
-      call MIO_Print('Sublattice disorder','ham')
-      call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
-      call MIO_Print('')
+      call MIO_Print('Sublattice disorder: w = '//trim(num2str(A,4)),'ham')
       do i=inode1,inode2
          call random_number(rand)
          if(rand.le.(pct*2.0_dp) .and. Species(i).eq.2) then  ! factor 2 to compensate for the sublattice restriction
@@ -1073,9 +1071,7 @@ subroutine HamOnSite()
    if (l) then
       call RandSeedFromInput()
       call HamInputEnergyEV('Disorder.AndersonAmp',A,1.0_dp,since='2026-11-07')
-      call MIO_Print('Anderson disorder','ham')
-      call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
-      call MIO_Print('')
+      call MIO_Print('Anderson disorder: w = '//trim(num2str(A,4)),'ham')
       do i=inode1,inode2
          call random_number(rand)
          H0(i) = H0(i) + (rand-0.5_dp)*A
@@ -1215,7 +1211,7 @@ subroutine HamOnSiteMoireCDW()
       cdwMass   = cdwMass/g0
       if (.not. frac) call AtomsSetFrac()
 
-      call MIO_Print('moireCDW: commensurate superlattice potential','ham')
+      call MIO_Subsection('moireCDW: commensurate superlattice potential','ham')
       call MIO_Print('  scalar amplitude: '//trim(num2str(cdwScalar*g0,5))//' eV','ham')
       call MIO_Print('  mass   amplitude: '//trim(num2str(cdwMass*g0,5))//' eV','ham')
       call MIO_Print('  denominator D:    '//trim(num2str(real(Dcdw,dp),0)),'ham')
@@ -1264,17 +1260,17 @@ subroutine HamOnSiteTrigonalCDW()
    call MIO_Debug('HamOnSiteTrigonalCDW',0)
 #endif /* DEBUG */
 
-         call MIO_Print('Adding CDW modulation for helical twisted MBM system','ham')
+         call MIO_Subsection('Trigonal CDW (helicalTwistedMBM_CDW)','ham')
          call MIO_InputParameter('Potential.CDWAmplitude',CDWAmplitude,0.01_dp)
          CDWAmplitude = CDWAmplitude/g0
          call MIO_InputParameter('Potential.CDWPeriod',CDWPeriod,1.0_dp)
          call MIO_InputParameter('Potential.CDWUseMassTerm',l,.false.)
          if (.not. frac) call AtomsSetFrac()
-         call MIO_Print('  Using fractional coordinates for CDW modulation (Rat in fractional units)','ham')
+         call MIO_PrintDebug('trigonal CDW evaluated in fractional coordinates','ham')
          call MIO_Print('  CDW period: '//trim(num2str(CDWPeriod,5))//' (in fractional units, 1.0 = full simulation cell)','ham')
          call MIO_Print('  CDW amplitude: '//trim(num2str(CDWAmplitude*g0,5))//' eV','ham')
          if (l) then
-            call MIO_Print('  CDW using sublattice-dependent mass term (opens spatially varying gap)','ham')
+            call MIO_Print('  Form: sublattice-staggered mass (CDWUseMassTerm)','ham')
             !$OMP PARALLEL DO PRIVATE(i)
             do i=1,nAt
                H0(i) = H0(i) + (-1.0_dp)**Species(i) * (1.0_dp/3.0_dp) * CDWAmplitude * &
@@ -1284,7 +1280,7 @@ subroutine HamOnSiteTrigonalCDW()
             end do
             !$OMP END PARALLEL DO
          else
-            call MIO_Print('  CDW using uniform energy shift (no gap opening)','ham')
+            call MIO_Print('  Form: same sign on both sublattices','ham')
             !$OMP PARALLEL DO PRIVATE(i)
             do i=1,nAt
                H0(i) = H0(i) + (1.0_dp/3.0_dp) * CDWAmplitude * &
@@ -1316,13 +1312,9 @@ subroutine HamOnSiteDeltaDisorder()
 
       call RandSeedFromInput()
       call HamInputEnergyEV('Disorder.DeltaAmp',A,1.0_dp)
-      call MIO_Print('delta disorder','ham')
-      call MIO_Print('  w: '//trim(num2str(A,4)),'ham')
-      call MIO_Print('')
+      call MIO_Print('Delta disorder: w = '//trim(num2str(A,4)),'ham')
       call MIO_InputParameter('Disorder.DeltaSkewFactor',AA,1.0_dp)
-      call MIO_Print('delta disorder','ham')
-      call MIO_Print('  skewFactor: '//trim(num2str(AA,4)),'ham')
-      call MIO_Print('')
+      call MIO_Print('Delta disorder: skewFactor = '//trim(num2str(AA,4)),'ham')
       tot = 0.0_dp
       tot2 = 0.0_dp
       tot3 = 0.0_dp
@@ -1344,7 +1336,7 @@ subroutine HamOnSiteDeltaDisorder()
          tot3 = tot3 + randomPot3
          H0(i) = H0(i) + randomPot*A
       end do
-      call MIO_Print('delta disorder','ham')
+      call MIO_Print('Delta disorder, statistics of the on-site energies:','ham')
       nImp = inode2
       call MIO_Print('  mean: '//trim(num2str((tot/nImp),9)),'ham')
       call MIO_Print('  variance: '//trim(num2str((tot2/nImp),9)),'ham')
@@ -1713,9 +1705,9 @@ subroutine HamOnSiteSublatticeMass()
 #endif /* DEBUG */
 
       if (onlyBottomLayerMassTerm) then
-          call MIO_Print('Adding a massterm between sublattices, but only for the bottom layer, i.e. layerIndex == 1','ham')
+          call MIO_Print('Sublattice mass term on layer 1 only','ham')
       else
-          call MIO_Print('Adding a massterm between sublattices','ham')
+          call MIO_Print('Sublattice mass term on every layer','ham')
       end if
       !$OMP PARALLEL DO PRIVATE(i)
       do i=1,nAt
@@ -1773,11 +1765,11 @@ subroutine HamOnSiteLayerPotential()
    call MIO_Debug('HamOnSiteLayerPotential',0)
 #endif /* DEBUG */
 
-      call MIO_Print('Adding a energy shift beteen both layers in the bilayer graphene','ham')
+      call MIO_Print('MoireBilayerElectricField: potential difference between the layers','ham')
       ! stacks without a profile of their own below get the two-layer step
       if (.not. (fourLayers .or. fourLayersSandwiched .or. helicalTwistedMBM .or. BNt2GBN .or. threeLayers .or. &
             fiveLayersSandwiched .or. sixLayersSandwiched .or. t3BG .or. twentyLayersSandwiched)) then
-         if (maxval(layerIndex(1:nAt)) > 2) call MIO_Print('WARNING: MoireBilayerElectricField on '// &
+         if (maxval(layerIndex(1:nAt)) > 2) call MIO_Warning('MoireBilayerElectricField on '// &
            trim(num2str(maxval(layerIndex(1:nAt))))//' layers without a profile for this stack: layer 1 is put at '// &
            '-Shift/2 and EVERY other layer at +Shift/2 (a step, not a linear profile). Use '// &
            'Potential.FourLayerOnsiteShifts or a stack flag with its own profile if that is not intended.','ham')
@@ -1883,7 +1875,7 @@ subroutine HamOnSiteMoirePotential()
 
       call MIO_InputParameter('Moire.Sachs',l,.false.)
       if (l) then
-         call MIO_Print('Moire potential model [Sachs et al. PRB 84, 195414 (2011)]','ham')
+         call MIO_Print('Moire potential: Sachs et al., PRB 84, 195414 (2011)','ham')
          call MIO_InputParameter('Moire.PotA',A,0.0186_dp)
          call MIO_InputParameter('Moire.PotB',B,0.042_dp)
          call MIO_InputParameter('Moire.PotC',C,0.0_dp)
@@ -1891,7 +1883,7 @@ subroutine HamOnSiteMoirePotential()
 ! --- New parameters for the moire pattern ---
       call MIO_InputParameter('Moire.Jeil',l,.false.)
       if (l) then
-         call MIO_Print('Moire potential model [Jeil Jung, PRB 89, 205414 (2014)]','ham')
+         call MIO_Print('Moire potential: Jung et al., PRB 89, 205414 (2014)','ham')
          call MIO_InputParameter('Moire.PreFactor',moirePreFactor,1.0_dp)
          call MIO_InputParameter('Moire.PotC0',C0,-0.01013_dp)
          C0 = C0/g0*moirePreFactor
@@ -1942,11 +1934,11 @@ subroutine HamOnSiteMoirePotential()
       ! to ensure the harmonic approximation path is taken instead
       if (GBNtwoLayers .and. GBNuseHarmonicApprox) then
          if (tBGDiag) then
-            call MIO_Print('WARNING: tBGDiag is true but GBNuseHarmonicApprox is also true for GBNtwoLayers. Disabling tBGDiag.','ham')
+            call MIO_Warning('tBGDiag is true but GBNuseHarmonicApprox is also true for GBNtwoLayers. Disabling tBGDiag.','ham')
             tBGDiag = .false.
          end if
          if (BNBNDiag) then
-            call MIO_Print('WARNING: BNBNDiag is true but GBNuseHarmonicApprox is also true for GBNtwoLayers. Disabling BNBNDiag.','ham')
+            call MIO_Warning('BNBNDiag is true but GBNuseHarmonicApprox is also true for GBNtwoLayers. Disabling BNBNDiag.','ham')
             BNBNDiag = .false.
          end if
       end if
@@ -2000,7 +1992,7 @@ subroutine HamOnSiteMoirePotential()
              call MIO_InputParameter('Interlayer.PhiBpBp',PhiBpBp_global,82.54_dp)
              PhiBpBp_global = PhiBpBp_global*pi/180.0_dp
          else
-             call MIO_Print('we are going to calculate interlayer-distance-dependent tBG intralayer  moire parametrization inside the loop using Srivani parametrization','ham')
+             call MIO_Print('tBG intralayer moire terms: interlayer-distance dependent (Srivani parametrisation)','ham')
          end if
       else if (BNBNDiag) then
              call MIO_InputParameter('Interlayer.CAA',CAA_global,0.00110_dp)
@@ -2061,8 +2053,8 @@ subroutine HamOnSiteMoirePotential()
       call MIO_InputParameter('TBG.LegacyAnalyticOnSite',tBGLegacyOnSite,.false.)
       onSiteAngle = GBNAngle
       if (tBGDiag .and. .not. tBGLegacyOnSite) onSiteAngle = tBGAngleOnSite
-      if (tBGDiag .and. tBGLegacyOnSite) call MIO_Print('WARNING: TBG.LegacyAnalyticOnSite: the analytic tBG on-site '// &
-           'term uses GBN.Angle and d in Angstrom, as before November 2026','ham')
+      if (tBGDiag .and. tBGLegacyOnSite) call MIO_Warning('TBG.LegacyAnalyticOnSite: the analytic tBG on-site '// &
+           'term uses GBN.Angle and d in Ang, as before November 2026','ham')
          GlobalPhi = Globalang*pi/180.0_dp
          GlobalPhi2 = Globalang2*pi/180.0_dp
       GlobalPhiL1 = GlobalPhiL1*pi/180.0_dp
@@ -2076,7 +2068,7 @@ subroutine HamOnSiteMoirePotential()
          open(589,FILE='Hjj2')
       end if
       if (dontUseInplaneMoire) then
-          call MIO_Print('We are deactivating the inplane moire terms','ham')
+          call MIO_Print('In-plane moire terms off (dontUseInplaneMoire)','ham')
       ! adding in plane moire
       else if (GBNtwoLayers .or. BNBNtwoLayers .or. encapsulatedThreeLayers .or.  encapsulatedFourLayers &
             .or. encapsulatedFiveLayers .or. t3GwithBN .or. BNt2GBN .or. tBGDiag .or. t2GBN) then
@@ -2265,7 +2257,7 @@ subroutine HamOnSiteMoirePotential()
             !$OMP END PARALLEL DO
 
       else if (l) then
-         call MIO_Print('Moire Trilayer','ham')
+         call MIO_Subsection('Moire trilayer potential','ham')
          ! A, B and C (the defaults of PotA1..PotB2, and the constant term) are read only with Moire.Sachs
          call MIO_InputParameter('Moire.Sachs',w,.false.)
          if (.not. w) call MIO_Kill('Moire.Trilayer uses the amplitudes Moire.PotA, Moire.PotB and Moire.PotC, '// &
@@ -2304,7 +2296,7 @@ subroutine HamOnSiteMoirePotential()
       else
          call MIO_InputParameter('Moire.Sachs',l,.false.)
          if (l) then
-           call MIO_Print('Actually adding the Sachs potential...','ham')
+           call MIO_Print('Sachs moire potential:','ham')
            call MIO_Print('  A: '//trim(num2str(A,4)),'ham')
            call MIO_Print('  B: '//trim(num2str(B,4)),'ham')
            call MIO_Print('  C: '//trim(num2str(C,4)),'ham')
@@ -2321,13 +2313,13 @@ subroutine HamOnSiteMoirePotential()
          call MIO_InputParameter('Moire.Jeil',l,.false.)
          call MIO_InputParameter('Structure.SingleLayerXYZ',singleLayerXYZ,.false.)
          if (l) then
-           call MIO_Print('Actually adding the Jeil potential...','ham')
+           call MIO_Print('Jung moire potential added','ham')
            call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
            call MIO_InputParameter('Trilayer.FanZhang',FanZhang,.false.)
            if (MIO_StringComp(str,'MoireEncapsulatedBilayer') &
                  .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') &
                  .or. (MIO_StringComp(str,'ReadXYZ') .and. .not.(singleLayerXYZ))) then
-             call MIO_Print('Working on MoireEncapsulatedBilayer or MoireEncapsulatedBilayerBasedOnMoireCell or ReadXYZ but not a single layer','ham')
+             call MIO_PrintDebug('moire potential branch: encapsulated bilayer or ReadXYZ multilayer','ham')
              call MIO_InputParameter('Moire.OnlyH0',l,.false.)
              call MIO_InputParameter('Moire.OnlyHZ',w,.false.)
              call MIO_InputParameter('Moire.NoH0AndHZ',v,.false.)
@@ -2347,7 +2339,7 @@ subroutine HamOnSiteMoirePotential()
              call HamOnSiteMoireEffectiveBilayer()
            !        ! add onsite energies
            else
-             call MIO_Print('Working on ANY moire system not satisfying MoireEncapsulatedBilayer or MoireEncapsulatedBilayerBasedOnMoireCell or ReadXYZ but not a single layer','ham')
+             call MIO_PrintDebug('moire potential branch: general moire system','ham')
              call MIO_InputParameter('Moire.OnlyH0',l,.false.)
              call MIO_InputParameter('Moire.OnlyHZ',w,.false.)
              call MIO_InputParameter('Moire.NoH0AndHZ',v,.false.)
@@ -2394,13 +2386,12 @@ subroutine HamOnSiteMoirePotential()
            end if
            if (.not. frac) call AtomsSetFrac()
          end if
-         call MIO_Print('')
       end if
       call MIO_InputParameter('Moire.SymmetricPot',l,.false.)
       if (l) then
          call MIO_InputParameter('Moire.SymmA',A,0.01_dp)
          call MIO_InputParameter('Moire.SymmB',B,0.01_dp)
-         call MIO_print('Symmetric part:')
+         call MIO_Print('Symmetric part:','ham')
          call MIO_Print('  A: '//trim(num2str(A,4)),'ham')
          call MIO_Print('  B: '//trim(num2str(B,4)),'ham')
          A = A/g0
@@ -2961,7 +2952,7 @@ subroutine HamOnSiteAtomHarmonicGBN(A, B, C, i, dxTemp, dx, dyTemp, dy, Hjj, dxT
                              dxTemp = -dx/aBN
                              dyTemp = -dy/aBN
                           else
-                             call MIO_Print('WARNING: atom '//trim(num2str(i)) &
+                             call MIO_Warning('atom '//trim(num2str(i)) &
                                    //' is in a layer that this model does not expect','ham')
                           end if
                            call harmonicApprox(dxTemp,dyTemp,A,B,C, Hjj)
@@ -3151,7 +3142,7 @@ subroutine HamOnSiteMoireEffective()
                     end if
                 end if
                 if (.not. shift1==0.0_dp) then
-                     call MIO_Print('we add a shift to the bottom moire layer','ham')
+                     call MIO_Print('Shift added to the bottom moire layer','ham')
                 end if
                 dy = dy + shift1
                 if (layerIndex(i).eq.1) then
@@ -3821,6 +3812,7 @@ subroutine HamMeasureLayerTwist()
    real(dp), allocatable :: phi(:), coh(:)
    complex(dp), allocatable :: z(:)
    character(len=12) :: what
+   character(len=160) :: row
 
 #ifdef DEBUG
    call MIO_Debug('HamMeasureLayerTwist',0)
@@ -3852,29 +3844,28 @@ subroutine HamMeasureLayerTwist()
          end if
       end do
       call HamLayerOrientation(nL, phi, coh, nBond)
-      call MIO_Print('')
-      call MIO_Print('Layer orientations measured from the structure (Stack.MeasureTwist):','ham')
-      call MIO_Print('  layer   atoms  kind      orientation [deg]   coherence','ham')
+      call MIO_Subsection('Layer orientations measured from the structure (Stack.MeasureTwist)','ham')
+      call MIO_Print('  Layer     Atoms  Kind       Orientation [deg]  Coherence','ham')
       do L = 1, nL
          what = 'mixed'
          if (nBN(L) == 0) what = 'graphene'
          if (nC(L) == 0) what = 'hBN'
-         call MIO_Print('  '//trim(num2str(L))//'       '//trim(num2str(nC(L)+nBN(L)))//'   '//what// &
-           trim(num2str(phi(L),4))//'             '//trim(num2str(coh(L),4)),'ham')
+         write(row,'(2x,i5,i10,2x,a9,f19.4,f11.4)') L, nC(L)+nBN(L), what, phi(L), coh(L)
+         call MIO_Print(trim(row),'ham')
       end do
-      call MIO_Print('  interface   twist [deg]   (tolerance '//trim(num2str(tol,3))//' deg)','ham')
+      call MIO_Print('  Interface   Twist [deg]  (tolerance '//trim(num2str(tol,3))//' deg)','ham')
       do L = 1, nL - 1
          twist = phi(L+1) - phi(L)
          twist = twist - 60.0_dp*nint(twist/60.0_dp)
          if (nBond(L) == 0 .or. nBond(L+1) == 0) then
-            call MIO_Print('  '//trim(num2str(L))//' - '//trim(num2str(L+1))//'       not measured (a layer '// &
-              'without first-shell bonds)','ham')
+            write(row,'(2x,i3,a,i3,a)') L,' - ',L+1,'     not measured (a layer without first-shell bonds)'
+            call MIO_Print(trim(row),'ham')
          else if (abs(twist) > tol) then
-            call MIO_Print('  '//trim(num2str(L))//' - '//trim(num2str(L+1))//'       '//trim(num2str(twist,4))// &
-              '      twisted','ham')
+            write(row,'(2x,i3,a,i3,f14.4,a)') L,' - ',L+1,twist,'  twisted'
+            call MIO_Print(trim(row),'ham')
          else
-            call MIO_Print('  '//trim(num2str(L))//' - '//trim(num2str(L+1))//'       '//trim(num2str(twist,4))// &
-              '      not twisted','ham')
+            write(row,'(2x,i3,a,i3,f14.4,a)') L,' - ',L+1,twist,'  not twisted'
+            call MIO_Print(trim(row),'ham')
          end if
       end do
       ! Untwisted graphene pairs. An atom is "on top" if an atom of the other layer of the pair lies above or
@@ -3913,9 +3904,8 @@ subroutine HamMeasureLayerTwist()
       hamPairAB = .false.
       hamF2G2Site = 0
       if (any(aligned)) then
-         call MIO_Print('  untwisted graphene pairs: atoms with an atom of the','ham')
-         call MIO_Print('  other layer above or below ("on top"), and the stacking','ham')
-         call MIO_Print('  pair     on top, lower / upper layer    stacking','ham')
+         call MIO_Print('  Untwisted graphene pairs: atoms with an atom of the other layer above or below ("on top")','ham')
+         call MIO_Print('  Pair        On top, lower / upper layer     Stacking','ham')
          do L = 1, nL - 1
             if (.not. aligned(L)) cycle
             ! AB: half of the atoms of each layer are on top; AA: all of them; anything else: a shifted pair
@@ -3927,9 +3917,9 @@ subroutine HamMeasureLayerTwist()
             else
                what = 'other'
             end if
-            call MIO_Print('  '//trim(num2str(L))//' - '//trim(num2str(L+1))//'    '//trim(num2str(nTop(1,L)))//' of '// &
-              trim(num2str(nC(L)))//' / '//trim(num2str(nTop(2,L)))//' of '//trim(num2str(nC(L+1)))//'    '// &
-              trim(what),'ham')
+            write(row,'(2x,i3,a,i3,4x,i8,a,i8,a,i8,a,i8,4x,a)') L,' - ',L+1,nTop(1,L),' of',nC(L),' /',nTop(2,L),' of', &
+              nC(L+1),trim(what)
+            call MIO_Print(trim(row),'ham')
          end do
       end if
       do i = inode1, inode2
@@ -3943,12 +3933,11 @@ subroutine HamMeasureLayerTwist()
          end if
       end do
       if (hamModelFromTwist) then
-         call MIO_Print('  Stack.ModelFromTwist: the AB pairs take the bilayer F2G2 model (on-site,','ham')
-         call MIO_Print('  intralayer and interlayer terms); every other graphene layer the','ham')
-         call MIO_Print('  single-layer F2G2 parameters; other interfaces the model of TypeOfBL.','ham')
-         if (.not. any(hamPairAB)) call MIO_Print('  No AB pair was found: the switch changes nothing in this run.','ham')
+         call MIO_Print('Stack.ModelFromTwist: the AB pairs take the bilayer F2G2 model (on-site, intralayer and '// &
+           'interlayer terms); every other graphene layer the single-layer F2G2 parameters; other interfaces the '// &
+           'model of TypeOfBL','ham')
+         if (.not. any(hamPairAB)) call MIO_Print('  No AB pair was found: the switch changes nothing in this run','ham')
       end if
-      call MIO_Print('')
       deallocate(z, nBond, nC, nBN, phi, coh, aligned, nTop, topLo, topUp)
    end if
 
@@ -4215,24 +4204,24 @@ subroutine HamCheckHermiticity()
    end if
    if (strMoire .and. .not. (moireOD .or. tbgOD .or. gbnOD)) then
       if (maxAsym*g0 > 1.0e-9_dp) then
-         call MIO_Print('WARNING: the hopping table is NOT Hermitian with StrainedMoire: the two directions of a bond '// &
+         call MIO_Warning('the hopping table is NOT Hermitian with StrainedMoire: the two directions of a bond '// &
            'differ by up to '//trim(num2str(maxAsym*g0,6))//' eV, because the displacement of the first atom of each '// &
            'bond is added to the bond vector.','ham')
       end if
    else if (haldanePhase .and. .not. (moireOD .or. tbgOD .or. gbnOD)) then
       if (maxAsym*g0 > 1.0e-9_dp) then
-         call MIO_Print('WARNING: the hopping table is NOT Hermitian with HaldaneNNN and HaldaneSpecifyPhase: '// &
+         call MIO_Warning('the hopping table is NOT Hermitian with HaldaneNNN and HaldaneSpecifyPhase: '// &
            'the two directions of a bond differ by up to '//trim(num2str(maxAsym*g0,6))//' eV.','ham')
       end if
    else if (moireOD .and. moireMid) then
       call MIO_Print('Hopping table with MoireOffDiagMidpoint: the two directions of a bond differ by up to '// &
         trim(num2str(maxAsym*g0,6))//' eV','ham')
    else if (moireOD .and. .not. (tbgOD .or. gbnOD)) then
-      call MIO_Print('WARNING: the hopping table is NOT Hermitian: the two directions of a bond differ by up to '// &
+      call MIO_Warning('the hopping table is NOT Hermitian: the two directions of a bond differ by up to '// &
         trim(num2str(maxAsym*g0,6))//' eV, because MoireOffDiag is evaluated at the first atom of each bond. '// &
         'Set MoireOffDiagMidpoint .true. to evaluate it at the bond midpoint (Hermitian).','ham')
    else
-      call MIO_Print('WARNING: the hopping table is NOT Hermitian: the two directions of a bond differ by up to '// &
+      call MIO_Warning('the hopping table is NOT Hermitian: the two directions of a bond differ by up to '// &
         trim(num2str(maxAsym*g0,6))//' eV, because the position-dependent bond terms (tBGOffDiag, GBNOffDiag) are '// &
         'evaluated at the first atom of each bond. No midpoint evaluation exists for these terms yet.','ham')
    end if
@@ -5307,6 +5296,7 @@ subroutine HamHopping
    ! misassigns shells on a strongly corrugated sheet (a steep bond projects short). Opt-in: from the in-plane
    ! bond length in a rigid reference structure with the same atom order (xyz, 4 header lines); realStrain keeps
    ! the 3-D length of the actual bond. Implemented for GBNtwoLayers, single MPI rank.
+   call MIO_Subsection('Hopping terms','ham')
    call MIO_InputParameter('Strain.ShellsFromRigidPositions',shellsFromRigid,.false.)
    if (shellsFromRigid) call HamHopShellsFromRigid()
 
@@ -5350,7 +5340,7 @@ subroutine HamHopping
          call MIO_InputParameter('Interlayer.ChangeLatticeParameterForSrivaniModel',changeLatticeParameterForSrivaniModel,.false.)
          if (changeLatticeParameterForSrivaniModel) then
             aGSrivani = 2.4389777651302801_dp
-            call MIO_Print('We change aG for the calculation of rbar into 2.43 instead of 2.46 to agree with Srivanis fitting','ham')
+            call MIO_Print('rbar computed with aG = 2.43 Ang (the lattice constant of the Srivani fit)','ham')
          else
             aGSrivani = aG
          end if
@@ -5427,7 +5417,7 @@ subroutine HamHopping
              call MIO_InputParameter('Trilayer.Gamma1',tr1,hamUnset)
              if (ieee_is_nan(tr1)) then
                 tr1 = tr3
-                call MIO_Print('WARNING: Trilayer.Gamma1 not set: the vertical (dimer) hopping takes the value of '// &
+                call MIO_Warning('Trilayer.Gamma1 not set: the vertical (dimer) hopping takes the value of '// &
                    'Trilayer.Gamma3, as before. Set Trilayer.Gamma1 explicitly.','ham')
              end if
              call MIO_InputParameter('Trilayer.Gamma4',tr4,0.0_dp)
@@ -5453,7 +5443,7 @@ subroutine HamHopping
          if (MIO_StringComp(BilayerModel,'Jeil')) then
             call MIO_Kill('TypeOfBL Jeil is not supported at present: its neighbour bookkeeping reads beyond '// &
               'its arrays for every structure tested (tests/regression/model_survey.py). Use another '// &
-              'interlayer model, for instance Koshino.','ham','HamHopping')
+              'interlayer model, for instance Koshino.','ham','ham')
          end if
          ! then we don't have to change the code and keep the bilayer parts even for the single layer
          call MIO_InputParameter('Interlayer.TypeOfSL',SinglelayerModel,'None')
@@ -5662,7 +5652,7 @@ subroutine HamHopping
                 .or. tBGOffDiag .or. GBNOffDiag .or. (zz .and. (ll .or. .not.rotateFirst))) then
                call MIO_Kill('MoireOffDiagMidpoint supports only the plain effective model (TypeOfSystem Graphene-like, '// &
                     'MoireJeil; second moire with MoireSecondMoireRotateFirst and without basedOnMoireCellParameters)', &
-                    'ham','HamHopping')
+                    'ham','ham')
             end if
             call MIO_Print('MoireOffDiag: bond term evaluated at the bond MIDPOINT (Hermitian; MoireOffDiagMidpoint)','ham')
          end if
@@ -5679,13 +5669,13 @@ subroutine HamHopping
          fangGhBN = useBNGKaxiras .and. MIO_StringComp(BilayerModel,'BLKaxiras')
          if (useBNGKaxiras .and. .not. fangGhBN) call MIO_Kill('Interlayer.UseBNGKaxiras is the graphene/hBN model of '// &
               'Fang et al. (PRB 93, 235153) and needs TypeOfBL BLKaxiras: with another interlayer model the hBN layers '// &
-              'would get its intralayer set and the graphene-hBN bonds another model','ham','HamHopping')
+              'would get its intralayer set and the graphene-hBN bonds another model','ham','ham')
          call MIO_InputParameter('Interlayer.LegacyAngleSearch',legacyAngleSearch,.false.)
          if (useBNGKaxiras .or. MIO_StringComp(BilayerModel,'BLKaxiras') .or. MIO_StringComp(BilayerModel,'BLSrivani')) then
             call HamFirstNeighbourBonds()
             if (legacyAngleSearch) then
-               call MIO_Print('WARNING: Interlayer.LegacyAngleSearch: interlayer angles from the search used before '// &
-                    'November 2026 (wrong for bonds above 1.43 A, where H is not Hermitian, and in small cells)','ham')
+               call MIO_Warning('Interlayer.LegacyAngleSearch: interlayer angles from the search used before '// &
+                    'November 2026 (wrong for bonds above 1.43 Ang, where H is not Hermitian, and in small cells)','ham')
             else
                call MIO_Print('Interlayer angles (BLKaxiras/BLSrivani): from the nearest bond of each atom in its layer','ham')
             end if
@@ -5757,7 +5747,7 @@ subroutine HamHopping
             call MIO_Kill('This layer stack without middleTwist uses the Bernal-bilayer F2G2 intralayer parameters '// &
               'in every layer but the third, and they are not set. Use middleTwist .true. (single-layer F2G2 '// &
               'parameters in every layer) or forceBilayerF2G2Intralayer .true. (Bernal-bilayer parameters '// &
-              'Bilayert2KA, Bilayert2KB, Bilayert3K, ...).','ham','HamHopping')
+              'Bilayert2KA, Bilayert2KB, Bilayert3K, ...).','ham','ham')
          end if
          call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
          call MIO_InputParameter('Interlayer.FindThetasGeometrically',findThetasGeometrically,.false.)
@@ -5855,9 +5845,9 @@ subroutine HamHopping
             else if (twentyLayersSandwiched) then
                 nLayers = 20
             else
-               call MIO_Print('WARNING: Bulk is set without a recognized number of layers','ham')
+               call MIO_Warning('Stack.Bulk is set without a recognised number of layers','ham')
             end if
-            call MIO_Print('We set the number of layers for the bulk','ham')
+            call MIO_Print('Stack.Bulk: number of layers taken from the layer indices','ham')
          else
             nLayers = 0
          end if
@@ -5928,7 +5918,7 @@ subroutine HamHopping
             bernalF2G2 = F2G2Model .and. .not. (BilayerOneParameter .or. BilayerThreeParameters)
             if (bernalF2G2 .and. legacyBernalTAB1) then
                bernalF2G2 = .false.
-               call MIO_Print('WARNING: Interlayer.LegacyBernalTAB1: Bernal interlayer hopping as before November 2026 '// &
+               call MIO_Warning('Interlayer.LegacyBernalTAB1: Bernal interlayer hopping as before November 2026 '// &
                     '(vertical dimer bonds only, with the F2G2 tAB1 = '//trim(num2str(-tAB1*g0,5))//' eV)','ham')
             end if
          end if
@@ -5949,7 +5939,7 @@ subroutine HamHopping
             if (abs(2*count(bernalDimer) - nAt) > nAt/10) then
                bernalF2G2 = .false.
                deallocate(bernalDimer)
-               call MIO_Print('WARNING: Bernal interlayer branch on a structure that is not AB stacked (dimer sites '// &
+               call MIO_Warning('Bernal interlayer branch on a structure that is not AB stacked (dimer sites '// &
                     'are not half of the atoms, e.g. a twisted cell): the former coupling is kept (tAB1 = '// &
                     trim(num2str(-tAB1*g0,5))//' eV on vertically aligned pairs only), which is not a model of it','ham')
             else
@@ -6235,7 +6225,7 @@ subroutine HamHopping
                     end if
                     hopp(j,i) = -hopp(j,i)
                     if (i == 1 &
-                          .and. j == 1) call MIO_Print('WARNING: this bilayer branch changes the sign of the hopping after '// &
+                          .and. j == 1) call MIO_Warning('this bilayer branch changes the sign of the hopping after '// &
                       'adding the interlayer terms; check the result if a moire term is present (it carries the sign already)','ham')
                   ! add intralayer hopping terms (see Jeil's paper)
                   else if (MIO_StringComp(str,'TwistedBilayer') &
@@ -6323,26 +6313,26 @@ subroutine HamHopping
           !$OMP END PARALLEL DO
         end if
 #ifdef DEBUG
-        call MIO_Print(' HAA '//trim(num2str(numberOfHAA1))//' '//trim(num2str(numberOfHAA2)),'HamHopping')
-        call MIO_Print(' HAB '//trim(num2str(numberOfHAB1))//' '//trim(num2str(numberOfHAB2)),'HamHopping')
-        call MIO_Print(' HBA '//trim(num2str(numberOfHBA1))//' '//trim(num2str(numberOfHBA2)),'HamHopping')
+        call MIO_Print(' HAA '//trim(num2str(numberOfHAA1))//' '//trim(num2str(numberOfHAA2)),'ham')
+        call MIO_Print(' HAB '//trim(num2str(numberOfHAB1))//' '//trim(num2str(numberOfHAB2)),'ham')
+        call MIO_Print(' HBA '//trim(num2str(numberOfHBA1))//' '//trim(num2str(numberOfHBA2)),'ham')
 #endif /* DEBUG */
 
         if (allocated(bernalDimer)) deallocate(bernalDimer)
         if (zz) call HamHopSecondMoire()
 
 ! --- Repeatation ended
-        call MIO_Print(' All 3 numbers should be equal '//trim(num2str(numberOfDel1))//' '// &
-                      trim(num2str(numberOfDel2))//'  '//trim(num2str(numberOfDel3)),'HamHopping')
+        call MIO_PrintDebug('displacement counts (must be equal): '//trim(num2str(numberOfDel1))//' '// &
+                      trim(num2str(numberOfDel2))//'  '//trim(num2str(numberOfDel3)),'ham')
         ! counted in the Bernal and encapsulated branches only: a zero would say nothing about the other models
-        if (numberOfInterlayerHoppings > 0) call MIO_Print(' Number of interlayer hoppings '// &
-           trim(num2str(numberOfInterlayerHoppings)),'HamHopping')
+        if (numberOfInterlayerHoppings > 0) call MIO_Print('Interlayer hoppings: '// &
+           trim(num2str(numberOfInterlayerHoppings)),'ham')
         ! the Bernal, encapsulated-bilayer and trilayer interlayer branches set their hoppings before the
         ! renormalizeCoupling block and never reach it
         if (renormalizeCoupling .and. (MIO_StringComp(str,'MoireEncapsulatedBilayer') &
               .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') .or. BernalReadXYZ &
               .or. MIO_StringComp(str,'TrilayerBasedOnMoireCell'))) &
-           call MIO_Print('WARNING: Interlayer.RenormalizeCoupling is set, but the interlayer hoppings of '// &
+           call MIO_Warning('Interlayer.RenormalizeCoupling is set, but the interlayer hoppings of '// &
               'TypeOfSystem '//trim(str)//' (or Structure.BernalReadXYZ) do not use Interlayer.CouplingFactor '// &
               'or CouplingFactor2: they are not scaled.','ham')
    end if
@@ -6389,7 +6379,7 @@ subroutine HamHopping
    ! spinful bond terms of the block Hamiltonian (SOC.RashbaConsistentPhase; no Peierls phase on them yet)
    if (RashbaConsistentPhase) then
       if (magfield) call MIO_Kill('SOC.RashbaConsistentPhase: the spinful bond terms carry no Peierls phase - '// &
-        'not available with a magnetic field','ham','HamHopping')
+        'not available with a magnetic field','ham','ham')
       call HamSOCBondTables()
    end if
 
@@ -6514,8 +6504,8 @@ subroutine HamHopHaldane()
       ! For backward compatibility, we still check if it's set, but it's ignored if HaldaneLayerControl is enabled.
       call MIO_InputParameter('Haldane.BothLayers',HaldaneBothLayers_deprecated,.false.)
       if (HaldaneBothLayers_deprecated .and. .not. HaldaneLayerControl) then
-         call MIO_Print('WARNING: HaldaneBothLayers is deprecated. Use HaldaneLayerControl and HaldaneLayers instead.','ham')
-         call MIO_Print('  For backward compatibility, applying Haldane to all layers.','ham')
+         call MIO_Warning('Haldane.BothLayers is deprecated: use Haldane.LayerControl and Haldane.Layers. '// &
+           'The Haldane term is applied to every layer.','ham')
       end if
       if (l) then
           call MIO_InputParameter('Haldane.Flux',flux,0.0_dp)
@@ -6643,8 +6633,8 @@ subroutine HamHopMagneticField()
                if (lllll .eq. 4 .and. nnnnn .eq. 3 .and. diffy .ge. 0.d0) mmphi= -1.d0 / n1 * (i-1)-1.d0/ n1 / 2.d0
                if (lllll .eq. 4 .and. nnnnn .eq. 3 .and. diffy .lt. 0.d0) mmphi= 0.d0
 #ifdef DEBUG
-               print*, mB, n2, n1
-               print*, "Magnetic field using Franks approach: ", dble(mB) / dble(n2) / dble(n1) * 39471.80806616257_dp, "T"
+                              call MIO_Print('MagField.FrankMagneticField: B = '//trim(num2str(dble(mB)/dble(n2)/dble(n1)*39471.80806616257_dp,5))// &
+          ' T','ham')
 #endif /* DEBUG */
                phase = -mmphi*2.0_dp*pi*mB
                hopp(j,i) = hopp(j,i)*exp(cmplx_i*phase)
@@ -6680,9 +6670,9 @@ subroutine HamHopRealisticBubbles()
       call MIO_InputParameter('Strain.BubbleInPlaneStrain',bubbleInPlaneStrain,.false.)
       if (.not. (bigBubble .or. manyBubbles)) call MIO_Kill('Strain.RealisticBubbles needs Strain.BigBubble or '// &
            'Strain.ManyBubbles (where the bubbles are); without either the number of bubbles was never set.', &
-           'ham','HamHopping')
+           'ham','ham')
       if (bigBubble) then
-         call MIO_Print('We add a single bubble','ham')
+         call MIO_Print('Strain bubble: one bubble','ham')
          if (.not. frac) call AtomsSetFrac()
          minDiffBubbleX = 0.01_dp
          minDiffBubbleY = 0.01_dp
@@ -6706,7 +6696,7 @@ subroutine HamHopRealisticBubbles()
          bubbleCenterY(1) = Rat(2,indxImp(1))
          indexOfBigBubbleCenter = indxImp(1)
       else if (manyBubbles) then
-         call MIO_Print('We add a lot of bubbles','ham')
+         call MIO_Print('Strain bubbles: many bubbles','ham')
          call MIO_InputParameter('Strain.BubblePercentage',per,10.0_dp)
          per = per/100.0_dp
          call MIO_Allocate(def,[inode1],[inode2],'def','gauss')
@@ -6735,9 +6725,8 @@ subroutine HamHopRealisticBubbles()
          end do
 
          per = totImp*100.0_dp/nAt
-         call MIO_Print('')
-         call MIO_Print('  final percentage          : '//trim(num2str(per,3))//'%')
-         call MIO_Print('  total number of impurities: '//trim(num2str(totImp)))
+         call MIO_Print('  Final percentage: '//trim(num2str(per,3))//'%','ham')
+         call MIO_Print('  Total number of impurities: '//trim(num2str(totImp)),'ham')
          call MIO_Allocate(indxImp,totImp,'indxImp','gauss')
          call MIO_Allocate(bubbleCenterX,totImp,'bubbleCenterX','gauss')
          call MIO_Allocate(bubbleCenterY,totImp,'bubbleCenterY','gauss')
@@ -6772,10 +6761,10 @@ subroutine HamHopRealisticBubbles()
       if (totImp > 0) then
          if (.not. associated(indxImp)) then
             call MIO_Kill('realisticBubbles is not supported at present: the list of bubble centres it '// &
-              'uses is never filled.','ham','HamHopping')
+              'uses is never filled.','ham','ham')
          else if (size(indxImp) < totImp) then
             call MIO_Kill('realisticBubbles is not supported at present: the list of bubble centres it '// &
-              'uses is never filled.','ham','HamHopping')
+              'uses is never filled.','ham','ham')
          end if
       end if
       do ii=1,totImp
@@ -6944,10 +6933,10 @@ subroutine HamHopRealStrain()
       aBN1R = aBNR/sqrt(3.0_dp)
       call MIO_InputParameter('Strain.RealStrainLegacyFourthShell',strainLegacyShell4,.false.)
       if (strainLegacyShell4) then
-         call MIO_Print('realStrain: 4th-shell reference distance 3.75696 A for every layer (RealStrainLegacyFourthShell)','ham')
+         call MIO_Print('realStrain: 4th-shell reference distance 3.75696 Ang for every layer (RealStrainLegacyFourthShell)','ham')
       else
          call MIO_Print('realStrain: 4th-shell reference distance sqrt(7) a1Ref = '//trim(num2str(sqrt(7.0_dp)*accR,5))// &
-           ' A (graphene), '//trim(num2str(sqrt(7.0_dp)*aBN1R,5))//' A (hBN); before 2026-11 a fixed 3.75696 A '// &
+           ' Ang (graphene), '//trim(num2str(sqrt(7.0_dp)*aBN1R,5))//' Ang (hBN); before 2026-11 a fixed 3.75696 Ang '// &
            '(Strain.RealStrainLegacyFourthShell .true.)','ham')
       end if
 ! aCCR --> aCC
@@ -7047,7 +7036,7 @@ subroutine HamHopRealStrain()
       end do
       !$OMP END PARALLEL DO
       if (nStrainNoRef > 0) then
-         call MIO_Print('WARNING: realStrain: '//trim(num2str(nStrainNoRef))//' intralayer hoppings belong to bonds '// &
+         call MIO_Warning('realStrain: '//trim(num2str(nStrainNoRef))//' intralayer hoppings belong to bonds '// &
            'whose length lies in no neighbour-shell window; they were left WITHOUT strain factor (earlier versions '// &
            'used the reference distance of the previous neighbour). The structure is strained or corrugated beyond '// &
            'the shell windows: check it, and consider shellsFromRigidPositions.','ham')
@@ -7126,10 +7115,10 @@ subroutine HamHopShellsFromRigid()
 
       call MIO_InputParameter('Strain.ShellsRigidFile',shellRigidFile,'generateInit.xyz')
       call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
-      if (.not. GBNtwoLayers) call MIO_Kill('shellsFromRigidPositions is implemented for GBNtwoLayers only','ham','HamHopping')
-      if (sCell /= 1) call MIO_Kill('shellsFromRigidPositions needs SuperCell 1','ham','HamHopping')
+      if (.not. GBNtwoLayers) call MIO_Kill('shellsFromRigidPositions is implemented for GBNtwoLayers only','ham','ham')
+      if (sCell /= 1) call MIO_Kill('shellsFromRigidPositions needs SuperCell 1','ham','ham')
 #ifdef MPI
-      if (nProc > 1) call MIO_Kill('shellsFromRigidPositions needs a single MPI rank','ham','HamHopping')
+      if (nProc > 1) call MIO_Kill('shellsFromRigidPositions needs a single MPI rank','ham','ham')
 #endif /* MPI */
       if (frac) call AtomsSetCart()
       if (allocated(RshellRig)) deallocate(RshellRig)
@@ -7139,7 +7128,7 @@ subroutine HamHopShellsFromRigid()
          read(97,*)
       end do
       read(97,*) nshellDiff
-      if (nshellDiff /= nAt) call MIO_Kill('shellsRigidFile: atom count differs from the structure','ham','HamHopping')
+      if (nshellDiff /= nAt) call MIO_Kill('shellsRigidFile: atom count differs from the structure','ham','ham')
       do i=1,nAt
          read(97,*) shellSpc, (RshellRig(j,i),j=1,3)
       end do
@@ -7160,7 +7149,7 @@ subroutine HamHopShellsFromRigid()
       end do
       call MIO_Print('shellsFromRigidPositions: intralayer shells from '//trim(shellRigidFile) &
             //'; max |rigid - in-plane| bond = '// &
-           trim(num2str(dshellMax,4))//' A, bonds differing by > 5 % : '//trim(num2str(nshellDiff)),'ham')
+           trim(num2str(dshellMax,4))//' Ang, bonds differing by > 5 %: '//trim(num2str(nshellDiff)),'ham')
 
 #ifdef DEBUG
    call MIO_Debug('HamHopShellsFromRigid',1)
@@ -7474,7 +7463,7 @@ subroutine HamHopInterlayerParameters()
                 call MIO_InputParameter('Interlayer.OldParameterSet',oldParameterSet,.false.)
                 call MIO_InputParameter('Interlayer.UseOnlyVAB',useOnlyVAB,.false.)
                 if (addPressureDependence) then
-                    call MIO_Print('Adding pressure (distance) dependent Srivani parameters','ham')
+                    call MIO_Print('Interlayer: pressure (distance) dependent Srivani parameters','ham')
                     if (oldParameterSet) then
                         tAB = 0.355_dp
                         c1_0 = 0.3571385063263838_dp
@@ -7677,7 +7666,7 @@ subroutine HamHopF2G2sParameters()
 #endif /* DEBUG */
 
          if (GBNtwoLayersF2G2s) then
-            call MIO_Print('defining the GBNtwoLayersF2G2 parameters','ham')
+            call MIO_Print('Intralayer: GBNtwoLayersF2G2 parameters','ham')
             t1K = g0/g0
             call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLGfromGBNA,-0.24498_dp)
             call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLGfromGBNB,-0.24523_dp)
@@ -8490,7 +8479,8 @@ function HamHopInterlayerKaxirasSrivani(jj, j, i, dist, numberOfInterlayerHoppin
                                  !if (checking .eq. .false.) print*, "check2 not good"
                                  checking = .false.
 
-                                 if (d232F.lt.0.1_dp .or. d132.le.0.0_dp) print*, "WARNING3", d232F, d132
+                                 if (d232F.lt.0.1_dp .or. d132.le.0.0_dp) call MIO_PrintDebug('bond-angle search: d232F = '// &
+                trim(num2str(d232F,6))//', d132 = '//trim(num2str(d132,6)),'ham')
                                      theta12 = acos(max(-1.0_dp, &
                                            min(1.0_dp,(d122 + d232F - d132) / (2.0_dp * sqrt(d122) * sqrt(d232F)))))
                                  !if (isnan(theta12)) print*, "theta12", d122, d232F, d132
@@ -9034,7 +9024,7 @@ function HamHopInterlayerTwoCenter(i, j, jj, dist, numberOfInterlayerHoppings, a
    skipBond = .false.
 
                       if (i.eq.1 &
-                            .and. j.eq.1) call MIO_Print('We add interlayer interactions for sandwiched systems, tBG, etc','ham')
+                            .and. j.eq.1) call MIO_Print('Interlayer hoppings: two-centre model between adjacent layers','ham')
                       if (deactivateInterlayer) then
                           skipBond = .true.
                           return
@@ -9247,8 +9237,7 @@ subroutine HamHopInterlayerBNBN(i, jj)
                           ! add the hopping terms depending if it is the C-B, C-N or C-C
                           ! interaction
                           if (i.eq.1 .and. .not. saidHTCBNBN) then
-                             call MIO_Print('Adding the interlayer terms for the HTC model for BN and BN interactions '// &
-                               'based on Fengpings parametrization','ham')
+                             call MIO_Print('Interlayer: HTC model for hBN-hBN (Fengping parametrisation)','ham')
                              saidHTCBNBN = .true.
                           end if
                       end if
@@ -9408,7 +9397,7 @@ function HamHopInterlayerGBN(i, jj, dist, j, numberOfInterlayerHoppings, aval, b
                           ! interaction
                           ! (atom 1 is handled by one thread, so the flag needs no protection)
                           if (i.eq.1 .and. .not. saidHTCGBN) then
-                             call MIO_Print('Adding the interlayer terms for the HTC model for G and BN interactions','ham')
+                             call MIO_Print('Interlayer: HTC model for graphene-hBN','ham')
                              saidHTCGBN = .true.
                           end if
                           if (Species(i).eq.1 .and. Species(NList(j,i)).eq.3) then ! C to B
@@ -12140,7 +12129,7 @@ subroutine HamHopReportModelEnergies()
       call MIO_Print('  bilayer F2G2, no atom on top (TB.OnSiteC1):    '//trim(num2str(eA,4))//' eV','ham')
       call MIO_Print('  bilayer F2G2, dimer sites (TB.OnSiteC2):       '//trim(num2str(eB,4))//' eV','ham')
       if (abs(eSL - eA) > 0.005_dp) then
-         call MIO_Print('WARNING: the single-layer and the bilayer part of the stack are offset by '// &
+         call MIO_Warning('the single-layer and the bilayer part of the stack are offset by '// &
            trim(num2str(eSL - eA,4))//' eV. Unless a potential difference between them is intended, set '// &
            'Stack.AlignModelEnergies .true., or choose TB.OnSiteC, TB.OnSiteC1 and TB.OnSiteC2 so that the '// &
            'first two energies above agree.','ham')
@@ -12263,7 +12252,7 @@ subroutine HamPeierlsPeriodicGauge(flux)
       end do
    end do
    if (legacyCorner) then
-      call MIO_Print('WARNING: MagField.LegacyCornerPhase: bonds across a cell corner keep the former phase '// &
+      call MIO_Warning('MagField.LegacyCornerPhase: bonds across a cell corner keep the former phase '// &
         '(wrong by a sign for an odd number of flux quanta)','ham')
    else
       call MIO_Print('Peierls phases: '//trim(num2str(nint(fluxQuanta)))//' flux quanta through the cell; '// &
@@ -12440,9 +12429,9 @@ subroutine HamSOCBondTables()
    end do
    call MIO_Print('SOC bond table: '//trim(num2str(nR))//' Rashba, '//trim(num2str(nKM))//' Kane-Mele, '// &
      trim(num2str(nIL))//' interlayer, '//trim(num2str(nPIA))//' PIA bonds','ham')
-   if (nILskip > 0) call MIO_Print('SOC.Interlayer: WARNING '//trim(num2str(nILskip))//' same-sublattice bonds '// &
+   if (nILskip > 0) call MIO_Warning('SOC.Interlayer: '//trim(num2str(nILskip))//' same-sublattice bonds '// &
      'at in-plane ~aCC are neither parallel nor antiparallel to a bond of their atom and were left out','ham')
-   if (InterlayerSOCterm .and. nIL == 0) call MIO_Print('SOC.Interlayer: WARNING no bond found - the term is '// &
+   if (InterlayerSOCterm .and. nIL == 0) call MIO_Warning('SOC.Interlayer: no bond found - the term is '// &
      'absent (no untwisted pair of adjacent graphene layers, or the neighbour list stops below aCC in-plane)','ham')
 
 end subroutine HamSOCBondTables
@@ -12502,7 +12491,7 @@ subroutine HamInputHBN(newKey,oldKey,value,default)
       call MIO_InputParameter(newKey,value,default)
    else
       call MIO_InputParameter(oldKey,value,default)
-      if (MIO_InputSearchLabel(oldKey)) call MIO_Print('Note: '//oldKey//' also sets the hBN hopping '// &
+      if (MIO_InputSearchLabel(oldKey)) call MIO_Print(oldKey//' also sets the hBN hopping '// &
            '(set '//newKey//' to give hBN its own value)','ham')
    end if
 
@@ -12634,7 +12623,7 @@ subroutine HamDisplacementsFromPositions()
         'layers of their own material: which interface their moire term belongs to is not defined','ham','HamInit')
    call MIO_Print('Structure.DisplacementsFromPositions: stacking displacements of '//trim(num2str(nAt))// &
         ' atoms from the rigid and actual structures, max |d| = '//trim(num2str(maxval(displacements(3,:)),4))// &
-        ' Angstrom','ham')
+        ' Ang','ham')
 
 end subroutine HamDisplacementsFromPositions
 
@@ -12660,7 +12649,7 @@ subroutine HamInputEnergyEV(key,value,defaultG0,since)
       return
    end if
    call MIO_InputParameter(key,value,defaultG0*g0)
-   call MIO_Print('WARNING: '//key//' is read in eV since '//date//' (it was taken in units of g0 before): '// &
+   call MIO_Warning(''//key//' is read in eV since '//date//' (it was taken in units of g0 before): '// &
      'value '//trim(num2str(value,6))//' eV = '//trim(num2str(value/g0,6))//' g0. An input file written before '// &
      'that date must multiply it by g0 = '//trim(num2str(g0,6))//' eV.','ham')
    value = value/g0
@@ -12832,10 +12821,7 @@ subroutine r8vec_uniform_01 ( n, seed, r )
   real ( kind = 8 ) r(n)
 
   if ( seed == 0 ) then
-    write ( *, '(a)' ) ' '
-    write ( *, '(a)' ) 'R8VEC_UNIFORM_01 - Fatal error!'
-    write ( *, '(a)' ) '  Input value of SEED = 0.'
-    stop 1
+    call MIO_Kill('r8vec_uniform_01: the random seed is 0','ham','r8vec_uniform_01')
   end if
 
   do i = 1, n

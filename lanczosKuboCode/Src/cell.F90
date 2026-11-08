@@ -31,6 +31,7 @@ subroutine CellGet()
    ! Other local variables
    integer :: i, j, m1(2,2)
    real(dp) :: delta, g, phi, uc(2,2), vn(3)
+   character(len=120) :: dbgline
 
 
 #ifdef DEBUG
@@ -43,14 +44,16 @@ subroutine CellGet()
    call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
    call MIO_InputParameter('Structure.LatticeParameterBN',aBN,2.505_dp)
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+   call MIO_Section('Cell','cell')
+   call MIO_Print('Type of system: '//trim(str),'cell')
    call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
    call MIO_InputParameter('Structure.SuperCell',sCell,1)
    ! Default of the interlayer distance: 3.35 Ang everywhere since October 2026 (3.22 Ang before in the
    ! generators, the neighbor search and parts of the Hamiltonian; it matters for structures read from a file too)
    if (.not. (MIO_StringComp(str,'Graphene') .or. MIO_StringComp(str,'BoronNitride'))) then
       if (.not. MIO_InputSearchLabel('Structure.InterlayerDistance')) then
-         call MIO_Print('NOTE: InterlayerDistance is not given: 3.35 Ang is used (the default was 3.22 Ang '// &
-           'before October 2026)','cell')
+         call MIO_Print('Structure.InterlayerDistance is not given: 3.35 Ang is used (the default was '// &
+           '3.22 Ang before October 2026)','cell')
       end if
    end if
    call MIO_InputParameter('Structure.SuperCellAsymmetric',l,.false.)
@@ -62,7 +65,7 @@ subroutine CellGet()
           uc(:,1) = (/aG,0.0_dp/)
           uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
           call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
-          call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
+          call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
             '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
             'cell')
           g = m(1)**2 + m(2)**2 + m(1)*m(2)
@@ -79,16 +82,15 @@ subroutine CellGet()
              m(4) = i
           end if
           aBN = aG*delta
-          call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' degrees','cell')
-          call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4)),'cell')
-          call MIO_Print('BN lattice parameter:       '//trim(num2str(aBN,4)),'cell')
+          call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' deg','cell')
+          call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4))//' Ang','cell')
+          call MIO_Print('BN lattice parameter: '//trim(num2str(aBN,4))//' Ang','cell')
           m1(:,1) = [m(1),m(2)]
           m1(:,2) = [-m(2),m(1)+m(2)]
           ucell = 0.0_dp
           ucell(1:2,1:2) = matmul(uc,m1)
           ucell(3,3) = h
           g = norm(ucell(:,1))
-          call MIO_Print('')
           call MIO_Print('Length of unit cell: '//trim(num2str(g,5))// &
             ' Ang','cell')
           ucell(:,:2) = ucell(:,:2)*sCell
@@ -110,7 +112,7 @@ subroutine CellGet()
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
       call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
-      call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
+      call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
@@ -127,16 +129,15 @@ subroutine CellGet()
          m(4) = i
       end if
       aBN = aG*delta
-      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' degrees','cell')
-      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4)),'cell')
-      call MIO_Print('BN lattice parameter:       '//trim(num2str(aBN,4)),'cell')
+      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' deg','cell')
+      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4))//' Ang','cell')
+      call MIO_Print('BN lattice parameter: '//trim(num2str(aBN,4))//' Ang','cell')
       m1(:,1) = [m(1),m(2)]
       m1(:,2) = [-m(2),m(1)+m(2)]
       ucell = 0.0_dp
       ucell(1:2,1:2) = matmul(uc,m1)
       ucell(3,3) = h
       g = norm(ucell(:,1))
-      call MIO_Print('')
       call MIO_Print('Length of unit cell: '//trim(num2str(g,5))// &
         ' Ang','cell')
       ucell(:,:2) = ucell(:,:2)*sCell
@@ -144,7 +145,7 @@ subroutine CellGet()
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
       call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
-      call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
+      call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
@@ -161,16 +162,15 @@ subroutine CellGet()
          m(4) = i
       end if
       aBN = aG*delta
-      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' degrees','cell')
-      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4)),'cell')
-      call MIO_Print('BN lattice parameter:       '//trim(num2str(aBN,4)),'cell')
+      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' deg','cell')
+      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4))//' Ang','cell')
+      call MIO_Print('BN lattice parameter: '//trim(num2str(aBN,4))//' Ang','cell')
       m1(:,1) = [m(1),m(2)]
       m1(:,2) = [-m(2),m(1)+m(2)]
       ucell = 0.0_dp
       ucell(1:2,1:2) = matmul(uc,m1)
       ucell(3,3) = h
       g = norm(ucell(:,1))
-      call MIO_Print('')
       call MIO_Print('Length of unit cell: '//trim(num2str(g,5))// &
         ' Ang','cell')
       ucell(:,:2) = ucell(:,:2)*sCell
@@ -178,7 +178,7 @@ subroutine CellGet()
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
       call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
-      call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
+      call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
@@ -195,16 +195,15 @@ subroutine CellGet()
          m(4) = i
       end if
       aBN = aG*delta
-      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' degrees','cell')
-      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4)),'cell')
-      call MIO_Print('BN lattice parameter:       '//trim(num2str(aBN,4)),'cell')
+      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' deg','cell')
+      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4))//' Ang','cell')
+      call MIO_Print('BN lattice parameter: '//trim(num2str(aBN,4))//' Ang','cell')
       m1(:,1) = [m(1),m(2)]
       m1(:,2) = [-m(2),m(1)+m(2)]
       ucell = 0.0_dp
       ucell(1:2,1:2) = matmul(uc,m1)
       ucell(3,3) = h
       g = norm(ucell(:,1))
-      call MIO_Print('')
       call MIO_Print('Length of unit cell: '//trim(num2str(g,5))// &
         ' Ang','cell')
       ucell(:,:2) = ucell(:,:2)*sCell
@@ -212,7 +211,7 @@ subroutine CellGet()
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
       call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
-      call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
+      call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
@@ -229,16 +228,15 @@ subroutine CellGet()
          m(4) = i
       end if
       aBN = aG*delta
-      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' degrees','cell')
-      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4)),'cell')
-      call MIO_Print('BN lattice parameter:       '//trim(num2str(aBN,4)),'cell')
+      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' deg','cell')
+      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4))//' Ang','cell')
+      call MIO_Print('BN lattice parameter: '//trim(num2str(aBN,4))//' Ang','cell')
       m1(:,1) = [m(1),m(2)]
       m1(:,2) = [-m(2),m(1)+m(2)]
       ucell = 0.0_dp
       ucell(1:2,1:2) = matmul(uc,m1)
       ucell(3,3) = h
       g = norm(ucell(:,1))
-      call MIO_Print('')
       call MIO_Print('Length of unit cell: '//trim(num2str(g,5))// &
         ' Ang','cell')
       ucell(:,:2) = ucell(:,:2)*sCell
@@ -246,7 +244,7 @@ subroutine CellGet()
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
       call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
-      call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
+      call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
@@ -263,16 +261,15 @@ subroutine CellGet()
          m(4) = i
       end if
       aBN = aG*delta
-      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' degrees','cell')
-      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4)),'cell')
-      call MIO_Print('BN lattice parameter:       '//trim(num2str(aBN,4)),'cell')
+      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' deg','cell')
+      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4))//' Ang','cell')
+      call MIO_Print('BN lattice parameter: '//trim(num2str(aBN,4))//' Ang','cell')
       m1(:,1) = [m(1),m(2)]
       m1(:,2) = [-m(2),m(1)+m(2)]
       ucell = 0.0_dp
       ucell(1:2,1:2) = matmul(uc,m1)
       ucell(3,3) = h
       g = norm(ucell(:,1))
-      call MIO_Print('')
       call MIO_Print('Length of unit cell: '//trim(num2str(g,5))// &
         ' Ang','cell')
       ucell(:,:2) = ucell(:,:2)*sCell
@@ -280,7 +277,7 @@ subroutine CellGet()
       uc(:,1) = (/aG,0.0_dp/)
       uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
       call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
-      call MIO_Print('Parameters for moiré generation: '//trim(num2str(m(1)))//&
+      call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
@@ -297,16 +294,15 @@ subroutine CellGet()
          m(4) = i
       end if
       aBN = aG*delta
-      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' degrees','cell')
-      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4)),'cell')
-      call MIO_Print('BN lattice parameter:       '//trim(num2str(aBN,4)),'cell')
+      call MIO_Print('Angle: '//trim(num2str(phi*180.0_dp/pi,4))//' deg','cell')
+      call MIO_Print('Graphene lattice parameter: '//trim(num2str(aG,4))//' Ang','cell')
+      call MIO_Print('BN lattice parameter: '//trim(num2str(aBN,4))//' Ang','cell')
       m1(:,1) = [m(1),m(2)]
       m1(:,2) = [-m(2),m(1)+m(2)]
       ucell = 0.0_dp
       ucell(1:2,1:2) = matmul(uc,m1)
       ucell(3,3) = h
       g = norm(ucell(:,1))
-      call MIO_Print('')
       call MIO_Print('Length of unit cell: '//trim(num2str(g,5))// &
         ' Ang','cell')
       ucell(:,:2) = ucell(:,:2)*sCell
@@ -333,16 +329,13 @@ subroutine CellGet()
       do i=1,3
          read(1,*) (ucell(j,i),j=1,3)
       end do
-#ifdef DEBUG
-      call MIO_Print("ucell was read from ReadXYZ as: ",'cell')
-      print*, ucell(:,1)
-      print*, ucell(:,2)
-      print*, ucell(:,3)
-#endif /* DEBUG */
+      do i=1,3
+         write(dbgline,'(a,i1,a,3f16.8)') 'lattice vector ',i,' read from the structure file [Ang]:',ucell(:,i)
+         call MIO_PrintDebug(dbgline,'cell')
+      end do
       close(1)
       call MIO_InputParameter('Structure.LatticeParameterBN',aBN,2.505_dp)
       g = norm(ucell(:,1))
-      call MIO_Print('')
       call MIO_Print('Length of unit cell: '//trim(num2str(g,5))// &
         ' Ang','cell')
    else
@@ -355,13 +348,12 @@ subroutine CellGet()
    if (sCell /= 1) then
       if (l) then
          call MIO_Print('Length of supercell: '//trim(num2str(norm(ucell(:,1)),5))// &
-            ' Ang'//' X '//trim(num2str(norm(ucell(:,2)),5))//' Ang','cell')
+            ' Ang x '//trim(num2str(norm(ucell(:,2)),5))//' Ang','cell')
       else
          call MIO_Print('Length of supercell: '//trim(num2str(norm(ucell(:,1)),5))// &
             ' Ang','cell')
       end if
    end if
-   call MIO_Print('')
 
    vn = CrossProd(ucell(:,1),ucell(:,2))
    volume = dot_product(ucell(:,3),vn)

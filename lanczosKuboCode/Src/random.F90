@@ -98,7 +98,6 @@ subroutine RandTest(rng,n)
    write(u,*)
    write(u,*) 'Av:', s
    call MIO_Print('Average: '//trim(num2str(s,12)),'random')
-   call MIO_Print('')
    close(u)
 
 #ifdef DEBUG

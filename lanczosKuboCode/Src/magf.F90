@@ -37,11 +37,11 @@ subroutine MagfInit()
       call MIO_InputParameter('MagField.Value',Bmag,0.0_dp)
       mBi = nint(area*1.0d-20*Bmag/(fluxq))
       mBf = mBi
-      call MIO_Print('Magnetic field '//trim(num2str(Bmag,5))//' T, flux index '//trim(num2str(mBf)),'magf')
+      call MIO_Print('MagField.Value '//trim(num2str(Bmag,5))//' T: '//trim(num2str(mBf))//' flux quanta through the cell','magf')
       ! the field is rounded to an integer number of flux quanta through the cell
-      if (mBi == 0 .and. Bmag /= 0.0_dp) call MIO_Print('WARNING: MagField.Value '//trim(num2str(Bmag,5))// &
+      if (mBi == 0 .and. Bmag /= 0.0_dp) call MIO_Warning('MagField.Value '//trim(num2str(Bmag,5))// &
         ' T is below half a flux quantum through this cell ('//trim(num2str(fluxq/(area*1.0d-20),5))// &
-        ' T per flux quantum): the run has NO magnetic field.','magf')
+        ' T per flux quantum): the run has no magnetic field','magf')
    else if (MIO_InputSearchLabel('MagField.Integer',line,id)) then
       call MIO_InputParameter('MagField.Integer',mBi,0)
       mBf = mBi
@@ -110,13 +110,14 @@ subroutine MagfValue(mB)
           Bmag = mB*fluxq/(area*1.0d-20)
       if (mBi /= mBf) then
          write(prefix,'(a,I5.5,a,f0.4)') 'm',mB,'_B', Bmag
+         call MIO_Section('Field '//trim(num2str(mB))//' of '//trim(num2str(mBi))//'..'//trim(num2str(mBf)),'magf')
          call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'magf')
          prefix = './'//trim(prefix)
          call system('mkdir '//trim(prefix))
          prefix = trim(prefix)//'/'//trim(sysname)
       end if
-      call MIO_Print('Magnetic field: '//trim(num2str(Bmag,3)),'magf')
-      call MIO_Print('m: '//trim(num2str(mB)),'magf')
+      call MIO_Print('Magnetic field: '//trim(num2str(Bmag,5))//' T ('//trim(num2str(mB))// &
+        ' flux quanta through the cell)','magf')
    else
       Bmag = 0.0_dp
    end if
@@ -207,13 +208,14 @@ subroutine HaldPhaseValue(mPhi)
       HaldanePhase = 1.0_dp/(mPhif-mPhii)*mPhi*2.0_dp*pi
       if (mPhii /= mPhif) then
          write(prefix,'(a,I5.5,a,f0.4)') 'm',mPhi,'_B', HaldanePhase
+         call MIO_Section('Haldane phase '//trim(num2str(mPhi))//' of '//trim(num2str(mPhii))//'..'// &
+           trim(num2str(mPhif)),'magf')
          call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'magf')
          prefix = './'//trim(prefix)
          call system('mkdir '//trim(prefix))
          prefix = trim(prefix)//'/'//trim(sysname)
       end if
-      call MIO_Print('Haldane phase: '//trim(num2str(HaldanePhase,3)),'HaldPhase')
-      call MIO_Print('m: '//trim(num2str(mPhi)),'magf')
+      call MIO_Print('Haldane phase: '//trim(num2str(HaldanePhase,5))//' rad (step '//trim(num2str(mPhi))//')','magf')
     end if
 
 #ifdef TIMER
