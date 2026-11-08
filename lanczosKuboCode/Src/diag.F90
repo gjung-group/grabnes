@@ -24,6 +24,9 @@ module diag
   logical, save :: checkTAPWUnitary=.false.  ! Enable TAPW unitary transformation check
   logical, save :: useKprimeValley=.false.  ! Use K' valley instead of K valley for TAPW reference
   logical, save :: tapwDebug=.false.  ! Enable verbose debug output for TAPW calculations
+  ! Buffer of the debug lines (MIO_PrintDebug); one per thread.
+  character(len=4096), save :: dbgmsg
+  !$OMP THREADPRIVATE(dbgmsg)
   logical, save :: useRigidPositions=.false.  ! Use rigid reference positions for TAPW X matrix construction
   logical, save :: tapwLowdin=.false.  ! Loewdin-orthonormalise X (X S^-1/2, S = X^H X); relaxed positions make S /= 1
   ! Both valleys in one TAPW basis (opt-in): the G-list is the union of the shells around K and K',
@@ -204,7 +207,7 @@ subroutine DiagDOS()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   call MIO_Print('Calculating DOS by diagonalization','diag')
+   call MIO_Subsection('DOS by diagonalisation','diag')
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
@@ -268,18 +271,18 @@ subroutine DiagDOS()
          end do
       end do
       !$OMP END PARALLEL DO
-      call MIO_Print('  Completed diagonalization for spin '//trim(num2str(is))//' of '//trim(num2str(nspin)),'diag')
+      call MIO_PrintDebug('  Completed diagonalization for spin '//trim(num2str(is))//' of '//trim(num2str(nspin)),'diag')
    end do
-   call MIO_Print('Accumulating DOS from eigenvalues...','diag')
+   call MIO_PrintDebug('Accumulating DOS from eigenvalues...','diag')
    do is=1,nspin
       if (nspin > 1) then
-         call MIO_Print('  Processing spin '//trim(num2str(is))//' of '//trim(num2str(nspin)),'diag')
+         call MIO_PrintDebug('  Processing spin '//trim(num2str(is))//' of '//trim(num2str(nspin)),'diag')
       end if
       do ik = 1,ptot
          ! Progress reporting every 10% completion
          if (ptot > 1) then
             if (ik == ptot .or. (ik > 0 .and. int(10.0_dp*(ik-1)/ptot) < int(10.0_dp*ik/ptot))) then
-               call MIO_Print('    Accumulating k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot))//' (' &
+               call MIO_PrintDebug('    Accumulating k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot))//' (' &
                      //trim(num2str(int(100.0_dp*ik/ptot)))//'%)','diag')
             end if
          end if
@@ -290,7 +293,7 @@ subroutine DiagDOS()
          end do
       end do
    end do
-   call MIO_Print('Completed DOS accumulation','diag')
+   call MIO_PrintDebug('Completed DOS accumulation','diag')
    if (nspin==1) then
       DOS = 2.0_dp*DOS/(eps*sqrt(twopi)*ptot)
    else
@@ -302,7 +305,7 @@ subroutine DiagDOS()
    call file%Close()
    call MIO_Deallocate(Eig,'Eig','diag')
    call MIO_Deallocate(H,'H','diag')
-   call MIO_Print('Emin: '//trim(num2str(Emin,4))//', Emax: '//trim(num2str(Emax,4)),'diag')
+   call MIO_Print('Energy window: '//trim(num2str(Emin,4))//' to '//trim(num2str(Emax,4)),'diag')
    eps = (E2-E1)/(Epts-1)
    sp = 0.0_dp
    Ep = Emin
@@ -321,8 +324,7 @@ subroutine DiagDOS()
          end if
       end if
    end do
-   call MIO_Print('Efermi: '//trim(num2str(Efermi,5)),'diag')
-   call MIO_Print('')
+   call MIO_Print('Fermi energy: '//trim(num2str(Efermi,5)),'diag')
 
 #ifdef TIMER
    call MIO_TimerStop('diag')
@@ -377,7 +379,7 @@ subroutine DiagPDOS()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   call MIO_Print('Calculating PDOS by diagonalization','diag')
+   call MIO_Subsection('PDOS by diagonalisation','diag')
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
@@ -450,7 +452,7 @@ subroutine DiagPDOS()
          write(u,*) E(i1), (DOS(i1,is),is=1,nspin)
       end do
       call file%Close()
-      call MIO_Print('Emin: '//trim(num2str(Emin,4))//', Emax: '//trim(num2str(Emax,4)),'diag')
+      call MIO_Print('Energy window: '//trim(num2str(Emin,4))//' to '//trim(num2str(Emax,4)),'diag')
       dEgrid = (E2-E1)/(Epts-1)
       sp = 0.0_dp
       Ep = Emin
@@ -469,8 +471,7 @@ subroutine DiagPDOS()
             end if
          end if
       end do
-      call MIO_Print('Efermi: '//trim(num2str(Efermi,5)),'diag')
-      call MIO_Print('')
+      call MIO_Print('Fermi energy: '//trim(num2str(Efermi,5)),'diag')
       call MIO_Deallocate(DOS,'DOS','diag')
    end do
    deallocate(EStoreS, WStore)
@@ -513,7 +514,7 @@ subroutine Diag3DBands()
    call MIO_TimerCount('diag')
 #endif /* TIMER */
 
-   call MIO_Print('Calculating 3D Bands by diagonalization','diag')
+   call MIO_Subsection('3D band structure by diagonalisation','diag')
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
    call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
@@ -539,8 +540,7 @@ subroutine Diag3DBands()
    write(uu,'(3i8)') nAt, nspin, ptot
    do is=1,nspin
       do ik=1,ptot
-         if (modulo(ik,max(1,ptot/10)).eq.0) call MIO_Print('progress is: '//trim(num2str(100.0_dp*ik/ptot,4)) &
-               //' percent','diag')
+         if (modulo(ik,max(1,ptot/10)).eq.0) call MIO_Print('Progress: k-point '//trim(num2str(ik))//' of '//trim(num2str(ptot)),'diag')
          call DiagHam(nAt,nspin,is,H(:,:,is),Eig(:,is),Kgrid(:,ik),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
          !hv = max(hv,maxval(E(:,is),mask=E(:,is)<=Efermi/g0))
          !lc = min(lc,minval(E(:,is),mask=E(:,is)>Efermi/g0))
@@ -662,7 +662,7 @@ subroutine DiagBands()
           call MIO_InputParameter('Zeeman.Term',zeeman,.false.)
           call MIO_InputParameter('Zeeman.PseudoTerm',pzeeman,.false.)
           if (zeeman .or. pzeeman .or. IsingSOCterm) then
-             call MIO_Print('WARNING: ZeemanTerm, PseudoZeemanTerm and IsingSOCterm are implemented for TAPW '// &
+             call MIO_Warning('ZeemanTerm, PseudoZeemanTerm and IsingSOCterm are implemented for TAPW '// &
                'calculations only (useTAPW .true.); they have NO effect on this calculation.','diag')
           end if
           if (RashbaSOCterm .and. nspin == 1) then
@@ -676,11 +676,11 @@ subroutine DiagBands()
           call MIO_InputParameter('Zeeman.Term',zeeman,.false.)
           call MIO_InputParameter('Zeeman.PseudoTerm',pzeeman,.false.)
           ! the TAPW builders add the Zeeman and Ising terms only when ns == 2
-          if ((zeeman .or. IsingSOCterm) .and. nspin == 1) call MIO_Print('WARNING: ZeemanTerm and IsingSOCterm '// &
+          if ((zeeman .or. IsingSOCterm) .and. nspin == 1) call MIO_Warning('ZeemanTerm and IsingSOCterm '// &
             'act on the two spin sectors and need Zeeman.SpinPolarized .true.; they have NO effect on this '// &
             'calculation.','diag')
           ! Zeeman.PseudoFactor is read but never used by any Hamiltonian builder
-          if (pzeeman) call MIO_Print('WARNING: PseudoZeemanTerm is not implemented; it has NO effect on this '// &
+          if (pzeeman) call MIO_Warning('PseudoZeemanTerm is not implemented; it has NO effect on this '// &
             'calculation.','diag')
        end block
     end if
@@ -697,7 +697,7 @@ subroutine DiagBands()
    end if
 
    if (MIO_InputFindBlock('Bands.Path',nPath)) then
-      call MIO_Print('Band calculation','diag')
+      call MIO_Subsection('Band structure','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_InputBlock('Bands.Path',path)
 
@@ -722,7 +722,7 @@ subroutine DiagBands()
       end do
       close(98)
 
-      call MIO_Print('k-path written to kpath_debug_absolute and kpath_debug_fractional','diag')
+      call MIO_PrintDebug('k-path written to kpath_debug_absolute and kpath_debug_fractional','diag', tapwDebug)
          !   !print*, "theta=", theta
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
@@ -786,11 +786,11 @@ subroutine DiagBands()
       ! Override k-path with k-grid for Chern calculation or 3D TAPW bands calculation
       if ((calculateChern .and. useTAPW) .or. calculate3DTAPWBands) then
          if (calculateChern .and. useTAPW) then
-            call MIO_Print('TAPW Chern number calculation mode detected','diag')
+            call MIO_PrintDebug('TAPW Chern number calculation mode detected','diag', tapwDebug)
             call MIO_Print('Generating '//trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))// &
                           ' Monkhorst-Pack k-grid for Chern calculation','diag')
          else if (calculate3DTAPWBands) then
-            call MIO_Print('3D TAPW bands calculation mode detected','diag')
+            call MIO_PrintDebug('3D TAPW bands calculation mode detected','diag', tapwDebug)
             call MIO_Print('Generating '//trim(num2str(nk_3D_x))//'x'//trim(num2str(nk_3D_y))// &
                           merge(' Gamma-centred  ',' Monkhorst-Pack ',gammaCentred3D)// &
                           'k-grid for 3D TAPW bands calculation','diag')
@@ -826,15 +826,15 @@ subroutine DiagBands()
             if (useHighSymmetryGrid) then
                ! Colleague's definition: k = (i/Nk) * b1 + (j/Nk) * b2 with i,j = 0,1,2,...Nk-1
                ! This ensures proper sampling of Gamma, K, and M points
-               call MIO_Print('Using high-symmetry k-grid definition: k = (i/Nk)*b1 + (j/Nk)*b2','diag')
-               call MIO_Print('  This ensures proper sampling of Gamma (0,0), K, and M points','diag')
-               if (tapwDebug) call MIO_Print('DEBUG: rcell matrix:','diag')
-               call MIO_Print('  b1 = ['//trim(num2str(rcell(1,1),6))//','//trim(num2str(rcell(2,1),6))//',' &
-                     //trim(num2str(rcell(3,1),6))//']','diag')
-               call MIO_Print('  b2 = ['//trim(num2str(rcell(1,2),6))//','//trim(num2str(rcell(2,2),6))//',' &
-                     //trim(num2str(rcell(3,2),6))//']','diag')
-               call MIO_Print('  b3 = ['//trim(num2str(rcell(1,3),6))//','//trim(num2str(rcell(2,3),6))//',' &
-                     //trim(num2str(rcell(3,3),6))//']','diag')
+               call MIO_PrintDebug('Using high-symmetry k-grid definition: k = (i/Nk)*b1 + (j/Nk)*b2','diag', tapwDebug)
+               call MIO_PrintDebug('  This ensures proper sampling of Gamma (0,0), K, and M points','diag', tapwDebug)
+               call MIO_PrintDebug('rcell matrix:','diag', tapwDebug)
+               call MIO_PrintDebug('  b1 = ['//trim(num2str(rcell(1,1),6))//','//trim(num2str(rcell(2,1),6))//',' &
+                     //trim(num2str(rcell(3,1),6))//']','diag', tapwDebug)
+               call MIO_PrintDebug('  b2 = ['//trim(num2str(rcell(1,2),6))//','//trim(num2str(rcell(2,2),6))//',' &
+                     //trim(num2str(rcell(3,2),6))//']','diag', tapwDebug)
+               call MIO_PrintDebug('  b3 = ['//trim(num2str(rcell(1,3),6))//','//trim(num2str(rcell(2,3),6))//',' &
+                     //trim(num2str(rcell(3,3),6))//']','diag', tapwDebug)
 
                ! First pass: regular grid
                do j = 0, nk_chern_y-1
@@ -848,12 +848,12 @@ subroutine DiagBands()
 
                ! Second pass: Add extra points near high-symmetry points for dispersive bands
                if (addHighSymmetryRefinement) then
-                  call MIO_Print('Adding extra k-points near high-symmetry points for dispersive bands','diag')
+                  call MIO_PrintDebug('Adding extra k-points near high-symmetry points for dispersive bands','diag', tapwDebug)
                   call add_high_symmetry_refinement(Kpts, ip, rcell, nk_chern_x, nk_chern_y)
                end if
             else
                ! Original Monkhorst-Pack formula
-               call MIO_Print('Using standard Monkhorst-Pack k-grid definition','diag')
+               call MIO_PrintDebug('Using standard Monkhorst-Pack k-grid definition','diag', tapwDebug)
                do j = 1, nk_chern_y
                   do i = 1, nk_chern_x
                      ip = ip + 1
@@ -873,7 +873,7 @@ subroutine DiagBands()
                ! at Gamma or K resolved only by the cells straddling it.
                ! It is also the convention a PERIODIC marching-squares contour
                ! tracer needs, since index N wraps exactly onto index 0.
-               call MIO_Print('3D TAPW bands: Gamma-centred i/N k-grid','diag')
+               call MIO_PrintDebug('3D TAPW bands: Gamma-centred i/N k-grid','diag', tapwDebug)
                do j = 0, nk_3D_y-1
                   do i = 0, nk_3D_x-1
                      ip = ip + 1
@@ -911,42 +911,42 @@ subroutine DiagBands()
          ! Use a conservative estimate based on typical N_G values
          allocate(ELoc(max(nAt, 15000)))  ! Allow up to 15k TAPW states
          ELoc = 0.0_dp  ! Initialize to avoid uninitialized memory issues
-         call MIO_Print('Allocated ELoc for TAPW with size: '//trim(num2str(size(ELoc))), 'diag')
+         call MIO_PrintDebug('Allocated ELoc for TAPW with size: '//trim(num2str(size(ELoc))), 'diag', tapwDebug)
 
       ! PERFORMANCE OPTIMIZATION: Pre-allocate TAPW arrays for reuse across k-points
       ! This avoids expensive allocate/deallocate for each of 20,736 k-points
       if (calculateChern) then
-         call MIO_Print('Pre-allocating TAPW arrays for high-performance Chern calculation...', 'diag')
+         call MIO_PrintDebug('Pre-allocating TAPW arrays for high-performance Chern calculation...', 'diag', tapwDebug)
          ! Estimate M based on typical values (will be updated in first call)
 
          ! Pre-allocate all arrays that are currently allocated per k-point
          if (.not. allocated(tapw_H_dense)) then
             allocate(tapw_H_dense(nAt, nAt))
-            call MIO_Print('Pre-allocated H_dense: '//trim(num2str(nAt))//'x'//trim(num2str(nAt))//' = ' &
-                  //trim(num2str(nAt*nAt*8/1024/1024))//' MB', 'diag')
+            call MIO_PrintDebug('Pre-allocated H_dense: '//trim(num2str(nAt))//'x'//trim(num2str(nAt))//' = ' &
+                  //trim(num2str(nAt*nAt*8/1024/1024))//' MB', 'diag', tapwDebug)
          end if
 
          if (.not. allocated(tapw_Hproj)) then
             allocate(tapw_Hproj(200, 200))
-            call MIO_Print('Pre-allocated Hproj: 200x200 = 0.3 MB', 'diag')
+            call MIO_PrintDebug('Pre-allocated Hproj: 200x200 = 0.3 MB', 'diag', tapwDebug)
          end if
 
          if (.not. allocated(tapw_eigvals)) then
             allocate(tapw_eigvals(200))
-            call MIO_Print('Pre-allocated eigvals: 200 elements', 'diag')
+            call MIO_PrintDebug('Pre-allocated eigvals: 200 elements', 'diag', tapwDebug)
          end if
 
          if (.not. allocated(tapw_ZWorkLoc)) then
             allocate(tapw_ZWorkLoc(400))
-            call MIO_Print('Pre-allocated ZWorkLoc: 400 elements', 'diag')
+            call MIO_PrintDebug('Pre-allocated ZWorkLoc: 400 elements', 'diag', tapwDebug)
          end if
 
          if (.not. allocated(tapw_DWorkLoc)) then
             allocate(tapw_DWorkLoc(600))
-            call MIO_Print('Pre-allocated DWorkLoc: 600 elements', 'diag')
+            call MIO_PrintDebug('Pre-allocated DWorkLoc: 600 elements', 'diag', tapwDebug)
          end if
 
-         call MIO_Print('TAPW memory pool ready for '//trim(num2str(ptsTot))//' k-points', 'diag')
+         call MIO_PrintDebug('TAPW memory pool ready for '//trim(num2str(ptsTot))//' k-points', 'diag', tapwDebug)
       end if
       else
          ! For regular calculations: use number of atoms
@@ -959,11 +959,10 @@ subroutine DiagBands()
       hv = -huge(0.0_dp)
       lc = huge(0.0_dp)
       E = 0.0_dp
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPathIn = nPath
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       !      !if (modulo(ip,int(ptsTot/10)).eq.0) print*, "progress is: ", ip/int(ptsTot/10)*10, "percent"
       !             !write(uu,*) (HLoc(j,i),j=1,nAt)
       !         !call DiagHamSparse(nAt,nspin,is,HLoc,ELoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
@@ -971,7 +970,7 @@ subroutine DiagBands()
 
       ! Print initial TAPW information
       if (useTAPW) then
-         call MIO_Print('Starting TAPW calculations for '//trim(num2str(ptsTot))//' k-points...', 'diag')
+         call MIO_PrintDebug('Starting TAPW calculations for '//trim(num2str(ptsTot))//' k-points...', 'diag', tapwDebug)
       end if
 
       ! A path of nPathIn > 1 vertices holds ptsTot+1 points (ptsTot = 1 for two vertices with Bands.NumPoints 1);
@@ -981,7 +980,7 @@ subroutine DiagBands()
          do ip = 1, ptsTot
             ! Progress tracking for TAPW
             if (useTAPW) then
-               call MIO_Print('TAPW: Processing k-point '//trim(num2str(ip))//'/'//trim(num2str(ptsTot)), 'diag')
+               call MIO_PrintDebug('TAPW: Processing k-point '//trim(num2str(ip))//'/'//trim(num2str(ptsTot)), 'diag', tapwDebug)
             end if
 
             do is = 1, nspin
@@ -1083,8 +1082,7 @@ subroutine DiagBands()
             end if
             if (sum(nPts(:nPath))==ip-1) then
                nPath = nPath+1
-               call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ip))// &
-                 '   '//trim(num2str(d,6)),'diag')
+               call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ip))//', '//trim(num2str(d,6)),'diag')
             end if
          end do
       else if (sparseDiagSolver) then
@@ -1130,7 +1128,7 @@ subroutine DiagBands()
                         Nneigh, neighCell, neig, ip)
                   !$OMP END CRITICAL
                else if (useTAPW) then
-                  call MIO_Print('calling TAPW routine for '//trim(num2str(ip)),'diag')
+                  call MIO_PrintDebug('calling TAPW routine for '//trim(num2str(ip)),'diag', tapwDebug)
                   call DiagH0TAPW(nAt, nspin, is, ELoc, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell,neig, ip)
                else if (RashbaSOCterm .and. is == 1) then
                   ! Use block Hamiltonian for Rashba (only call once, gives 2N eigenvalues)
@@ -1207,8 +1205,7 @@ subroutine DiagBands()
                end if
                if (.not. calculate3DTAPWBands .and. sum(nPts(:nPath))==ip-1) then
                   nPath = nPath+1
-                  call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ip))// &
-                    '   '//trim(num2str(d,6)),'diag')
+                  call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ip))//', '//trim(num2str(d,6)),'diag')
                end if
             end do
          end if
@@ -1291,18 +1288,18 @@ subroutine DiagBands()
                      else
                         forceBlockTAPW_str = 'false'
                      end if
-                     call MIO_Print('DEBUG: forceBlockTAPW flag check - useTAPW='//trim(useTAPW_str) &
-                           //', forceBlockTAPW='//trim(forceBlockTAPW_str)//', is='//trim(num2str(is))//', ip=' &
-                           //trim(num2str(ip)), 'diag')
+                     call MIO_PrintDebug('forceBlockTAPW flag check - useTAPW='//trim(useTAPW_str)  // &
+                       ', forceBlockTAPW='//trim(forceBlockTAPW_str)//', is='//trim(num2str(is))//', ip='  // &
+                       trim(num2str(ip)),'diag')
                   end if
                   ! TAPW + Rashba SOC (or forced block path for testing): Build block Hamiltonian once, then use TAPW diagonalization
                   ! Only Rashba requires block Hamiltonian due to spin-flip terms, but forceBlockTAPW allows testing without SOC
                   !$OMP CRITICAL
                   if (forceBlockTAPW) then
-                     call MIO_Print('TAPW: Using forced block path (forceBlockTAPW=true, no SOC)', 'diag')
-                     call MIO_Print('About to call BuildBlockHamiltonianOnly for TAPW (forced block path, no SOC)', 'diag')
+                     call MIO_PrintDebug('TAPW: Using forced block path (forceBlockTAPW=true, no SOC)', 'diag', tapwDebug)
+                     call MIO_PrintDebug('About to call BuildBlockHamiltonianOnly for TAPW (forced block path, no SOC)', 'diag', tapwDebug)
                   else if (socDebug) then
-                     call MIO_Print('About to call BuildBlockHamiltonianOnly for TAPW+Rashba', 'diag')
+                     call MIO_PrintDebug('About to call BuildBlockHamiltonianOnly for TAPW+Rashba','diag', socDebug)
                   end if
                   if (tapwBlockMatrixFree) then
                      if (.not. allocated(HBlock)) allocate(HBlock(1, 1))
@@ -1311,16 +1308,17 @@ subroutine DiagBands()
                      call BuildBlockHamiltonianOnly(nAt, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, HBlock)
                   end if
                   if (forceBlockTAPW) then
-                     call MIO_Print('BuildBlockHamiltonianOnly completed, calling DiagH0TAPW_withBlockH', 'diag')
+                     call MIO_PrintDebug('BuildBlockHamiltonianOnly completed, calling DiagH0TAPW_withBlockH', 'diag', tapwDebug)
                   else if (socDebug) then
-                     call MIO_Print('BuildBlockHamiltonianOnly completed, calling DiagH0TAPW_withBlockH', 'diag')
+                     call MIO_PrintDebug('BuildBlockHamiltonianOnly completed, calling DiagH0TAPW_withBlockH','diag', &
+                       socDebug)
                   end if
                   call DiagH0TAPW_withBlockH(nAt, nspin, is, ELoc, KptsLoc, ucell, HBlock, maxNeigh, hopp, NList, &
                         Nneigh, neighCell, neig, ip)
                   if (forceBlockTAPW) then
-                     call MIO_Print('DiagH0TAPW_withBlockH completed', 'diag')
+                     call MIO_PrintDebug('DiagH0TAPW_withBlockH completed', 'diag', tapwDebug)
                   else if (socDebug) then
-                     call MIO_Print('DiagH0TAPW_withBlockH completed', 'diag')
+                     call MIO_PrintDebug('DiagH0TAPW_withBlockH completed','diag', socDebug)
                   end if
                   !$OMP END CRITICAL
                   ! For Rashba SOC with TAPW, we now have 2M_tapw eigenvalues (spin-mixed from block projection)
@@ -1378,13 +1376,14 @@ subroutine DiagBands()
                else if (RashbaSOCterm .and. is == 1) then
                   ! Use block Hamiltonian for Rashba (only call once, gives 2N eigenvalues)
                   !$OMP CRITICAL
-                  if (socDebug) call MIO_Print('About to call BuildBlockHamiltonianOnly for Rashba', 'diag')
+                  call MIO_PrintDebug('About to call BuildBlockHamiltonianOnly for Rashba','diag', socDebug)
                   if (.not. allocated(HBlock)) allocate(HBlock(2*nAt, 2*nAt))
                   if (.not. allocated(ELocBlock)) allocate(ELocBlock(2*nAt))
                   call BuildBlockHamiltonianOnly(nAt, KptsLoc, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, HBlock)
-                  if (socDebug) call MIO_Print('BuildBlockHamiltonianOnly completed, calling DiagBlockHamiltonian', 'diag')
+                  call MIO_PrintDebug('BuildBlockHamiltonianOnly completed, calling DiagBlockHamiltonian','diag', &
+                    socDebug)
                   call DiagBlockHamiltonian(HBlock, ELocBlock, nAt)
-                  if (socDebug) call MIO_Print('DiagBlockHamiltonian completed, storing eigenvalues', 'diag')
+                  call MIO_PrintDebug('DiagBlockHamiltonian completed, storing eigenvalues','diag', socDebug)
                   !$OMP END CRITICAL
                   ! Store eigenvalues - first nAt go to spin-up, next nAt to spin-down
                   E(1:nAt, 1, ip) = ELocBlock(1:nAt)
@@ -1416,7 +1415,7 @@ subroutine DiagBands()
 
          ! Print completion message for TAPW
          if (useTAPW) then
-            call MIO_Print('TAPW calculations completed for all k-points!', 'diag')
+            call MIO_PrintDebug('TAPW calculations completed for all k-points!', 'diag', tapwDebug)
          end if
 
 #ifdef SEMICL
@@ -1470,8 +1469,7 @@ subroutine DiagBands()
                   end if
                   if (.not. calculate3DTAPWBands .and. sum(nPts(:nPath))==ip-1) then
                      nPath = nPath+1
-                     call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ip))// &
-                       '   '//trim(num2str(d,6)),'diag')
+                     call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ip))//', '//trim(num2str(d,6)),'diag')
                   end if
                end do
             end if
@@ -1480,20 +1478,18 @@ subroutine DiagBands()
 
       ! Chern number calculation for TAPW
       if (calculateChern .and. useTAPW) then
-         call MIO_Print('')
-         call MIO_Print('Starting Chern number calculation...','diag')
-         call MIO_Print('Note: For Chern calculation, consider setting OMP_NUM_THREADS=1 to avoid MKL/OpenMP conflicts','diag')
+         call MIO_PrintDebug('Starting Chern number calculation...','diag', tapwDebug)
+         call MIO_PrintDebug('Note: For Chern calculation, consider setting OMP_NUM_THREADS=1 to avoid MKL/OpenMP conflicts','diag', tapwDebug)
          ! E is allocated with max(nAt,15000) rows and ptsTot+1 points; the routine declares E(nAt,nspin,ptsTot).
          ! Passing the whole array made E(:,is,ik) point at the wrong data for is > 1 or ik > 1 (sequence association).
          call CalculateChernTAPW(Kpts, ptsTot, E(1:nAt,:,1:ptsTot), nAt, nspin, ucell, H0, maxNeigh, hopp, NList, Nneigh, &
               neighCell, RashbaSOCterm)
       end if
 
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
-      call MIO_Print('')
       close(u)
+      call MIO_Print('Bands written to '//trim(flnm),'diag')
    end if
 
    ! Deallocate ELoc
@@ -1568,7 +1564,7 @@ subroutine DiagChern()
       !!ip = 0
       !      !Kpts(:,ip) = path(:,i) + (j-1)*(path(:,i+1)-path(:,i))/nPts(i)
 
-      call MIO_Print('Calculating Chern number by diagonalization','diag')
+      call MIO_Subsection('Chern number by diagonalisation','diag')
       call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
       ptsTot = nk(1)*nk(2)*nk(3)
       call MIO_Allocate(Kgrid,[3,ptsTot],'Kgrid','diag')
@@ -1593,10 +1589,9 @@ subroutine DiagChern()
       hv = -huge(0.0_dp)
       lc = huge(0.0_dp)
       Chern = 0.0_dp
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       call DiagCheckThreads('DiagChern')
       !$OMP PARALLEL DO PRIVATE(ChernLoc, KptsLoc, is, ip, HLoc), &
       !$OMP& SHARED(Chern, nAt, nspin, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, Kgrid)
@@ -1621,13 +1616,11 @@ subroutine DiagChern()
          do ip=1,ptsTot
             totalChern = totalChern+Chern(i,1,ip)*dArea
          end do
-         call MIO_Print('Chern number for band '//trim(num2str(i))//' equals '//trim(num2str(totalChern,6)),'diag')
+         call MIO_Print('Chern number of band '//trim(num2str(i))//': '//trim(num2str(totalChern,6)),'diag')
       end do
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(Chern,'Chern','diag')
       call MIO_Deallocate(H,'H','diag')
-      call MIO_Print('')
       close(u)
 
 #ifdef TIMER
@@ -1681,7 +1674,7 @@ subroutine DiagBandsRashba()
        rcell(2,1) = 0.0_dp
    end if
    if (MIO_InputFindBlock('Bands.Path',nPath)) then
-      call MIO_Print('Band calculation','diag')
+      call MIO_Subsection('Band structure','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_InputBlock('Bands.Path',path)
       do ip=1,nPath
@@ -1733,10 +1726,9 @@ subroutine DiagBandsRashba()
       hv = -huge(0.0_dp)
       lc = huge(0.0_dp)
       E = 0.0_dp
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       call DiagCheckThreads('DiagBandsRashba')
       !$OMP PARALLEL DO PRIVATE(ELoc, KptsLoc, is, ip, HLoc), &
       !$OMP& SHARED(E, nAt, nspin, ucell, H0, maxNeigh, hopp, NList, Nneigh, neighCell, Kpts)
@@ -1758,15 +1750,12 @@ subroutine DiagBandsRashba()
          write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is,ip)*g0, i=1,nAt*2),is=1,nspin)
          if (sum(nPts(:nPath))==ip-1) then
             nPath = nPath+1
-            call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ip))// &
-              '   '//trim(num2str(d,6)),'diag')
+            call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ip))//', '//trim(num2str(d,6)),'diag')
          end if
       end do
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(H,'H','diag')
-      call MIO_Print('')
       close(u)
    end if
 
@@ -1822,7 +1811,7 @@ subroutine DiagBandsAroundK()
 
    call MIO_InputParameter('Bands.NumPoints',nPts0,100)
    if (MIO_InputFindBlock('Bands.Path',nPath)) then
-      call MIO_Print('Band calculation','diag')
+      call MIO_Subsection('Band structure','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_InputBlock('Bands.Path',path)
       do ip=1,nPath
@@ -1875,10 +1864,9 @@ subroutine DiagBandsAroundK()
       d = 0.0_dp
       hv = -huge(0.0_dp)
       lc = huge(0.0_dp)
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       do ip=1,ptsTot + 1
          do is=1,nspin
             call DiagHam(nAt,nspin,is,H(:,:,is),E(:,is),Kpts(:,ip),ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
@@ -1891,16 +1879,13 @@ subroutine DiagBandsAroundK()
          write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
          if (sum(nPts(:nPath))==ip-1) then
             nPath = nPath+1
-            call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ip))// &
-              '   '//trim(num2str(d,6)),'diag')
+            call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ip))//', '//trim(num2str(d,6)),'diag')
          end if
       end do
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(H,'H','diag')
-      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
-      call MIO_Print('')
+      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5))//' eV','diag')
       close(u)
    end if
 
@@ -1950,7 +1935,7 @@ subroutine DiagBandsG()
    ! the Bloch phases below use gcell with the image indices of the simulation cell: exact only when the simulation
    ! cell is the graphene primitive cell
    if (maxval(abs(ucell(1:2,1:2) - gcell(1:2,1:2))) > 1.0e-6_dp*aG) call MIO_Kill('Bands.GrapheneUnitCell needs '// &
-     'the graphene primitive cell (a1 = (aG,0), a2 at 60 degrees, as for CellSize 1): on any other cell its Bloch '// &
+     'the graphene primitive cell (a1 = (aG,0), a2 at 60 deg, as for CellSize 1): on any other cell its Bloch '// &
      'phases are wrong. Use Bands.Path for the bands of this cell.','diag','DiagBandsG')
 
    vn = CrossProd(gcell(:,1),gcell(:,2))
@@ -1962,7 +1947,7 @@ subroutine DiagBandsG()
 
    call MIO_InputParameter('Bands.NumPoints',nPts0,100)
    if (MIO_InputFindBlock('Bands.Path',nPath)) then
-      call MIO_Print('Band calculation','diag')
+      call MIO_Subsection('Band structure','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_InputBlock('Bands.Path',path)
       do ip=1,nPath
@@ -2013,10 +1998,9 @@ subroutine DiagBandsG()
       d = 0.0_dp
       hv = -huge(0.0_dp)
       lc = huge(0.0_dp)
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       do ip=1,ptsTot + 1
          do is=1,nspin
             call DiagHam(nAt,nspin,is,H(:,:,is),E(:,is),Kpts(:,ip),gcell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
@@ -2029,16 +2013,13 @@ subroutine DiagBandsG()
          write(u,'(f12.6,10f14.6,/,(10x,10f14.6))') d,((E(i,is)*g0, i=1,nAt),is=1,nspin)
          if (sum(nPts(:nPath))==ip-1) then
             nPath = nPath+1
-            call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ip))// &
-              '   '//trim(num2str(d,6)),'diag')
+            call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ip))//', '//trim(num2str(d,6)),'diag')
          end if
       end do
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(H,'H','diag')
-      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
-      call MIO_Print('')
+      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5))//' eV','diag')
       close(u)
    end if
 
@@ -2086,7 +2067,7 @@ subroutine DiagSpectralCheckGrid(E1,E2,Epts,resolution)
    integer, intent(in) :: Epts
 
    if (Epts < 2) return
-   if ((E2-E1)/(Epts-1) >= 2.0_dp*resolution/g0) call MIO_Print('WARNING: the energy points are '// &
+   if ((E2-E1)/(Epts-1) >= 2.0_dp*resolution/g0) call MIO_Warning('the energy points are '// &
      trim(num2str((E2-E1)/(Epts-1)*g0,6))//' eV apart, Spectral.energyGridResolution '//trim(num2str(resolution,6))// &
      ' eV: states can fall between the points and be missing from the output, unless Spectral.UseGaussianBroadening '// &
      'is used. Raise the resolution or Kubo.NumberofEnergyPoints.','diag')
@@ -2141,8 +2122,8 @@ subroutine DiagSpectralFunction()
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
 
    if (MIO_InputFindBlock('Spectral.Path',nPath)) then
-      call MIO_Print('Spectral function calculation','diag')
-      call MIO_Print('Based on PRB 95, 085420 (2017)','diag')
+      call MIO_Subsection('Spectral function','diag')
+      call MIO_Print('Unfolding as in PRB 95, 085420 (2017)','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_InputBlock('Spectral.Path',path)
       do ip=1,nPath
@@ -2194,10 +2175,9 @@ subroutine DiagSpectralFunction()
       d = 0.0_dp
       hv = -huge(0.0_dp) ! HUGE(X) returns the largest number that is not an infinity in the model of the type of X.
       lc = huge(0.0_dp)
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1],[ptsTot,2],'Pkc','diag')
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
@@ -2260,8 +2240,7 @@ subroutine DiagSpectralFunction()
          d = d + sqrt(dot_product(v,v))
          if (sum(nPts(:nPath))==ik) then
             nPath = nPath+1
-            call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ik))// &
-              '   '//trim(num2str(d,6)),'diag')
+            call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ik))//', '//trim(num2str(d,6)),'diag')
          end if
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -2274,14 +2253,12 @@ subroutine DiagSpectralFunction()
          end if
       end do
 
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(Kpts,'Ktsp','diag')
       call MIO_Deallocate(KptsG,'KtspG','diag')
       call MIO_Deallocate(Energy,'Energy','diag')
-      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
-      call MIO_Print('')
+      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5))//' eV','diag')
       close(u)
    end if
 
@@ -2365,8 +2342,8 @@ subroutine DiagSpectralFunctionKGrid()
    grcell(:,3) = twopi*CrossProd(gcell(:,1),gcell(:,2))/volume
 
    if (MIO_InputFindBlock('Spectral.Path',nPath)) then
-      call MIO_Print('Spectral function calculation','diag')
-      call MIO_Print('Based on PRB 95, 085420 (2017)','diag')
+      call MIO_Subsection('Spectral function','diag')
+      call MIO_Print('Unfolding as in PRB 95, 085420 (2017)','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_Allocate(pathG,[3,nPath],'path','diag')
       call MIO_InputBlock('Spectral.Path',path)
@@ -2429,10 +2406,9 @@ subroutine DiagSpectralFunctionKGrid()
       d = 0.0_dp
       hv = -huge(0.0_dp) ! HUGE(X) returns the largest number that is not an infinity in the model of the type of X.
       lc = huge(0.0_dp)
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptsTot,nAt,2],'Pkc','diag')
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
@@ -2502,8 +2478,7 @@ subroutine DiagSpectralFunctionKGrid()
          d = d + sqrt(dot_product(v,v))
          if (sum(nPts(:nPath))==ik) then
             nPath = nPath+1
-            call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ik))// &
-              '   '//trim(num2str(d,6)),'diag')
+            call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ik))//', '//trim(num2str(d,6)),'diag')
          end if
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -2516,14 +2491,12 @@ subroutine DiagSpectralFunctionKGrid()
          end if
       end do
 
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(Kpts,'Ktsp','diag')
       call MIO_Deallocate(KptsG,'KtspG','diag')
       call MIO_Deallocate(Energy,'Energy','diag')
-      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
-      call MIO_Print('')
+      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5))//' eV','diag')
       close(u)
    end if
 
@@ -2694,13 +2667,16 @@ subroutine DiagSpectralFunctionKGridInequivalent()
    grcell(:,3) = twopi*CrossProd(gcell(:,1),gcell(:,2))/volume
    gcell2 = gcell
 
-   print*, grcell(:,1)
-   print*, grcell(:,2)
-   print*, grcell(:,3)
+   write(dbgmsg,'(*(g0,1x))') grcell(:,1)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') grcell(:,2)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') grcell(:,3)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
 
    if (MIO_InputFindBlock('Spectral.Path',nPath)) then
-      call MIO_Print('Spectral function calculation','diag')
-      call MIO_Print('Based on PRB 95, 085420 (2017)','diag')
+      call MIO_Subsection('Spectral function','diag')
+      call MIO_Print('Unfolding as in PRB 95, 085420 (2017)','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_Allocate(pathG,[3,nPath],'path','diag')
       call MIO_InputBlock('Spectral.Path',path)
@@ -2714,8 +2690,10 @@ subroutine DiagSpectralFunctionKGridInequivalent()
             pathG(:,ip) = pathG(1,ip)*grcell(:,1) + pathG(2,ip)*grcell(:,2) + pathG(3,ip)*grcell(:,3)
          end if
       end do
-      print*, "The k-points for the reference system equal in cartesian coordinates:", pathG
-      print*, "The k-points for the moire system equal in cartesian coordinates:", path
+      write(dbgmsg,'(*(g0,1x))') "The k-points for the reference system equal in cartesian coordinates:", pathG
+      call MIO_PrintDebug(trim(dbgmsg),'diag')
+      write(dbgmsg,'(*(g0,1x))') "The k-points for the moire system equal in cartesian coordinates:", path
+      call MIO_PrintDebug(trim(dbgmsg),'diag')
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
          nPts(1) = 1
@@ -2857,10 +2835,9 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       d = 0.0_dp
       hv = -huge(0.0_dp) ! HUGE(X) returns the largest number that is not an infinity in the model of the type of X.
       lc = huge(0.0_dp)
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptsTot,nAt,2],'Pkc','diag')
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
@@ -3044,8 +3021,7 @@ subroutine DiagSpectralFunctionKGridInequivalent()
          d = d + sqrt(dot_product(v,v))
          if (sum(nPts(:nPath))==ik) then
             nPath = nPath+1
-            call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ik))// &
-              '   '//trim(num2str(d,6)),'diag')
+            call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ik))//', '//trim(num2str(d,6)),'diag')
          end if
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -3079,14 +3055,12 @@ subroutine DiagSpectralFunctionKGridInequivalent()
          end if
       end do
 
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(Kpts,'Ktsp','diag')
       call MIO_Deallocate(KptsG,'KtspG','diag')
       call MIO_Deallocate(Energy,'Energy','diag')
-      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
-      call MIO_Print('')
+      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5))//' eV','diag')
       close(u)
    end if
 
@@ -3191,9 +3165,12 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
 #endif /* TIMER */
 
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
-   print*, rcell(:,1)
-   print*, rcell(:,2)
-   print*, rcell(:,3)
+   write(dbgmsg,'(*(g0,1x))') rcell(:,1)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') rcell(:,2)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') rcell(:,3)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
@@ -3249,19 +3226,23 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
    grcell(:,3) = twopi*CrossProd(gcell(:,1),gcell(:,2))/volume
    gcell2 = gcell
 
-   print*, grcell(:,1)
-   print*, grcell(:,2)
-   print*, grcell(:,3)
+   write(dbgmsg,'(*(g0,1x))') grcell(:,1)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') grcell(:,2)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') grcell(:,3)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
 
    if (MIO_InputFindBlock('Spectral.Path',nPath)) then
-      call MIO_Print('Spectral function calculation','diag')
-      call MIO_Print('Based on PRB 95, 085420 (2017)','diag')
+      call MIO_Subsection('Spectral function','diag')
+      call MIO_Print('Unfolding as in PRB 95, 085420 (2017)','diag')
       call MIO_Allocate(path,[3,nPath],'path','diag')
       call MIO_Allocate(pathG,[3,nPath],'path','diag')
       call MIO_InputBlock('Spectral.Path',path)
       call MIO_InputBlock('Spectral.Path',pathG)
       do ip=1,nPath
-         print*, "0: ", path(:,ip)
+         write(dbgmsg,'(*(g0,1x))') "0:", path(:,ip)
+         call MIO_PrintDebug(trim(dbgmsg),'diag')
          if (useCoordinates) then
             path(:,ip) = path(:,ip)
             pathG(:,ip) = pathG(:,ip)
@@ -3269,8 +3250,10 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
             path(:,ip) = path(1,ip)*rcell(:,1) + path(2,ip)*rcell(:,2) + path(3,ip)*rcell(:,3)
             pathG(:,ip) = pathG(1,ip)*grcell(:,1) + pathG(2,ip)*grcell(:,2) + pathG(3,ip)*grcell(:,3)
          end if
-         print*, "1: ", path(:,ip)
-         print*, "2: ", path(:,ip)
+         write(dbgmsg,'(*(g0,1x))') "1:", path(:,ip)
+         call MIO_PrintDebug(trim(dbgmsg),'diag')
+         write(dbgmsg,'(*(g0,1x))') "2:", path(:,ip)
+         call MIO_PrintDebug(trim(dbgmsg),'diag')
       end do
       if (nPath==1) then
          call MIO_Allocate(nPts,1,'nPts','diag')
@@ -3298,7 +3281,8 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       ip = 0
       d = 0.0_dp
       GVec = matmul(rcell,[1,0,0]) ! we only want to translate them by one reciprocal lattice vector
-      print*, matmul(rcell,[1,1,0]), matmul(rcell,[1,0,0]), matmul(rcell,[0,1,0])
+      write(dbgmsg,'(*(g0,1x))') matmul(rcell,[1,1,0]), matmul(rcell,[1,0,0]), matmul(rcell,[0,1,0])
+      call MIO_PrintDebug(trim(dbgmsg),'diag')
       G10 = matmul(rcell,[1,0,0]) ! Lattice vectors of moire cell
       G01 = matmul(rcell,[0,1,0])
       G11 = matmul(rcell,[1,1,0])
@@ -3396,10 +3380,9 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       d = 0.0_dp
       hv = -huge(0.0_dp) ! HUGE(X) returns the largest number that is not an infinity in the model of the type of X.
       lc = huge(0.0_dp)
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptsTot,nAt,2],'Pkc','diag')
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
@@ -3421,7 +3404,8 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
       AkeGaussian = 0.0_dp
       AkeGaussian1 = 0.0_dp
       AkeGaussian2 = 0.0_dp
-      print*, "nspin ", nspin
+      write(dbgmsg,'(*(g0,1x))') "nspin", nspin
+      call MIO_PrintDebug(trim(dbgmsg),'diag')
       is = 1
       call MIO_InputParameter('Spectral.topBottomRatio',topBottomRatio,1.0_dp)
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
@@ -3559,8 +3543,7 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
          d = d + sqrt(dot_product(v,v))
          if (sum(nPts(:nPath))==ik) then
             nPath = nPath+1
-            call MIO_Print('Point '//trim(num2str(nPath))//': '//trim(num2str(ik))// &
-              '   '//trim(num2str(d,6)),'diag')
+            call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ik))//', '//trim(num2str(d,6)),'diag')
          end if
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -3589,14 +3572,12 @@ subroutine DiagSpectralFunctionKGridInequivalent_v2()
          end if
       end do
 
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(Kpts,'Ktsp','diag')
       call MIO_Deallocate(KptsG,'KtspG','diag')
       call MIO_Deallocate(Energy,'Energy','diag')
-      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
-      call MIO_Print('')
+      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5))//' eV','diag')
       close(u)
    end if
 
@@ -3774,7 +3755,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
-   call MIO_Print('Calculating Spectral function around K1 (2/3,1/3)','diag')
+   call MIO_Subsection('Spectral function around K1 (2/3,1/3)','diag')
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
    ptot = nk(1)*nk(2)*nk(3)
@@ -3790,7 +3771,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    else
       K1 = grcell(:,1)*2.0_dp/3.0_dp + grcell(:,2)*1.0_dp/3.0_dp + grcell(:,3)*0.0  ! Macro K valley of graphene
    end if
-   print*, "K1: ", K1
+   write(dbgmsg,'(*(g0,1x))') "K1:", K1
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
    K1x1 = K1(1) - gridCut
    K1x2 = K1(1) + gridCut
    deltaKx = (K1x2 - K1x1)/nk(1)
@@ -3918,10 +3900,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
       d = 0.0_dp
       hv = -huge(0.0_dp) ! HUGE(X) returns the largest number that is not an infinity in the model of the type of X.
       lc = huge(0.0_dp)
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptot,nAt,2],'Pkc','diag')
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
@@ -4065,15 +4046,13 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
          end if
       end do
 
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(Kpts,'Ktsp','diag')
       call MIO_Deallocate(KptsG,'KtspG','diag')
       call MIO_Deallocate(Kgrid,'Kgrid','diag')
       call MIO_Deallocate(Energy,'Energy','diag')
-      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
-      call MIO_Print('')
+      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5))//' eV','diag')
       close(u)
 
 #ifdef TIMER
@@ -4191,9 +4170,12 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
 #endif /* TIMER */
 
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
-   print*, rcell(:,1)
-   print*, rcell(:,2)
-   print*, rcell(:,3)
+   write(dbgmsg,'(*(g0,1x))') rcell(:,1)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') rcell(:,2)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') rcell(:,3)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
 
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
    call MIO_InputParameter('Spectral.FoldByZero',foldByZero,.false.)
@@ -4206,9 +4188,12 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
        call MIO_InputParameter('Spectral.RotateReferenceSystem',rotateRefSystem,.false.)
        call MIO_InputParameter('Spectral.RotateOpposite',rotateOpposite,.false.)
        gcell1 = gcell
-       print*,"gcell before rotation ", gcell(:,1)
-       print*,"gcell before rotation ", gcell(:,2)
-       print*,"gcell before rotation ", gcell(:,3)
+       write(dbgmsg,'(*(g0,1x))') "gcell before rotation", gcell(:,1)
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
+       write(dbgmsg,'(*(g0,1x))') "gcell before rotation", gcell(:,2)
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
+       write(dbgmsg,'(*(g0,1x))') "gcell before rotation", gcell(:,3)
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
        if (rotateRefSystem .eqv. .true.) then
            gg = mmm(1)**2 + mmm(2)**2 + mmm(1)*mmm(2)
            delta = sqrt(real(mmm(3)**2 + mmm(4)**2 + mmm(3)*mmm(4))/gg)
@@ -4219,7 +4204,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
                phi = -phi*180.0_dp/pi
            end if
            aa = phi*pi/180.0_dp
-           print*, "phi =", phi
+           write(dbgmsg,'(*(g0,1x))') "phi =", phi
+           call MIO_PrintDebug(trim(dbgmsg),'diag')
            rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
            rot(:,2) = [sin(aa),cos(aa),0.0_dp]
            rot(:,3) = [0.0_dp,0.0_dp,1.0_dp]
@@ -4251,18 +4237,30 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    grcell(:,3) = twopi*CrossProd(gcell(:,1),gcell(:,2))/volume
 
    gcell2 = gcell
-   print*,"gcell after rotation ", gcell(:,1)
-   print*,"gcell after rotation ", gcell(:,2)
-   print*,"gcell after rotation ", gcell(:,3)
-   print*,"grcell ", grcell(:,1)
-   print*,"grcell ", grcell(:,2)
-   print*,"grcell ", grcell(:,3)
-   print*,"ucell ", ucell(:,1)
-   print*,"ucell ", ucell(:,2)
-   print*,"ucell ", ucell(:,3)
-   print*,"rcell ", rcell(:,1)
-   print*,"rcell ", rcell(:,2)
-   print*,"rcell ", rcell(:,3)
+   write(dbgmsg,'(*(g0,1x))') "gcell after rotation", gcell(:,1)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "gcell after rotation", gcell(:,2)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "gcell after rotation", gcell(:,3)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "grcell", grcell(:,1)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "grcell", grcell(:,2)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "grcell", grcell(:,3)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "ucell", ucell(:,1)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "ucell", ucell(:,2)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "ucell", ucell(:,3)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "rcell", rcell(:,1)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "rcell", rcell(:,2)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
+   write(dbgmsg,'(*(g0,1x))') "rcell", rcell(:,3)
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
@@ -4270,7 +4268,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
-   call MIO_Print('Calculating Spectral function around K1 (2/3,1/3)','diag')
+   call MIO_Subsection('Spectral function around K1 (2/3,1/3)','diag')
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
    ptot = nk(1)*nk(2)*nk(3)
@@ -4286,7 +4284,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
    else
       K1 = grcell(:,1)*2.0_dp/3.0_dp + grcell(:,2)*1.0_dp/3.0_dp + grcell(:,3)*0.0  ! Macro K valley of graphene
    end if
-   print*, "K1: ", K1
+   write(dbgmsg,'(*(g0,1x))') "K1:", K1
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
    K1x1 = K1(1) - gridCut
    K1x2 = K1(1) + gridCut
    deltaKx = (K1x2 - K1x1)/nk(1)
@@ -4318,7 +4317,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       ip = 0
       d = 0.0_dp
       GVec = matmul(rcell,[1,0,0]) ! we only want to translate them by one reciprocal lattice vector
-      print*, matmul(rcell,[1,1,0]), matmul(rcell,[1,0,0]), matmul(rcell,[0,1,0])
+      write(dbgmsg,'(*(g0,1x))') matmul(rcell,[1,1,0]), matmul(rcell,[1,0,0]), matmul(rcell,[0,1,0])
+      call MIO_PrintDebug(trim(dbgmsg),'diag')
       G10 = matmul(rcell,[1,0,0])
       G01 = matmul(rcell,[0,1,0])
       G11 = matmul(rcell,[1,1,0])
@@ -4415,10 +4415,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       d = 0.0_dp
       hv = -huge(0.0_dp) ! HUGE(X) returns the largest number that is not an infinity in the model of the type of X.
       lc = huge(0.0_dp)
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptot,nAt,2],'Pkc','diag')
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
@@ -4440,7 +4439,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
       AkeGaussian = 0.0_dp
       AkeGaussian1 = 0.0_dp
       AkeGaussian2 = 0.0_dp
-      print*, "nspin ", nspin
+      write(dbgmsg,'(*(g0,1x))') "nspin", nspin
+      call MIO_PrintDebug(trim(dbgmsg),'diag')
       is = 1
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
       call MIO_InputParameter('Spectral.energyGridResolution',energyGridResolution,0.005_dp)
@@ -4567,7 +4567,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
          AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
-      call MIO_Print("lets write it all out",'diag')
+      call MIO_PrintDebug("lets write it all out",'diag')
       do ik=1,ptot ! K loop
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -4594,15 +4594,13 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut_v2()
          end if
       end do
 
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(Kpts,'Ktsp','diag')
       call MIO_Deallocate(KptsG,'KtspG','diag')
       call MIO_Deallocate(Kgrid,'Kgrid','diag')
       call MIO_Deallocate(Energy,'Energy','diag')
-      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
-      call MIO_Print('')
+      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5))//' eV','diag')
       close(u)
 
 #ifdef TIMER
@@ -4776,14 +4774,14 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
 
-   call MIO_Print('Calculating Spectral function around K1 (2/3,1/3)','diag')
+   call MIO_Subsection('Spectral function around K1 (2/3,1/3)','diag')
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
    call MIO_InputParameter('Spectral.KGridCutX',gridCutX,0.1_dp)
    call MIO_InputParameter('Spectral.KGridCutY',gridCutY,0.1_dp)
    call MIO_InputParameter('Spectral.KGridLowerGridHalf',lowerGridHalf,.false.)
-   if (nk(2) > 1) call MIO_Print('WARNING: this spectral cut is a line along kx at ky = K_y + Spectral.KGridCutY: '// &
-        'the '//trim(num2str(nk(2)))//' rows of Diag.KGrid along y are identical copies','diag')
+   if (nk(2) > 1) call MIO_Warning('this spectral cut is a line along kx at ky = K_y + Spectral.KGridCutY: '// &
+     'the '//trim(num2str(nk(2)))//' rows of Diag.KGrid along y are identical copies','diag')
    ptot = nk(1)*nk(2)*nk(3)
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
@@ -4797,7 +4795,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    else
       K1 = grcell(:,1)*2.0_dp/3.0_dp + grcell(:,2)*1.0_dp/3.0_dp + grcell(:,3)*0.0
    end if
-   print*, "K1: ", K1
+   write(dbgmsg,'(*(g0,1x))') "K1:", K1
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
    if (lowerGridHalf) then
       K1x1 = K1(1) - gridCutX
       K1x2 = K1(1)
@@ -4907,10 +4906,9 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
       d = 0.0_dp
       hv = -huge(0.0_dp) ! HUGE(X) returns the largest number that is not an infinity in the model of the type of X.
       lc = huge(0.0_dp)
-      call MIO_Print('')
-      call MIO_Print('Path with '//trim(num2str(nPath))//' points:','diag')
+      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPath = 1
-      call MIO_Print('Point 1:   1   '//trim(num2str(0.0_dp,6)),'diag')
+      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1,1],[ptot,nAt,2],'Pkc','diag')
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
       call DiagSpectralWindow(E1,E2)
@@ -5006,7 +5004,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
          AkeGaussian(ik,:) = convolve(real(Ake(ik,:)),gaussian,Epts,Epts2)
       end do
       !$OMP END PARALLEL DO
-      call MIO_Print("lets write it all out",'diag')
+      call MIO_PrintDebug("lets write it all out",'diag')
       do ik=1,ptot ! K loop
          if (GaussConv) then
             do iee=1,Epts  ! epsilon
@@ -5022,15 +5020,13 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
          end if
       end do
 
-      call MIO_Print('')
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       call MIO_Deallocate(Kpts,'Ktsp','diag')
       call MIO_Deallocate(KptsG,'KtspG','diag')
       call MIO_Deallocate(Kgrid,'Kgrid','diag')
       call MIO_Deallocate(Energy,'Energy','diag')
-      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5)),'diag')
-      call MIO_Print('')
+      call MIO_Print('Band gap: '//trim(num2str(g0*(lc-hv),5))//' eV','diag')
       close(u)
 
 #ifdef TIMER
@@ -5195,8 +5191,8 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     ! Ensure correct size of nev and ncv
     if ( (nev < 1) .or. (nev >= ncv) .or. (ncv > N) ) then
-        print *, 'Error: invalid parameters - nev=', nev, 'ncv=', ncv, 'N=', N
-        error stop 1
+        write(dbgmsg,'(*(g0,1x))') 'Error: invalid parameters - nev=', nev, 'ncv=', ncv, 'N=', N
+        call MIO_Kill(trim(dbgmsg),'diag','DiagHamSparse')
     end if
 
     ! Initialize arrays
@@ -5241,14 +5237,13 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     ! Check resid for initial state
     if (size(resid) /= N) then
-        print *, 'Error: resid size mismatch: ', size(resid), ' expected: ', N
-        error stop 1
+        write(dbgmsg,'(*(g0,1x))') 'Error: resid size mismatch:', size(resid), ' expected: ', N
+        call MIO_Kill(trim(dbgmsg),'diag','DiagHamSparse')
     end if
 
      ! Debug print for resid
     if (any(resid /= resid)) then
-        call MIO_Print('Error: resid contains NaN values initially.','diag')
-        error stop 1
+        call MIO_Kill('resid contains NaN values initially.','diag','DiagHamSparse')
     end if
 
     resid_norm = sqrt(sum(abs(resid)**2))
@@ -5257,26 +5252,26 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     ! Create CSR sparse matrix storage
 #ifdef DEBUG
-    call MIO_Print("initialize the sparse matrix and put it in csr format",'diag')
+    call MIO_PrintDebug("initialize the sparse matrix and put it in csr format",'diag')
 #endif /* DEBUG */
     call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell, row_ptr, col_ind, values,sigma)
 #ifdef DEBUG
-    call MIO_Print("done",'diag')
+    call MIO_PrintDebug("done",'diag')
 #endif /* DEBUG */
     symmetric = is_structurally_symmetric(values, row_ptr, col_ind, N)
 
 #ifdef DEBUG
-    print*, "is it symmetric?", symmetric
+    write(dbgmsg,'(*(g0,1x))') "is it symmetric?", symmetric
+    call MIO_PrintDebug(trim(dbgmsg),'diag')
 #endif /* DEBUG */
 
     ! Debug prints for CSR matrix
     if (any(values /= values)) then
-        call MIO_Print('Error: values contains NaN values after initialization.','diag')
-        error stop 1
+        call MIO_Kill('values contains NaN values after initialization.','diag','DiagHamSparse')
     end if
 
     if (maxval(abs(values)) > 1e10) then
-        call MIO_Print('Warning: values contains extremely large values.','diag')
+        call MIO_Warning('values contains extremely large values.','diag')
     end if
 
     if (useShift) then
@@ -5300,8 +5295,8 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
        phase = 12       ! analysis + numerical factorisation
        call pardiso(pt, maxfct, mnum, mtype, phase, nnn, a, ia, ja, idum, nrhs, iparm, msglvl, ddum, ddum, error)
        if (error /= 0) then
-          print *, 'DiagHamSparse: PARDISO factorisation error ', error
-          error stop 1
+          write(dbgmsg,'(*(g0,1x))') 'DiagHamSparse: PARDISO factorisation error', error
+          call MIO_Kill(trim(dbgmsg),'diag','DiagHamSparse')
        end if
        call MIO_Print('DiagHamSparse: factor of H - shift: '//trim(num2str(iparm(18)))//' non-zeros, '// &
           trim(num2str(iparm(14)))//' perturbed pivots','diag')
@@ -5314,23 +5309,35 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     ! Check for convergence and errors
     if (info == -5) then
-        print *, 'Maximum number of iterations reached, INFO = ', info
-        print *, 'Number of converged eigenvalues:', iparam(5)
-        print *, 'iparam: ', iparam
-        print *, 'ipntr: ', ipntr
-        print *, 'ido: ', ido
-        print *, 'bmat: ', bmat
-        print *, 'nn: ', nn
-        print *, 'which: ', which
-        print *, 'nev: ', nev
-        print *, 'tol: ', tol
+        write(dbgmsg,'(*(g0,1x))') 'Maximum number of iterations reached, INFO =', info
+        call MIO_Warning(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'Number of converged eigenvalues:', iparam(5)
+        call MIO_Warning(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'iparam:', iparam
+        call MIO_PrintDebug(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'ipntr:', ipntr
+        call MIO_PrintDebug(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'ido:', ido
+        call MIO_PrintDebug(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'bmat:', bmat
+        call MIO_PrintDebug(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'nn:', nn
+        call MIO_PrintDebug(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'which:', which
+        call MIO_PrintDebug(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'nev:', nev
+        call MIO_PrintDebug(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'tol:', tol
+        call MIO_PrintDebug(trim(dbgmsg),'diag')
     else if (info /= 0) then
-        print *, 'Error with znaupd, INFO = ', info
-        print *, 'iparam: ', iparam
-        print *, 'ipntr: ', ipntr
-        error stop 1
+        write(dbgmsg,'(*(g0,1x))') 'Error with znaupd, INFO =', info
+        call MIO_Warning(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'iparam:', iparam
+        call MIO_PrintDebug(trim(dbgmsg),'diag')
+        write(dbgmsg,'(*(g0,1x))') 'ipntr:', ipntr
+        call MIO_Kill(trim(dbgmsg),'diag','DiagHamSparse')
     else
-        call MIO_Print('ARPACK (znaupd) converged','diag')
+        call MIO_PrintDebug('ARPACK (znaupd) converged','diag')
     endif
 
     !    ! Sort each row
@@ -5411,27 +5418,27 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
                call pardiso(pt, maxfct, mnum, mtype, phase, nnn, a, ia, ja, idum, nrhs, iparm, msglvl, &
                             workd(ipntr(1)), workd(ipntr(2)), error)
                if (error /= 0) then
-                  print *, 'DiagHamSparse: PARDISO solve error ', error
-                  error stop 1
+                  write(dbgmsg,'(*(g0,1x))') 'DiagHamSparse: PARDISO solve error', error
+                  call MIO_Kill(trim(dbgmsg),'diag','DiagHamSparse')
                end if
                !! Solve the linear system (A - sigma*I) * y = x using PARDISO
                !!phase = 33  ! Back substitution and iterative refinement
                !!    stop
                !!end if
            else
-               print *, 'Error: ido has unexpected value ', ido
-               error stop 1
+               write(dbgmsg,'(*(g0,1x))') 'Error: ido has unexpected value', ido
+               call MIO_Kill(trim(dbgmsg),'diag','DiagHamSparse')
            end if
 
            ! ARPACK iteration
            call znaupd(ido, bmat, nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr, workd, workl, lworkl, rwork, info)
            if (info /= 0) then
-               print *, 'Error with znaupd during iteration, info = ', info
-               error stop 1
+               write(dbgmsg,'(*(g0,1x))') 'Error with znaupd during iteration, info =', info
+               call MIO_Kill(trim(dbgmsg),'diag','DiagHamSparse')
            end if
 !          ! resid_norm = sqrt(sum(abs(workd(ipntr(2):ipntr(2) + nn - 1))**2))
        end do
-       call MIO_Print('Solve completed ... ','diag')
+       call MIO_PrintDebug('Solve completed ... ','diag')
     else
        do while (ido /= 99)
            if (ido == -1 .or. ido == 1) then
@@ -5444,15 +5451,15 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
                ! Print the output vector for debugging
            else
-               print *, 'Error: ido has unexpected value ', ido
-               error stop 1
+               write(dbgmsg,'(*(g0,1x))') 'Error: ido has unexpected value', ido
+               call MIO_Kill(trim(dbgmsg),'diag','DiagHamSparse')
            end if
 
            ! ARPACK iteration
            call znaupd(ido, bmat, nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr, workd, workl, lworkl, rwork, info)
            if (info /= 0) then
-               print *, 'Error with znaupd during iteration, info = ', info
-               error stop 1
+               write(dbgmsg,'(*(g0,1x))') 'Error with znaupd during iteration, info =', info
+               call MIO_Kill(trim(dbgmsg),'diag','DiagHamSparse')
            end if
        end do
     end if
@@ -5461,7 +5468,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     ! Debug print for extreme values
     if (maxval(abs(resid)) > 1e10) then
-        call MIO_Print('Warning: resid contains extremely large values.','diag')
+        call MIO_Warning('resid contains extremely large values.','diag')
     end if
 
     if (saveRitz) then
@@ -5485,7 +5492,8 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
        ! Write eigenvectors to file
        ! Write eigenvectors to file
-       print*, "ucell:", cell
+       write(dbgmsg,'(*(g0,1x))') "ucell:", cell
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
        do i = 1, nev
            do j = 1, nn
                write(10, '(ES20.12,ES20.12)', advance='no') real(EVectors(j, i)), aimag(EVectors(j, i))
@@ -5501,14 +5509,15 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     end if
     ! Debug prints after zneupd
     if (any(d /= d)) then
-        call MIO_Print('Error: d contains NaN values after zneupd.','diag')
+        call MIO_Warning('d contains NaN values after zneupd.','diag')
     endif
     if (info /= 0) then
-        print *, 'Error with zneupd, ierr = ', info
-        error stop 1
+        write(dbgmsg,'(*(g0,1x))') 'Error with zneupd, ierr =', info
+        call MIO_Kill(trim(dbgmsg),'diag','DiagHamSparse')
     end if
 #ifdef DEBUG
-    print *, "eigenvalues: ", d
+    write(dbgmsg,'(*(g0,1x))') "eigenvalues:", d
+    call MIO_PrintDebug(trim(dbgmsg),'diag')
 #endif /* DEBUG */
 
     if (useShift) then
@@ -5611,11 +5620,11 @@ subroutine sparse_upper_sorted(N, row_ptr, col_ind, values, ia, ja, a)
           l = l + 1
        end do
        if (l == ia(i)) then
-          print *, 'sparse_upper_sorted: empty row ', i
-          error stop 1
+          write(dbgmsg,'(*(g0,1x))') 'sparse_upper_sorted: empty row', i
+          call MIO_Kill(trim(dbgmsg),'diag','sparse_upper_sorted')
        else if (ja(ia(i)) /= i) then
-          print *, 'sparse_upper_sorted: missing diagonal in row ', i
-          error stop 1
+          write(dbgmsg,'(*(g0,1x))') 'sparse_upper_sorted: missing diagonal in row', i
+          call MIO_Kill(trim(dbgmsg),'diag','sparse_upper_sorted')
        end if
        a(ia(i)) = real(a(ia(i)))
     end do
@@ -5738,8 +5747,8 @@ subroutine sparse_count_below(N, ia, ja, a, nE, dE, nbelow, ok)
     phase = 11
     call pardiso(ptc, maxfct, mnum, mtype, phase, M, b, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
     if (error /= 0) then
-       print *, 'sparse_count_below: PARDISO analysis error ', error
-       error stop 1
+       write(dbgmsg,'(*(g0,1x))') 'sparse_count_below: PARDISO analysis error', error
+       call MIO_Kill(trim(dbgmsg),'diag','sparse_count_below')
     end if
     do ie = 1, nE
        bw = b
@@ -5747,8 +5756,8 @@ subroutine sparse_count_below(N, ia, ja, a, nE, dE, nbelow, ok)
        phase = 22
        call pardiso(ptc, maxfct, mnum, mtype, phase, M, bw, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
        if (error /= 0) then
-          print *, 'sparse_count_below: PARDISO factorisation error ', error
-          error stop 1
+          write(dbgmsg,'(*(g0,1x))') 'sparse_count_below: PARDISO factorisation error', error
+          call MIO_Kill(trim(dbgmsg),'diag','sparse_count_below')
        end if
        if (iparmc(14) /= 0 .or. iparmc(22) + iparmc(23) /= M) ok = .false.
        if (cplx) then
@@ -5955,7 +5964,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        which = 'LM'
        iparam(7) = 3
        sigma = cmplx(shift, 0.0_dp)
-       print*, "We will find eigenvalues close to ", shift
+       write(dbgmsg,'(*(g0,1x))') "We will find eigenvalues close to", shift
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
     else
        which = 'SM'
        sigma = (0.0_dp, 0.0_dp)
@@ -5980,8 +5990,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     ! Check resid for initial state
     if (size(resid) /= N) then
-        print *, 'Error: resid size mismatch: ', size(resid), ' expected: ', N
-        error stop 1
+        write(dbgmsg,'(*(g0,1x))') 'Error: resid size mismatch:', size(resid), ' expected: ', N
+        call MIO_Kill(trim(dbgmsg),'diag','DiagH0TAPW')
     end if
 
     ! Debug prints
@@ -5994,19 +6004,25 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     if (.not. useDenseMatrixTAPW) then
     ! Create CSR sparse matrix storage
 #ifdef DEBUG
-    call MIO_Print("initialize the sparse matrix and put it in csr format",'diag')
+    call MIO_PrintDebug("initialize the sparse matrix and put it in csr format",'diag', tapwDebug)
 #endif /* DEBUG */
     if (tapwDebug) then
-       print *, "DEBUG TAPW: KLoc for sparse matrix =", KLoc
-       print *, "DEBUG TAPW: |KLoc| =", sqrt(dot_product(KLoc, KLoc))
-       print *, "DEBUG TAPW: cell_real(1,:) =", cell_real(1,:)
-       print *, "DEBUG TAPW: cell_real(2,:) =", cell_real(2,:)
+       write(dbgmsg,'(*(g0,1x))') "KLoc for sparse matrix =", KLoc
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "|KLoc| =", sqrt(dot_product(KLoc, KLoc))
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "cell_real(1,:) =", cell_real(1,:)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "cell_real(2,:) =", cell_real(2,:)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
 
        ! Cell is already in correct column format for initialize_sparse_matrix
        ! matmul(cell, neighCell) expects cell(:,k) = k-th lattice vector
-       call MIO_Print("DEBUG TAPW: Using cell_real in column format (correct for matmul):",'diag')
-       print *, "TAPW:   a1 = cell_real(:,1) =", cell_real(:,1)
-       print *, "TAPW:   a2 = cell_real(:,2) =", cell_real(:,2)
+       call MIO_PrintDebug("Using cell_real in column format (correct for matmul):",'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "TAPW:   a1 = cell_real(:,1) =", cell_real(:,1)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "TAPW:   a2 = cell_real(:,2) =", cell_real(:,2)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
     end if
 
      ! The projected matrix X^H H X is diagonalised densely below: no shift-invert shift belongs in H here
@@ -6014,16 +6030,17 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
      call initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell, ns, is, KLoc, cell_real, row_ptr, &
            col_ind, values,(0.0_dp,0.0_dp))
 #ifdef DEBUG
-    call MIO_Print("done",'diag')
+    call MIO_PrintDebug("done",'diag', tapwDebug)
 #endif /* DEBUG */
     symmetric = is_structurally_symmetric(values, row_ptr, col_ind, N)
 
 #ifdef DEBUG
-    print*, "is it symmetric?", symmetric
+    write(dbgmsg,'(*(g0,1x))') "is it symmetric?", symmetric
+    call MIO_PrintDebug(trim(dbgmsg),'diag')
 #endif /* DEBUG */
     else
         ! Skip sparse matrix initialization when using dense matrix approach
-        if (tapwDebug) call MIO_Print("Skipping sparse matrix initialization (using dense matrix approach)",'diag')
+        call MIO_PrintDebug("Skipping sparse matrix initialization (using dense matrix approach)",'diag', tapwDebug)
         ! Initialize dummy values to avoid uninitialized variables
         allocate(row_ptr(1), col_ind(1), values(1))
         row_ptr(1) = 1
@@ -6034,12 +6051,11 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     ! Debug prints for CSR matrix
     if (any(values /= values)) then
-        call MIO_Print('Error: values contains NaN values after initialization.','diag')
-        error stop 1
+        call MIO_Kill('values contains NaN values after initialization.','diag','DiagH0TAPW')
     end if
 
     if (maxval(abs(values)) > 1e10) then
-        call MIO_Print('Warning: values contains extremely large values.','diag')
+        call MIO_Warning('values contains extremely large values.','diag')
     end if
 
     ! === TAPW settings (configurable via input parameters) ===
@@ -6055,10 +6071,10 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ! Reference fractional coordinates in BZ (valley-dependent)
     if (useKprimeValley) then
        refF = (/ 1.0_dp/3.0_dp, 2.0_dp/3.0_dp /)  ! K' valley: [1/3, 2/3]
-       call MIO_Print('TAPW targeting K'' valley with fractional coordinates [1/3, 2/3]','diag')
+       call MIO_PrintDebug('TAPW targeting K'' valley with fractional coordinates [1/3, 2/3]','diag', tapwDebug)
     else
        refF = (/ 2.0_dp/3.0_dp, 1.0_dp/3.0_dp /)  ! K valley: [2/3, 1/3] (default)
-       if (tapwDebug) call MIO_Print('TAPW targeting K valley with fractional coordinates [2/3, 1/3]','diag')
+       call MIO_PrintDebug('TAPW targeting K valley with fractional coordinates [2/3, 1/3]','diag', tapwDebug)
     end if
 
     ! Build graphene lattice vectors (60-degree structure) - COLUMN storage like rcell
@@ -6080,8 +6096,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ! Manual 2x2 matrix inverse for sGlattice
     det = sGlattice(1,1)*sGlattice(2,2) - sGlattice(1,2)*sGlattice(2,1)
     if (abs(det) < 1e-10_dp) then
-        print *, "Error: Lattice matrix is singular, det =", det
-        error stop 1
+        write(dbgmsg,'(*(g0,1x))') "Error: Lattice matrix is singular, det =", det
+        call MIO_Kill(trim(dbgmsg),'diag','DiagH0TAPW')
     end if
 
     sGlattice_inv(1,1) =  sGlattice(2,2) / det
@@ -6092,7 +6108,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ! With column storage for sGlattice, rG should also use column storage like rcell
     rG = 2.0_dp * pi * transpose(sGlattice_inv)  ! Column storage: rG(:,i) = i-th reciprocal vector
 #ifdef DEBUG
-    print *, "A*rG =", matmul(sGlattice, rG)  ! Should give 2π*identity with column storage
+    ! Should give 2π*identity with column storage
+    write(dbgmsg,'(*(g0,1x))') "A*rG =", matmul(sGlattice, rG)
+    call MIO_PrintDebug(trim(dbgmsg),'diag')
 #endif /* DEBUG */
 
     ! Calculate reference K-point in reciprocal space using graphene vectors (by design)
@@ -6102,60 +6120,79 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     ! Set NGrange based on calculation mode
     if (checkTAPWUnitary) then
         ! For unitary check: need complete first BZ coverage
-        call MIO_Print('UNITARY CHECK MODE: Calculating NGrange for complete first BZ coverage','diag')
+        call MIO_PrintDebug('UNITARY CHECK MODE: Calculating NGrange for complete first BZ coverage','diag', tapwDebug)
         call calculate_optimal_NGrange_for_complete_BZ(abs(physicalTwistAngle), tapwNG, NGrange)
     else
         ! For valley separation: use user-specified N_G for reduced basis around K-point
         NGrange = tapwNG
-        if (tapwDebug) call MIO_Print('VALLEY SEPARATION MODE: Using user-specified N_G = '//trim(num2str(NGrange)),'diag')
-        if (.not. tapwSetupSaid) call MIO_Print('This creates a reduced TAPW basis centered around K-point','diag')
+        call MIO_PrintDebug('VALLEY SEPARATION MODE: Using user-specified N_G = '//trim(num2str(NGrange)),'diag', &
+          tapwDebug)
+        if (.not. tapwSetupSaid) call MIO_PrintDebug('This creates a reduced TAPW basis centered around K-point','diag', tapwDebug)
     end if
 
     ! Debug output for TAPW parameters (always show basic parameters)
-    if (tapwDebug) call MIO_Print('TAPW Parameters:','diag')
-    if (.not. tapwSetupSaid) call MIO_Print('  N_G (requested G-vectors): '//trim(num2str(tapwNG)),'diag')
-    if (.not. tapwSetupSaid) call MIO_Print('  Moire angle: '//trim(num2str(moireAngle,6))//' degrees','diag')
-    if (.not. tapwSetupSaid) call MIO_Print('  TAPW graphene lattice constant: '//trim(num2str(tapw_aG,6))//' Angstroms','diag')
-    if (useKprimeValley) then
-       if (.not. tapwSetupSaid) call MIO_Print('  Valley selection: K'' valley [1/3, 2/3]','diag')
-    else
-       if (.not. tapwSetupSaid) call MIO_Print('  Valley selection: K valley [2/3, 1/3]','diag')
-    end if
-    if (useRigidPositions) then
-       if (.not. tapwSetupSaid) call MIO_Print('  Position mode: Rigid reference positions','diag')
-    else
-       if (.not. tapwSetupSaid) call MIO_Print('  Position mode: Current relaxed positions','diag')
+    if (.not. tapwSetupSaid) then
+       call MIO_Subsection('TAPW basis','diag')
+       call MIO_Print('  Diag.N_G: '//trim(num2str(tapwNG)),'diag')
+       call MIO_Print('  Diag.MoireAngle: '//trim(num2str(moireAngle,6))//' deg','diag')
+       call MIO_Print('  TAPW.aG: '//trim(num2str(tapw_aG,6))//' Ang','diag')
+       if (useKprimeValley) then
+          call MIO_Print('  Valley: K'' (1/3, 2/3)','diag')
+       else
+          call MIO_Print('  Valley: K (2/3, 1/3)','diag')
+       end if
+       if (useRigidPositions) then
+          call MIO_Print('  Plane-wave positions: rigid reference structure (Diag.UseRigidPositions)','diag')
+       else
+          call MIO_Print('  Plane-wave positions: actual (relaxed) structure','diag')
+       end if
     end if
 
     if (tapwDebug) then
-       print *, "  G-grid rotation angle:", gGridRotationAngle, "degrees"
-       print *, "  Triangular truncation:", useTriangularTruncation
+       write(dbgmsg,'(*(g0,1x))') "G-grid rotation angle:", gGridRotationAngle, "degrees"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Triangular truncation:", useTriangularTruncation
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
     end if
 
     if (tapwDebug) then
        ! Debug: Print lattice vectors and reference point calculation
-       call MIO_Print("DEBUG: Lattice vectors and reference point:",'diag')
-       print *, "  Graphene lattice constant aG =", aG
-       print *, "  sGlattice(1,:) =", sGlattice(1,:)
-       print *, "  sGlattice(2,:) =", sGlattice(2,:)
-       print *, "  sGlattice_inv(1,:) =", sGlattice_inv(1,:)
-       print *, "  sGlattice_inv(2,:) =", sGlattice_inv(2,:)
-       print *, "  rG(1,:) =", rG(1,:)
-       print *, "  rG(2,:) =", rG(2,:)
-       print *, "  refF (fractional) =", refF
-       print *, "  k_ref (Cartesian) =", k_ref
-       print *, "  |k_ref| =", sqrt(k_ref(1)**2 + k_ref(2)**2)
+       call MIO_PrintDebug("Lattice vectors and reference point:",'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Graphene lattice constant aG =", aG
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "sGlattice(1,:) =", sGlattice(1,:)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "sGlattice(2,:) =", sGlattice(2,:)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "sGlattice_inv(1,:) =", sGlattice_inv(1,:)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "sGlattice_inv(2,:) =", sGlattice_inv(2,:)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "rG(1,:) =", rG(1,:)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "rG(2,:) =", rG(2,:)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "refF (fractional) =", refF
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "k_ref (Cartesian) =", k_ref
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "|k_ref| =", sqrt(k_ref(1)**2 + k_ref(2)**2)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
     end if
 
     if (tapwDebug) then
        ! Debug: Compare orientations of graphene vs moiré lattice vectors
-       call MIO_Print("DEBUG: Orientation comparison between graphene and moiré lattices:",'diag')
-       print *, "  Moiré rcell(:,1) =", rcell(:,1)
-       print *, "  Moiré rcell(:,2) =", rcell(:,2)
+       call MIO_PrintDebug("Orientation comparison between graphene and moire lattices:",'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Moire rcell(:,1) =", rcell(:,1)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Moire rcell(:,2) =", rcell(:,2)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
     end if
     if (tapwDebug) then
-       print *, "  Graphene rG(:,1) =", rG(:,1)
-       print *, "  Graphene rG(:,2) =", rG(:,2)
+       write(dbgmsg,'(*(g0,1x))') "Graphene rG(:,1) =", rG(:,1)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Graphene rG(:,2) =", rG(:,2)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
 
        ! Compare orientations (angles) rather than magnitudes
        ! Both rcell and rG now use column storage: (:,i) = i-th vector
@@ -6172,41 +6209,51 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        if (angle_diff_2 > 180.0_dp) angle_diff_2 = angle_diff_2 - 360.0_dp
        if (angle_diff_2 < -180.0_dp) angle_diff_2 = angle_diff_2 + 360.0_dp
 
-       call MIO_Print("  Orientation angles:",'diag')
+       call MIO_PrintDebug("  Orientation angles:",'diag', tapwDebug)
     end if
     if (tapwDebug) then
-       print *, "    Moiré b1 angle =", angle_rcell_1, "degrees"
-       print *, "    Moiré b2 angle =", angle_rcell_2, "degrees"
-       print *, "    Graphene b1 angle =", angle_rG_1, "degrees"
-       print *, "    Graphene b2 angle =", angle_rG_2, "degrees"
-       print *, "    Angle difference b1 =", angle_diff_1, "degrees"
-       print *, "    Angle difference b2 =", angle_diff_2, "degrees"
+       write(dbgmsg,'(*(g0,1x))') "Moire b1 angle =", angle_rcell_1, "degrees"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Moire b2 angle =", angle_rcell_2, "degrees"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Graphene b1 angle =", angle_rG_1, "degrees"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Graphene b2 angle =", angle_rG_2, "degrees"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Angle difference b1 =", angle_diff_1, "degrees"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Angle difference b2 =", angle_diff_2, "degrees"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
 
        ! Keep k_ref from graphene calculation (by design)
-       print *, "  k_ref from graphene vectors =", k_ref
-       print *, "  rcell(2,:) =", rcell(2,:)
-       print *, "  |rcell(1)| =", sqrt(rcell(1,1)**2 + rcell(1,2)**2)
-       print *, "  |rcell(2)| =", sqrt(rcell(2,1)**2 + rcell(2,2)**2)
+       write(dbgmsg,'(*(g0,1x))') "k_ref from graphene vectors =", k_ref
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "rcell(2,:) =", rcell(2,:)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "|rcell(1)| =", sqrt(rcell(1,1)**2 + rcell(1,2)**2)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "|rcell(2)| =", sqrt(rcell(2,1)**2 + rcell(2,2)**2)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
     end if
 
     ! Choose G-vector generation method based on input flag
     if (useTriangularTruncation) then
-       if (.not. tapwSetupSaid) call MIO_Print('Using triangular G-vector truncation (following Python get_Gvecs_tri)','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  G truncation: triangular (Diag.TriangularTruncation)','diag')
 
        ! Control distance-based ordering with input parameter
        call MIO_InputParameter('TAPW.UseTriangularDistanceOrder', useTriangularDistanceOrder, .true.)
        if (useTriangularDistanceOrder) then
-          call MIO_Print('TRIANGULAR: Distance-based ordering ENABLED (default)','diag')
+          call MIO_PrintDebug('TRIANGULAR: Distance-based ordering ENABLED (default)','diag', tapwDebug)
        else
-          call MIO_Print('TRIANGULAR: Distance-based ordering DISABLED - using grid order','diag')
+          call MIO_PrintDebug('TRIANGULAR: Distance-based ordering DISABLED - using grid order','diag', tapwDebug)
        end if
 
        call generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, useTriangularDistanceOrder)
     else
-       if (.not. tapwSetupSaid) call MIO_Print('Using hexagonal shell G-vector truncation (original method)','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  G truncation: hexagonal shells','diag')
        if (checkTAPWUnitary) then
            ! For unitary check, center G-grid around (0,0) to cover entire first BZ
-           call MIO_Print('UNITARY CHECK MODE: Centering G-grid around Γ(0,0) for complete BZ coverage','diag')
+           call MIO_PrintDebug('UNITARY CHECK MODE: Centering G-grid around Gamma(0,0) for complete BZ coverage','diag', tapwDebug)
            call generate_shifted_G_list_with_graphene_BZ(rcell, k_ref, NGrange, Gx, Gy, NG, [0.0_dp, 0.0_dp], rG)
        else
            ! Normal mode: center around K-point for local expansion (Python style)
@@ -6232,7 +6279,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        saved_Gy = Gy
        ! print once: this routine runs at every k-point of the grid
        if (.not. bf_announced) then
-          call MIO_Print('Saved '//trim(num2str(NG))//' G-vectors for Berry curvature calculation','diag')
+          call MIO_PrintDebug('Saved '//trim(num2str(NG))//' G-vectors for Berry curvature calculation','diag', tapwDebug)
           bf_announced = .true.
        end if
        saved_NG = NG
@@ -6285,16 +6332,21 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Show TAPW structure
-       call MIO_Print("TAPW Structure:",'diag')
-       print *, "  Number of atoms (N):", N
-       print *, "  Number of G-vectors (NG):", NG
-       print *, "  Number of unique labels (Nlabel):", Nlabel
-       print *, "  Projected space dimension (M = NG × Nlabel):", M
-       print *, "  Updated M_tapw =", M_tapw, "(now matches actual matrix size)"
+       call MIO_PrintDebug("TAPW Structure:",'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Number of atoms (N):", N
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Number of G-vectors (NG):", NG
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Number of unique labels (Nlabel):", Nlabel
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Projected space dimension (M = NG x Nlabel):", M
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Updated M_tapw =", M_tapw, "(now matches actual matrix size)"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
     else
        ! Always show basic TAPW dimensions
-       if (tapwDebug) call MIO_Print('TAPW matrix: '//trim(num2str(N))//' atoms → '//trim(num2str(M)) &
-             //' projected states (NG='//trim(num2str(NG))//', Nlabel='//trim(num2str(Nlabel))//')','diag')
+       if (.not. tapwSetupSaid) call MIO_Print('  Basis: '//trim(num2str(NG))//' plane waves x '//trim(num2str(Nlabel))// &
+         ' labels = '//trim(num2str(M))//' states ('//trim(num2str(N))//' atoms)','diag')
     end if
 
     allocate(XArray(N, M))
@@ -6302,30 +6354,37 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Print atomic coordinates and G-vector information
-       call MIO_Print("DEBUG: Atomic coordinates and X matrix construction:",'diag')
-       print *, "  Total atoms N =", N
-       print *, "  frac flag =", frac
-       call MIO_Print("  Sample atomic coordinates (first 5 atoms):",'diag')
+       call MIO_PrintDebug("Atomic coordinates and X matrix construction:",'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Total atoms N =", N
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "frac flag =", frac
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       call MIO_PrintDebug("  Sample atomic coordinates (first 5 atoms):",'diag', tapwDebug)
        do i = 1, min(5, N)
-          print '(A,I3,A,2F12.6,A,I0)', "    Atom ", i, ": (", Rat(1,i), Rat(2,i), "), label=", label(i)
+          write(dbgmsg,'(A,I3,A,2F12.6,A,I0)') "Atom", i, ": (", Rat(1,i), Rat(2,i), "), label=", label(i)
+          call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
        end do
-       print *, "  Coordinate ranges: x=[", minval(Rat(1,1:N)), ",", maxval(Rat(1,1:N)), "]"
-       print *, "  Coordinate ranges: y=[", minval(Rat(2,1:N)), ",", maxval(Rat(2,1:N)), "]"
-       print *, "  G-vector ranges: Gx=[", minval(Gx), ",", maxval(Gx), "]"
-       print *, "  G-vector ranges: Gy=[", minval(Gy), ",", maxval(Gy), "]"
+       write(dbgmsg,'(*(g0,1x))') "Coordinate ranges: x=[", minval(Rat(1,1:N)), ",", maxval(Rat(1,1:N)), "]"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Coordinate ranges: y=[", minval(Rat(2,1:N)), ",", maxval(Rat(2,1:N)), "]"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "G-vector ranges: Gx=[", minval(Gx), ",", maxval(Gx), "]"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "G-vector ranges: Gy=[", minval(Gy), ",", maxval(Gy), "]"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
     end if
 
     if (tapwDebug) then
        ! Debug: Show phase calculations for multiple atoms and G-vectors
-       call MIO_Print("DEBUG: Phase calculations G·r for X-matrix construction:",'diag')
+       call MIO_PrintDebug("Phase calculations G.r for X-matrix construction:",'diag', tapwDebug)
        block
           real(dp) :: real_phase
           do i = 1, min(3, N)  ! First 3 atoms
              do j = 1, min(3, NG)  ! First 3 G-vectors
                 real_phase = Gx(j)*Rat(1,i) + Gy(j)*Rat(2,i)
-                print '(A,I0,A,I0,A,F12.6,A,F12.6,A,F12.6,A,2F12.6)', &
-                      "    Atom ", i, ", G-vector ", j, ": G=[", Gx(j), ",", Gy(j), &
-                      "], G·r=", real_phase, ", exp(iG·r)=", cos(real_phase), sin(real_phase)
+                write(dbgmsg,'(A,I0,A,I0,A,F12.6,A,F12.6,A,F12.6,A,2F12.6)') "Atom", i, ", G-vector ", j, ": G=[", &
+                  Gx(j), ",", Gy(j), "], G.r=", real_phase, ", exp(iG.r)=", cos(real_phase), sin(real_phase)
+                call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
              end do
           end do
        end block
@@ -6341,25 +6400,26 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        close(98)
     end if
     if (tapwDebug) then
-       call MIO_Print("DEBUG: Atomic coordinates written to atomic_coords_debug.dat for visualization",'diag')
+       call MIO_PrintDebug("Atomic coordinates written to atomic_coords_debug.dat for visualization",'diag', &
+         tapwDebug)
 
        ! Output comprehensive debugging data for TAPW visualization
-       call MIO_Print("DEBUG: About to call output_brillouin_zones_debug...",'diag')
+       call MIO_PrintDebug("About to call output_brillouin_zones_debug...",'diag', tapwDebug)
        call output_brillouin_zones_debug(aG, moireAngle, k_ref, rG)
 
        ! Output moiré BZ data
-       call MIO_Print("DEBUG: Outputting moiré BZ data...",'diag')
+       call MIO_PrintDebug("Outputting moire BZ data...",'diag', tapwDebug)
        call output_moire_bz_debug(rcell)
 
        ! Output k-path data if available
-       call MIO_Print("DEBUG: Outputting k-path data...",'diag')
+       call MIO_PrintDebug("Outputting k-path data...",'diag', tapwDebug)
        call output_kpath_debug()
     end if
 
     if (useRigidPositions) then
        ! Use rigid reference positions for X matrix construction
        ! This ensures perfect TAPW unitarity even with lattice reconstruction
-       if (.not. tapwSetupSaid) call MIO_Print('Using rigid reference positions for TAPW X matrix construction','diag')
+       if (.not. tapwSetupSaid) call MIO_PrintDebug('Using rigid reference positions for TAPW X matrix construction','diag', tapwDebug)
 
        ! Read rigid positions from generateInit.xyz
        allocate(rigid_positions(3, N))
@@ -6375,7 +6435,7 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        Rat = rigid_positions
     else
        ! Use current positions in Rat directly (default behavior)
-       if (.not. tapwSetupSaid) call MIO_Print('Using current atomic positions for TAPW X matrix construction','diag')
+       if (.not. tapwSetupSaid) call MIO_PrintDebug('Using current atomic positions for TAPW X matrix construction','diag', tapwDebug)
 
        ! Store current state for consistency with rigid position path
        temp_positions = Rat  ! Save current positions (no change needed)
@@ -6384,13 +6444,13 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        if (useRigidPositions) then
-          if (tapwDebug) call MIO_Print('DEBUG: First 3 atomic positions BEFORE build_X (rigid):','diag')
+          call MIO_PrintDebug('First 3 atomic positions BEFORE build_X (rigid):','diag', tapwDebug)
        else
-          if (tapwDebug) call MIO_Print('DEBUG: First 3 atomic positions BEFORE build_X (current):','diag')
+          call MIO_PrintDebug('First 3 atomic positions BEFORE build_X (current):','diag', tapwDebug)
        end if
        do i = 1, min(3, N)
-           call MIO_Print('  Atom '//trim(num2str(i))//': ['//trim(num2str(Rat(1,i),6))//','//&
-                         trim(num2str(Rat(2,i),6))//','//trim(num2str(Rat(3,i),6))//']','diag')
+           call MIO_PrintDebug('  Atom '//trim(num2str(i))//': ['//trim(num2str(Rat(1,i),6))//','// &
+             trim(num2str(Rat(2,i),6))//','//trim(num2str(Rat(3,i),6))//']','diag', tapwDebug)
        end do
     end if
 
@@ -6407,11 +6467,11 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
        ! Convert wrapped rigid positions back to Cartesian for build_X
        call AtomsSetCart()
-       call MIO_Print('Rigid positions wrapped and converted to Cartesian for X matrix','diag')
+       call MIO_PrintDebug('Rigid positions wrapped and converted to Cartesian for X matrix','diag', tapwDebug)
     else
        ! For current positions, ensure we're in the right coordinate system for build_X
        if (frac) call AtomsSetCart()
-       if (.not. tapwSetupSaid) call MIO_Print('Using current positions directly for X matrix construction','diag')
+       if (.not. tapwSetupSaid) call MIO_PrintDebug('Using current positions directly for X matrix construction','diag', tapwDebug)
     end if
 
     ! Build X matrix using current positions (rigid or relaxed)
@@ -6423,20 +6483,20 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        Rat = temp_positions
        if (original_frac_state .and. .not. frac) call AtomsSetFrac()
        if (.not. original_frac_state .and. frac) call AtomsSetCart()
-       call MIO_Print('Restored original relaxed positions for TB Hamiltonian construction','diag')
+       call MIO_PrintDebug('Restored original relaxed positions for TB Hamiltonian construction','diag', tapwDebug)
 
        if (tapwDebug) then
-          if (tapwDebug) call MIO_Print('DEBUG: First 3 atomic positions AFTER restoration (relaxed):','diag')
+          call MIO_PrintDebug('First 3 atomic positions AFTER restoration (relaxed):','diag', tapwDebug)
           do i = 1, min(3, N)
-              call MIO_Print('  Atom '//trim(num2str(i))//': ['//trim(num2str(Rat(1,i),6))//','//&
-                            trim(num2str(Rat(2,i),6))//','//trim(num2str(Rat(3,i),6))//']','diag')
+              call MIO_PrintDebug('  Atom '//trim(num2str(i))//': ['//trim(num2str(Rat(1,i),6))//','// &
+                trim(num2str(Rat(2,i),6))//','//trim(num2str(Rat(3,i),6))//']','diag', tapwDebug)
           end do
        end if
 
        ! Clean up rigid positions array
        deallocate(rigid_positions)
     else
-       if (.not. tapwSetupSaid) call MIO_Print('Using same positions for both X matrix and TB Hamiltonian construction','diag')
+       if (.not. tapwSetupSaid) call MIO_PrintDebug('Using same positions for both X matrix and TB Hamiltonian construction','diag', tapwDebug)
     end if
 
     if (tapwDebug) then
@@ -6458,29 +6518,29 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
         ! Copy from pre-allocated array (no pointer overhead)
     allocate(Hproj(M, M))
         Hproj(1:M, 1:M) = tapw_Hproj(1:M, 1:M)
-        call MIO_Print('Using pre-allocated Hproj array for performance','diag')
+        call MIO_PrintDebug('Using pre-allocated Hproj array for performance','diag', tapwDebug)
     else
         allocate(Hproj(M, M))
 #ifdef DEBUG
-        call MIO_Print('Allocated new Hproj array (not pre-allocated)','diag')
+        call MIO_PrintDebug('Allocated new Hproj array (not pre-allocated)','diag', tapwDebug)
 #endif /* DEBUG */
     end if
 
     ! Branch: use dense or sparse matrix approach for TAPW transformation
     if (useDenseMatrixTAPW) then
-        if (.not. tapwSetupSaid) call MIO_Print('Using DENSE matrix approach for TAPW transformation','diag')
+        if (.not. tapwSetupSaid) call MIO_PrintDebug('Using DENSE matrix approach for TAPW transformation','diag', tapwDebug)
         call transform_dense_hamiltonian_tapw(N, M, XArray, Hproj, KLoc, cell_real, H0, maxN, hopp, NList, Nneigh, &
               neighCell, ns, is)
     else
-        if (.not. tapwSetupSaid) call MIO_Print('Using SPARSE matrix approach for TAPW transformation','diag')
+        if (.not. tapwSetupSaid) call MIO_PrintDebug('Using SPARSE matrix approach for TAPW transformation','diag', tapwDebug)
         ! For large systems (>1M atoms), force sparse approach to avoid memory issues
         if (N > 1000000) then
-            call MIO_Print('Large system detected (N='//trim(num2str(N))//'), using sparse-only TAPW transformation','diag')
+            call MIO_PrintDebug('Large system detected (N='//trim(num2str(N))//'), using sparse-only TAPW transformation','diag', tapwDebug)
             call transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, XArray, Hproj)
         else
             call transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, XArray, Hproj)
         end if
-        if (.not. allocated(values)) stop "values not allocated after transform"
+        if (.not. allocated(values)) call MIO_Kill('values not allocated after transform','diag','DiagH0TAPW')
     end if
 
     ! Intervalley block of the two-valley basis: its size is the valley mixing
@@ -6502,14 +6562,17 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     ! NUMERICAL CHECK: Verify TAPW unitary transformation property (if enabled)
     if (checkTAPWUnitary .and. tapwDebug) then
-        call MIO_Print('Running TAPW unitary transformation check (enabled via Diag.CheckTAPWUnitary)','diag')
-        call MIO_Print('Current k-point for unitary check: ['//trim(num2str(KLoc(1),6))//','//trim(num2str(KLoc(2),6))//']','diag')
+        call MIO_PrintDebug('Running TAPW unitary transformation check (enabled via Diag.CheckTAPWUnitary)','diag', &
+          tapwDebug)
+        call MIO_PrintDebug('Current k-point for unitary check: ['//trim(num2str(KLoc(1),6))//','// &
+          trim(num2str(KLoc(2),6))//']','diag', tapwDebug)
         call diagnose_tapw_phase_consistency(KLoc, Gx, Gy, NG, XArray, N, Nlabel)
         call verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, XArray, Hproj, NG, Nlabel, Gx, Gy)
     else if (checkTAPWUnitary .and. .not. tapwDebug) then
-        call MIO_Print('TAPW unitary check enabled but debug output suppressed (set Diag.TAPWDebug=.true. for details)','diag')
+        call MIO_PrintDebug('TAPW unitary check enabled but debug output suppressed (set Diag.TAPWDebug=.true. for details)','diag', tapwDebug)
     else if (tapwDebug) then
-        call MIO_Print('TAPW unitary check disabled (set Diag.CheckTAPWUnitary=.true. to enable)','diag')
+        call MIO_PrintDebug('TAPW unitary check disabled (set Diag.CheckTAPWUnitary=.true. to enable)','diag', &
+          tapwDebug)
     end if
 
     ! PERFORMANCE OPTIMIZATION: Use pre-allocated arrays if available
@@ -6518,11 +6581,11 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     if (tapw_pre_ok) then
     allocate(eigvals(M))
         eigvals(1:M) = tapw_eigvals(1:M)
-        call MIO_Print('Using pre-allocated eigvals array for performance','diag')
+        call MIO_PrintDebug('Using pre-allocated eigvals array for performance','diag', tapwDebug)
     else
         allocate(eigvals(M))
 #ifdef DEBUG
-        call MIO_Print('Allocated new eigvals array (not pre-allocated)','diag')
+        call MIO_PrintDebug('Allocated new eigvals array (not pre-allocated)','diag', tapwDebug)
 #endif /* DEBUG */
     end if
 
@@ -6532,11 +6595,11 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     if (tapw_pre_ok) then
         allocate(ZWorkLoc(2*M))
         ZWorkLoc(1:2*M) = tapw_ZWorkLoc(1:2*M)
-        call MIO_Print('Using pre-allocated ZWorkLoc array for performance','diag')
+        call MIO_PrintDebug('Using pre-allocated ZWorkLoc array for performance','diag', tapwDebug)
     else
         allocate(ZWorkLoc(2*M))
 #ifdef DEBUG
-        call MIO_Print('Allocated new ZWorkLoc array (not pre-allocated)','diag')
+        call MIO_PrintDebug('Allocated new ZWorkLoc array (not pre-allocated)','diag', tapwDebug)
 #endif /* DEBUG */
     end if
 
@@ -6545,11 +6608,11 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     if (tapw_pre_ok) then
         allocate(DWorkLoc(3*M))
         DWorkLoc(1:3*M) = tapw_DWorkLoc(1:3*M)
-        call MIO_Print('Using pre-allocated DWorkLoc array for performance','diag')
+        call MIO_PrintDebug('Using pre-allocated DWorkLoc array for performance','diag', tapwDebug)
     else
         allocate(DWorkLoc(3*M))
 #ifdef DEBUG
-        call MIO_Print('Allocated new DWorkLoc array (not pre-allocated)','diag')
+        call MIO_PrintDebug('Allocated new DWorkLoc array (not pre-allocated)','diag', tapwDebug)
 #endif /* DEBUG */
     end if
 
@@ -6638,31 +6701,52 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
           ! Print graphene average mass term for this k-point
           if (present(kpoint_index)) then
-             print *, "TAPW Average Mass Term - GRAPHENE Layer 1 (k-point ", kpoint_index, "):"
+             write(dbgmsg,'(*(g0,1x))') "TAPW Average Mass Term - GRAPHENE Layer 1 (k-point", kpoint_index, "):"
+             call MIO_PrintDebug(trim(dbgmsg),'diag')
           else
-             call MIO_Print("TAPW Average Mass Term - GRAPHENE Layer 1:",'diag')
+             call MIO_PrintDebug("TAPW Average Mass Term - GRAPHENE Layer 1:",'diag', tapwDebug)
           end if
-          print *, "  TAPW basis: label_A_idx = ", label_A_idx, " (layer 1, Species 1 = A, GRAPHENE)"
-          print *, "  TAPW basis: label_B_idx = ", label_B_idx, " (layer 1, Species 2 = B, GRAPHENE)"
-          print *, "  Number of atoms with label A (code 11): ", count_A
-          print *, "  Number of atoms with label B (code 12): ", count_B
-          print *, "  TAPW normalization factor for A: 1/sqrt(", count_A, ") = ", 1.0_dp/sqrt(real(count_A, dp))
-          print *, "  TAPW normalization factor for B: 1/sqrt(", count_B, ") = ", 1.0_dp/sqrt(real(count_B, dp))
-          print *, "  V_A(G=0) = ", V_A_0, " (in units of g0)"
-          print *, "  V_B(G=0) = ", V_B_0, " (in units of g0)"
-          print *, "  m0 = (V_A - V_B)/2 = ", m0, " (in units of g0) = ", m0_meV, " meV"
-          print *, "  Delta_avg = 2|m0| = ", delta_avg, " (in units of g0) = ", delta_avg_meV, " meV"
-          call MIO_Print("  NOTE: V_A and V_B are TAPW-averaged values (normalized by 1/N_label)",'diag')
-          call MIO_Print("        For relaxed systems, spatial variations in moiré pattern can cause",'diag')
-          call MIO_Print("        on-site energies to vary across atoms with same label, leading to",'diag')
-          call MIO_Print("        smaller averaged mass term than individual atom values",'diag')
-          call MIO_Print("        The gap in bands (from eigenvalues) may still be reasonable because",'diag')
-          call MIO_Print("        it includes off-diagonal contributions and full Hproj structure",'diag')
+          write(dbgmsg,'(*(g0,1x))') "TAPW basis: label_A_idx =", label_A_idx, " (layer 1, Species 1 = A, GRAPHENE)"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "TAPW basis: label_B_idx =", label_B_idx, " (layer 1, Species 2 = B, GRAPHENE)"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "Number of atoms with label A (code 11):", count_A
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "Number of atoms with label B (code 12):", count_B
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "TAPW normalization factor for A: 1/sqrt(", count_A, ") = ", &
+            1.0_dp/sqrt(real(count_A, dp))
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "TAPW normalization factor for B: 1/sqrt(", count_B, ") = ", &
+            1.0_dp/sqrt(real(count_B, dp))
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "V_A(G=0) =", V_A_0, " (in units of g0)"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "V_B(G=0) =", V_B_0, " (in units of g0)"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "m0 = (V_A - V_B)/2 =", m0, " (in units of g0) = ", m0_meV, " meV"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "Delta_avg = 2|m0| =", delta_avg, " (in units of g0) = ", delta_avg_meV, " meV"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          call MIO_PrintDebug("  NOTE: V_A and V_B are TAPW-averaged values (normalized by 1/N_label)",'diag', tapwDebug)
+          call MIO_PrintDebug("        For relaxed systems, spatial variations in moire pattern can cause",'diag', tapwDebug)
+          call MIO_PrintDebug("        on-site energies to vary across atoms with same label, leading to",'diag', tapwDebug)
+          call MIO_PrintDebug("        smaller averaged mass term than individual atom values",'diag', tapwDebug)
+          call MIO_PrintDebug("        The gap in bands (from eigenvalues) may still be reasonable because",'diag', tapwDebug)
+          call MIO_PrintDebug("        it includes off-diagonal contributions and full Hproj structure",'diag', tapwDebug)
        else
-          if (.not. found_A) call MIO_Print("Warning: Could not find layer 1 sublattice A (code 11, GRAPHENE) in TAPW basis",'diag')
-          if (.not. found_B) call MIO_Print("Warning: Could not find layer 1 sublattice B (code 12, GRAPHENE) in TAPW basis",'diag')
-          if (found_A .and. label_A_idx > M) print *, "Warning: label_A_idx = ", label_A_idx, " > M = ", M
-          if (found_B .and. label_B_idx > M) print *, "Warning: label_B_idx = ", label_B_idx, " > M = ", M
+          if (.not. found_A) call MIO_Warning("Could not find layer 1 sublattice A (code 11, GRAPHENE) in TAPW basis", &
+            'diag')
+          if (.not. found_B) call MIO_Warning("Could not find layer 1 sublattice B (code 12, GRAPHENE) in TAPW basis", &
+            'diag')
+          if (found_A .and. label_A_idx > M) then
+             write(dbgmsg,'(*(g0,1x))') "Warning: label_A_idx =", label_A_idx, " > M = ", M
+             call MIO_Warning(trim(dbgmsg),'diag')
+          end if
+          if (found_B .and. label_B_idx > M) then
+             write(dbgmsg,'(*(g0,1x))') "Warning: label_B_idx =", label_B_idx, " > M = ", M
+             call MIO_Warning(trim(dbgmsg),'diag')
+          end if
        end if
 
        ! Extract hBN layer 2 gap (B and N atoms) for verification
@@ -6678,21 +6762,38 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
           ! Print hBN average mass term for this k-point
           if (present(kpoint_index)) then
-             print *, "TAPW Average Mass Term - hBN Layer 2 (k-point ", kpoint_index, "):"
+             write(dbgmsg,'(*(g0,1x))') "TAPW Average Mass Term - hBN Layer 2 (k-point", kpoint_index, "):"
+             call MIO_PrintDebug(trim(dbgmsg),'diag')
           else
-             call MIO_Print("TAPW Average Mass Term - hBN Layer 2:",'diag')
+             call MIO_PrintDebug("TAPW Average Mass Term - hBN Layer 2:",'diag', tapwDebug)
           end if
-          print *, "  TAPW basis: label_B_hBN_idx = ", label_B_hBN_idx, " (layer 2, Species 3 = B, hBN)"
-          print *, "  TAPW basis: label_N_hBN_idx = ", label_N_hBN_idx, " (layer 2, Species 4 = N, hBN)"
-          print *, "  V_B_hBN(G=0) = ", V_B_hBN_0, " (in units of g0)"
-          print *, "  V_N_hBN(G=0) = ", V_N_hBN_0, " (in units of g0)"
-          print *, "  m0_hBN = (V_B_hBN - V_N_hBN)/2 = ", m0_hBN, " (in units of g0) = ", m0_hBN_meV, " meV"
-          print *, "  Delta_avg_hBN = 2|m0_hBN| = ", delta_avg_hBN, " (in units of g0) = ", delta_avg_hBN_meV, " meV"
+          write(dbgmsg,'(*(g0,1x))') "TAPW basis: label_B_hBN_idx =", label_B_hBN_idx, &
+            " (layer 2, Species 3 = B, hBN)"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "TAPW basis: label_N_hBN_idx =", label_N_hBN_idx, &
+            " (layer 2, Species 4 = N, hBN)"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "V_B_hBN(G=0) =", V_B_hBN_0, " (in units of g0)"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "V_N_hBN(G=0) =", V_N_hBN_0, " (in units of g0)"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "m0_hBN = (V_B_hBN - V_N_hBN)/2 =", m0_hBN, " (in units of g0) = ", m0_hBN_meV, &
+            " meV"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
+          write(dbgmsg,'(*(g0,1x))') "Delta_avg_hBN = 2|m0_hBN| =", delta_avg_hBN, " (in units of g0) = ", &
+            delta_avg_hBN_meV, " meV"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
        else
-          if (.not. found_B_hBN) call MIO_Print("Warning: Could not find layer 2 B atom (code 23, hBN) in TAPW basis",'diag')
-          if (.not. found_N_hBN) call MIO_Print("Warning: Could not find layer 2 N atom (code 24, hBN) in TAPW basis",'diag')
-          if (found_B_hBN .and. label_B_hBN_idx > M) print *, "Warning: label_B_hBN_idx = ", label_B_hBN_idx, " > M = ", M
-          if (found_N_hBN .and. label_N_hBN_idx > M) print *, "Warning: label_N_hBN_idx = ", label_N_hBN_idx, " > M = ", M
+          if (.not. found_B_hBN) call MIO_Warning("Could not find layer 2 B atom (code 23, hBN) in TAPW basis",'diag')
+          if (.not. found_N_hBN) call MIO_Warning("Could not find layer 2 N atom (code 24, hBN) in TAPW basis",'diag')
+          if (found_B_hBN .and. label_B_hBN_idx > M) then
+             write(dbgmsg,'(*(g0,1x))') "Warning: label_B_hBN_idx =", label_B_hBN_idx, " > M = ", M
+             call MIO_Warning(trim(dbgmsg),'diag')
+          end if
+          if (found_N_hBN .and. label_N_hBN_idx > M) then
+             write(dbgmsg,'(*(g0,1x))') "Warning: label_N_hBN_idx =", label_N_hBN_idx, " > M = ", M
+             call MIO_Warning(trim(dbgmsg),'diag')
+          end if
        end if
     end if
 
@@ -6709,8 +6810,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     call ZHEEV('V','U', M, Hproj, M, eigvals, ZWorkLoc, lwork, DWorkLoc, info)
 
     if (info /= 0) then
-       print *, "Diagonalization failed: ZHEEV info =", info
-       error stop 1
+       write(dbgmsg,'(*(g0,1x))') "Diagonalization failed: ZHEEV info =", info
+       call MIO_Kill(trim(dbgmsg),'diag','DiagH0TAPW')
     end if
 
     ! Extract gap from eigenvalues for comparison with diagonal extraction
@@ -6747,16 +6848,21 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        gap_from_eigenvalues_meV = gap_from_eigenvalues * g0 * 1000.0_dp
 
        if (present(kpoint_index)) then
-          print *, "TAPW Gap from Eigenvalues - GRAPHENE Layer 1 (k-point ", kpoint_index, "):"
+          write(dbgmsg,'(*(g0,1x))') "TAPW Gap from Eigenvalues - GRAPHENE Layer 1 (k-point", kpoint_index, "):"
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
        else
-          call MIO_Print("TAPW Gap from Eigenvalues - GRAPHENE Layer 1:",'diag')
+          call MIO_PrintDebug("TAPW Gap from Eigenvalues - GRAPHENE Layer 1:",'diag', tapwDebug)
        end if
-       print *, "  Lowest eigenvalue (idx ", idx_min1, "): ", eigval_sorted(1), " (in units of g0)"
-       print *, "  2nd lowest eigenvalue (idx ", idx_min2, "): ", eigval_sorted(2), " (in units of g0)"
-       print *, "  Gap from eigenvalues = ", gap_from_eigenvalues, " (in units of g0) = ", gap_from_eigenvalues_meV, " meV"
-       call MIO_Print("  NOTE: This is the actual gap that appears in the bands",'diag')
-       call MIO_Print("        It includes off-diagonal contributions from Hproj",'diag')
-       call MIO_Print("        Compare with Delta_avg from diagonal extraction above",'diag')
+       write(dbgmsg,'(*(g0,1x))') "Lowest eigenvalue (idx", idx_min1, "): ", eigval_sorted(1), " (in units of g0)"
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
+       write(dbgmsg,'(*(g0,1x))') "2nd lowest eigenvalue (idx", idx_min2, "): ", eigval_sorted(2), " (in units of g0)"
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
+       write(dbgmsg,'(*(g0,1x))') "Gap from eigenvalues =", gap_from_eigenvalues, " (in units of g0) = ", &
+         gap_from_eigenvalues_meV, " meV"
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
+       call MIO_PrintDebug("  NOTE: This is the actual gap that appears in the bands",'diag', tapwDebug)
+       call MIO_PrintDebug("        It includes off-diagonal contributions from Hproj",'diag', tapwDebug)
+       call MIO_PrintDebug("        Compare with Delta_avg from diagonal extraction above",'diag', tapwDebug)
 
        ! Deallocate sorting arrays
        deallocate(eigval_sorted, idx_sorted)
@@ -6771,9 +6877,9 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           stored_nspin = ns  ! Store number of spin channels
           ! Calculate actual number of k-points needed based on Chern grid
           stored_nk = nk_chern_x * nk_chern_y
-          call MIO_Print('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points (' &
+          call MIO_PrintDebug('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points (' &
                 //trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))//' grid) for '//trim(num2str(stored_nspin)) &
-                //' spin channel(s)','diag')
+                //' spin channel(s)','diag', tapwDebug)
           allocate(stored_eigenvectors(M, M, stored_nk, stored_nspin))
           allocate(stored_hamiltonians(M, M, stored_nk, stored_nspin))
 
@@ -6781,28 +6887,28 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
           allocate(stored_X_matrix(N, M))
           stored_X_matrix = XArray
 
-          call MIO_Print('Allocated TAPW storage for Chern calculation: '//trim(num2str(M))//'x'//trim(num2str(M))//'x' &
-                //trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
-          call MIO_Print('Stored X matrix ('//trim(num2str(N))//'x'//trim(num2str(M))//') for Berry curvature calculation','diag')
+          call MIO_PrintDebug('Allocated TAPW storage for Chern calculation: '//trim(num2str(M))//'x'//trim(num2str(M))//'x' &
+                //trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag', tapwDebug)
+          call MIO_PrintDebug('Stored X matrix ('//trim(num2str(N))//'x'//trim(num2str(M))//') for Berry curvature calculation','diag', tapwDebug)
 
           ! VERIFICATION: Check stored data integrity
-          call MIO_Print('=== TAPW STORAGE VERIFICATION ===','diag')
-          call MIO_Print('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk=' &
-                //trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag')
-          call MIO_Print('XArray dimensions: '//trim(num2str(size(XArray,1)))//'x'//trim(num2str(size(XArray,2))),'diag')
-          call MIO_Print('XArray norm: '//trim(num2str(sqrt(sum(abs(XArray)**2)),8)),'diag')
-          call MIO_Print('XArray max element: '//trim(num2str(maxval(abs(XArray)),8)),'diag')
-          call MIO_Print('XArray min element: '//trim(num2str(minval(abs(XArray)),8)),'diag')
+          call MIO_PrintDebug('=== TAPW STORAGE VERIFICATION ===','diag', tapwDebug)
+          call MIO_PrintDebug('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk=' &
+                //trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag', tapwDebug)
+          call MIO_PrintDebug('XArray dimensions: '//trim(num2str(size(XArray,1)))//'x'//trim(num2str(size(XArray,2))),'diag', tapwDebug)
+          call MIO_PrintDebug('XArray norm: '//trim(num2str(sqrt(sum(abs(XArray)**2)),8)),'diag', tapwDebug)
+          call MIO_PrintDebug('XArray max element: '//trim(num2str(maxval(abs(XArray)),8)),'diag', tapwDebug)
+          call MIO_PrintDebug('XArray min element: '//trim(num2str(minval(abs(XArray)),8)),'diag', tapwDebug)
        else
           ! Check for consistency - M should not change between k-points
           if (M /= stored_M) then
-             call MIO_Print('ERROR: TAPW matrix size changed between k-points','diag')
-             call MIO_Print('  Initial stored_M: '//trim(num2str(stored_M)),'diag')
-             call MIO_Print('  Current M: '//trim(num2str(M)),'diag')
-             call MIO_Print('  This indicates inconsistent TAPW calculation','diag')
+             call MIO_Warning('TAPW matrix size changed between k-points','diag')
+             call MIO_PrintDebug('  Initial stored_M: '//trim(num2str(stored_M)),'diag', tapwDebug)
+             call MIO_PrintDebug('  Current M: '//trim(num2str(M)),'diag', tapwDebug)
+             call MIO_PrintDebug('  This indicates inconsistent TAPW calculation','diag', tapwDebug)
              ! Use the smaller dimension to avoid bounds errors
              M = min(M, stored_M)
-             call MIO_Print('  Using M = '//trim(num2str(M))//' (minimum of both)','diag')
+             call MIO_PrintDebug('  Using M = '//trim(num2str(M))//' (minimum of both)','diag', tapwDebug)
           end if
        end if
 
@@ -6815,40 +6921,40 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
              ! CRITICAL FIX: Store TAPW eigenvalues to match eigenvectors
              if (.not. allocated(stored_eigenvalues)) then
                 allocate(stored_eigenvalues(M, stored_nk, stored_nspin))
-                call MIO_Print('Allocated stored_eigenvalues array: '//trim(num2str(M))//'x'//trim(num2str(stored_nk)) &
-                      //'x'//trim(num2str(stored_nspin)),'diag')
+                call MIO_PrintDebug('Allocated stored_eigenvalues array: '//trim(num2str(M))//'x'//trim(num2str(stored_nk)) &
+                      //'x'//trim(num2str(stored_nspin)),'diag', tapwDebug)
              end if
              stored_eigenvalues(1:M,kpoint_index,is) = eigvals(1:M)  ! Store TAPW eigenvalues
 
              ! DEBUG: Verify eigenvalue storage for first k-point
              if (kpoint_index == 1 .and. is == 1) then
-                call MIO_Print('=== TAPW EIGENVALUE STORAGE VERIFICATION (k-point 1, spin 1) ===','diag')
-                call MIO_Print('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
-                      //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
-                call MIO_Print('First 5 TAPW eigenvalues: ['//trim(num2str(eigvals(1),6))//',' &
+                call MIO_PrintDebug('=== TAPW EIGENVALUE STORAGE VERIFICATION (k-point 1, spin 1) ===','diag', tapwDebug)
+                call MIO_PrintDebug('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+                      //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag', tapwDebug)
+                call MIO_PrintDebug('First 5 TAPW eigenvalues: ['//trim(num2str(eigvals(1),6))//',' &
                       //trim(num2str(eigvals(2),6))//','//trim(num2str(eigvals(3),6))//','//trim(num2str(eigvals(4),6)) &
-                      //','//trim(num2str(eigvals(5),6))//']','diag')
-                call MIO_Print('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:M)),6))//',' &
-                      //trim(num2str(maxval(eigvals(1:M)),6))//']','diag')
+                      //','//trim(num2str(eigvals(5),6))//']','diag', tapwDebug)
+                call MIO_PrintDebug('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:M)),6))//',' &
+                      //trim(num2str(maxval(eigvals(1:M)),6))//']','diag', tapwDebug)
              end if
 
              ! VERIFICATION: Check stored eigenvectors for first k-point
              if (kpoint_index == 1) then
-                call MIO_Print('=== EIGENVECTOR STORAGE VERIFICATION (k-point 1) ===','diag')
-                call MIO_Print('Stored eigenvectors dimensions: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
-                      //trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag')
-                call MIO_Print('Hproj (eigenvectors) norm: '//trim(num2str(sqrt(sum(abs(Hproj)**2)),8)),'diag')
-                call MIO_Print('Hproj max element: '//trim(num2str(maxval(abs(Hproj)),8)),'diag')
-                call MIO_Print('Hproj min element: '//trim(num2str(minval(abs(Hproj)),8)),'diag')
+                call MIO_PrintDebug('=== EIGENVECTOR STORAGE VERIFICATION (k-point 1) ===','diag', tapwDebug)
+                call MIO_PrintDebug('Stored eigenvectors dimensions: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
+                      //trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag', tapwDebug)
+                call MIO_PrintDebug('Hproj (eigenvectors) norm: '//trim(num2str(sqrt(sum(abs(Hproj)**2)),8)),'diag', tapwDebug)
+                call MIO_PrintDebug('Hproj max element: '//trim(num2str(maxval(abs(Hproj)),8)),'diag', tapwDebug)
+                call MIO_PrintDebug('Hproj min element: '//trim(num2str(minval(abs(Hproj)),8)),'diag', tapwDebug)
                 ! Check orthogonality of first few eigenvectors
-                call MIO_Print('First eigenvector norm: '//trim(num2str(sqrt(sum(abs(Hproj(:,1))**2)),8)),'diag')
-                if (M > 1) call MIO_Print('Second eigenvector norm: '//trim(num2str(sqrt(sum(abs(Hproj(:,2))**2)),8)),'diag')
-                if (M > 2) call MIO_Print('Third eigenvector norm: '//trim(num2str(sqrt(sum(abs(Hproj(:,3))**2)),8)),'diag')
+                call MIO_PrintDebug('First eigenvector norm: '//trim(num2str(sqrt(sum(abs(Hproj(:,1))**2)),8)),'diag', tapwDebug)
+                if (M > 1) call MIO_PrintDebug('Second eigenvector norm: '//trim(num2str(sqrt(sum(abs(Hproj(:,2))**2)),8)),'diag', tapwDebug)
+                if (M > 2) call MIO_PrintDebug('Third eigenvector norm: '//trim(num2str(sqrt(sum(abs(Hproj(:,3))**2)),8)),'diag', tapwDebug)
              end if
           else
-             call MIO_Print('ERROR: Cannot store k-point data - array too small','diag')
-             call MIO_Print('  M='//trim(num2str(M))//', stored array size='//trim(num2str(size(stored_eigenvectors,1))) &
-                   //'x'//trim(num2str(size(stored_eigenvectors,2))),'diag')
+             call MIO_Warning('Cannot store k-point data - array too small','diag')
+             call MIO_PrintDebug('  M='//trim(num2str(M))//', stored array size='//trim(num2str(size(stored_eigenvectors,1))) &
+                   //'x'//trim(num2str(size(stored_eigenvectors,2))),'diag', tapwDebug)
           end if
        end if
 
@@ -6858,13 +6964,17 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
     if (tapwDebug) then
        ! Debug: Print TAPW eigenvalues
-       if (tapwDebug) print *, "TAPW projected matrix size M =", M
-       print *, "TAPW eigenvalues (first 10):", eigvals(1:min(10,M))
-       print *, "Max eigenvalue:", maxval(eigvals)
-       print *, "Min eigenvalue:", minval(eigvals)
+       write(dbgmsg,'(*(g0,1x))') "TAPW projected matrix size M =", M
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "TAPW eigenvalues (first 10):", eigvals(1:min(10,M))
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Max eigenvalue:", maxval(eigvals)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+       write(dbgmsg,'(*(g0,1x))') "Min eigenvalue:", minval(eigvals)
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
     end if
 
-    if (.not. allocated(eigvals)) stop "eigvals not allocated"
+    if (.not. allocated(eigvals)) call MIO_Kill('eigvals not allocated','diag','DiagH0TAPW')
 
     ! Berry-flux path: hand back the eigenvectors of the requested band window.
     ! ZHEEV('V') leaves them in the columns of Hproj, in ascending-eigenvalue
@@ -6900,13 +7010,17 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
        end if
     end if
 #endif
-    if (tapwDebug) print *, "TAPW projected matrix size M = ", M
+    write(dbgmsg,'(*(g0,1x))') "TAPW projected matrix size M =", M
+    call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
 
     ! Handle size mismatch gracefully - TAPW can produce more/fewer states than atoms
     if (M > size(ELoc)) then
         if (tapwDebug) then
-           print *, "Warning: More TAPW states (M=", M, ") than output array size (", size(ELoc), ")"
-           print *, "Taking first", size(ELoc), "eigenvalues out of", M, "total TAPW states"
+           write(dbgmsg,'(*(g0,1x))') "Warning: More TAPW states (M=", M, ") than output array size (", size(ELoc), &
+             ")"
+           call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+           write(dbgmsg,'(*(g0,1x))') "Taking first", size(ELoc), "eigenvalues out of", M, "total TAPW states"
+           call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
         end if
         ELoc = eigvals(1:size(ELoc))  ! Take first size(ELoc) eigenvalues
     else
@@ -6917,130 +7031,131 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
     end if
 
     if (tapwDebug) then
-       print *, "TAPW: Using", M, "eigenvalues for output"
+       write(dbgmsg,'(*(g0,1x))') "TAPW: Using", M, "eigenvalues for output"
+       call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
     end if
 
     ! Set M_tapw for band output (module variable) and validate consistency
     if (M_tapw > 0 .and. M_tapw /= M) then
-       call MIO_Print('WARNING: M_tapw inconsistency detected','diag')
-       call MIO_Print('  Previous M_tapw: '//trim(num2str(M_tapw)),'diag')
-       call MIO_Print('  Current M: '//trim(num2str(M)),'diag')
-       call MIO_Print('  This may cause array bounds issues in subsequent calculations','diag')
+       call MIO_Warning('M_tapw inconsistency detected','diag')
+       call MIO_PrintDebug('  Previous M_tapw: '//trim(num2str(M_tapw)),'diag', tapwDebug)
+       call MIO_PrintDebug('  Current M: '//trim(num2str(M)),'diag', tapwDebug)
+       call MIO_PrintDebug('  This may cause array bounds issues in subsequent calculations','diag', tapwDebug)
     end if
     M_tapw = M
 
 ! eigvals now contains eigenvalues of projected H
 
-    if (tapwDebug) call MIO_Print("Deallocating arrays...",'diag')
+    call MIO_PrintDebug("Deallocating arrays...",'diag', tapwDebug)
 
     ! PERFORMANCE OPTIMIZATION: Only deallocate if not using pre-allocated arrays
     ! Use a simple approach: always deallocate, pre-allocated arrays will be reused
     if (allocated(eigvals)) then
         deallocate(eigvals)
-        if (tapwDebug) call MIO_Print("Deallocated eigvals",'diag')
+        call MIO_PrintDebug("Deallocated eigvals",'diag', tapwDebug)
     endif
 
     if (allocated(ZWorkLoc)) then
         deallocate(ZWorkLoc)
-        if (tapwDebug) call MIO_Print("Deallocated ZWorkLoc",'diag')
+        call MIO_PrintDebug("Deallocated ZWorkLoc",'diag', tapwDebug)
     endif
 
     if (allocated(DWorkLoc)) then
         deallocate(DWorkLoc)
-        if (tapwDebug) call MIO_Print("Deallocated DWorkLoc",'diag')
+        call MIO_PrintDebug("Deallocated DWorkLoc",'diag', tapwDebug)
     endif
 
     if (allocated(XArray)) then
         deallocate(XArray)
-        if (tapwDebug) call MIO_Print("Deallocated XArray",'diag')
+        call MIO_PrintDebug("Deallocated XArray",'diag', tapwDebug)
     endif
 
     if (allocated(Hproj)) then
         deallocate(Hproj)
-        if (tapwDebug) call MIO_Print("Deallocated Hproj",'diag')
+        call MIO_PrintDebug("Deallocated Hproj",'diag', tapwDebug)
     endif
 
     if (allocated(Gx)) then
         deallocate(Gx)
-        if (tapwDebug) call MIO_Print("Deallocated Gx",'diag')
+        call MIO_PrintDebug("Deallocated Gx",'diag', tapwDebug)
     endif
 
     if (allocated(Gy)) then
         deallocate(Gy)
-        if (tapwDebug) call MIO_Print("Deallocated Gy",'diag')
+        call MIO_PrintDebug("Deallocated Gy",'diag', tapwDebug)
     endif
 
     if (allocated(label)) then
         deallocate(label)
-        if (tapwDebug) call MIO_Print("Deallocated label",'diag')
+        call MIO_PrintDebug("Deallocated label",'diag', tapwDebug)
     endif
 
     if (allocated(row_ptr)) then
         deallocate(row_ptr)
-        if (tapwDebug) call MIO_Print("Deallocated row_ptr",'diag')
+        call MIO_PrintDebug("Deallocated row_ptr",'diag', tapwDebug)
     endif
 
     if (allocated(col_ind)) then
         deallocate(col_ind)
-        if (tapwDebug) call MIO_Print("Deallocated col_ind",'diag')
+        call MIO_PrintDebug("Deallocated col_ind",'diag', tapwDebug)
     endif
 
     if (allocated(values)) then
         deallocate(values)
-        if (tapwDebug) call MIO_Print("Deallocated values",'diag')
+        call MIO_PrintDebug("Deallocated values",'diag', tapwDebug)
     endif
 
     if (allocated(rand_real)) then
         deallocate(rand_real)
-        if (tapwDebug) call MIO_Print("Deallocated rand_real",'diag')
+        call MIO_PrintDebug("Deallocated rand_real",'diag', tapwDebug)
     endif
 
     if (allocated(rand_imag)) then
         deallocate(rand_imag)
-        if (tapwDebug) call MIO_Print("Deallocated rand_imag",'diag')
+        call MIO_PrintDebug("Deallocated rand_imag",'diag', tapwDebug)
     endif
 
     if (allocated(a)) then
         deallocate(a)
-        if (tapwDebug) call MIO_Print("Deallocated a",'diag')
+        call MIO_PrintDebug("Deallocated a",'diag', tapwDebug)
     endif
 
     if (allocated(EVectors)) then
         deallocate(EVectors)
-        if (tapwDebug) call MIO_Print("Deallocated EVectors",'diag')
+        call MIO_PrintDebug("Deallocated EVectors",'diag', tapwDebug)
     endif
 
     if (allocated(ax)) then
         deallocate(ax)
-        if (tapwDebug) call MIO_Print("Deallocated ax",'diag')
+        call MIO_PrintDebug("Deallocated ax",'diag', tapwDebug)
     endif
 
     if (allocated(rd)) then
         deallocate(rd)
-        if (tapwDebug) call MIO_Print("Deallocated rd",'diag')
+        call MIO_PrintDebug("Deallocated rd",'diag', tapwDebug)
     endif
 
     if (allocated(XArray)) then
         deallocate(XArray)
-        if (tapwDebug) call MIO_Print("Deallocated XArray",'diag')
+        call MIO_PrintDebug("Deallocated XArray",'diag', tapwDebug)
     endif
 
     if (allocated(Hproj)) then
         deallocate(Hproj)
-        if (tapwDebug) call MIO_Print("Deallocated Hproj",'diag')
+        call MIO_PrintDebug("Deallocated Hproj",'diag', tapwDebug)
     endif
 
     if (allocated(ZWorkLoc)) then
         deallocate(ZWorkLoc)
-        if (tapwDebug) call MIO_Print("Deallocated ZWorkLoc",'diag')
+        call MIO_PrintDebug("Deallocated ZWorkLoc",'diag', tapwDebug)
     endif
 
     if (allocated(DWorkLoc)) then
         deallocate(DWorkLoc)
-        if (tapwDebug) call MIO_Print("Deallocated DWorkLoc",'diag')
+        call MIO_PrintDebug("Deallocated DWorkLoc",'diag', tapwDebug)
     endif
 
-    if (tapwDebug) call MIO_Print("Done deallocating.",'diag')
+    call MIO_PrintDebug("Done deallocating.",'diag', tapwDebug)
 
     ! the set-up messages above are printed for the first k-point only
     tapwSetupSaid = .true.
@@ -7213,20 +7328,21 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     k_ref = refF(1)*rG(:,1) + refF(2)*rG(:,2)
 
     if (tapwDebug) then
-       call MIO_Print('DiagH0TAPW_withBlockH: Starting TAPW with block Hamiltonian', 'diag')
-       call MIO_Print('  Using N_G = '//trim(num2str(tapwNG))//', NGrange = '//trim(num2str(NGrange)), 'diag')
-       call MIO_Print('  Moire angle: '//trim(num2str(moireAngle,6))//' degrees','diag')
+       call MIO_PrintDebug('DiagH0TAPW_withBlockH: Starting TAPW with block Hamiltonian','diag', tapwDebug)
+       call MIO_PrintDebug('  Using N_G = '//trim(num2str(tapwNG))//', NGrange = '//trim(num2str(NGrange)),'diag', &
+         tapwDebug)
+       call MIO_PrintDebug('  Moire angle: '//trim(num2str(moireAngle,6))//' degrees','diag', tapwDebug)
        if (useKprimeValley) then
-          call MIO_Print('  Valley selection: K'' valley [1/3, 2/3]','diag')
+          call MIO_PrintDebug('  Valley selection: K'' valley [1/3, 2/3]','diag', tapwDebug)
        else
-          call MIO_Print('  Valley selection: K valley [2/3, 1/3]','diag')
+          call MIO_PrintDebug('  Valley selection: K valley [2/3, 1/3]','diag', tapwDebug)
        end if
     end if
 
     ! Generate G-vectors (same as original DiagH0TAPW)
     allocate(Gx(1000), Gy(1000))  ! Temporary allocation
     if (useTriangularTruncation) then
-       call MIO_Print('Using triangular G-vector truncation','diag')
+       call MIO_PrintDebug('Using triangular G-vector truncation','diag', tapwDebug)
        call MIO_InputParameter('TAPW.UseTriangularDistanceOrder', useTriangularDistanceOrder, .true.)
        call generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, useTriangularDistanceOrder)
     else if (checkTAPWUnitary) then
@@ -7273,8 +7389,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     end if
 
     if (tapwDebug) then
-       call MIO_Print('  Generated NG = '//trim(num2str(NG))//' G-vectors, Nlabel = '//trim(num2str(Nlabel))//', M = ' &
-             //trim(num2str(M)), 'diag')
+       call MIO_PrintDebug('  Generated NG = '//trim(num2str(NG))//' G-vectors, Nlabel = '//trim(num2str(Nlabel))// &
+         ', M = '  //trim(num2str(M)),'diag', tapwDebug)
     end if
 
     ! Allocate TAPW arrays
@@ -7291,7 +7407,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     if (useRigidPositions) then
        ! Use rigid reference positions for X matrix construction
        ! This ensures perfect TAPW unitarity even with lattice reconstruction
-       call MIO_Print('Using rigid reference positions for TAPW X matrix construction','diag')
+       call MIO_PrintDebug('Using rigid reference positions for TAPW X matrix construction','diag', tapwDebug)
 
        ! Allocate and read rigid positions
        allocate(rigid_positions(3, N))
@@ -7306,10 +7422,10 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        Rat = rigid_positions
        deallocate(rigid_positions)
 
-       call MIO_Print('Rigid positions loaded, wrapping to single unit cell','diag')
+       call MIO_PrintDebug('Rigid positions loaded, wrapping to single unit cell','diag', tapwDebug)
     else
        ! Use current positions in Rat directly (default behavior)
-       call MIO_Print('Using current atomic positions for TAPW X matrix construction','diag')
+       call MIO_PrintDebug('Using current atomic positions for TAPW X matrix construction','diag', tapwDebug)
 
        ! Store current state for consistency with rigid position path
        temp_positions = Rat  ! Save current positions (no change needed)
@@ -7318,13 +7434,13 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     if (tapwDebug) then
        if (useRigidPositions) then
-          call MIO_Print('DEBUG: First 3 atomic positions BEFORE build_X (rigid):','diag')
+          call MIO_PrintDebug('First 3 atomic positions BEFORE build_X (rigid):','diag', tapwDebug)
        else
-          call MIO_Print('DEBUG: First 3 atomic positions BEFORE build_X (current):','diag')
+          call MIO_PrintDebug('First 3 atomic positions BEFORE build_X (current):','diag', tapwDebug)
        end if
        do i = 1, min(3, N)
-           call MIO_Print('  Atom '//trim(num2str(i))//': ['//trim(num2str(Rat(1,i),6))//','//&
-                         trim(num2str(Rat(2,i),6))//','//trim(num2str(Rat(3,i),6))//']','diag')
+           call MIO_PrintDebug('  Atom '//trim(num2str(i))//': ['//trim(num2str(Rat(1,i),6))//','// &
+             trim(num2str(Rat(2,i),6))//','//trim(num2str(Rat(3,i),6))//']','diag', tapwDebug)
        end do
     end if
 
@@ -7341,11 +7457,11 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
        ! Convert wrapped rigid positions back to Cartesian for build_X
        call AtomsSetCart()
-       call MIO_Print('Rigid positions wrapped and converted to Cartesian for X matrix','diag')
+       call MIO_PrintDebug('Rigid positions wrapped and converted to Cartesian for X matrix','diag', tapwDebug)
     else
        ! For current positions, ensure we're in the right coordinate system for build_X
        if (frac) call AtomsSetCart()
-       call MIO_Print('Using current positions directly for X matrix construction','diag')
+       call MIO_PrintDebug('Using current positions directly for X matrix construction','diag', tapwDebug)
     end if
 
     ! Build spinless TAPW basis once
@@ -7358,7 +7474,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        Rat = temp_positions
        if (original_frac_state .and. .not. frac) call AtomsSetFrac()
        if (.not. original_frac_state .and. frac) call AtomsSetCart()
-       call MIO_Print('Restored original relaxed positions for TB Hamiltonian construction','diag')
+       call MIO_PrintDebug('Restored original relaxed positions for TB Hamiltonian construction','diag', tapwDebug)
     end if
 
     ! Place into block-diagonal structure:
@@ -7371,18 +7487,19 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     ! Debug: Show M and NG before projection
     if (tapwDebug .and. present(kpoint_index)) then
-       call MIO_Print('DiagH0TAPW_withBlockH: About to project HBlock (2N='//trim(num2str(2*N))//'×'//trim(num2str(2*N)) &
-             //') to Hproj (2M='//trim(num2str(2*M))//'×'//trim(num2str(2*M))//')','diag')
-       call MIO_Print('  Using block-diagonal projector XArray (2N='//trim(num2str(2*N))//'×2M='//trim(num2str(2*M)) &
-             //') to preserve spin structure','diag')
-       call MIO_Print('  This will perform: Hproj = XArray† * HBlock * XArray','diag')
-       call MIO_Print('  Matrix multiplication complexity: O(2M × 2N × 2N) ≈ '//trim(num2str(2*M*2*N*2*N))//' operations','diag')
+       call MIO_PrintDebug('DiagH0TAPW_withBlockH: About to project HBlock (2N='//trim(num2str(2*N))//'x'// &
+         trim(num2str(2*N))  //') to Hproj (2M='//trim(num2str(2*M))//'x'//trim(num2str(2*M))//')','diag', tapwDebug)
+       call MIO_PrintDebug('  Using block-diagonal projector XArray (2N='//trim(num2str(2*N))//'x2M='// &
+         trim(num2str(2*M))  //') to preserve spin structure','diag', tapwDebug)
+       call MIO_PrintDebug('  This will perform: Hproj = XArray^H * HBlock * XArray','diag', tapwDebug)
+       call MIO_PrintDebug('  Matrix multiplication complexity: O(2M x 2N x 2N) ~ '//trim(num2str(2*M*2*N*2*N))// &
+         ' operations','diag', tapwDebug)
     end if
 
     ! Debug: Check HBlock structure before projection (for forceBlockTAPW testing)
     if (forceBlockTAPW .and. tapw_k_at_most(kpoint_index, 2)) then
-       call MIO_Print('=== HBlock STRUCTURE CHECK (before projection) ===','diag')
-       call MIO_Print('  HBlock dimensions: '//trim(num2str(2*N))//'×'//trim(num2str(2*N)),'diag')
+       call MIO_PrintDebug('=== HBlock STRUCTURE CHECK (before projection) ===','diag', tapwDebug)
+       call MIO_PrintDebug('  HBlock dimensions: '//trim(num2str(2*N))//'x'//trim(num2str(2*N)),'diag', tapwDebug)
 
        ! Check diagonal blocks (should be identical without SOC)
        max_hblock_diff = 0.0_dp
@@ -7394,7 +7511,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              end if
           end do
        end do
-       call MIO_Print('  Max difference between HBlock diagonal blocks (first 10×10): '//trim(num2str(max_hblock_diff,8)),'diag')
+       call MIO_PrintDebug('  Max difference between HBlock diagonal blocks (first 10x10): '// &
+         trim(num2str(max_hblock_diff,8)),'diag', tapwDebug)
 
        ! Check off-diagonal blocks (should be zero without SOC/Rashba)
        max_hblock_offdiag = 0.0_dp
@@ -7410,23 +7528,24 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              end if
           end do
        end do
-       call MIO_Print('  Max off-diagonal block element in HBlock (first 10×10): '//trim(num2str(max_hblock_offdiag,8)),'diag')
+       call MIO_PrintDebug('  Max off-diagonal block element in HBlock (first 10x10): '// &
+         trim(num2str(max_hblock_offdiag,8)),'diag', tapwDebug)
 
        ! Show first few diagonal elements from each block
        if (N >= 5) then
-          call MIO_Print('  First 5 HBlock diagonal elements (upper block): ['//&
+          call MIO_PrintDebug('  First 5 HBlock diagonal elements (upper block): ['//&
                         trim(num2str(real(HBlock(1,1)),6))//', '//trim(num2str(real(HBlock(2,2)),6))//', '//&
                         trim(num2str(real(HBlock(3,3)),6))//', '//trim(num2str(real(HBlock(4,4)),6))//', '//&
-                        trim(num2str(real(HBlock(5,5)),6))//']','diag')
-          call MIO_Print('  First 5 HBlock diagonal elements (lower block): ['//&
+                        trim(num2str(real(HBlock(5,5)),6))//']','diag', tapwDebug)
+          call MIO_PrintDebug('  First 5 HBlock diagonal elements (lower block): ['//&
                         trim(num2str(real(HBlock(N+1,N+1)),6))//', '//trim(num2str(real(HBlock(N+2,N+2)),6))//', '//&
                         trim(num2str(real(HBlock(N+3,N+3)),6))//', '//trim(num2str(real(HBlock(N+4,N+4)),6))//', '//&
-                        trim(num2str(real(HBlock(N+5,N+5)),6))//']','diag')
+                        trim(num2str(real(HBlock(N+5,N+5)),6))//']','diag', tapwDebug)
        end if
 
        if (max_hblock_diff > 1e-6_dp) then
-          call MIO_Print('  WARNING: HBlock diagonal blocks differ! This may cause Hproj blocks to differ.','diag')
-          call MIO_Print('  Check if SOC terms are enabled (Zterm, IntrinsicSOCterm, PIASOCterm)','diag')
+          call MIO_Warning('HBlock diagonal blocks differ! This may cause Hproj blocks to differ.','diag')
+          call MIO_PrintDebug('  Check if SOC terms are enabled (Zterm, IntrinsicSOCterm, PIASOCterm)','diag', tapwDebug)
        end if
     end if
 
@@ -7434,8 +7553,9 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     if (tapwDebug .and. tapw_k_at_most(kpoint_index, 2)) then
        allocate(diag_temp(2*N))
 
-       call MIO_Print('DiagH0TAPW_withBlockH: Checking HBlock before projection (k-point '//trim(num2str(kpoint_index))//')','diag')
-       call MIO_Print('  HBlock dimensions: '//trim(num2str(2*N))//'×'//trim(num2str(2*N)),'diag')
+       call MIO_PrintDebug('DiagH0TAPW_withBlockH: Checking HBlock before projection (k-point '// &
+         trim(num2str(kpoint_index))//')','diag', tapwDebug)
+       call MIO_PrintDebug('  HBlock dimensions: '//trim(num2str(2*N))//'x'//trim(num2str(2*N)),'diag', tapwDebug)
 
        ! Extract diagonal elements
        do ii = 1, 2*N
@@ -7443,7 +7563,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        end do
        diag_min = minval(real(diag_temp))
        diag_max = maxval(real(diag_temp))
-       call MIO_Print('  HBlock diagonal range: ['//trim(num2str(diag_min,6))//', '//trim(num2str(diag_max,6))//']','diag')
+       call MIO_PrintDebug('  HBlock diagonal range: ['//trim(num2str(diag_min,6))//', '//trim(num2str(diag_max,6))// &
+         ']','diag', tapwDebug)
 
        ! Check Rashba spin-flip terms by scanning neighbors
        ! Instead of checking arbitrary pairs, check actual neighbor bonds
@@ -7465,15 +7586,16 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
                 max_rashba = max(max_rashba, abs(test_rashba))
                 test_count = test_count + 1
                 if (test_count <= 5) then
-                   call MIO_Print('  Rashba bond: HBlock('//trim(num2str(test_i))//','//trim(num2str(test_in+N))//') = ' &
-                         //trim(num2str(real(test_rashba),6))//' + i*'//trim(num2str(aimag(test_rashba),6)),'diag')
+                   call MIO_PrintDebug('  Rashba bond: HBlock('//trim(num2str(test_i))//','// &
+                     trim(num2str(test_in+N))//') = '  //trim(num2str(real(test_rashba),6))//' + i*'// &
+                     trim(num2str(aimag(test_rashba),6)),'diag', tapwDebug)
                 end if
              end if
           end do
        end do
 
-       call MIO_Print('  Total Rashba bonds checked: '//trim(num2str(test_count))//', max |Rashba| = ' &
-             //trim(num2str(max_rashba,6)),'diag')
+       call MIO_PrintDebug('  Total Rashba bonds checked: '//trim(num2str(test_count))//', max |Rashba| = '  // &
+         trim(num2str(max_rashba,6)),'diag', tapwDebug)
 
        deallocate(diag_temp)
     end if
@@ -7484,7 +7606,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     ! However, BuildBlockHamiltonianOnly actually sets HBlock(in, i) for all neighbors,
     ! which may include upper triangle elements. For safety, we check/complete Hermiticity.
     if (tapwDebug .and. present(kpoint_index)) then
-       call MIO_Print('DiagH0TAPW_withBlockH: Starting matrix multiplication (this may take a while for large M)...','diag')
+       call MIO_PrintDebug('DiagH0TAPW_withBlockH: Starting matrix multiplication (this may take a while for large M)...', &
+         'diag', tapwDebug)
        ! Check: verify HBlock is Hermitian (should be naturally Hermitian from BuildBlockHamiltonianOnly)
        ! If not, this indicates a bug that should be fixed at the source
        max_herm_error = 0.0_dp
@@ -7495,9 +7618,11 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              end if
           end do
        end do
-       call MIO_Print('  HBlock Hermiticity check (first 10x10): max error = '//trim(num2str(max_herm_error,8)),'diag')
+       call MIO_PrintDebug('  HBlock Hermiticity check (first 10x10): max error = '//trim(num2str(max_herm_error,8)), &
+         'diag', tapwDebug)
        if (max_herm_error > 1e-10_dp) then
-          call MIO_Print('  WARNING: HBlock is not Hermitian! This indicates a bug in BuildBlockHamiltonianOnly.','diag')
+          call MIO_PrintDebug('  WARNING: HBlock is not Hermitian! This indicates a bug in BuildBlockHamiltonianOnly.', &
+            'diag', tapwDebug)
        end if
     end if
 
@@ -7530,7 +7655,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        call transform_block_hamiltonian_tapw(2*N, 2*M, XArray, HBlock, Hproj)
     end if
     if (tapwDebug .and. present(kpoint_index)) then
-       call MIO_Print('DiagH0TAPW_withBlockH: Matrix multiplication completed','diag')
+       call MIO_PrintDebug('DiagH0TAPW_withBlockH: Matrix multiplication completed','diag', tapwDebug)
 
        ! Debug: Verify Hproj is Hermitian (should be if HBlock is Hermitian)
        if (kpoint_index <= 2) then
@@ -7543,13 +7668,14 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
                 end if
              end do
           end do
-          call MIO_Print('  Hproj Hermiticity check (first 20×20): max error = '//trim(num2str(max_herm_error_proj,8)),'diag')
+          call MIO_PrintDebug('  Hproj Hermiticity check (first 20x20): max error = '// &
+            trim(num2str(max_herm_error_proj,8)),'diag', tapwDebug)
 
           ! Debug: Compare a few elements of Hproj with expected values
           if (2*M >= 5) then
-             call MIO_Print('  Hproj(1:5,1:5) diagonal: ['//trim(num2str(real(Hproj(1,1)),6))//', '//&
-                           trim(num2str(real(Hproj(2,2)),6))//', '//trim(num2str(real(Hproj(3,3)),6))//', '//&
-                           trim(num2str(real(Hproj(4,4)),6))//', '//trim(num2str(real(Hproj(5,5)),6))//']','diag')
+             call MIO_PrintDebug('  Hproj(1:5,1:5) diagonal: ['//trim(num2str(real(Hproj(1,1)),6))//', '// &
+               trim(num2str(real(Hproj(2,2)),6))//', '//trim(num2str(real(Hproj(3,3)),6))//', '// &
+               trim(num2str(real(Hproj(4,4)),6))//', '//trim(num2str(real(Hproj(5,5)),6))//']','diag', tapwDebug)
           end if
        end if
     end if
@@ -7558,9 +7684,9 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     ! For no-SOC case (forceBlockTAPW), Hproj should be block-diagonal with identical blocks
     if ((tapwDebug .or. forceBlockTAPW) .and. tapw_k_at_most(kpoint_index, 2)) then
        if (forceBlockTAPW) then
-          call MIO_Print('=== BLOCK TAPW PROJECTION DEBUG (no SOC) ===','diag')
-          call MIO_Print('  Expected: Hproj should be block-diagonal [H_TAPW 0; 0 H_TAPW]','diag')
-          call MIO_Print('  Hproj dimensions: '//trim(num2str(2*M))//'×'//trim(num2str(2*M)),'diag')
+          call MIO_PrintDebug('=== BLOCK TAPW PROJECTION DEBUG (no SOC) ===','diag', tapwDebug)
+          call MIO_PrintDebug('  Expected: Hproj should be block-diagonal [H_TAPW 0; 0 H_TAPW]','diag', tapwDebug)
+          call MIO_PrintDebug('  Hproj dimensions: '//trim(num2str(2*M))//'x'//trim(num2str(2*M)),'diag', tapwDebug)
 
           ! Check if Hproj is block-diagonal (off-diagonal blocks should be ~0 without SOC)
           max_offblock = 0.0_dp
@@ -7582,7 +7708,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
                 end if
              end do
           end do
-          call MIO_Print('  Max off-diagonal block element (first 10×10): '//trim(num2str(max_offblock,8)),'diag')
+          call MIO_PrintDebug('  Max off-diagonal block element (first 10x10): '//trim(num2str(max_offblock,8)),'diag', tapwDebug)
 
           ! Compare diagonal blocks (should be identical without SOC)
           max_block_diff = 0.0_dp
@@ -7594,24 +7720,25 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
                 end if
              end do
           end do
-          call MIO_Print('  Max difference between diagonal blocks (first 10×10): '//trim(num2str(max_block_diff,8)),'diag')
+          call MIO_PrintDebug('  Max difference between diagonal blocks (first 10x10): '//trim(num2str(max_block_diff,8)), &
+            'diag', tapwDebug)
 
           if (max_block_diff > 1e-6_dp) then
-             call MIO_Print('  WARNING: Diagonal blocks differ! They should be identical without SOC','diag')
+             call MIO_Warning('Diagonal blocks differ! They should be identical without SOC','diag')
           else
-             call MIO_Print('  SUCCESS: Diagonal blocks are identical (projection structure is correct)','diag')
+             call MIO_PrintDebug('  SUCCESS: Diagonal blocks are identical (projection structure is correct)','diag', tapwDebug)
           end if
 
           ! Show first few eigenvalues from each block
           if (2*M >= 5) then
-             call MIO_Print('  First 5 Hproj diagonal elements (upper block): ['//&
+             call MIO_PrintDebug('  First 5 Hproj diagonal elements (upper block): ['//&
                            trim(num2str(real(Hproj(1,1)),6))//', '//trim(num2str(real(Hproj(2,2)),6))//', '//&
                            trim(num2str(real(Hproj(3,3)),6))//', '//trim(num2str(real(Hproj(4,4)),6))//', '//&
-                           trim(num2str(real(Hproj(5,5)),6))//']','diag')
-             call MIO_Print('  First 5 Hproj diagonal elements (lower block): ['//&
+                           trim(num2str(real(Hproj(5,5)),6))//']','diag', tapwDebug)
+             call MIO_PrintDebug('  First 5 Hproj diagonal elements (lower block): ['//&
                            trim(num2str(real(Hproj(M+1,M+1)),6))//', '//trim(num2str(real(Hproj(M+2,M+2)),6))//', '//&
                            trim(num2str(real(Hproj(M+3,M+3)),6))//', '//trim(num2str(real(Hproj(M+4,M+4)),6))//', '//&
-                           trim(num2str(real(Hproj(M+5,M+5)),6))//']','diag')
+                           trim(num2str(real(Hproj(M+5,M+5)),6))//']','diag', tapwDebug)
           end if
 
           ! Check if eigenvalues are doubly degenerate (should be for identical blocks)
@@ -7623,8 +7750,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     if (tapwDebug .and. tapw_k_at_most(kpoint_index, 2)) then
        allocate(proj_diag_temp(2*M))
 
-       call MIO_Print('DiagH0TAPW_withBlockH: Checking Hproj after projection','diag')
-       call MIO_Print('  Hproj dimensions: '//trim(num2str(2*M))//'×'//trim(num2str(2*M)),'diag')
+       call MIO_PrintDebug('DiagH0TAPW_withBlockH: Checking Hproj after projection','diag', tapwDebug)
+       call MIO_PrintDebug('  Hproj dimensions: '//trim(num2str(2*M))//'x'//trim(num2str(2*M)),'diag', tapwDebug)
 
        ! Extract diagonal elements (now 2M×2M)
        do jj = 1, 2*M
@@ -7632,7 +7759,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        end do
        proj_diag_min = minval(real(proj_diag_temp))
        proj_diag_max = maxval(real(proj_diag_temp))
-       call MIO_Print('  Hproj diagonal range: ['//trim(num2str(proj_diag_min,6))//', '//trim(num2str(proj_diag_max,6))//']','diag')
+       call MIO_PrintDebug('  Hproj diagonal range: ['//trim(num2str(proj_diag_min,6))//', '// &
+         trim(num2str(proj_diag_max,6))//']','diag', tapwDebug)
 
        ! Debug: Check off-diagonal elements to verify Rashba terms are present in Hproj
        if (2*M >= 10) then
@@ -7645,18 +7773,19 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
                 end if
              end do
           end do
-          call MIO_Print('  Hproj max off-diagonal (first 10×10): '//trim(num2str(max_offdiag,6)),'diag')
+          call MIO_PrintDebug('  Hproj max off-diagonal (first 10x10): '//trim(num2str(max_offdiag,6)),'diag', &
+            tapwDebug)
 
           ! Debug: Show specific off-diagonal elements to check k-dependence
           ! Also check cross-spin terms (should be non-zero with Rashba)
           if (kpoint_index <= 2 .and. 2*M >= 5) then
-             call MIO_Print('  Hproj(1,2) = '//trim(num2str(real(Hproj(1,2)),6))//' + i*' &
-                   //trim(num2str(aimag(Hproj(1,2)),6)),'diag')
-             call MIO_Print('  Hproj(2,1) = '//trim(num2str(real(Hproj(2,1)),6))//' + i*' &
-                   //trim(num2str(aimag(Hproj(2,1)),6)),'diag')
+             call MIO_PrintDebug('  Hproj(1,2) = '//trim(num2str(real(Hproj(1,2)),6))//' + i*'  // &
+               trim(num2str(aimag(Hproj(1,2)),6)),'diag', tapwDebug)
+             call MIO_PrintDebug('  Hproj(2,1) = '//trim(num2str(real(Hproj(2,1)),6))//' + i*'  // &
+               trim(num2str(aimag(Hproj(2,1)),6)),'diag', tapwDebug)
              if (2*M >= M+1) then
-                call MIO_Print('  Hproj(1,M+1) [cross-spin] = '//trim(num2str(real(Hproj(1,M+1)),6))//' + i*' &
-                      //trim(num2str(aimag(Hproj(1,M+1)),6)),'diag')
+                call MIO_PrintDebug('  Hproj(1,M+1) [cross-spin] = '//trim(num2str(real(Hproj(1,M+1)),6))//' + i*'  // &
+                  trim(num2str(aimag(Hproj(1,M+1)),6)),'diag', tapwDebug)
              end if
           end if
        end if
@@ -7673,8 +7802,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              end if
           end do
        end do
-       call MIO_Print('  Hproj trace (first 100×100): '//trim(num2str(trace_Hproj,6))//', norm²: ' &
-             //trim(num2str(norm_Hproj,6)),'diag')
+       call MIO_PrintDebug('  Hproj trace (first 100x100): '//trim(num2str(trace_Hproj,6))//', norm^2: '  // &
+         trim(num2str(norm_Hproj,6)),'diag', tapwDebug)
 
        deallocate(proj_diag_temp)
     end if
@@ -7695,7 +7824,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     call ZHEEV('V', 'U', 2*M, Hproj, 2*M, eigvals, ZWorkLoc, lwork, DWorkLoc, info)
 
     if (info /= 0) then
-       call MIO_Print('ZHEEV failed in DiagH0TAPW_withBlockH: info = '//trim(num2str(info)), 'diag')
+       call MIO_Warning('ZHEEV failed in DiagH0TAPW_withBlockH: info = '//trim(num2str(info)), 'diag')
        call MIO_Kill('Error in TAPW block Hamiltonian diagonalization', 'diag', 'DiagH0TAPW_withBlockH')
     end if
 
@@ -7714,10 +7843,10 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     ! Debug: Check eigenvalue degeneracy after diagonalization (for forceBlockTAPW testing)
     if (forceBlockTAPW .and. tapw_k_at_most(kpoint_index, 2)) then
-       call MIO_Print('=== EIGENVALUE DEGENERACY CHECK (after diagonalization) ===','diag')
-       call MIO_Print('  Total eigenvalues: '//trim(num2str(2*M)),'diag')
-       call MIO_Print('  Expected: Each eigenvalue should appear twice (degenerate pairs)','diag')
-       call MIO_Print('  Note: For identical diagonal blocks, eigvals should be sorted pairs','diag')
+       call MIO_PrintDebug('=== EIGENVALUE DEGENERACY CHECK (after diagonalization) ===','diag', tapwDebug)
+       call MIO_PrintDebug('  Total eigenvalues: '//trim(num2str(2*M)),'diag', tapwDebug)
+       call MIO_PrintDebug('  Expected: Each eigenvalue should appear twice (degenerate pairs)','diag', tapwDebug)
+       call MIO_PrintDebug('  Note: For identical diagonal blocks, eigvals should be sorted pairs','diag', tapwDebug)
 
        max_degen_diff = 0.0_dp
        max_degen_diff_idx = 0
@@ -7727,8 +7856,9 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        ! For block-diagonal matrix with identical blocks, ZHEEV sorts eigenvalues as:
        ! λ₁, λ₁, λ₂, λ₂, ..., λₘ, λₘ (each eigenvalue appears twice consecutively)
        ! NOT as: λ₁...λₘ, λ₁...λₘ (all first block, then all second block)
-       call MIO_Print('  Note: For block-diagonal [A 0; 0 A], ZHEEV sorts eigenvalues','diag')
-       call MIO_Print('        as consecutive pairs: (λ₁,λ₁), (λ₂,λ₂), ..., (λₘ,λₘ)','diag')
+       call MIO_PrintDebug('  Note: For block-diagonal [A 0; 0 A], ZHEEV sorts eigenvalues','diag', tapwDebug)
+       call MIO_PrintDebug('        as consecutive pairs: (lambda1,lambda1), (lambda2,lambda2), ..., (lambdam,lambdam)', &
+         'diag', tapwDebug)
 
        do check_i = 1, min(M, 10)
           ! Check if eigvals(2i-1) ≈ eigvals(2i) (consecutive degenerate pairs)
@@ -7742,24 +7872,24 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           end if
        end do
 
-       call MIO_Print('  Consecutive pair check (first 10 pairs: 2i-1 and 2i): '//trim(num2str(eig_pair_count))//'/' &
-             //trim(num2str(min(M,10)))//' pairs match','diag')
+       call MIO_PrintDebug('  Consecutive pair check (first 10 pairs: 2i-1 and 2i): '//trim(num2str(eig_pair_count))//'/' &
+             //trim(num2str(min(M,10)))//' pairs match','diag', tapwDebug)
        if (max_degen_diff > 1e-6_dp) then
-          call MIO_Print('  WARNING: Max eigenvalue pair difference: '//trim(num2str(max_degen_diff,8))//' at pair ' &
-                //trim(num2str(max_degen_diff_idx)),'diag')
-          call MIO_Print('  First 5 consecutive eigenvalue pairs:','diag')
+          call MIO_Warning('Max eigenvalue pair difference: '//trim(num2str(max_degen_diff,8))//' at pair '  // &
+            trim(num2str(max_degen_diff_idx)),'diag')
+          call MIO_PrintDebug('  First 5 consecutive eigenvalue pairs:','diag', tapwDebug)
           do check_i = 1, min(5, M)
-             call MIO_Print('    Pair '//trim(num2str(check_i))//': eigvals('//trim(num2str(2*check_i-1))//') = ' &
+             call MIO_PrintDebug('    Pair '//trim(num2str(check_i))//': eigvals('//trim(num2str(2*check_i-1))//') = ' &
                    //trim(num2str(eigvals(2*check_i-1),6))//', eigvals('//trim(num2str(2*check_i))//') = ' &
                    //trim(num2str(eigvals(2*check_i),6))//', diff = ' &
-                   //trim(num2str(abs(eigvals(2*check_i-1)-eigvals(2*check_i)),8)),'diag')
+                   //trim(num2str(abs(eigvals(2*check_i-1)-eigvals(2*check_i)),8)),'diag', tapwDebug)
           end do
        else
-          call MIO_Print('  SUCCESS: Eigenvalues form proper consecutive pairs (eigvals(2i-1) ≈ eigvals(2i))','diag')
-          call MIO_Print('  First 5 consecutive eigenvalue pairs (should be identical):','diag')
+          call MIO_PrintDebug('  SUCCESS: Eigenvalues form proper consecutive pairs (eigvals(2i-1) ~ eigvals(2i))','diag', tapwDebug)
+          call MIO_PrintDebug('  First 5 consecutive eigenvalue pairs (should be identical):','diag', tapwDebug)
           do check_i = 1, min(5, M)
-             call MIO_Print('    Pair '//trim(num2str(check_i))//': '//trim(num2str(eigvals(2*check_i-1),6)) &
-                   //' (appears twice at indices '//trim(num2str(2*check_i-1))//','//trim(num2str(2*check_i))//')','diag')
+             call MIO_PrintDebug('    Pair '//trim(num2str(check_i))//': '//trim(num2str(eigvals(2*check_i-1),6)) &
+                   //' (appears twice at indices '//trim(num2str(2*check_i-1))//','//trim(num2str(2*check_i))//')','diag', tapwDebug)
           end do
     end if
 
@@ -7780,12 +7910,13 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              n_unique = n_unique + 1
           end if
        end do
-       call MIO_Print('  Unique eigenvalue count: '//trim(num2str(n_unique))//' (expected: '//trim(num2str(M)) &
-             //' unique eigenvalues, each appearing twice)','diag')
+       call MIO_PrintDebug('  Unique eigenvalue count: '//trim(num2str(n_unique))//' (expected: '//trim(num2str(M)) &
+             //' unique eigenvalues, each appearing twice)','diag', tapwDebug)
        if (n_unique == M) then
-          call MIO_Print('  SUCCESS: Exactly M unique eigenvalues (perfect degeneracy)','diag')
+          call MIO_PrintDebug('  SUCCESS: Exactly M unique eigenvalues (perfect degeneracy)','diag', tapwDebug)
        else
-          call MIO_Print('  WARNING: Expected M='//trim(num2str(M))//' unique eigenvalues, found '//trim(num2str(n_unique)),'diag')
+          call MIO_Warning('Expected M='//trim(num2str(M))//' unique eigenvalues, found '//trim(num2str(n_unique)), &
+            'diag')
        end if
     end if
 
@@ -7799,37 +7930,44 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
        n_negative = count(eigvals(1:2*M) < 0.0_dp)
        n_zero = count(abs(eigvals(1:2*M)) < 1e-10_dp)
 
-       call MIO_Print('=== FULL EIGENVALUE ANALYSIS (2M='//trim(num2str(2*M))//' total eigenvalues) ===','diag')
-       call MIO_Print('  Full eigenvalue range: ['//trim(num2str(eig_full_min,6))//', '//trim(num2str(eig_full_max,6))//']','diag')
-       call MIO_Print('  Eigenvalue span: '//trim(num2str(eig_full_range,6)),'diag')
-       call MIO_Print('  Positive eigenvalues: '//trim(num2str(n_positive))//' / '//trim(num2str(2*M)),'diag')
-       call MIO_Print('  Negative eigenvalues: '//trim(num2str(n_negative))//' / '//trim(num2str(2*M)),'diag')
-       call MIO_Print('  Zero eigenvalues: '//trim(num2str(n_zero))//' / '//trim(num2str(2*M)),'diag')
-       call MIO_Print('  ELoc array size: '//trim(num2str(size(ELoc)))//' (will store ' &
-             //trim(num2str(min(2*M, size(ELoc))))//' eigenvalues)','diag')
+       call MIO_PrintDebug('=== FULL EIGENVALUE ANALYSIS (2M='//trim(num2str(2*M))//' total eigenvalues) ===','diag', &
+         tapwDebug)
+       call MIO_PrintDebug('  Full eigenvalue range: ['//trim(num2str(eig_full_min,6))//', '// &
+         trim(num2str(eig_full_max,6))//']','diag', tapwDebug)
+       call MIO_PrintDebug('  Eigenvalue span: '//trim(num2str(eig_full_range,6)),'diag', tapwDebug)
+       call MIO_PrintDebug('  Positive eigenvalues: '//trim(num2str(n_positive))//' / '//trim(num2str(2*M)),'diag', &
+         tapwDebug)
+       call MIO_PrintDebug('  Negative eigenvalues: '//trim(num2str(n_negative))//' / '//trim(num2str(2*M)),'diag', &
+         tapwDebug)
+       call MIO_PrintDebug('  Zero eigenvalues: '//trim(num2str(n_zero))//' / '//trim(num2str(2*M)),'diag', tapwDebug)
+       call MIO_PrintDebug('  ELoc array size: '//trim(num2str(size(ELoc)))//' (will store '  // &
+         trim(num2str(min(2*M, size(ELoc))))//' eigenvalues)','diag', tapwDebug)
 
        ! Show first and last few eigenvalues
        if (2*M >= 5) then
-          call MIO_Print('  First 5 eigenvalues (lowest energy): ['//trim(num2str(eigvals(1),6))//', ' &
-                //trim(num2str(eigvals(2),6))//', '//trim(num2str(eigvals(3),6))//', '//trim(num2str(eigvals(4),6)) &
-                //', '//trim(num2str(eigvals(5),6))//']','diag')
+          call MIO_PrintDebug('  First 5 eigenvalues (lowest energy): ['//trim(num2str(eigvals(1),6))//', '  // &
+            trim(num2str(eigvals(2),6))//', '//trim(num2str(eigvals(3),6))//', '//trim(num2str(eigvals(4),6))  // &
+            ', '//trim(num2str(eigvals(5),6))//']','diag', tapwDebug)
        end if
        if (2*M >= 5) then
-          call MIO_Print('  Last 5 eigenvalues (highest energy): ['//trim(num2str(eigvals(2*M-4),6))//', ' &
-                //trim(num2str(eigvals(2*M-3),6))//', '//trim(num2str(eigvals(2*M-2),6))//', ' &
-                //trim(num2str(eigvals(2*M-1),6))//', '//trim(num2str(eigvals(2*M),6))//']','diag')
+          call MIO_PrintDebug('  Last 5 eigenvalues (highest energy): ['//trim(num2str(eigvals(2*M-4),6))//', '  // &
+            trim(num2str(eigvals(2*M-3),6))//', '//trim(num2str(eigvals(2*M-2),6))//', '  // &
+            trim(num2str(eigvals(2*M-1),6))//', '//trim(num2str(eigvals(2*M),6))//']','diag', tapwDebug)
        end if
 
        ! Check for truncation issue
        if (2*M > size(ELoc)) then
-          call MIO_Print('  WARNING: Truncation will occur! 2M='//trim(num2str(2*M))//' > ELoc size=' &
-                //trim(num2str(size(ELoc))),'diag')
-          call MIO_Print('  Will lose '//trim(num2str(2*M - size(ELoc)))//' eigenvalues (highest energy states)','diag')
+          call MIO_PrintDebug('  WARNING: Truncation will occur! 2M='//trim(num2str(2*M))//' > ELoc size='  // &
+            trim(num2str(size(ELoc))),'diag', tapwDebug)
+          call MIO_PrintDebug('  Will lose '//trim(num2str(2*M - size(ELoc)))//' eigenvalues (highest energy states)', &
+            'diag', tapwDebug)
           if (size(ELoc)+1 <= 2*M .and. eigvals(size(ELoc)+1) > 0.0_dp) then
-             call MIO_Print('  CRITICAL: First lost eigenvalue is POSITIVE: '//trim(num2str(eigvals(size(ELoc)+1),6)),'diag')
+             call MIO_PrintDebug('  CRITICAL: First lost eigenvalue is POSITIVE: '// &
+               trim(num2str(eigvals(size(ELoc)+1),6)),'diag', tapwDebug)
           end if
        else
-          call MIO_Print('  No truncation: All '//trim(num2str(2*M))//' eigenvalues will be stored in ELoc','diag')
+          call MIO_PrintDebug('  No truncation: All '//trim(num2str(2*M))//' eigenvalues will be stored in ELoc', &
+            'diag', tapwDebug)
        end if
     else
        ! Initialize to avoid uninitialized variable warnings
@@ -7852,20 +7990,22 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           ELoc(M+1:size(ELoc)) = 0.0_dp
        end if
        if (tapwDebug) then
-          call MIO_Print('TAPW with block H (no SOC): Collapsed '//trim(num2str(2*M))//' eigenvalues to ' &
-                //trim(num2str(min(M, size(ELoc))))//' unique ones','diag')
+          call MIO_PrintDebug('TAPW with block H (no SOC): Collapsed '//trim(num2str(2*M))//' eigenvalues to '  // &
+            trim(num2str(min(M, size(ELoc))))//' unique ones','diag', tapwDebug)
        end if
     else
        ! Rashba SOC case: use all 2M eigenvalues (spin-split)
        if (2*M > size(ELoc)) then
           if (tapwDebug) then
-             call MIO_Print('Warning: More TAPW states (2M='//trim(num2str(2*M))//') than output array size (' &
-                   //trim(num2str(size(ELoc)))//')','diag')
-             call MIO_Print('Taking first '//trim(num2str(size(ELoc)))//' eigenvalues out of '//trim(num2str(2*M)) &
-                   //' total TAPW states','diag')
-             call MIO_Print('  This will only include eigenvalues up to: '//trim(num2str(eigvals(size(ELoc)),6)),'diag')
+             call MIO_PrintDebug('Warning: More TAPW states (2M='//trim(num2str(2*M))// &
+               ') than output array size ('  //trim(num2str(size(ELoc)))//')','diag', tapwDebug)
+             call MIO_PrintDebug('Taking first '//trim(num2str(size(ELoc)))//' eigenvalues out of '// &
+               trim(num2str(2*M))  //' total TAPW states','diag', tapwDebug)
+             call MIO_PrintDebug('  This will only include eigenvalues up to: '//trim(num2str(eigvals(size(ELoc)),6)), &
+               'diag', tapwDebug)
              if (eigvals(size(ELoc)) < 0.0_dp .and. n_positive > 0) then
-                call MIO_Print('  CRITICAL: All positive eigenvalues will be lost due to truncation!','diag')
+                call MIO_PrintDebug('  CRITICAL: All positive eigenvalues will be lost due to truncation!','diag', &
+                  tapwDebug)
              end if
           end if
           ELoc(1:size(ELoc)) = eigvals(1:size(ELoc))  ! Take first size(ELoc) eigenvalues
@@ -7879,12 +8019,13 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
     if (tapwDebug) then
        if (forceBlockTAPW .and. .not. RashbaSOCterm) then
-          call MIO_Print('TAPW with block H (no SOC): Using '//trim(num2str(min(M_tapw, size(ELoc)))) &
-                //' eigenvalues for output (M_tapw='//trim(num2str(M_tapw))//', ELoc size='//trim(num2str(size(ELoc))) &
-                //')','diag')
+          call MIO_PrintDebug('TAPW with block H (no SOC): Using '//trim(num2str(min(M_tapw, size(ELoc))))  // &
+            ' eigenvalues for output (M_tapw='//trim(num2str(M_tapw))//', ELoc size='//trim(num2str(size(ELoc)))  // &
+            ')','diag', tapwDebug)
        else
-          call MIO_Print('TAPW with block H: Using '//trim(num2str(min(2*M, size(ELoc)))) &
-                //' eigenvalues for output (2M='//trim(num2str(2*M))//', ELoc size='//trim(num2str(size(ELoc)))//')','diag')
+          call MIO_PrintDebug('TAPW with block H: Using '//trim(num2str(min(2*M, size(ELoc))))  // &
+            ' eigenvalues for output (2M='//trim(num2str(2*M))//', ELoc size='//trim(num2str(size(ELoc)))//')','diag', &
+            tapwDebug)
        end if
     end if
 
@@ -7898,9 +8039,9 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           stored_nspin = ns  ! Store number of spin channels
           ! Calculate actual number of k-points needed based on Chern grid
           stored_nk = nk_chern_x * nk_chern_y
-          call MIO_Print('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points (' &
+          call MIO_PrintDebug('Allocating TAPW storage for '//trim(num2str(stored_nk))//' k-points (' &
                 //trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y))//' grid) for '//trim(num2str(stored_nspin)) &
-                //' spin channel(s)','diag')
+                //' spin channel(s)','diag', tapwDebug)
           allocate(stored_eigenvectors(2*M, 2*M, stored_nk, stored_nspin))
           allocate(stored_hamiltonians(2*M, 2*M, stored_nk, stored_nspin))
 
@@ -7908,37 +8049,35 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
           allocate(stored_X_matrix(2*N, 2*M))
           stored_X_matrix = XArray
 
-          call MIO_Print('Allocated TAPW storage for Chern calculation: '//trim(num2str(2*M))//'x'//trim(num2str(2*M)) &
-                //'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag')
-          call MIO_Print('Stored SOC-aware X matrix (2N='//trim(num2str(2*N))//'x 2M='//trim(num2str(2*M)) &
-                //') for Berry curvature calculation','diag')
+          call MIO_PrintDebug('Allocated TAPW storage for Chern calculation: '//trim(num2str(2*M))//'x'//trim(num2str(2*M)) &
+                //'x'//trim(num2str(stored_nk))//'x'//trim(num2str(stored_nspin)),'diag', tapwDebug)
+          call MIO_PrintDebug('Stored SOC-aware X matrix (2N='//trim(num2str(2*N))//'x 2M='//trim(num2str(2*M)) &
+                //') for Berry curvature calculation','diag', tapwDebug)
 
           ! VERIFICATION: Check stored data integrity
-          call MIO_Print('=== TAPW STORAGE VERIFICATION (Rashba SOC) ===','diag')
-          call MIO_Print('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk=' &
-                //trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag')
-          call MIO_Print('XArray dimensions: '//trim(num2str(size(XArray,1)))//'x'//trim(num2str(size(XArray,2))),'diag')
-          call MIO_Print('XArray norm: '//trim(num2str(sqrt(sum(abs(XArray)**2)),8)),'diag')
-          call MIO_Print('XArray max element: '//trim(num2str(maxval(abs(XArray)),8)),'diag')
-          call MIO_Print('XArray min element: '//trim(num2str(minval(abs(XArray)),8)),'diag')
+          call MIO_PrintDebug('=== TAPW STORAGE VERIFICATION (Rashba SOC) ===','diag', tapwDebug)
+          call MIO_PrintDebug('Stored dimensions: N='//trim(num2str(stored_N))//', M='//trim(num2str(stored_M))//', nk=' &
+                //trim(num2str(stored_nk))//', nspin='//trim(num2str(stored_nspin)),'diag', tapwDebug)
+          call MIO_PrintDebug('XArray dimensions: '//trim(num2str(size(XArray,1)))//'x'//trim(num2str(size(XArray,2))),'diag', tapwDebug)
+          call MIO_PrintDebug('XArray norm: '//trim(num2str(sqrt(sum(abs(XArray)**2)),8)),'diag', tapwDebug)
+          call MIO_PrintDebug('XArray max element: '//trim(num2str(maxval(abs(XArray)),8)),'diag', tapwDebug)
+          call MIO_PrintDebug('XArray min element: '//trim(num2str(minval(abs(XArray)),8)),'diag', tapwDebug)
        else
           ! Check for consistency - M should not change between k-points
           if (2*M /= stored_M) then
-             call MIO_Print('ERROR: M dimension changed between k-points in DiagH0TAPW_withBlockH','diag')
-             call MIO_Print('  Stored M: '//trim(num2str(stored_M))//', Current M: '//trim(num2str(2*M)),'diag')
-             error stop 1
+             call MIO_Warning('M dimension changed between k-points in DiagH0TAPW_withBlockH','diag')
+             call MIO_Kill('  Stored M: '//trim(num2str(stored_M))//', Current M: '//trim(num2str(2*M)),'diag','DiagH0TAPW_withBlockH')
           end if
 
           ! Verify X matrix dimensions are consistent
           if (.not. allocated(stored_X_matrix)) then
-             call MIO_Print('ERROR: stored_X_matrix not allocated but stored_eigenvectors is allocated','diag')
-             error stop 1
+             call MIO_Kill('stored_X_matrix not allocated but stored_eigenvectors is allocated','diag','DiagH0TAPW_withBlockH')
           end if
           if (size(stored_X_matrix, 1) /= 2*N .or. size(stored_X_matrix, 2) /= 2*M) then
-             call MIO_Print('ERROR: Stored X matrix dimensions inconsistent with current calculation','diag')
-             call MIO_Print('  Stored: '//trim(num2str(size(stored_X_matrix,1)))//'x' &
-                   //trim(num2str(size(stored_X_matrix,2))),'diag')
-             call MIO_Print('  Current: '//trim(num2str(2*N))//'x'//trim(num2str(2*M)),'diag')
+             call MIO_Warning('Stored X matrix dimensions inconsistent with current calculation','diag')
+             call MIO_PrintDebug('  Stored: '//trim(num2str(size(stored_X_matrix,1)))//'x' &
+                   //trim(num2str(size(stored_X_matrix,2))),'diag', tapwDebug)
+             call MIO_PrintDebug('  Current: '//trim(num2str(2*N))//'x'//trim(num2str(2*M)),'diag', tapwDebug)
           end if
        end if
 
@@ -7955,8 +8094,8 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
              ! CRITICAL: Store TAPW eigenvalues (now 2M)
              if (.not. allocated(stored_eigenvalues)) then
                 allocate(stored_eigenvalues(2*M, stored_nk, stored_nspin))
-                call MIO_Print('Allocated stored_eigenvalues array: '//trim(num2str(2*M))//'x'//trim(num2str(stored_nk)) &
-                      //'x'//trim(num2str(stored_nspin)),'diag')
+                call MIO_PrintDebug('Allocated stored_eigenvalues array: '//trim(num2str(2*M))//'x'//trim(num2str(stored_nk)) &
+                      //'x'//trim(num2str(stored_nspin)),'diag', tapwDebug)
              end if
              stored_eigenvalues(1:2*M,kpoint_index,1) = eigvals(1:2*M)
 
@@ -7970,14 +8109,14 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
 
              ! DEBUG: Verify eigenvalue storage for first k-point
              if (kpoint_index == 1 .and. is == 1) then
-                call MIO_Print('=== TAPW EIGENVALUE STORAGE VERIFICATION (Rashba, k-point 1, spin-mixed) ===','diag')
-                call MIO_Print('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
-                      //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
-                call MIO_Print('First 5 TAPW eigenvalues (spin-mixed): ['//trim(num2str(eigvals(1),6))//',' &
+                call MIO_PrintDebug('=== TAPW EIGENVALUE STORAGE VERIFICATION (Rashba, k-point 1, spin-mixed) ===','diag', tapwDebug)
+                call MIO_PrintDebug('Stored eigenvalues dimensions: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+                      //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag', tapwDebug)
+                call MIO_PrintDebug('First 5 TAPW eigenvalues (spin-mixed): ['//trim(num2str(eigvals(1),6))//',' &
                       //trim(num2str(eigvals(2),6))//','//trim(num2str(eigvals(3),6))//','//trim(num2str(eigvals(4),6)) &
-                      //','//trim(num2str(eigvals(5),6))//']','diag')
-                call MIO_Print('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:2*M)),6))//',' &
-                      //trim(num2str(maxval(eigvals(1:2*M)),6))//']','diag')
+                      //','//trim(num2str(eigvals(5),6))//']','diag', tapwDebug)
+                call MIO_PrintDebug('TAPW eigenvalue range: ['//trim(num2str(minval(eigvals(1:2*M)),6))//',' &
+                      //trim(num2str(maxval(eigvals(1:2*M)),6))//']','diag', tapwDebug)
              end if
           end if
        end if
@@ -7988,7 +8127,7 @@ subroutine DiagH0TAPW_withBlockH(N, ns, is, ELoc, KLoc, cell_real, HBlock, maxN,
     ! Clean up
     deallocate(XArray, Hproj, eigvals, eigvec, ZWorkLoc, DWorkLoc, Gx, Gy, label)
 
-    if (tapwDebug) call MIO_Print('DiagH0TAPW_withBlockH: Completed successfully', 'diag')
+    call MIO_PrintDebug('DiagH0TAPW_withBlockH: Completed successfully','diag', tapwDebug)
 
 end subroutine DiagH0TAPW_withBlockH
 
@@ -8325,7 +8464,7 @@ subroutine tapw_append_second_valley(rcell, rG, sGlattice, refF, NGrange, useDen
           trim(num2str(NG))//' around the other valley','diag')
      call MIO_Print('  max|G-K| = '//trim(num2str(d1,5))//', '//trim(num2str(d2,5))// &
           ' 1/Ang; valley-purity cap |K|/2 = '//trim(num2str(kcap,5))//'; aliased pairs: 0','diag')
-     if (max(d1,d2) >= kcap) call MIO_Print('  WARNING: a shell reaches past |K|/2','diag')
+     if (max(d1,d2) >= kcap) call MIO_Warning('a shell reaches past |K|/2','diag')
   end if
   ! generate_shifted_G_list_reduced rewrites this file at every k: overwrite it with the full list
   open(unit=98, file='g_vectors_debug.dat', status='replace')
@@ -8380,12 +8519,12 @@ subroutine generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, center_poi
   ! Determine the center point for G-grid generation
   if (present(center_point)) then
      grid_center = center_point
-     call MIO_Print('Using custom center point for G-grid: ['//&
-                    trim(num2str(grid_center(1),6))//','//trim(num2str(grid_center(2),6))//']','diag')
+     call MIO_PrintDebug('Using custom center point for G-grid: ['//&
+                    trim(num2str(grid_center(1),6))//','//trim(num2str(grid_center(2),6))//']','diag', tapwDebug)
   else
      grid_center = k_ref
-     call MIO_Print('Using k_ref as center point for G-grid: ['//&
-                    trim(num2str(grid_center(1),6))//','//trim(num2str(grid_center(2),6))//']','diag')
+     call MIO_PrintDebug('Using k_ref as center point for G-grid: ['//&
+                    trim(num2str(grid_center(1),6))//','//trim(num2str(grid_center(2),6))//']','diag', tapwDebug)
   end if
 
   ! Determine if hexagonal BZ filtering should be applied
@@ -8393,7 +8532,7 @@ subroutine generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, center_poi
   if (present(apply_BZ_filter)) then
      use_BZ_filter = apply_BZ_filter
      if (use_BZ_filter) then
-        call MIO_Print('HEXAGONAL BZ FILTERING ENABLED: Will exclude G-vectors outside first BZ','diag')
+        call MIO_PrintDebug('HEXAGONAL BZ FILTERING ENABLED: Will exclude G-vectors outside first BZ','diag', tapwDebug)
      end if
   end if
 
@@ -8406,88 +8545,121 @@ subroutine generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, center_poi
   inv_rcell = reshape([b2(2), -b2(1), -b1(2), b1(1)], [2,2]) / det
 
   ! Debug: Check matrix calculations
-  call MIO_Print("DEBUG: OLD vs NEW coordinate conversion methods:",'diag')
-  print *, "  det =", det
-  call MIO_Print("  OLD inv_rcell method (reciprocal lattice inverse):",'diag')
-  print *, "    inv_rcell(1,1) = b2(2)/det =", b2(2), "/", det, "=", b2(2)/det
-  print *, "    inv_rcell(1,2) = -b2(1)/det =", -b2(1), "/", det, "=", -b2(1)/det
-  print *, "    inv_rcell(2,1) = -b1(2)/det =", -b1(2), "/", det, "=", -b1(2)/det
-  print *, "    inv_rcell(2,2) = b1(1)/det =", b1(1), "/", det, "=", b1(1)/det
+  call MIO_PrintDebug("OLD vs NEW coordinate conversion methods:",'diag')
+  write(dbgmsg,'(*(g0,1x))') "det =", det
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  call MIO_PrintDebug("  OLD inv_rcell method (reciprocal lattice inverse):",'diag', tapwDebug)
+  write(dbgmsg,'(*(g0,1x))') "inv_rcell(1,1) = b2(2)/det =", b2(2), "/", det, "=", b2(2)/det
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "inv_rcell(1,2) = -b2(1)/det =", -b2(1), "/", det, "=", -b2(1)/det
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "inv_rcell(2,1) = -b1(2)/det =", -b1(2), "/", det, "=", -b1(2)/det
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "inv_rcell(2,2) = b1(1)/det =", b1(1), "/", det, "=", b1(1)/det
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! Debug: Direct lattice calculation details
-  call MIO_Print("DEBUG: Direct lattice coordinate conversion (FIXED):",'diag')
-  call MIO_Print("  ucell_T (direct lattice transpose):",'diag')
-  print *, "    ucell_T(1,:) =", ucell_T(1,:)
-  print *, "    ucell_T(2,:) =", ucell_T(2,:)
+  call MIO_PrintDebug("Direct lattice coordinate conversion (FIXED):",'diag')
+  call MIO_PrintDebug("  ucell_T (direct lattice transpose):",'diag', tapwDebug)
+  write(dbgmsg,'(*(g0,1x))') "ucell_T(1,:) =", ucell_T(1,:)
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "ucell_T(2,:) =", ucell_T(2,:)
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! Debug: Matrix multiplication k_ref @ ucell_T / (2π) (Python equivalent)
-  call MIO_Print("DEBUG: k_ref @ ucell_T / (2π) calculation (Python equivalent):",'diag')
-  call MIO_Print("  k_ref(1) * ucell_T(1,1) + k_ref(2) * ucell_T(2,1) =",'diag')
-  print *, "  ", k_ref(1), "*", ucell_T(1,1), "+", k_ref(2), "*", ucell_T(2,1), "="
-  print *, "  ", (k_ref(1) * ucell_T(1,1) + k_ref(2) * ucell_T(2,1)) / (2.0_dp * 3.14159265358979323846_dp)
-  call MIO_Print("  k_ref(1) * ucell_T(1,2) + k_ref(2) * ucell_T(2,2) =",'diag')
-  print *, "  ", k_ref(1), "*", ucell_T(1,2), "+", k_ref(2), "*", ucell_T(2,2), "="
-  print *, "  ", (k_ref(1) * ucell_T(1,2) + k_ref(2) * ucell_T(2,2)) / (2.0_dp * 3.14159265358979323846_dp)
+  call MIO_PrintDebug("k_ref @ ucell_T / (2pi) calculation (Python equivalent):",'diag')
+  call MIO_PrintDebug("  k_ref(1) * ucell_T(1,1) + k_ref(2) * ucell_T(2,1) =",'diag', tapwDebug)
+  write(dbgmsg,'(*(g0,1x))') k_ref(1), "*", ucell_T(1,1), "+", k_ref(2), "*", ucell_T(2,1), "="
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg, &
+    '(*(g0,1x))') (k_ref(1) * ucell_T(1,1) + k_ref(2) * ucell_T(2,1)) / (2.0_dp * 3.14159265358979323846_dp)
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  call MIO_PrintDebug("  k_ref(1) * ucell_T(1,2) + k_ref(2) * ucell_T(2,2) =",'diag', tapwDebug)
+  write(dbgmsg,'(*(g0,1x))') k_ref(1), "*", ucell_T(1,2), "+", k_ref(2), "*", ucell_T(2,2), "="
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg, &
+    '(*(g0,1x))') (k_ref(1) * ucell_T(1,2) + k_ref(2) * ucell_T(2,2)) / (2.0_dp * 3.14159265358979323846_dp)
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! CRITICAL CHECK: Test both transpose methods for coordinate conversion
-  call MIO_Print("DEBUG: Testing coordinate conversion methods:",'diag')
-  print *, "  Method 1 (current): k_ref * ucell_T =", matmul(k_ref, ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
-  print *, "  Method 2 (transpose): k_ref * ucell_T^T =", matmul(k_ref, transpose(ucell_T)) / (2.0_dp * 3.14159265358979323846_dp)
+  call MIO_PrintDebug("Testing coordinate conversion methods:",'diag')
+  write(dbgmsg,'(*(g0,1x))') "Method 1 (current): k_ref * ucell_T =", matmul(k_ref, &
+    ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Method 2 (transpose): k_ref * ucell_T^T =", matmul(k_ref, &
+    transpose(ucell_T)) / (2.0_dp * 3.14159265358979323846_dp)
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! Use standard Fortran nint() for rounding to nearest G-grid center
   ! For triangular lattice (1/3, 2/3 values), nint() gives same results as Python np.round()
   G_nn_method1 = matmul(grid_center, ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
   G_nn_int(1) = nint(G_nn_method1(1))
   G_nn_int(2) = nint(G_nn_method1(2))
-  call MIO_Print('Using standard Fortran nint() for G-grid center selection','diag')
-  print *, "DEBUG: Fractional coordinates:", G_nn_method1
-  print *, "DEBUG: nint()-rounded G_nn_int =", G_nn_int
+  call MIO_PrintDebug('Using standard Fortran nint() for G-grid center selection','diag', tapwDebug)
+  write(dbgmsg,'(*(g0,1x))') "Fractional coordinates:", G_nn_method1
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "nint()-rounded G_nn_int =", G_nn_int
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! Also calculate what standard Fortran nint() would give for comparison
   G_nn_int_transpose(1) = nint(G_nn_method1(1))
   G_nn_int_transpose(2) = nint(G_nn_method1(2))
-  print *, "DEBUG: Standard nint() would give:", G_nn_int_transpose
+  write(dbgmsg,'(*(g0,1x))') "Standard nint() would give:", G_nn_int_transpose
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
   if (any(G_nn_int /= G_nn_int_transpose)) then
-     call MIO_Print('WARNING: Python and Fortran rounding differ - using Python for consistency','diag')
+     call MIO_Warning('Python and Fortran rounding differ - using Python for consistency','diag')
   end if
 
   ! COMPREHENSIVE VERIFICATION: Test both methods by reconstruction
-  call MIO_Print("DEBUG: === COMPREHENSIVE COORDINATE CONVERSION VERIFICATION ===",'diag')
+  call MIO_PrintDebug("=== COMPREHENSIVE COORDINATE CONVERSION VERIFICATION ===",'diag')
 
   ! Method 1 reconstruction: G_nn_int -> G_nn -> k_space
   G_nn_method1 = G_nn_int(1)*b1 + G_nn_int(2)*b2
-  call MIO_Print("Method 1 reconstruction:",'diag')
-  print *, "  G_nn_int =", G_nn_int
-  print *, "  G_nn_method1 = G_nn_int(1)*b1 + G_nn_int(2)*b2 =", G_nn_method1
-  print *, "  Distance from grid_center: |G_nn_method1 - grid_center| =", sqrt(sum((G_nn_method1 - grid_center)**2))
+  call MIO_PrintDebug("Method 1 reconstruction:",'diag', tapwDebug)
+  write(dbgmsg,'(*(g0,1x))') "G_nn_int =", G_nn_int
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "G_nn_method1 = G_nn_int(1)*b1 + G_nn_int(2)*b2 =", G_nn_method1
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Distance from grid_center: |G_nn_method1 - grid_center| =", &
+    sqrt(sum((G_nn_method1 - grid_center)**2))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! Method 2 reconstruction: G_nn_int_transpose -> G_nn -> k_space
   G_nn_method2 = G_nn_int_transpose(1)*b1 + G_nn_int_transpose(2)*b2
-  call MIO_Print("Method 2 reconstruction:",'diag')
-  print *, "  G_nn_int_transpose =", G_nn_int_transpose
-  print *, "  G_nn_method2 = G_nn_int_transpose(1)*b1 + G_nn_int_transpose(2)*b2 =", G_nn_method2
-  print *, "  Distance from grid_center: |G_nn_method2 - grid_center| =", sqrt(sum((G_nn_method2 - grid_center)**2))
+  call MIO_PrintDebug("Method 2 reconstruction:",'diag', tapwDebug)
+  write(dbgmsg,'(*(g0,1x))') "G_nn_int_transpose =", G_nn_int_transpose
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "G_nn_method2 = G_nn_int_transpose(1)*b1 + G_nn_int_transpose(2)*b2 =", G_nn_method2
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Distance from grid_center: |G_nn_method2 - grid_center| =", &
+    sqrt(sum((G_nn_method2 - grid_center)**2))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! Round-trip test: fractional -> integer -> fractional
   frac_roundtrip1 = matmul(G_nn_method1, ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
   frac_roundtrip2 = matmul(G_nn_method2, ucell_T) / (2.0_dp * 3.14159265358979323846_dp)
-  call MIO_Print("Round-trip test (should recover integer values):",'diag')
-  print *, "  Method 1: G_nn_method1 -> fractional =", frac_roundtrip1
-  print *, "  Method 2: G_nn_method2 -> fractional =", frac_roundtrip2
+  call MIO_PrintDebug("Round-trip test (should recover integer values):",'diag', tapwDebug)
+  write(dbgmsg,'(*(g0,1x))') "Method 1: G_nn_method1 -> fractional =", frac_roundtrip1
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Method 2: G_nn_method2 -> fractional =", frac_roundtrip2
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! The correct method should give the nearest G-vector to grid_center
-  call MIO_Print("VERDICT: Method with smaller distance from grid_center is likely correct",'diag')
+  call MIO_PrintDebug("VERDICT: Method with smaller distance from grid_center is likely correct",'diag', tapwDebug)
   if (sqrt(sum((G_nn_method1 - grid_center)**2)) < sqrt(sum((G_nn_method2 - grid_center)**2))) then
-call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",'diag')
+call MIO_PrintDebug("  -> Method 1 (current) appears CORRECT: closer to grid_center",'diag', tapwDebug)
   else
-     call MIO_Print("  -> Method 2 (transpose) appears CORRECT: closer to grid_center",'diag')
+     call MIO_PrintDebug("  -> Method 2 (transpose) appears CORRECT: closer to grid_center",'diag', tapwDebug)
   end if
 
   G_nn = G_nn_int(1)*b1 + G_nn_int(2)*b2
-  call MIO_Print("DEBUG: G_nn reconstruction:",'diag')
-  print *, "  G_nn_int(1)*b1 =", G_nn_int(1), "*", b1, "=", G_nn_int(1)*b1
-  print *, "  G_nn_int(2)*b2 =", G_nn_int(2), "*", b2, "=", G_nn_int(2)*b2
-  print *, "  G_nn = G_nn_int(1)*b1 + G_nn_int(2)*b2 =", G_nn
+  call MIO_PrintDebug("G_nn reconstruction:",'diag')
+  write(dbgmsg,'(*(g0,1x))') "G_nn_int(1)*b1 =", G_nn_int(1), "*", b1, "=", G_nn_int(1)*b1
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "G_nn_int(2)*b2 =", G_nn_int(2), "*", b2, "=", G_nn_int(2)*b2
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "G_nn = G_nn_int(1)*b1 + G_nn_int(2)*b2 =", G_nn
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! Generate (2*NGrange+1)^2 grid around G_nn - exactly like Python
   nmax = (2*NGrange + 1)**2
@@ -8507,13 +8679,13 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
 
         ! DEBUG: Check for the center point
         if (u == 0 .and. v == 0) then
-           if (tapwDebug) call MIO_Print('DEBUG: Found center point u=0,v=0:','diag')
-           call MIO_Print('  Position in array: '//trim(adjustl(num2str(real(count,dp),0))),'diag')
-           call MIO_Print('  G_point = ['//trim(adjustl(num2str(Gpoints(1,count),6)))//','//&
-                          trim(adjustl(num2str(Gpoints(2,count),6)))//']','diag')
-           call MIO_Print('  G_nn = ['//trim(adjustl(num2str(G_nn(1),6)))//','//&
-                          trim(adjustl(num2str(G_nn(2),6)))//']','diag')
-           call MIO_Print('  Distance = '//trim(adjustl(num2str(distances(count),6))),'diag')
+           call MIO_PrintDebug('Found center point u=0,v=0:','diag', tapwDebug)
+           call MIO_PrintDebug('  Position in array: '//trim(adjustl(num2str(real(count,dp),0))),'diag', tapwDebug)
+           call MIO_PrintDebug('  G_point = ['//trim(adjustl(num2str(Gpoints(1,count),6)))//','//&
+                          trim(adjustl(num2str(Gpoints(2,count),6)))//']','diag', tapwDebug)
+           call MIO_PrintDebug('  G_nn = ['//trim(adjustl(num2str(G_nn(1),6)))//','//&
+                          trim(adjustl(num2str(G_nn(2),6)))//']','diag', tapwDebug)
+           call MIO_PrintDebug('  Distance = '//trim(adjustl(num2str(distances(count),6))),'diag', tapwDebug)
         end if
      end do
   end do
@@ -8522,17 +8694,17 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
   allocate(unique_distances(nmax))
   num_unique = 0
 
-  if (tapwDebug) call MIO_Print('DEBUG: First 15 raw distances from G_nn:','diag')
+  call MIO_PrintDebug('First 15 raw distances from G_nn:','diag', tapwDebug)
   do i = 1, min(15, count)
-     call MIO_Print('  Point '//trim(adjustl(num2str(real(i,dp),0)))//': distance = ' &
+     call MIO_PrintDebug('  Point '//trim(adjustl(num2str(real(i,dp),0)))//': distance = ' &
            //trim(adjustl(num2str(distances(i),6))),'diag')
   end do
 
   ! Also check around the center position
-  if (tapwDebug) call MIO_Print('DEBUG: Looking for distance=0 in all raw distances:','diag')
+  call MIO_PrintDebug('Looking for distance=0 in all raw distances:','diag', tapwDebug)
   do i = 1, count
      if (abs(distances(i)) < 1.0e-10_dp) then
-        call MIO_Print('  Found distance=0 at position '//trim(adjustl(num2str(real(i,dp),0))),'diag')
+        call MIO_PrintDebug('  Found distance=0 at position '//trim(adjustl(num2str(real(i,dp),0))),'diag', tapwDebug)
      end if
   end do
 
@@ -8542,15 +8714,15 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
 
      ! DEBUG: Track the center point specifically
      if (i == 25) then
-        if (tapwDebug) call MIO_Print('DEBUG: Processing center point (position 25):','diag')
-        call MIO_Print('  Original distance = '//trim(adjustl(num2str(current_dist,10))),'diag')
+        call MIO_PrintDebug('Processing center point (position 25):','diag', tapwDebug)
+        call MIO_PrintDebug('  Original distance = '//trim(adjustl(num2str(current_dist,10))),'diag', tapwDebug)
      end if
 
      ! Check if this distance already exists (rounded to 5 decimal places like Python)
      current_dist = nint(current_dist * 1.0e5_dp) / 1.0e5_dp  ! Round to 5 decimal places
 
      if (i == 25) then
-        call MIO_Print('  Rounded distance = '//trim(adjustl(num2str(current_dist,10))),'diag')
+        call MIO_PrintDebug('  Rounded distance = '//trim(adjustl(num2str(current_dist,10))),'diag', tapwDebug)
      end if
 
      do j = 1, num_unique
@@ -8558,7 +8730,7 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
            found_distance = .true.
            inverse(i) = j - 1  ! 0-based indexing like Python
            if (i == 25) then
-              call MIO_Print('  Found existing shell: '//trim(adjustl(num2str(real(j-1,dp),0))),'diag')
+              call MIO_PrintDebug('  Found existing shell: '//trim(adjustl(num2str(real(j-1,dp),0))),'diag', tapwDebug)
            end if
            exit
         end if
@@ -8570,33 +8742,33 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
         unique_distances(num_unique) = current_dist
         inverse(i) = num_unique - 1  ! 0-based indexing like Python
         if (i == 25) then
-           call MIO_Print('  Created new shell: '//trim(adjustl(num2str(real(num_unique-1,dp),0)))//&
-                         ' with distance = '//trim(adjustl(num2str(current_dist,10))),'diag')
+           call MIO_PrintDebug('  Created new shell: '//trim(adjustl(num2str(real(num_unique-1,dp),0)))//&
+                         ' with distance = '//trim(adjustl(num2str(current_dist,10))),'diag', tapwDebug)
         end if
      end if
   end do
 
   ! Sort unique distances to get proper shell ordering
-  if (tapwDebug) call MIO_Print('DEBUG: Before sorting - first 5 unique distances:','diag')
+  call MIO_PrintDebug('Before sorting - first 5 unique distances:','diag', tapwDebug)
   do i = 1, min(5, num_unique)
-     call MIO_Print('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = ' &
-           //trim(adjustl(num2str(unique_distances(i),6))),'diag')
+     call MIO_PrintDebug('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = ' &
+           //trim(adjustl(num2str(unique_distances(i),6))),'diag', tapwDebug)
   end do
 
   call sort_distances_with_inverse_update(unique_distances, num_unique, inverse, count)
 
-  if (tapwDebug) call MIO_Print('DEBUG: After sorting - first 5 unique distances:','diag')
+  call MIO_PrintDebug('After sorting - first 5 unique distances:','diag', tapwDebug)
   do i = 1, min(5, num_unique)
-     call MIO_Print('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = ' &
-           //trim(adjustl(num2str(unique_distances(i),6))),'diag')
+     call MIO_PrintDebug('  Shell '//trim(adjustl(num2str(real(i-1,dp),0)))//' distance = ' &
+           //trim(adjustl(num2str(unique_distances(i),6))),'diag', tapwDebug)
   end do
 
   ! Count how many G-vectors we need: inverse < NGrange (Python condition)
   NG = 0
-  if (tapwDebug) call MIO_Print('DEBUG: Checking inverse array for selection:','diag')
+  call MIO_PrintDebug('Checking inverse array for selection:','diag', tapwDebug)
   do i = 1, count
      if (i <= 10 .or. i == 25) then  ! Show first 10 + center point
-        call MIO_Print('  Point '//trim(adjustl(num2str(real(i,dp),0)))//': inverse = '//&
+        call MIO_PrintDebug('  Point '//trim(adjustl(num2str(real(i,dp),0)))//': inverse = '//&
                        trim(adjustl(num2str(real(inverse(i),dp),0)))//', NGrange = '//&
                        trim(adjustl(num2str(real(NGrange,dp),0)))//', selected = '//&
                        merge('YES','NO ',inverse(i) < NGrange),'diag')
@@ -8606,15 +8778,15 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
      end if
   end do
 
-  if (tapwDebug) call MIO_Print('DEBUG: G-vector selection summary','diag')
-  call MIO_Print('  Total grid points generated: '//trim(adjustl(num2str(real(count,dp),0))),'diag')
-  call MIO_Print('  Unique distance shells: '//trim(adjustl(num2str(real(num_unique,dp),0))),'diag')
-  call MIO_Print('  NGrange (shells to keep): '//trim(adjustl(num2str(real(NGrange,dp),0))),'diag')
-  call MIO_Print('  Selected G-vectors: '//trim(adjustl(num2str(real(NG,dp),0))),'diag')
+  call MIO_PrintDebug('G-vector selection summary','diag', tapwDebug)
+  call MIO_PrintDebug('  Total grid points generated: '//trim(adjustl(num2str(real(count,dp),0))),'diag', tapwDebug)
+  call MIO_PrintDebug('  Unique distance shells: '//trim(adjustl(num2str(real(num_unique,dp),0))),'diag', tapwDebug)
+  call MIO_PrintDebug('  NGrange (shells to keep): '//trim(adjustl(num2str(real(NGrange,dp),0))),'diag', tapwDebug)
+  call MIO_PrintDebug('  Selected G-vectors: '//trim(adjustl(num2str(real(NG,dp),0))),'diag', tapwDebug)
 
   if (present(center_point)) then
      ! Unitary TAPW: use current shell-based logic
-     if (tapwDebug) call MIO_Print('DEBUG: Using shell-based G-vector selection for unitary TAPW','diag')
+     call MIO_PrintDebug('Using shell-based G-vector selection for unitary TAPW','diag', tapwDebug)
 
      ! Allocate output arrays
      allocate(Gx(NG), Gy(NG))
@@ -8645,7 +8817,7 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
 
   else
      ! Normal TAPW: use Python-like direct distance sorting
-     if (tapwDebug) call MIO_Print('DEBUG: Using Python-like distance-based G-vector selection for normal TAPW','diag')
+     call MIO_PrintDebug('Using Python-like distance-based G-vector selection for normal TAPW','diag', tapwDebug)
 
      ! Create arrays of indices and distances for sorting
      allocate(sorted_indices(count), sorted_distances(count))
@@ -8686,9 +8858,9 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
         Gy(k) = Gpoints(2, idx)
 
         if (k <= 5) then  ! Debug first 5
-           call MIO_Print('  Selected G('//trim(adjustl(num2str(real(k,dp),0)))//') distance='//&
+           call MIO_PrintDebug('  Selected G('//trim(adjustl(num2str(real(k,dp),0)))//') distance='//&
                          trim(adjustl(num2str(sorted_distances(i),6)))//' = ['//&
-                         trim(adjustl(num2str(Gx(k),6)))//','//trim(adjustl(num2str(Gy(k),6)))//']','diag')
+                         trim(adjustl(num2str(Gx(k),6)))//','//trim(adjustl(num2str(Gy(k),6)))//']','diag', tapwDebug)
         end if
      end do
 
@@ -8697,12 +8869,12 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
 
   ! Report filtering results
   if (use_BZ_filter) then
-     call MIO_Print('HEXAGONAL BZ FILTERING RESULTS:','diag')
-     call MIO_Print('  G-vectors before BZ filter: '//trim(adjustl(num2str(real(NG_before_filter,dp),0))),'diag')
-     call MIO_Print('  G-vectors after BZ filter: '//trim(adjustl(num2str(real(NG_after_filter,dp),0))),'diag')
-     call MIO_Print('  G-vectors removed: '//trim(adjustl(num2str(real(NG_before_filter-NG_after_filter,dp),0))),'diag')
-     call MIO_Print('  Efficiency gain: ' &
-           //trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag')
+     call MIO_PrintDebug('HEXAGONAL BZ FILTERING RESULTS:','diag', tapwDebug)
+     call MIO_PrintDebug('  G-vectors before BZ filter: '//trim(adjustl(num2str(real(NG_before_filter,dp),0))),'diag', tapwDebug)
+     call MIO_PrintDebug('  G-vectors after BZ filter: '//trim(adjustl(num2str(real(NG_after_filter,dp),0))),'diag', tapwDebug)
+     call MIO_PrintDebug('  G-vectors removed: '//trim(adjustl(num2str(real(NG_before_filter-NG_after_filter,dp),0))),'diag', tapwDebug)
+     call MIO_PrintDebug('  Efficiency gain: ' &
+           //trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag', tapwDebug)
   end if
 
   ! No need to reallocate - arrays are already the right size and contain correct data
@@ -8710,20 +8882,21 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
 
   ! CRITICAL: Apply final uniqueness like Python's np.unique(np.vstack(self.G_list),axis=0)
   ! This removes duplicate G-vectors that might come from multiple reference points
-  if (tapwDebug) call MIO_Print('DEBUG: About to call remove_duplicate_G_vectors with NG=' &
-        //trim(adjustl(num2str(real(NG,dp),0))),'diag')
+  call MIO_PrintDebug('About to call remove_duplicate_G_vectors with NG='  //trim(adjustl(num2str(real(NG,dp),0))), &
+    'diag', tapwDebug)
   initial_NG = NG
   call remove_duplicate_G_vectors(Gx, Gy, NG)
-  if (tapwDebug) call MIO_Print('DEBUG: After remove_duplicate_G_vectors, NG='//trim(adjustl(num2str(real(NG,dp),0))),'diag')
+  call MIO_PrintDebug('After remove_duplicate_G_vectors, NG='//trim(adjustl(num2str(real(NG,dp),0))),'diag', &
+    tapwDebug)
   if (NG /= initial_NG) then
-     call MIO_Print('G-vector uniqueness: '//trim(adjustl(num2str(real(initial_NG,dp),0)))//&
-                    ' → '//trim(adjustl(num2str(real(NG,dp),0)))//' (removed '//&
-                    trim(adjustl(num2str(real(initial_NG-NG,dp),0)))//' duplicates)','diag')
+     call MIO_PrintDebug('G-vector uniqueness: '//trim(adjustl(num2str(real(initial_NG,dp),0)))// ' -> '// &
+       trim(adjustl(num2str(real(NG,dp),0)))//' (removed '// trim(adjustl(num2str(real(initial_NG-NG,dp),0)))// &
+       ' duplicates)','diag', tapwDebug)
   end if
 
   ! === FINAL: enforce Python-like order ===
   ! Sort by distance to G_nn first, then by angle for tie-breaking (matches Python behavior)
-  if (tapwDebug) call MIO_Print('DEBUG: Applying final canonical ordering (distance then angle)','diag')
+  call MIO_PrintDebug('Applying final canonical ordering (distance then angle)','diag', tapwDebug)
 
   allocate(sel_dist(NG), sel_ang(NG), perm(NG))
   do ii = 1, NG
@@ -8735,10 +8908,10 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
   call argsort_by_dist_then_angle(sel_dist, sel_ang, perm, NG)
   call apply_permutation_in_place(Gx, Gy, perm, NG)
 
-  if (tapwDebug) call MIO_Print('DEBUG: First 5 distances after final sort:','diag')
+  call MIO_PrintDebug('First 5 distances after final sort:','diag', tapwDebug)
   do ii = 1, min(5, NG)
-     call MIO_Print('  '//trim(adjustl(num2str(sel_dist(perm(ii)),6)))//'  ang=' &
-           //trim(adjustl(num2str(sel_ang(perm(ii)),6))),'diag')
+     call MIO_PrintDebug('  '//trim(adjustl(num2str(sel_dist(perm(ii)),6)))//'  ang=' &
+           //trim(adjustl(num2str(sel_ang(perm(ii)),6))),'diag', tapwDebug)
   end do
 
   deallocate(sel_dist, sel_ang, perm)
@@ -8749,7 +8922,7 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
   if (abs(gGridRotationAngle) > 1.0e-10_dp) then
      cos_rot = cos(rotation_angle)
      sin_rot = sin(rotation_angle)
-     call MIO_Print("G-grid rotation: "//trim(adjustl(num2str(gGridRotationAngle,3)))//" degrees",'diag')
+     call MIO_PrintDebug("G-grid rotation: "//trim(adjustl(num2str(gGridRotationAngle,3)))//" degrees",'diag', tapwDebug)
 
      do i = 1, NG
         Gx_rot = Gx(i)
@@ -8763,8 +8936,8 @@ call MIO_Print("  -> Method 1 (current) appears CORRECT: closer to grid_center",
   deallocate(Gpoints, distances, inverse, unique_distances)
 
   ! Essential info: G-vector generation summary
-  call MIO_Print('G-grid: Generated NG='//trim(adjustl(num2str(real(NG,dp),0)))//' vectors, NGrange=' &
-        //trim(adjustl(num2str(real(NGrange,dp),0))),'diag')
+  call MIO_PrintDebug('G-grid: Generated NG='//trim(adjustl(num2str(real(NG,dp),0)))//' vectors, NGrange=' &
+        //trim(adjustl(num2str(real(NGrange,dp),0))),'diag', tapwDebug)
 
   ! Output G-vectors for matplotlib visualization (thread-safe)
   ! Use critical section to avoid conflicts in parallel execution
@@ -8971,7 +9144,7 @@ subroutine generate_shifted_G_list_with_graphene_BZ(rcell, k_ref, NGrange, Gx, G
   double precision :: b1_moire(2), b2_moire(2), b1_graphene(2), b2_graphene(2)
   integer :: NG_before_filter, NG_after_filter, k, i
 
-  call MIO_Print('GRAPHENE BZ FILTERING: Using graphene reciprocal lattice for BZ boundaries','diag')
+  call MIO_PrintDebug('GRAPHENE BZ FILTERING: Using graphene reciprocal lattice for BZ boundaries','diag', tapwDebug)
 
   ! Get moiré reciprocal lattice vectors for G-vector generation
   b1_moire = rcell(1:2,1); b2_moire = rcell(1:2,2)
@@ -8979,12 +9152,12 @@ subroutine generate_shifted_G_list_with_graphene_BZ(rcell, k_ref, NGrange, Gx, G
   ! Get graphene reciprocal lattice vectors for BZ filtering
   b1_graphene = rG_graphene(:,1); b2_graphene = rG_graphene(:,2)
 
-  call MIO_Print('Moiré lattice vectors (for G-grid): b1=['//&
-                 trim(num2str(b1_moire(1),4))//','//trim(num2str(b1_moire(2),4))//&
-                 '], b2=['//trim(num2str(b2_moire(1),4))//','//trim(num2str(b2_moire(2),4))//']','diag')
-  call MIO_Print('Graphene lattice vectors (for BZ filter): b1=['//&
+  call MIO_PrintDebug('Moire lattice vectors (for G-grid): b1=['// trim(num2str(b1_moire(1),4))//','// &
+    trim(num2str(b1_moire(2),4))// '], b2=['//trim(num2str(b2_moire(1),4))//','//trim(num2str(b2_moire(2),4))//']', &
+    'diag', tapwDebug)
+  call MIO_PrintDebug('Graphene lattice vectors (for BZ filter): b1=['//&
                  trim(num2str(b1_graphene(1),4))//','//trim(num2str(b1_graphene(2),4))//&
-                 '], b2=['//trim(num2str(b2_graphene(1),4))//','//trim(num2str(b2_graphene(2),4))//']','diag')
+                 '], b2=['//trim(num2str(b2_graphene(1),4))//','//trim(num2str(b2_graphene(2),4))//']','diag', tapwDebug)
 
   ! First, generate G-vectors using moiré lattice (no filtering)
   call generate_shifted_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, center_point)
@@ -9004,17 +9177,17 @@ subroutine generate_shifted_G_list_with_graphene_BZ(rcell, k_ref, NGrange, Gx, G
   NG = NG_after_filter
 
   ! Report filtering results
-  call MIO_Print('GRAPHENE BZ FILTERING RESULTS:','diag')
-  call MIO_Print('  G-vectors before graphene BZ filter: '//trim(adjustl(num2str(real(NG_before_filter,dp),0))),'diag')
-  call MIO_Print('  G-vectors after graphene BZ filter: '//trim(adjustl(num2str(real(NG_after_filter,dp),0))),'diag')
-  call MIO_Print('  G-vectors removed: '//trim(adjustl(num2str(real(NG_before_filter-NG_after_filter,dp),0))),'diag')
+  call MIO_PrintDebug('GRAPHENE BZ FILTERING RESULTS:','diag', tapwDebug)
+  call MIO_PrintDebug('  G-vectors before graphene BZ filter: '//trim(adjustl(num2str(real(NG_before_filter,dp),0))),'diag', tapwDebug)
+  call MIO_PrintDebug('  G-vectors after graphene BZ filter: '//trim(adjustl(num2str(real(NG_after_filter,dp),0))),'diag', tapwDebug)
+  call MIO_PrintDebug('  G-vectors removed: '//trim(adjustl(num2str(real(NG_before_filter-NG_after_filter,dp),0))),'diag', tapwDebug)
   if (NG_before_filter > 0) then
-     call MIO_Print('  Efficiency gain: ' &
-           //trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag')
+     call MIO_PrintDebug('  Efficiency gain: ' &
+           //trim(adjustl(num2str(100.0_dp*(NG_before_filter-NG_after_filter)/NG_before_filter,1)))//'%','diag', tapwDebug)
   end if
 
   ! Output FILTERED G-vectors for matplotlib visualization (overwrites the unfiltered version)
-  call MIO_Print('Writing FILTERED G-vectors to g_vectors_debug.dat','diag')
+  call MIO_PrintDebug('Writing FILTERED G-vectors to g_vectors_debug.dat','diag', tapwDebug)
   ! Use critical section to avoid conflicts in parallel execution
   !$OMP CRITICAL(g_vectors_file)
   close(98, status='keep')
@@ -9068,20 +9241,20 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
   ! CRITICAL FIX: Convert k_ref from Cartesian to fractional coordinates in moiré lattice
   ! k_ref is the graphene K-point in Cartesian coordinates
   ! We need to express it in fractional coordinates of the moiré lattice for grid selection
-  call MIO_Print('k_ref (Cartesian): ['//trim(num2str(k_ref(1),6))//','//trim(num2str(k_ref(2),6))//']','diag')
+  call MIO_PrintDebug('k_ref (Cartesian): ['//trim(num2str(k_ref(1),6))//','//trim(num2str(k_ref(2),6))//']','diag', tapwDebug)
   call cart_to_frac_single_point(k_ref, bMvec, kkDvec_ind)
-  call MIO_Print('k_ref converted to fractional: ['//trim(num2str(kkDvec_ind(1),6))//','//trim(num2str(kkDvec_ind(2),6)) &
-        //']','diag')
+  call MIO_PrintDebug('k_ref converted to fractional: ['//trim(num2str(kkDvec_ind(1),6))//','//trim(num2str(kkDvec_ind(2),6)) &
+        //']','diag', tapwDebug)
 
   ! Set grid size following Python nsize logic
   ! NGrange now controls the density of the G-vector grid (like nsize in Python)
   N1 = NGrange  ! Direct correspondence to Python nsize[0]
   N2 = NGrange  ! Direct correspondence to Python nsize[1]
 
-  call MIO_Print('=== Python-style triangular G-vector generation ===','diag')
-  call MIO_Print('Grid size: ['//trim(num2str(N1))//','//trim(num2str(N2))//']','diag')
-  call MIO_Print('Valley position (frac): ['//trim(num2str(kkDvec_ind(1),6))//','//trim(num2str(kkDvec_ind(2),6))//']','diag')
-  call MIO_Print('Triangle ratio: '//trim(num2str(ratio,3)),'diag')
+  call MIO_PrintDebug('=== Python-style triangular G-vector generation ===','diag', tapwDebug)
+  call MIO_PrintDebug('Grid size: ['//trim(num2str(N1))//','//trim(num2str(N2))//']','diag', tapwDebug)
+  call MIO_PrintDebug('Valley position (frac): ['//trim(num2str(kkDvec_ind(1),6))//','//trim(num2str(kkDvec_ind(2),6))//']','diag', tapwDebug)
+  call MIO_PrintDebug('Triangle ratio: '//trim(num2str(ratio,3)),'diag', tapwDebug)
 
   ! Python: G_frac = np.meshgrid(np.fft.ifftshift(np.arange(-N2,N2)), np.fft.ifftshift(np.arange(-N1,N1)))
   ! np.fft.ifftshift for arange(-N,N) gives: [0, 1, 2, ..., N-1, -N, -N+1, ..., -1]
@@ -9102,18 +9275,18 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
      end do
   end do
 
-  call MIO_Print('Generated '//trim(num2str(total_G))//' G-vectors in fractional coordinates','diag')
-  call MIO_Print('G-grid range: ['//trim(num2str(minval(G_frac(1,:)),2))//','//trim(num2str(minval(G_frac(2,:)),2))//'] to ['// &
-                 trim(num2str(maxval(G_frac(1,:)),2))//','//trim(num2str(maxval(G_frac(2,:)),2))//']','diag')
+  call MIO_PrintDebug('Generated '//trim(num2str(total_G))//' G-vectors in fractional coordinates','diag', tapwDebug)
+  call MIO_PrintDebug('G-grid range: ['//trim(num2str(minval(G_frac(1,:)),2))//','//trim(num2str(minval(G_frac(2,:)),2))//'] to ['// &
+                 trim(num2str(maxval(G_frac(1,:)),2))//','//trim(num2str(maxval(G_frac(2,:)),2))//']','diag', tapwDebug)
 
   ! Set up moiré reciprocal lattice vectors (bMvec in Python)
   ! rcell uses column storage: rcell(:,i) = i-th vector
   bMvec(:,1) = rcell(1:2, 1)  ! First moiré reciprocal vector
   bMvec(:,2) = rcell(1:2, 2)  ! Second moiré reciprocal vector
 
-  call MIO_Print('Moiré reciprocal lattice vectors:','diag')
-  call MIO_Print('  b1 = ['//trim(num2str(bMvec(1,1),6))//','//trim(num2str(bMvec(2,1),6))//']','diag')
-  call MIO_Print('  b2 = ['//trim(num2str(bMvec(1,2),6))//','//trim(num2str(bMvec(2,2),6))//']','diag')
+  call MIO_PrintDebug('Moire reciprocal lattice vectors:','diag', tapwDebug)
+  call MIO_PrintDebug('  b1 = ['//trim(num2str(bMvec(1,1),6))//','//trim(num2str(bMvec(2,1),6))//']','diag', tapwDebug)
+  call MIO_PrintDebug('  b2 = ['//trim(num2str(bMvec(1,2),6))//','//trim(num2str(bMvec(2,2),6))//']','diag', tapwDebug)
 
   ! CORRECT APPROACH: Use alternating corners of graphene BZ, shifted to K-point
   ! This follows your exact instructions and uses the proper graphene BZ geometry
@@ -9140,23 +9313,22 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
   ! Count selected G-vectors
   selected_count = count(G_selected)
 
-  call MIO_Print('Triangular selection results:','diag')
-  call MIO_Print('  Total G-vectors: '//trim(num2str(total_G)),'diag')
-  call MIO_Print('  Selected G-vectors: '//trim(num2str(selected_count)),'diag')
-  call MIO_Print('  Selection efficiency: '//trim(num2str(100.0_dp*selected_count/total_G,1))//'%','diag')
+  call MIO_PrintDebug('Triangular selection results:','diag', tapwDebug)
+  call MIO_PrintDebug('  Total G-vectors: '//trim(num2str(total_G)),'diag', tapwDebug)
+  call MIO_PrintDebug('  Selected G-vectors: '//trim(num2str(selected_count)),'diag', tapwDebug)
+  call MIO_PrintDebug('  Selection efficiency: '//trim(num2str(100.0_dp*selected_count/total_G,1))//'%','diag', tapwDebug)
 
   if (selected_count == 0) then
-     call MIO_Print('ERROR: No G-vectors selected by triangular truncation!','diag')
-     call MIO_Print('This will cause M=0 and matrix dimension errors.','diag')
-     call MIO_Print('Check BZ triangle calculation or increase grid size.','diag')
-     error stop 1
+     call MIO_Warning('No G-vectors selected by triangular truncation!','diag')
+     call MIO_Warning('This will cause M=0 and matrix dimension errors.','diag')
+     call MIO_Kill('Check BZ triangle calculation or increase grid size.','diag','generate_triangular_G_list')
   end if
 
   ! OPTIONAL DISTANCE-BASED ORDERING: Match generate_shifted_G_list_reduced approach
   allocate(Gx(selected_count), Gy(selected_count))
 
   if (do_distance_sort) then
-     call MIO_Print('TRIANGULAR: Using distance-based G-vector ordering (matching hexagonal method)','diag')
+     call MIO_PrintDebug('TRIANGULAR: Using distance-based G-vector ordering (matching hexagonal method)','diag', tapwDebug)
 
      ! Allocate temporary arrays for distance-based sorting
      allocate(temp_Gx(selected_count), temp_Gy(selected_count))
@@ -9206,7 +9378,7 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
      deallocate(temp_Gx, temp_Gy, distances, sorted_indices)
 
   else
-     call MIO_Print('TRIANGULAR: Using original grid-order G-vector ordering (Python-like)','diag')
+     call MIO_PrintDebug('TRIANGULAR: Using original grid-order G-vector ordering (Python-like)','diag', tapwDebug)
 
      ! Original approach: copy G-vectors in grid generation order
      idx = 0
@@ -9224,30 +9396,32 @@ subroutine generate_triangular_G_list(rcell, k_ref, NGrange, Gx, Gy, NG, rG, use
 
   if (do_distance_sort) then
      if (tapwDebug) then
-        call MIO_Print('Generated '//trim(num2str(NG)) &
-              //' G-vectors using triangular truncation with distance-based ordering','diag')
-        call MIO_Print('First 5 G-vectors (distance-sorted):','diag')
+        call MIO_PrintDebug('Generated '//trim(num2str(NG))  // &
+          ' G-vectors using triangular truncation with distance-based ordering','diag', tapwDebug)
+        call MIO_PrintDebug('First 5 G-vectors (distance-sorted):','diag', tapwDebug)
         do i = 1, min(5, NG)
            ! Recalculate distance for debug output
            dx = Gx(i) - k_ref(1)
            dy = Gy(i) - k_ref(2)
            temp_dist = sqrt(dx*dx + dy*dy)
-           call MIO_Print('  G('//trim(num2str(i))//') distance='//&
-                         trim(num2str(temp_dist,6))//' = ['//trim(num2str(Gx(i),6))//','//trim(num2str(Gy(i),6))//']','diag')
+           call MIO_PrintDebug('  G('//trim(num2str(i))//') distance='// trim(num2str(temp_dist,6))//' = ['// &
+             trim(num2str(Gx(i),6))//','//trim(num2str(Gy(i),6))//']','diag', tapwDebug)
         end do
      end if
   else
      if (tapwDebug) then
-        call MIO_Print('Generated '//trim(num2str(NG))//' G-vectors using triangular truncation with grid-order','diag')
-        call MIO_Print('First 5 G-vectors (grid-order):','diag')
+        call MIO_PrintDebug('Generated '//trim(num2str(NG))//' G-vectors using triangular truncation with grid-order', &
+          'diag', tapwDebug)
+        call MIO_PrintDebug('First 5 G-vectors (grid-order):','diag', tapwDebug)
         do i = 1, min(5, NG)
-           call MIO_Print('  G('//trim(num2str(i))//') = ['//trim(num2str(Gx(i),6))//','//trim(num2str(Gy(i),6))//']','diag')
+           call MIO_PrintDebug('  G('//trim(num2str(i))//') = ['//trim(num2str(Gx(i),6))//','// &
+             trim(num2str(Gy(i),6))//']','diag', tapwDebug)
         end do
      end if
   end if
 
   ! Output G-vectors for matplotlib visualization
-  call MIO_Print('Writing triangular G-vectors to g_vectors_triangular.dat','diag')
+  call MIO_PrintDebug('Writing triangular G-vectors to g_vectors_triangular.dat','diag', tapwDebug)
   open(unit=199, file='g_vectors_triangular.dat', status='replace')
   write(199, '(A)') '# Triangular G-vectors (Gx, Gy) for matplotlib plotting'
   write(199, '(A,I0)') '# Number of G-vectors: ', NG
@@ -9373,7 +9547,7 @@ subroutine create_triangle_from_graphene_BZ(k_ref_cart, ratio, triangle_frac, rG
   integer :: alternating_indices(3)
   integer :: i
 
-  call MIO_Print('Creating triangle from alternating graphene BZ corners (CORRECT approach)','diag')
+  call MIO_PrintDebug('Creating triangle from alternating graphene BZ corners (CORRECT approach)','diag', tapwDebug)
 
   ! Use graphene reciprocal lattice vectors (same as in the debug file generation)
   b1 = rG(:,1)
@@ -9387,19 +9561,19 @@ subroutine create_triangle_from_graphene_BZ(k_ref_cart, ratio, triangle_frac, rG
   bz_vertices(5,:) = -(b1 - b2) / 3.0_dp            ! Next vertex
   bz_vertices(6,:) = (b1 + 2.0_dp*b2) / 3.0_dp     ! K' point
 
-  call MIO_Print('Graphene BZ vertices (Cartesian):','diag')
+  call MIO_PrintDebug('Graphene BZ vertices (Cartesian):','diag', tapwDebug)
   do i = 1, 6
-     call MIO_Print('  BZ('//trim(num2str(i))//') = ['//trim(num2str(bz_vertices(i,1),6))//','// &
-                    trim(num2str(bz_vertices(i,2),6))//']','diag')
+     call MIO_PrintDebug('  BZ('//trim(num2str(i))//') = ['//trim(num2str(bz_vertices(i,1),6))//','// &
+                    trim(num2str(bz_vertices(i,2),6))//']','diag', tapwDebug)
   end do
 
   ! Select alternating corners to form triangle (1/6 of hexagon)
   if (useKprimeValley) then
      alternating_indices = [1, 3, 5]  ! Select alternating vertices for K' valley
-     call MIO_Print('Using K'' valley triangular indices: [1, 3, 5]','diag')
+     call MIO_PrintDebug('Using K'' valley triangular indices: [1, 3, 5]','diag', tapwDebug)
   else
      alternating_indices = [2, 4, 6]  ! Skip vertex 1 (K-point), take alternating ones for K valley
-     call MIO_Print('Using K valley triangular indices: [2, 4, 6]','diag')
+     call MIO_PrintDebug('Using K valley triangular indices: [2, 4, 6]','diag', tapwDebug)
   end if
 
   do i = 1, 3
@@ -9412,19 +9586,19 @@ subroutine create_triangle_from_graphene_BZ(k_ref_cart, ratio, triangle_frac, rG
      triangle_cart(i, 2) = triangle_cart(i, 2) + k_ref_cart(2)
   end do
 
-  call MIO_Print('Triangle corners (Cartesian, shifted to K-point):','diag')
+  call MIO_PrintDebug('Triangle corners (Cartesian, shifted to K-point):','diag', tapwDebug)
   do i = 1, 3
-     call MIO_Print('  Triangle('//trim(num2str(i))//') = ['//trim(num2str(triangle_cart(i,1),6))//','// &
-                    trim(num2str(triangle_cart(i,2),6))//']','diag')
+     call MIO_PrintDebug('  Triangle('//trim(num2str(i))//') = ['//trim(num2str(triangle_cart(i,1),6))//','// &
+                    trim(num2str(triangle_cart(i,2),6))//']','diag', tapwDebug)
   end do
 
   ! Convert triangle corners to fractional coordinates in moiré lattice
   call cart_to_frac_multiple_points(triangle_cart, 3, bMvec, triangle_frac)
 
-  call MIO_Print('Triangle corners (fractional in moiré lattice):','diag')
+  call MIO_PrintDebug('Triangle corners (fractional in moire lattice):','diag', tapwDebug)
   do i = 1, 3
-     call MIO_Print('  Triangle_frac('//trim(num2str(i))//') = ['//trim(num2str(triangle_frac(i,1),6))//','// &
-                    trim(num2str(triangle_frac(i,2),6))//']','diag')
+     call MIO_PrintDebug('  Triangle_frac('//trim(num2str(i))//') = ['//trim(num2str(triangle_frac(i,1),6))//','// &
+                    trim(num2str(triangle_frac(i,2),6))//']','diag', tapwDebug)
   end do
 
 end subroutine create_triangle_from_graphene_BZ
@@ -9449,7 +9623,7 @@ subroutine cart_to_frac_coords(cart_coords, basis_vectors, frac_coords)
   det = basis_vectors(1,1) * basis_vectors(2,2) - basis_vectors(1,2) * basis_vectors(2,1)
 
   if (abs(det) < 1.0e-12_dp) then
-     call MIO_Print('Warning: Singular basis vectors matrix in cart_to_frac_coords','diag')
+     call MIO_Warning('Singular basis vectors matrix in cart_to_frac_coords','diag')
      frac_coords = cart_coords  ! Fallback
 #ifdef DEBUG
      call MIO_Debug('cart_to_frac_coords',1)
@@ -9490,7 +9664,7 @@ subroutine cart_to_frac_multiple_points(cart_points, n_points, basis_vectors, fr
   det = basis_vectors(1,1) * basis_vectors(2,2) - basis_vectors(1,2) * basis_vectors(2,1)
 
   if (abs(det) < 1.0e-12_dp) then
-     call MIO_Print('Warning: Singular basis vectors matrix in cart_to_frac_multiple_points','diag')
+     call MIO_Warning('Singular basis vectors matrix in cart_to_frac_multiple_points','diag')
      frac_points = cart_points  ! Fallback
      return
   end if
@@ -9522,7 +9696,7 @@ subroutine cart_to_frac_single_point(cart_point, basis_vectors, frac_point)
   det = basis_vectors(1,1) * basis_vectors(2,2) - basis_vectors(1,2) * basis_vectors(2,1)
 
   if (abs(det) < 1.0e-12_dp) then
-     call MIO_Print('Warning: Singular basis vectors matrix in cart_to_frac_single_point','diag')
+     call MIO_Warning('Singular basis vectors matrix in cart_to_frac_single_point','diag')
      frac_point = cart_point  ! Fallback
      return
   end if
@@ -9570,7 +9744,8 @@ subroutine compute_unique_labels(labels, N, num_unique)
   deallocate(unique_labels)
 
 #ifdef DEBUG
-  print *, "Found", num_unique, "unique layer×sublattice combinations"
+  write(dbgmsg,'(*(g0,1x))') "Found", num_unique, "unique layerxsublattice combinations"
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 #endif /* DEBUG */
 end subroutine compute_unique_labels
 
@@ -9616,9 +9791,10 @@ subroutine remap_labels_to_contiguous(labels, N, num_unique)
 
   ! Debug output
 #ifdef DEBUG
-  call MIO_Print("Label mapping (original -> contiguous):",'diag')
+  call MIO_PrintDebug("Label mapping (original -> contiguous):",'diag', tapwDebug)
   do i = 1, num_unique
-     print *, "  ", unique_labels(i), "->", i
+     write(dbgmsg,'(*(g0,1x))') unique_labels(i), "->", i
+     call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
   end do
 #endif /* DEBUG */
 
@@ -9643,28 +9819,28 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
 
   ! Validate CSR size
   if (size(row_ptr) /= N+1) then
-     call MIO_Print("ERROR: row_ptr size mismatch!",'diag')
-     print *, "ERROR: row_ptr has", size(row_ptr), "entries but should have", N+1
-     call MIO_Print("ERROR: This will cause array bounds violations in sparse multiplication",'diag')
-     error stop "row_ptr size mismatch in transform_sparse_hamiltonian"
+     call MIO_Warning("row_ptr size mismatch!",'diag')
+     write(dbgmsg,'(*(g0,1x))') "ERROR: row_ptr has", size(row_ptr), "entries but should have", N+1
+     call MIO_Warning(trim(dbgmsg),'diag')
+     call MIO_Kill("This will cause array bounds violations in sparse multiplication",'diag','transform_sparse_hamiltonian')
   endif
 
   nnz = row_ptr(N+1) - 1
   if (size(values) < nnz) then
-     print *, "ERROR: size(values) <", nnz
-     error stop "CSR format inconsistency: not enough values"
+     write(dbgmsg,'(*(g0,1x))') "ERROR: size(values) <", nnz
+     call MIO_Kill(trim(dbgmsg),'diag','transform_sparse_hamiltonian')
   endif
   if (maxval(col_ind(1:nnz)) > N) then
-     print *, "ERROR: max(col_ind) >", N
-     error stop "col_ind contains out-of-bounds indices for X"
+     write(dbgmsg,'(*(g0,1x))') "ERROR: max(col_ind) >", N
+     call MIO_Kill(trim(dbgmsg),'diag','transform_sparse_hamiltonian')
   endif
 
   ! Validate matrix dimensions
   if (size(X,1) /= N) then
-     call MIO_Print("ERROR: Matrix dimension mismatch!",'diag')
-     print *, "ERROR: X matrix has", size(X,1), "rows but sparse matrix H has", N, "rows"
-     call MIO_Print("ERROR: This will cause incorrect matrix multiplication",'diag')
-     error stop "Matrix dimension mismatch in transform_sparse_hamiltonian"
+     call MIO_Warning("Matrix dimension mismatch!",'diag')
+     write(dbgmsg,'(*(g0,1x))') "ERROR: X matrix has", size(X,1), "rows but sparse matrix H has", N, "rows"
+     call MIO_Warning(trim(dbgmsg),'diag')
+     call MIO_Kill("This will cause incorrect matrix multiplication",'diag','transform_sparse_hamiltonian')
   endif
 
   ! Allocate Y = H * X
@@ -9675,12 +9851,12 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
      do k = row_ptr(i), row_ptr(i+1) - 1
         j = col_ind(k)
         if (j < 1 .or. j > N) then
-           print *, "ERROR: j = col_ind(k) = ", j, " out of bounds at i=", i, " k=", k
-           error stop 1
+           write(dbgmsg,'(*(g0,1x))') "ERROR: j = col_ind(k) =", j, " out of bounds at i=", i, " k=", k
+           call MIO_Kill(trim(dbgmsg),'diag','transform_sparse_hamiltonian')
         endif
         if (k < 1 .or. k > size(values)) then
-           print *, "ERROR: k=", k, " out of bounds (values size=", size(values), ")"
-           error stop 1
+           write(dbgmsg,'(*(g0,1x))') "ERROR: k=", k, " out of bounds (values size=", size(values), ")"
+           call MIO_Kill(trim(dbgmsg),'diag','transform_sparse_hamiltonian')
         endif
      end do
   end do
@@ -9705,56 +9881,78 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
   !$OMP END PARALLEL DO
 
   ! Debug: Check sparse matrix structure
-  call MIO_Print("Debug: Sparse matrix info:",'diag')
-  print *, "Debug: N =", N, "M =", M
-  print *, "Debug: row_ptr range:", row_ptr(1), "to", row_ptr(N+1)
-  print *, "Debug: col_ind range:", minval(col_ind(1:row_ptr(N+1)-1)), "to", maxval(col_ind(1:row_ptr(N+1)-1))
-  print *, "Debug: First few row_ptr entries:", (row_ptr(i), i=1,min(10,N+1))
-  print *, "Debug: First few col_ind entries:", (col_ind(i), i=1,min(10,row_ptr(N+1)-1))
-  print *, "Debug: First few values:", (values(i), i=1,min(10,row_ptr(N+1)-1))
+  call MIO_PrintDebug("Sparse matrix info:",'diag')
+  write(dbgmsg,'(*(g0,1x))') "N =", N, "M =", M
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "row_ptr range:", row_ptr(1), "to", row_ptr(N+1)
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "col_ind range:", minval(col_ind(1:row_ptr(N+1)-1)), "to", &
+    maxval(col_ind(1:row_ptr(N+1)-1))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "First few row_ptr entries:", (row_ptr(i), i=1,min(10,N+1))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "First few col_ind entries:", (col_ind(i), i=1,min(10,row_ptr(N+1)-1))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "First few values:", (values(i), i=1,min(10,row_ptr(N+1)-1))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! Debug: Check if Y calculation is reasonable
-  call MIO_Print("Debug: After Y = H * X calculation:",'diag')
-  print *, "Debug: Max |values| in sparse matrix:", maxval(abs(values))
-  print *, "Debug: Max |X| element used in multiplication:", maxval(abs(X))
-  print *, "Debug: Expected max |Y| should be around:", maxval(abs(values)) * maxval(abs(X)) * maxval(row_ptr(2:N+1) - row_ptr(1:N))
+  call MIO_PrintDebug("After Y = H * X calculation:",'diag')
+  write(dbgmsg,'(*(g0,1x))') "Max |values| in sparse matrix:", maxval(abs(values))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Max |X| element used in multiplication:", maxval(abs(X))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Expected max |Y| should be around:", &
+    maxval(abs(values)) * maxval(abs(X)) * maxval(row_ptr(2:N+1) - row_ptr(1:N))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! Debug: Check intermediate result Y = H * X
-  print *, "Intermediate Y matrix size:", size(Y,1), "x", size(Y,2)
-  print *, "Max |Y|:", maxval(abs(Y))
-  print *, "Min |Y|:", minval(abs(Y))
-  print *, "Y diagonal elements (first 10):", (abs(Y(i,i)), i=1,min(10,N))
+  write(dbgmsg,'(*(g0,1x))') "Intermediate Y matrix size:", size(Y,1), "x", size(Y,2)
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Max |Y|:", maxval(abs(Y))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Min |Y|:", minval(abs(Y))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Y diagonal elements (first 10):", (abs(Y(i,i)), i=1,min(10,N))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
          ! Compute Hproj = X^† * Y
        ! Debug: Check matrix values before multiplication
-       print *, "Debug: Original max values - X:", maxval(abs(X)), "Y:", maxval(abs(Y))
+       write(dbgmsg,'(*(g0,1x))') "Original max values - X:", maxval(abs(X)), "Y:", maxval(abs(Y))
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
 
        ! Debug: Check matrices before zgemm
-       call MIO_Print("Debug: Before zgemm call:",'diag')
-       print *, "Debug: X matrix shape:", shape(X), "leading dimension:", N
-       print *, "Debug: Y matrix shape:", shape(Y), "leading dimension:", N
-       print *, "Debug: Hproj matrix shape:", shape(Hproj), "leading dimension:", M
-       print *, "Debug: zgemm parameters: 'C', 'N',", M, M, N
+       call MIO_PrintDebug("Before zgemm call:",'diag')
+       write(dbgmsg,'(*(g0,1x))') "X matrix shape:", shape(X), "leading dimension:", N
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
+       write(dbgmsg,'(*(g0,1x))') "Y matrix shape:", shape(Y), "leading dimension:", N
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
+       write(dbgmsg,'(*(g0,1x))') "Hproj matrix shape:", shape(Hproj), "leading dimension:", M
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
+       write(dbgmsg,'(*(g0,1x))') "zgemm parameters: 'C', 'N',", M, M, N
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
 
        ! Matrix multiplication: Hproj = X^† * Y
        ! First try with transpose 'C' (conjugate transpose)
        call zgemm('C', 'N', M, M, N, cmplx_1, X, N, Y, N, cmplx_0, Hproj, M)
 
        ! Debug: Check result with transpose
-       call MIO_Print("Debug: After zgemm('C') call:",'diag')
-       print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
+       call MIO_PrintDebug("After zgemm('C') call:",'diag')
+       write(dbgmsg,'(*(g0,1x))') "Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
 
        ! If that fails, try without transpose 'N' (no transpose)
        if (maxval(abs(Hproj)) == 0.0_dp) then
-          call MIO_Print("Debug: Transpose failed, trying without transpose...",'diag')
+          call MIO_PrintDebug("Transpose failed, trying without transpose...",'diag')
           call zgemm('N', 'N', M, M, N, cmplx_1, X, N, Y, N, cmplx_0, Hproj, M)
-          call MIO_Print("Debug: After zgemm('N') call:",'diag')
-          print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
+          call MIO_PrintDebug("After zgemm('N') call:",'diag')
+          write(dbgmsg,'(*(g0,1x))') "Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
        endif
 
        ! If both zgemm calls fail, try manual matrix multiplication
        if (maxval(abs(Hproj)) == 0.0_dp) then
-          call MIO_Print("Debug: Both zgemm calls failed, trying manual multiplication...",'diag')
+          call MIO_PrintDebug("Both zgemm calls failed, trying manual multiplication...",'diag')
           Hproj = (0.0_dp, 0.0_dp)
           do i = 1, M
              do j = 1, M
@@ -9763,20 +9961,27 @@ subroutine transform_sparse_hamiltonian(N, M, row_ptr, col_ind, values, X, Hproj
                 end do
              end do
           end do
-          call MIO_Print("Debug: After manual multiplication:",'diag')
-          print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
+          call MIO_PrintDebug("After manual multiplication:",'diag')
+          write(dbgmsg,'(*(g0,1x))') "Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
+          call MIO_PrintDebug(trim(dbgmsg),'diag')
        endif
 
        ! Debug: Check result immediately after zgemm
-       call MIO_Print("Debug: After zgemm call:",'diag')
-       print *, "Debug: Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
-       print *, "Debug: Hproj first few diagonal elements:", (abs(Hproj(i,i)), i=1,min(5,M))
+       call MIO_PrintDebug("After zgemm call:",'diag')
+       write(dbgmsg,'(*(g0,1x))') "Hproj max/min:", maxval(abs(Hproj)), minval(abs(Hproj))
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
+       write(dbgmsg,'(*(g0,1x))') "Hproj first few diagonal elements:", (abs(Hproj(i,i)), i=1,min(5,M))
+       call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   ! Debug: Check final projected Hamiltonian
-  print *, "Final Hproj matrix size:", size(Hproj,1), "x", size(Hproj,2)
-  print *, "Max |Hproj|:", maxval(abs(Hproj))
-  print *, "Min |Hproj|:", minval(abs(Hproj))
-  print *, "Hproj diagonal elements (first 10):", (real(Hproj(i,i)), i=1,min(10,M))
+  write(dbgmsg,'(*(g0,1x))') "Final Hproj matrix size:", size(Hproj,1), "x", size(Hproj,2)
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Max |Hproj|:", maxval(abs(Hproj))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Min |Hproj|:", minval(abs(Hproj))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
+  write(dbgmsg,'(*(g0,1x))') "Hproj diagonal elements (first 10):", (real(Hproj(i,i)), i=1,min(10,M))
+  call MIO_PrintDebug(trim(dbgmsg),'diag')
 
   deallocate(Y)
 end subroutine transform_sparse_hamiltonian
@@ -9811,7 +10016,7 @@ subroutine GWeightsWrite(M, NG, Nlabel, Gx, Gy, U, ev, ik, kvec)
         write(gw_unit,'(a)') '# ik kx ky band E[eV] sum_w  then (iG weight) x top, largest first'
      end if
   end if
-  if (NG /= gw_ng) call MIO_Print('WARNING: Diag.GWeights: NG changed between k-points','diag')
+  if (NG /= gw_ng) call MIO_Warning('Diag.GWeights: NG changed between k-points','diag')
   do b = max(1, gw_b1), min(M, gw_b2)
      w = 0.0_dp
      do ig = 1, NG
@@ -9968,20 +10173,24 @@ subroutine build_X(X, xcoord, ycoord, label, Gx, Gy, N_orbit, N_G, N_label)
 
   if (tapwDebug) then
      ! Debug: Print label counts and normalizations
-     call MIO_Print("DEBUG: Label counts and normalizations in build_X:",'diag')
+     call MIO_PrintDebug("Label counts and normalizations in build_X:",'diag', tapwDebug)
      do i_label = 1, N_label
-        print *, "  Label ", i_label, ": count =", count(i_label), ", norm = 1/√count =", norm(i_label)
+        write(dbgmsg,'(*(g0,1x))') "Label", i_label, ": count =", count(i_label), ", norm = 1/sqrtcount =", &
+          norm(i_label)
+        call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
      end do
 
      ! Debug: Check X-matrix phases for first few elements
-     call MIO_Print("DEBUG: X-matrix phase factors (first 3 G-vectors, first 3 atoms):",'diag')
+     call MIO_PrintDebug("X-matrix phase factors (first 3 G-vectors, first 3 atoms):",'diag', tapwDebug)
      do i_G = 1, min(3, N_G)
         do i_orb = 1, min(3, N_orbit)
            if (label(i_orb) == 1) then  ! Only check first label
               G_dot_r = Gx(i_G) * xcoord(i_orb) + Gy(i_G) * ycoord(i_orb)
               phase = cmplx(0.0_dp, G_dot_r, kind=dp)
-              print *, "  G(", i_G, ") · r(", i_orb, ") =", G_dot_r
-              print *, "  exp(i*G·r) =", exp(phase)
+              write(dbgmsg,'(*(g0,1x))') "G(", i_G, ") . r(", i_orb, ") =", G_dot_r
+              call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+              write(dbgmsg,'(*(g0,1x))') "exp(i*G.r) =", exp(phase)
+              call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
            end if
         end do
      end do
@@ -10292,14 +10501,17 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
                   ! If no entry exists, add a new one
                   if (.not. found) then
                       if (l > nnz_temp) then
-                         print *, "CSR OVERFLOW: l =", l, " > nnz_temp =", nnz_temp
-                         error stop "Sparse matrix allocation overflow in initialize_sparse_matrix"
+                         write(dbgmsg,'(*(g0,1x))') "CSR OVERFLOW: l =", l, " > nnz_temp =", nnz_temp
+                         call MIO_Kill(trim(dbgmsg),'diag','initialize_sparse_matrix')
                       endif
                       ! Debug first few k-dependent phases for K-point analysis (now using NeighD)
                       if (tapwDebug .and. i <= 3 .and. j <= 2) then
-                         print *, "DEBUG: atom", i, "neighbor", j, ": R (from NeighD) =", R
-                         print *, "DEBUG: k·R =", dot_product(KLoc,R)
-                         print *, "DEBUG: exp(-i*k·R) =", exp(-cmplx_i*dot_product(KLoc,R))
+                         write(dbgmsg,'(*(g0,1x))') "atom", i, "neighbor", j, ": R (from NeighD) =", R
+                         call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+                         write(dbgmsg,'(*(g0,1x))') "k.R =", dot_product(KLoc,R)
+                         call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
+                         write(dbgmsg,'(*(g0,1x))') "exp(-i*k.R) =", exp(-cmplx_i*dot_product(KLoc,R))
+                         call MIO_PrintDebug(trim(dbgmsg),'diag', tapwDebug)
                       end if
                       ! CSR row i, column in holds element (i,in). The dense TAPW path writes -hopp(j,i)*exp(-ik.R) at
                       ! (in,i), so (i,in) is its Hermitian conjugate. Writing the unconjugated value here stored H^T = H*,
@@ -10322,10 +10534,14 @@ subroutine initialize_sparse_matrix(N, maxN, H0, hopp, NList, Nneigh, neighCell,
 
     ! Debug print for sparse matrix
 #ifdef DEBUG
-    print *, 'Sparse matrix row_ptr: ', row_ptr(1:min(N+1,10))
-    print *, 'Sparse matrix col_ind: ', col_ind(1:min(nnz_temp,10))
-    print *, 'Sparse matrix values: ', values(1:min(nnz,10))
-    print *, "CSR max l =", l-1, "allocated nnz_temp =", nnz_temp
+    write(dbgmsg,'(*(g0,1x))') 'Sparse matrix row_ptr:', row_ptr(1:min(N+1,10))
+    call MIO_PrintDebug(trim(dbgmsg),'diag')
+    write(dbgmsg,'(*(g0,1x))') 'Sparse matrix col_ind:', col_ind(1:min(nnz_temp,10))
+    call MIO_PrintDebug(trim(dbgmsg),'diag')
+    write(dbgmsg,'(*(g0,1x))') 'Sparse matrix values:', values(1:min(nnz,10))
+    call MIO_PrintDebug(trim(dbgmsg),'diag')
+    write(dbgmsg,'(*(g0,1x))') "CSR max l =", l-1, "allocated nnz_temp =", nnz_temp
+    call MIO_PrintDebug(trim(dbgmsg),'diag')
 #endif /* DEBUG */
 end subroutine initialize_sparse_matrix
 
@@ -10568,7 +10784,8 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
    ! Calculating Vxmn and Vymn
    eigvec = HLoc
    eigval = ELoc
-   print*, "eigval", eigval
+   write(dbgmsg,'(*(g0,1x))') "eigval", eigval
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
 
    Vxmn = matmul(matmul(transpose(eigvec), dHdx), eigvec)
    Vymn = matmul(matmul(transpose(eigvec), dHdy), eigvec)
@@ -10578,7 +10795,8 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
        Vxmn(j,j) = 0.0_dp
        Vymn(j,j) = 0.0_dp
    end do
-   print*, "Vxmn", Vxmn
+   write(dbgmsg,'(*(g0,1x))') "Vxmn", Vxmn
+   call MIO_PrintDebug(trim(dbgmsg),'diag')
 
    !! Calculating Chern
    forall(i=1:N, j=1:N) ones_matrix(i, j) = 1.0_dp
@@ -11798,28 +12016,28 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
    soc_enabled = .false.
    if (present(useSOC)) soc_enabled = useSOC
 
-   call MIO_Print('Implementing TAPW Berry curvature calculation using ANALYTICAL derivatives...','diag')
-   if (soc_enabled) call MIO_Print('SOC-enabled Chern calculation','diag')
-   call MIO_Print('E array dimensions: '//trim(num2str(size(E,1)))//' x '//trim(num2str(size(E,2)))//' x ' &
-         //trim(num2str(size(E,3))),'diag')
-   call MIO_Print('nAt = '//trim(num2str(nAt))//', nk = '//trim(num2str(nk)),'diag')
+   call MIO_PrintDebug('Implementing TAPW Berry curvature calculation using ANALYTICAL derivatives...','diag', tapwDebug)
+   if (soc_enabled) call MIO_PrintDebug('SOC-enabled Chern calculation','diag', tapwDebug)
+   call MIO_PrintDebug('E array dimensions: '//trim(num2str(size(E,1)))//' x '//trim(num2str(size(E,2)))//' x ' &
+         //trim(num2str(size(E,3))),'diag', tapwDebug)
+   call MIO_PrintDebug('nAt = '//trim(num2str(nAt))//', nk = '//trim(num2str(nk)),'diag', tapwDebug)
 
    ! Store k-points array for Option B Berry curvature calculation
    if (.not. allocated(stored_Kpts)) then
       allocate(stored_Kpts(3, nk))
       stored_Kpts = Kpts(:, 1:nk)  ! Store only the actual k-points (not the extra +1)
-      call MIO_Print('Stored k-points array for Option B Berry curvature calculation','diag')
+      call MIO_PrintDebug('Stored k-points array for Option B Berry curvature calculation','diag', tapwDebug)
 
       ! VERIFICATION: Check stored k-points
-      call MIO_Print('=== K-POINTS STORAGE VERIFICATION ===','diag')
-      call MIO_Print('Stored k-points dimensions: '//trim(num2str(size(stored_Kpts,1)))//'x' &
-            //trim(num2str(size(stored_Kpts,2))),'diag')
-      call MIO_Print('First k-point: ['//trim(num2str(stored_Kpts(1,1),6))//','//trim(num2str(stored_Kpts(2,1),6))//',' &
-            //trim(num2str(stored_Kpts(3,1),6))//']','diag')
-      if (nk > 1) call MIO_Print('Second k-point: ['//trim(num2str(stored_Kpts(1,2),6))//',' &
-            //trim(num2str(stored_Kpts(2,2),6))//','//trim(num2str(stored_Kpts(3,2),6))//']','diag')
-      call MIO_Print('Last k-point: ['//trim(num2str(stored_Kpts(1,nk),6))//','//trim(num2str(stored_Kpts(2,nk),6))//',' &
-            //trim(num2str(stored_Kpts(3,nk),6))//']','diag')
+      call MIO_PrintDebug('=== K-POINTS STORAGE VERIFICATION ===','diag', tapwDebug)
+      call MIO_PrintDebug('Stored k-points dimensions: '//trim(num2str(size(stored_Kpts,1)))//'x' &
+            //trim(num2str(size(stored_Kpts,2))),'diag', tapwDebug)
+      call MIO_PrintDebug('First k-point: ['//trim(num2str(stored_Kpts(1,1),6))//','//trim(num2str(stored_Kpts(2,1),6))//',' &
+            //trim(num2str(stored_Kpts(3,1),6))//']','diag', tapwDebug)
+      if (nk > 1) call MIO_PrintDebug('Second k-point: ['//trim(num2str(stored_Kpts(1,2),6))//',' &
+            //trim(num2str(stored_Kpts(2,2),6))//','//trim(num2str(stored_Kpts(3,2),6))//']','diag', tapwDebug)
+      call MIO_PrintDebug('Last k-point: ['//trim(num2str(stored_Kpts(1,nk),6))//','//trim(num2str(stored_Kpts(2,nk),6))//',' &
+            //trim(num2str(stored_Kpts(3,nk),6))//']','diag', tapwDebug)
    end if
 
    ! Make energy window and band selection method configurable
@@ -11830,9 +12048,9 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
    call MIO_InputParameter('Diag.ChernUseOptionA', use_option_a, .false.)
 
    if (use_option_a) then
-      call MIO_Print('*** USING OPTION A: Berry curvature in TB basis (colleague''s approach) ***','diag')
+      call MIO_PrintDebug('*** USING OPTION A: Berry curvature in TB basis (colleague''s approach) ***','diag', tapwDebug)
    else
-      call MIO_Print('*** USING OPTION B: Berry curvature in TAPW basis (default approach) ***','diag')
+      call MIO_PrintDebug('*** USING OPTION B: Berry curvature in TAPW basis (default approach) ***','diag', tapwDebug)
    end if
    call MIO_InputParameter('Diag.ChernBandsBelowFermi', n_bands_below_fermi, 30)
    call MIO_InputParameter('Diag.ChernBandsAboveFermi', n_bands_above_fermi, 30)
@@ -11843,8 +12061,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
    energy_window = energy_window_eV / g0  ! Convert energy window to internal units
    call MIO_Print('Fermi energy: '//trim(num2str(fermi_energy,6))//' eV = '// &
                  trim(num2str(fermi_energy_internal,6))//' (internal units)','diag')
-   call MIO_Print('Energy window: ±'//trim(num2str(energy_window*g0,3))//' eV = ±'// &
-                 trim(num2str(energy_window,6))//' (internal units)','diag')
+   call MIO_Print('Energy window: +-'//trim(num2str(energy_window*g0,3))//' eV = +-'// &
+     trim(num2str(energy_window,6))//' (internal units)','diag')
 
    ! For now, implement a placeholder that identifies bands near Fermi energy
    ! and sets up the structure for Berry curvature calculation
@@ -11855,19 +12073,19 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
    max_bands_near_fermi = min(size(E,1), max(n_chern_bands, n_bands_below_fermi + n_bands_above_fermi + 10))
 
    ! Debug: Show eigenvalue range at first k-point
-   call MIO_Print('Eigenvalue range at first k-point:','diag')
-   call MIO_Print('  First 10 eigenvalues: '//trim(num2str(E(1,1,1)*g0,3))//' to '//trim(num2str(E(10,1,1)*g0,3))//' eV','diag')
-   call MIO_Print('  Around band 100: '//trim(num2str(E(max(1,100),1,1)*g0,3))//' eV','diag')
-   call MIO_Print('  Around band 500: '//trim(num2str(E(min(size(E,1),500),1,1)*g0,3))//' eV','diag')
-   call MIO_Print('  Last few: '//trim(num2str(E(size(E,1)-2,1,1)*g0,3))//' to '//trim(num2str(E(size(E,1),1,1)*g0,3)) &
-         //' eV','diag')
+   call MIO_PrintDebug('Eigenvalue range at first k-point:','diag', tapwDebug)
+   call MIO_PrintDebug('  First 10 eigenvalues: '//trim(num2str(E(1,1,1)*g0,3))//' to '//trim(num2str(E(10,1,1)*g0,3))//' eV','diag', tapwDebug)
+   call MIO_PrintDebug('  Around band 100: '//trim(num2str(E(max(1,100),1,1)*g0,3))//' eV','diag', tapwDebug)
+   call MIO_PrintDebug('  Around band 500: '//trim(num2str(E(min(size(E,1),500),1,1)*g0,3))//' eV','diag', tapwDebug)
+   call MIO_PrintDebug('  Last few: '//trim(num2str(E(size(E,1)-2,1,1)*g0,3))//' to '//trim(num2str(E(size(E,1),1,1)*g0,3)) &
+         //' eV','diag', tapwDebug)
 
    ! Allocate band indices array
    allocate(band_indices(max_bands_near_fermi))
 
    if (use_all_occupied_bands) then
       ! Method 1: Include ALL bands below Fermi level (proper total Chern number)
-      call MIO_Print('Using ALL occupied bands (E < E_F) for total Chern number','diag')
+      call MIO_PrintDebug('Using ALL occupied bands (E < E_F) for total Chern number','diag', tapwDebug)
       ! only the stored_M TAPW bands are valid: E is zero-filled beyond them (counted as occupied when E_F > 0)
       if (stored_M > 0) then
          max_valid_band = min(stored_M, size(E,1))
@@ -11881,23 +12099,23 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
                n_bands_near_fermi = n_bands_near_fermi + 1
                if (n_bands_near_fermi <= max_bands_near_fermi) then
                   band_indices(n_bands_near_fermi) = iband
-                  call MIO_Print('  Including occupied band '//trim(num2str(iband))// &
-                                ': E = '//trim(num2str(E(iband,1,ik)*g0,6))//' eV','diag')
+                  call MIO_PrintDebug('  Including occupied band '//trim(num2str(iband))// &
+                                ': E = '//trim(num2str(E(iband,1,ik)*g0,6))//' eV','diag', tapwDebug)
                end if
                exit  ! Found this band, move to next
             end if
          end do
          if (n_bands_near_fermi >= max_bands_near_fermi) then
-            call MIO_Print('  Maximum number of bands reached: '//trim(num2str(max_bands_near_fermi)),'diag')
+            call MIO_PrintDebug('  Maximum number of bands reached: '//trim(num2str(max_bands_near_fermi)),'diag', tapwDebug)
             exit
          end if
       end do
    else if (n_bands_below_fermi > 0 .and. n_bands_above_fermi > 0) then
       ! Method 2: Include N bands below and above Fermi for convergent calculation
       ! This is the CORRECT approach for getting accurate Chern numbers of specific bands
-      call MIO_Print('Using '//trim(num2str(n_bands_below_fermi))//' bands below + '// &
-                    trim(num2str(n_bands_above_fermi))//' bands above Fermi for convergence','diag')
-      call MIO_Print('Will report Chern numbers for '//trim(num2str(n_target_bands))//' bands closest to Fermi','diag')
+      call MIO_PrintDebug('Using '//trim(num2str(n_bands_below_fermi))//' bands below + '// &
+                    trim(num2str(n_bands_above_fermi))//' bands above Fermi for convergence','diag', tapwDebug)
+      call MIO_PrintDebug('Will report Chern numbers for '//trim(num2str(n_target_bands))//' bands closest to Fermi','diag', tapwDebug)
 
       ! Find the band closest to Fermi energy at first k-point as reference
       ! CRITICAL FIX: Only search within valid TAPW bands [1, stored_M]
@@ -11913,7 +12131,7 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          max_valid_band = size(E,1)
       end if
 
-      call MIO_Print('Searching for Fermi band in valid range [1,'//trim(num2str(max_valid_band))//']','diag')
+      call MIO_PrintDebug('Searching for Fermi band in valid range [1,'//trim(num2str(max_valid_band))//']','diag', tapwDebug)
       do iband = 1, max_valid_band
          energy_diff = abs(E(iband,1,1) - fermi_energy_internal)
          if (energy_diff < min_energy_diff) then
@@ -11922,8 +12140,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          end if
       end do
 
-      call MIO_Print('Band closest to Fermi energy: '//trim(num2str(fermi_band_index))// &
-                    ' (E = '//trim(num2str(E(fermi_band_index,1,1)*g0,6))//' eV)','diag')
+      call MIO_PrintDebug('Band closest to Fermi energy: '//trim(num2str(fermi_band_index))// &
+                    ' (E = '//trim(num2str(E(fermi_band_index,1,1)*g0,6))//' eV)','diag', tapwDebug)
 
       ! Include bands in the range [fermi_band - n_below, fermi_band + n_above]
       ! CRITICAL FIX: Ensure end_band doesn't exceed stored_M (valid TAPW bands)
@@ -11935,23 +12153,23 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
       end if
 
       ! Debug: Show band range calculation
-      if (tapwDebug) call MIO_Print('DEBUG: Band range calculation:','diag')
-      call MIO_Print('  Requested: '//trim(num2str(n_bands_below_fermi))//' below + ' &
+      call MIO_PrintDebug('Band range calculation:','diag', tapwDebug)
+      call MIO_PrintDebug('  Requested: '//trim(num2str(n_bands_below_fermi))//' below + ' &
             //trim(num2str(n_bands_above_fermi))//' above = ' &
-            //trim(num2str(n_bands_below_fermi + n_bands_above_fermi + 1))//' total','diag')
-      call MIO_Print('  Fermi band index: '//trim(num2str(fermi_band_index)),'diag')
-      call MIO_Print('  Total bands available: '//trim(num2str(size(E,1))),'diag')
-      call MIO_Print('  Requested start_band: '//trim(num2str(fermi_band_index - n_bands_below_fermi)),'diag')
-      call MIO_Print('  Actual start_band: '//trim(num2str(start_band))//' (constrained by max(1, requested))','diag')
-      call MIO_Print('  Requested end_band: '//trim(num2str(fermi_band_index + n_bands_above_fermi)),'diag')
-      call MIO_Print('  Actual end_band: '//trim(num2str(end_band))//' (constrained by min(size(E,1), requested))','diag')
+            //trim(num2str(n_bands_below_fermi + n_bands_above_fermi + 1))//' total','diag', tapwDebug)
+      call MIO_PrintDebug('  Fermi band index: '//trim(num2str(fermi_band_index)),'diag', tapwDebug)
+      call MIO_PrintDebug('  Total bands available: '//trim(num2str(size(E,1))),'diag', tapwDebug)
+      call MIO_PrintDebug('  Requested start_band: '//trim(num2str(fermi_band_index - n_bands_below_fermi)),'diag', tapwDebug)
+      call MIO_PrintDebug('  Actual start_band: '//trim(num2str(start_band))//' (constrained by max(1, requested))','diag', tapwDebug)
+      call MIO_PrintDebug('  Requested end_band: '//trim(num2str(fermi_band_index + n_bands_above_fermi)),'diag', tapwDebug)
+      call MIO_PrintDebug('  Actual end_band: '//trim(num2str(end_band))//' (constrained by min(size(E,1), requested))','diag', tapwDebug)
 
       n_bands_near_fermi = end_band - start_band + 1
-      call MIO_Print('  Final band count: '//trim(num2str(n_bands_near_fermi)),'diag')
+      call MIO_PrintDebug('  Final band count: '//trim(num2str(n_bands_near_fermi)),'diag', tapwDebug)
 
       if (n_bands_near_fermi > max_bands_near_fermi) then
-         call MIO_Print('WARNING: Requested '//trim(num2str(n_bands_near_fermi))//' bands exceeds limit '// &
-                       trim(num2str(max_bands_near_fermi)),'diag')
+         call MIO_Warning('Requested '//trim(num2str(n_bands_near_fermi))//' bands exceeds limit '// &
+           trim(num2str(max_bands_near_fermi)),'diag')
          n_bands_near_fermi = max_bands_near_fermi
          end_band = start_band + max_bands_near_fermi - 1
       end if
@@ -11960,43 +12178,43 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          iband = start_band + i - 1
          ! Bounds check: ensure iband doesn't exceed available bands
          if (iband > size(E,1)) then
-            call MIO_Print('  ERROR: Calculated band index '//trim(num2str(iband))//' exceeds E array size ' &
+            call MIO_Warning('Calculated band index '//trim(num2str(iband))//' exceeds E array size ' &
                   //trim(num2str(size(E,1))),'diag')
-            call MIO_Print('    start_band='//trim(num2str(start_band))//', i='//trim(num2str(i)) &
-                  //', n_bands_near_fermi='//trim(num2str(n_bands_near_fermi)),'diag')
+            call MIO_PrintDebug('    start_band='//trim(num2str(start_band))//', i='//trim(num2str(i)) &
+                  //', n_bands_near_fermi='//trim(num2str(n_bands_near_fermi)),'diag', tapwDebug)
             ! Truncate to valid range
             n_bands_near_fermi = i - 1
             exit
          end if
          if (iband > stored_M .and. stored_M > 0) then
-            call MIO_Print('  WARNING: Band index '//trim(num2str(iband))//' exceeds stored_M='//trim(num2str(stored_M)) &
-                  //', will be excluded later','diag')
+            call MIO_Warning('Band index '//trim(num2str(iband))//' exceeds stored_M='//trim(num2str(stored_M))  // &
+              ', will be excluded later','diag')
          end if
          band_indices(i) = iband
          if (i <= 5 .or. i > n_bands_near_fermi - 5) then  ! Show first and last 5
-            call MIO_Print('  Including band '//trim(num2str(iband))// &
-                          ': E = '//trim(num2str(E(iband,1,1)*g0,6))//' eV','diag')
+            call MIO_PrintDebug('  Including band '//trim(num2str(iband))// &
+                          ': E = '//trim(num2str(E(iband,1,1)*g0,6))//' eV','diag', tapwDebug)
          else if (i == 6) then
-            call MIO_Print('  ... ('//trim(num2str(n_bands_near_fermi-10))//' more bands) ...','diag')
+            call MIO_PrintDebug('  ... ('//trim(num2str(n_bands_near_fermi-10))//' more bands) ...','diag', tapwDebug)
          end if
       end do
 
-      call MIO_Print('Total bands for calculation: '//trim(num2str(n_bands_near_fermi)),'diag')
-      call MIO_Print('Target bands for Chern reporting: '//trim(num2str(fermi_band_index-n_target_bands/2))// &
-                    ' to '//trim(num2str(fermi_band_index+n_target_bands/2)),'diag')
+      call MIO_PrintDebug('Total bands for calculation: '//trim(num2str(n_bands_near_fermi)),'diag', tapwDebug)
+      call MIO_PrintDebug('Target bands for Chern reporting: '//trim(num2str(fermi_band_index-n_target_bands/2))// &
+                    ' to '//trim(num2str(fermi_band_index+n_target_bands/2)),'diag', tapwDebug)
 
    else if (n_chern_bands > 0 .and. n_chern_bands <= size(E,1)) then
       ! Method 3: Include specific number of lowest bands (for isolated manifolds)
-      call MIO_Print('Using first '//trim(num2str(n_chern_bands))//' bands (isolated manifold)','diag')
+      call MIO_PrintDebug('Using first '//trim(num2str(n_chern_bands))//' bands (isolated manifold)','diag', tapwDebug)
       n_bands_near_fermi = n_chern_bands
       do i = 1, n_chern_bands
          band_indices(i) = i
-         call MIO_Print('  Including band '//trim(num2str(i))// &
-                       ': E = '//trim(num2str(E(i,1,1)*g0,6))//' eV (at Γ)','diag')
+         call MIO_PrintDebug('  Including band '//trim(num2str(i))//  ': E = '//trim(num2str(E(i,1,1)*g0,6))// &
+           ' eV (at Gamma)','diag', tapwDebug)
       end do
    else
       ! Method 3: Include bands in energy window around Fermi level
-      call MIO_Print('Using bands within ±'//trim(num2str(energy_window*g0,3))//' eV of Fermi level','diag')
+      call MIO_PrintDebug('Using bands within +-'//trim(num2str(energy_window*g0,3))//' eV of Fermi level','diag', tapwDebug)
       do iband = 1, min(size(E,1), 1000)
          ! Check this band at ALL k-points to see if it's ever near Fermi energy
          do ik = 1, nk
@@ -12004,27 +12222,27 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
                n_bands_near_fermi = n_bands_near_fermi + 1
                if (n_bands_near_fermi <= max_bands_near_fermi) then
                   band_indices(n_bands_near_fermi) = iband
-                  call MIO_Print('  Found band '//trim(num2str(iband))//' at k-point '//trim(num2str(ik))// &
-                                ': E = '//trim(num2str(E(iband,1,ik)*g0,6))//' eV','diag')
+                  call MIO_PrintDebug('  Found band '//trim(num2str(iband))//' at k-point '//trim(num2str(ik))// &
+                                ': E = '//trim(num2str(E(iband,1,ik)*g0,6))//' eV','diag', tapwDebug)
                end if
                exit  ! Found this band, move to next band
             end if
          end do
          if (n_bands_near_fermi >= max_bands_near_fermi) then
-            call MIO_Print('  Maximum number of bands reached: '//trim(num2str(max_bands_near_fermi)),'diag')
+            call MIO_PrintDebug('  Maximum number of bands reached: '//trim(num2str(max_bands_near_fermi)),'diag', tapwDebug)
             exit
          end if
       end do
    end if
 
-   call MIO_Print('Found '//trim(num2str(n_bands_near_fermi))//' bands near Fermi energy ('// &
-                 trim(num2str(fermi_energy,6))//' eV)','diag')
+   call MIO_PrintDebug('Found '//trim(num2str(n_bands_near_fermi))//' bands near Fermi energy ('// &
+                 trim(num2str(fermi_energy,6))//' eV)','diag', tapwDebug)
 
    if (n_bands_near_fermi >= 1) then
-      call MIO_Print('Will calculate Chern numbers for '//trim(num2str(n_bands_near_fermi))//' bands','diag')
+      call MIO_PrintDebug('Will calculate Chern numbers for '//trim(num2str(n_bands_near_fermi))//' bands','diag', tapwDebug)
       if (n_bands_near_fermi >= 2) then
-         call MIO_Print('First few bands: '//trim(num2str(band_indices(1)))//' to ' &
-               //trim(num2str(band_indices(min(n_bands_near_fermi,5)))),'diag')
+         call MIO_PrintDebug('First few bands: '//trim(num2str(band_indices(1)))//' to ' &
+               //trim(num2str(band_indices(min(n_bands_near_fermi,5)))),'diag', tapwDebug)
       end if
 
       ! Calculate area element for BZ integration (2D) - following Python approach
@@ -12034,15 +12252,16 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
       actual_BZ_area = areaG  ! Set the actual BZ area for sanity check
       dk = areaG / (nk_chern_x * nk_chern_y)  ! Area per k-point in reciprocal space
 
-      call MIO_Print('Using proper reciprocal lattice area for integration:','diag')
-      call MIO_Print('  Reciprocal lattice area (areaG) = '//trim(num2str(areaG,8)),'diag')
-      call MIO_Print('  dk (area per k-point) = '//trim(num2str(dk,8)),'diag')
-      call MIO_Print('  Ratio to (2π)²: '//trim(num2str(areaG/((2.0_dp*pi)**2),6)),'diag')
+      call MIO_PrintDebug('Using proper reciprocal lattice area for integration:','diag', tapwDebug)
+      call MIO_PrintDebug('  Reciprocal lattice area (areaG) = '//trim(num2str(areaG,8)),'diag', tapwDebug)
+      call MIO_PrintDebug('  dk (area per k-point) = '//trim(num2str(dk,8)),'diag', tapwDebug)
+      call MIO_PrintDebug('  Ratio to (2pi)^2: '//trim(num2str(areaG/((2.0_dp*pi)**2),6)),'diag', tapwDebug)
 
       ! DEBUG: Check integration area
-      if (tapwDebug) call MIO_Print('DEBUG: Integration area calculation:','diag')
-      call MIO_Print('  nk_chern_x × nk_chern_y = '//trim(num2str(nk_chern_x))//' × '//trim(num2str(nk_chern_y)),'diag')
-      call MIO_Print('  dk = '//trim(num2str(dk,8))//' (k-space area per point)','diag')
+      call MIO_PrintDebug('Integration area calculation:','diag', tapwDebug)
+      call MIO_PrintDebug('  nk_chern_x x nk_chern_y = '//trim(num2str(nk_chern_x))//' x '//trim(num2str(nk_chern_y)), &
+        'diag', tapwDebug)
+      call MIO_PrintDebug('  dk = '//trim(num2str(dk,8))//' (k-space area per point)','diag', tapwDebug)
 
       ! Initialize Chern numbers for all selected bands (per spin)
       allocate(chern_bands(n_bands_near_fermi))
@@ -12055,8 +12274,7 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
       ! For non-SOC calculations (nspin=1), this loop executes once
       ! For SOC calculations (nspin=2), this loop executes twice to calculate separately
       do is = 1, nspin
-         call MIO_Print('')
-         call MIO_Print('=== Calculating Chern numbers for spin channel '//trim(num2str(is))//' ===','diag')
+         call MIO_PrintDebug('=== Calculating Chern numbers for spin channel '//trim(num2str(is))//' ===','diag', tapwDebug)
 
          ! Reset Chern numbers for this spin channel
          chern_bands = 0.0_dp
@@ -12094,9 +12312,9 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          end do
 
          ! Debug: Show target band indices
-            call MIO_Print('DEBUG: Target band indices for spin '//trim(num2str(is))//' (file naming):','diag')
+            call MIO_PrintDebug('Target band indices for spin '//trim(num2str(is))//' (file naming):','diag')
          do i = 1, n_target_bands
-            call MIO_Print('  target_band_indices('//trim(num2str(i))//') = '//trim(num2str(target_band_indices(i))),'diag')
+            call MIO_PrintDebug('  target_band_indices('//trim(num2str(i))//') = '//trim(num2str(target_band_indices(i))),'diag', tapwDebug)
          end do
 
          deallocate(fermi_distances, sorted_indices)
@@ -12109,40 +12327,40 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
       end if
 
          ! Main Berry curvature calculation loop for this spin channel
-         call MIO_Print('Calculating Berry curvature at '//trim(num2str(nk))//' k-points for spin '//trim(num2str(is)) &
-               //'...','diag')
-      call MIO_Print('Processing '//trim(num2str(n_bands_near_fermi))//' bands','diag')
+         call MIO_PrintDebug('Calculating Berry curvature at '//trim(num2str(nk))//' k-points for spin '//trim(num2str(is)) &
+               //'...','diag', tapwDebug)
+      call MIO_PrintDebug('Processing '//trim(num2str(n_bands_near_fermi))//' bands','diag', tapwDebug)
 
       ! Area element already calculated above
 
       ! Memory-efficient: calculate Berry curvature one k-point at a time
       do ik = 1, nk
          if (modulo(ik, max(1, nk/4)) == 0) then
-            call MIO_Print('Berry curvature progress: '//trim(num2str(nint(100.0_dp*ik/nk)))//'%','diag')
+            call MIO_PrintDebug('Berry curvature progress: '//trim(num2str(nint(100.0_dp*ik/nk)))//'%','diag', tapwDebug)
          end if
 
          ! Calculate Berry curvature for all selected bands at this k-point
          if (ik == 1) then  ! Debug info for first k-point only
-            call MIO_Print('Debug: Calling CalculateBerryAtKpointFromStored with:','diag')
-            call MIO_Print('  n_bands_near_fermi: '//trim(num2str(n_bands_near_fermi)),'diag')
-            call MIO_Print('  band_indices size: '//trim(num2str(size(band_indices(1:n_bands_near_fermi)))),'diag')
-            call MIO_Print('  berry_curv_bands size: '//trim(num2str(size(berry_curv_bands))),'diag')
+            call MIO_PrintDebug('Calling CalculateBerryAtKpointFromStored with:','diag')
+            call MIO_PrintDebug('  n_bands_near_fermi: '//trim(num2str(n_bands_near_fermi)),'diag', tapwDebug)
+            call MIO_PrintDebug('  band_indices size: '//trim(num2str(size(band_indices(1:n_bands_near_fermi)))),'diag', tapwDebug)
+            call MIO_PrintDebug('  berry_curv_bands size: '//trim(num2str(size(berry_curv_bands))),'diag', tapwDebug)
          end if
          ! Choose between Option A and Option B (pass spin index)
          if (use_option_a) then
             ! DEBUG: Verify inputs to Option A
             if (ik == 1 .and. is == 1) then
-               call MIO_Print('=== OPTION A INPUT VERIFICATION ===','diag')
-               call MIO_Print('kpoint_index: '//trim(num2str(ik)),'diag')
-               call MIO_Print('spin_index: '//trim(num2str(is)),'diag')
-               call MIO_Print('n_bands_near_fermi: '//trim(num2str(n_bands_near_fermi)),'diag')
-               call MIO_Print('band_indices(1:5): ['//trim(num2str(band_indices(1)))//',' &
+               call MIO_PrintDebug('=== OPTION A INPUT VERIFICATION ===','diag', tapwDebug)
+               call MIO_PrintDebug('kpoint_index: '//trim(num2str(ik)),'diag', tapwDebug)
+               call MIO_PrintDebug('spin_index: '//trim(num2str(is)),'diag', tapwDebug)
+               call MIO_PrintDebug('n_bands_near_fermi: '//trim(num2str(n_bands_near_fermi)),'diag', tapwDebug)
+               call MIO_PrintDebug('band_indices(1:5): ['//trim(num2str(band_indices(1)))//',' &
                      //trim(num2str(band_indices(2)))//','//trim(num2str(band_indices(3)))//',' &
-                     //trim(num2str(band_indices(4)))//','//trim(num2str(band_indices(5)))//']','diag')
-               call MIO_Print('E(:,is,ik) dimensions: '//trim(num2str(size(E,1))),'diag')
-               call MIO_Print('E(:,is,ik) first 5 values: ['//trim(num2str(E(1,is,ik),6))//',' &
+                     //trim(num2str(band_indices(4)))//','//trim(num2str(band_indices(5)))//']','diag', tapwDebug)
+               call MIO_PrintDebug('E(:,is,ik) dimensions: '//trim(num2str(size(E,1))),'diag', tapwDebug)
+               call MIO_PrintDebug('E(:,is,ik) first 5 values: ['//trim(num2str(E(1,is,ik),6))//',' &
                      //trim(num2str(E(2,is,ik),6))//','//trim(num2str(E(3,is,ik),6))//','//trim(num2str(E(4,is,ik),6)) &
-                     //','//trim(num2str(E(5,is,ik),6))//']','diag')
+                     //','//trim(num2str(E(5,is,ik),6))//']','diag', tapwDebug)
             end if
             if (soc_enabled) then
                call CalculateBerryAtKpointFromStored_OptionA_withSOC(ik, is, band_indices(1:n_bands_near_fermi), &
@@ -12157,30 +12375,30 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
          ! DEBUG: Verify k-point ordering and coordinates (only if tapwDebug enabled)
          if (tapwDebug .and. (ik <= 5 .or. modulo(ik, max(1, nk/10)) == 0)) then
-            call MIO_Print('DEBUG k-point '//trim(num2str(ik))//': kx='//trim(num2str(Kpts(1,ik),6))//', ky=' &
-                  //trim(num2str(Kpts(2,ik),6))//', kz='//trim(num2str(Kpts(3,ik),6)),'diag')
+            call MIO_PrintDebug('k-point '//trim(num2str(ik))//': kx='//trim(num2str(Kpts(1,ik),6))//', ky='  // &
+              trim(num2str(Kpts(2,ik),6))//', kz='//trim(num2str(Kpts(3,ik),6)),'diag')
          end if
 
          ! CRITICAL: Verify k-point correspondence between storage and retrieval (only if tapwDebug enabled)
          if (tapwDebug .and. ik <= 3) then
-            call MIO_Print('=== K-POINT CORRESPONDENCE CHECK ===','diag')
-            call MIO_Print('Chern calculation k-point '//trim(num2str(ik))//':','diag')
-            call MIO_Print('  Kpts(:,ik) = ['//trim(num2str(Kpts(1,ik),6))//','//trim(num2str(Kpts(2,ik),6))//',' &
-                  //trim(num2str(Kpts(3,ik),6))//']','diag')
+            call MIO_PrintDebug('=== K-POINT CORRESPONDENCE CHECK ===','diag', tapwDebug)
+            call MIO_PrintDebug('Chern calculation k-point '//trim(num2str(ik))//':','diag', tapwDebug)
+            call MIO_PrintDebug('  Kpts(:,ik) = ['//trim(num2str(Kpts(1,ik),6))//','//trim(num2str(Kpts(2,ik),6))// &
+              ','  //trim(num2str(Kpts(3,ik),6))//']','diag', tapwDebug)
             if (allocated(stored_Kpts) .and. ik <= size(stored_Kpts,2)) then
-               call MIO_Print('  stored_Kpts(:,ik) = ['//trim(num2str(stored_Kpts(1,ik),6))//',' &
-                     //trim(num2str(stored_Kpts(2,ik),6))//','//trim(num2str(stored_Kpts(3,ik),6))//']','diag')
+               call MIO_PrintDebug('  stored_Kpts(:,ik) = ['//trim(num2str(stored_Kpts(1,ik),6))//','  // &
+                 trim(num2str(stored_Kpts(2,ik),6))//','//trim(num2str(stored_Kpts(3,ik),6))//']','diag', tapwDebug)
                ! Check if they match
                if (abs(Kpts(1,ik) - stored_Kpts(1,ik)) < 1e-10_dp .and. &
                    abs(Kpts(2,ik) - stored_Kpts(2,ik)) < 1e-10_dp .and. &
                    abs(Kpts(3,ik) - stored_Kpts(3,ik)) < 1e-10_dp) then
-                  call MIO_Print('  ✓ K-points match perfectly','diag')
+                  call MIO_PrintDebug('   K-points match perfectly','diag', tapwDebug)
                else
-                  call MIO_Print('  ✗ K-POINT MISMATCH DETECTED!','diag')
-                  call MIO_Print('  ✗ This will cause wrong Berry curvature calculation!','diag')
+                  call MIO_PrintDebug('   K-POINT MISMATCH DETECTED!','diag', tapwDebug)
+                  call MIO_PrintDebug('   This will cause wrong Berry curvature calculation!','diag', tapwDebug)
                end if
             else
-               call MIO_Print('  WARNING: stored_Kpts not available or index out of bounds','diag')
+               call MIO_PrintDebug('  WARNING: stored_Kpts not available or index out of bounds','diag', tapwDebug)
             end if
          end if
 
@@ -12202,13 +12420,13 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
       chern_total = sum(chern_bands)
 
          ! Report Chern numbers for target bands (closest to Fermi) for this spin channel
-         call MIO_Print('=== Chern Number Results for Spin Channel '//trim(num2str(is))//' ===','diag')
+         call MIO_Subsection('Chern numbers, spin '//trim(num2str(is)),'diag')
       if (use_option_a) then
-         call MIO_Print('*** RESULTS FROM OPTION A (TB basis approach) ***','diag')
+         call MIO_PrintDebug('*** RESULTS FROM OPTION A (TB basis approach) ***','diag', tapwDebug)
       else
-         call MIO_Print('*** RESULTS FROM OPTION B (TAPW basis approach) ***','diag')
+         call MIO_PrintDebug('*** RESULTS FROM OPTION B (TAPW basis approach) ***','diag', tapwDebug)
       end if
-      call MIO_Print('Convergence calculation used '//trim(num2str(n_bands_near_fermi))//' bands','diag')
+      call MIO_PrintDebug('Convergence calculation used '//trim(num2str(n_bands_near_fermi))//' bands','diag', tapwDebug)
 
       ! Find target bands (n_target_bands closest to Fermi energy)
       if (n_target_bands > 0 .and. n_target_bands <= n_bands_near_fermi) then
@@ -12243,8 +12461,8 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          target_end = n_target_bands  ! Process n_target_bands closest bands
 
          ! Debug: Show which bands are actually closest
-         if (tapwDebug) call MIO_Print('DEBUG: Bands closest to Fermi energy (E_F = '//trim(num2str(fermi_energy,6)) &
-               //' eV) for spin '//trim(num2str(is))//':','diag')
+         call MIO_PrintDebug('Bands closest to Fermi energy (E_F = '//trim(num2str(fermi_energy,6))  // &
+           ' eV) for spin '//trim(num2str(is))//':','diag', tapwDebug)
          do i = 1, min(n_target_bands, 5)
             iband = band_indices(sorted_indices(i))
             band_energy_at_gamma = E(iband,is,1) * g0
@@ -12254,40 +12472,40 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          end do
 
          call MIO_Print('Target bands ('//trim(num2str(n_target_bands))//' closest to Fermi):','diag')
-         if (tapwDebug) call MIO_Print('  DEBUG: E array dimensions: '//trim(num2str(size(E,1)))//' x ' &
-               //trim(num2str(size(E,2)))//' x '//trim(num2str(size(E,3))),'diag')
+         call MIO_PrintDebug('E array dimensions: '//trim(num2str(size(E,1)))//' x '  //trim(num2str(size(E,2)))// &
+           ' x '//trim(num2str(size(E,3))),'diag', tapwDebug)
 
          ! Calculate min/max energies of target bands across all k-points
          call MIO_Print('  Energy ranges of target bands:','diag')
          do i = 1, n_target_bands
             ! Bounds check: ensure sorted_indices(i) is valid
             if (sorted_indices(i) < 1 .or. sorted_indices(i) > n_bands_near_fermi) then
-               call MIO_Print('  ERROR: sorted_indices('//trim(num2str(i))//') = '//trim(num2str(sorted_indices(i)))// &
+               call MIO_Warning('sorted_indices('//trim(num2str(i))//') = '//trim(num2str(sorted_indices(i)))// &
                             ' out of range [1,'//trim(num2str(n_bands_near_fermi))//']','diag')
                cycle
             end if
             iband = band_indices(sorted_indices(i))
             ! Additional bounds check: ensure iband is valid
             if (iband < 1 .or. iband > stored_M) then
-               call MIO_Print('  ERROR: Band index '//trim(num2str(iband))//' out of range [1,'//trim(num2str(stored_M)) &
+               call MIO_Warning('Band index '//trim(num2str(iband))//' out of range [1,'//trim(num2str(stored_M)) &
                      //'] for target band '//trim(num2str(i)),'diag')
-               call MIO_Print('    This indicates band_indices('//trim(num2str(sorted_indices(i)))//') = ' &
-                     //trim(num2str(iband))//' is invalid','diag')
+               call MIO_PrintDebug('    This indicates band_indices('//trim(num2str(sorted_indices(i)))//') = ' &
+                     //trim(num2str(iband))//' is invalid','diag', tapwDebug)
                cycle
             end if
             ! Find min and max energies across all k-points for this band
             ! Extract eigenvalues from stored Hamiltonians instead of using E array
             call GetBandEnergyRange(iband, min_energy, max_energy, is)
 
-            call MIO_Print('  Band '//trim(num2str(iband))//': E_min = '// &
+            call MIO_PrintDebug('  Band '//trim(num2str(iband))//': E_min = '// &
                           trim(num2str(min_energy*g0,6))//' eV, E_max = '// &
-                          trim(num2str(max_energy*g0,6))//' eV','diag')
+                          trim(num2str(max_energy*g0,6))//' eV','diag', tapwDebug)
          end do
 
          chern_target = 0.0_dp
          do i = 1, n_target_bands
-            call MIO_Print('  Band '//trim(num2str(band_indices(sorted_indices(i))))//': C = '// &
-                          trim(num2str(chern_bands(sorted_indices(i)),6)),'diag')
+            call MIO_PrintDebug('  Band '//trim(num2str(band_indices(sorted_indices(i))))//': C = '// &
+                          trim(num2str(chern_bands(sorted_indices(i)),6)),'diag', tapwDebug)
             chern_target = chern_target + chern_bands(sorted_indices(i))
          end do
 
@@ -12301,26 +12519,26 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
          call MIO_Print('  Target Chern number: C_target = '//trim(num2str(chern_target,6)),'diag')
       else
          ! Fallback: report first few bands
-         call MIO_Print('Selected bands (first '//trim(num2str(min(n_bands_near_fermi,5)))//' shown):','diag')
+         call MIO_PrintDebug('Selected bands (first '//trim(num2str(min(n_bands_near_fermi,5)))//' shown):','diag', tapwDebug)
 
          ! Calculate min/max energies of selected bands across all k-points
-         call MIO_Print('  Energy ranges of selected bands:','diag')
+         call MIO_PrintDebug('  Energy ranges of selected bands:','diag', tapwDebug)
          do i = 1, min(n_bands_near_fermi, 5)
             iband = band_indices(i)
             ! Find min and max energies across all k-points for this band
             ! Extract eigenvalues from stored Hamiltonians instead of using E array
             call GetBandEnergyRange(iband, min_energy, max_energy, is)
-            call MIO_Print('  Band '//trim(num2str(iband))//': E_min = '// &
+            call MIO_PrintDebug('  Band '//trim(num2str(iband))//': E_min = '// &
                           trim(num2str(min_energy*g0,6))//' eV, E_max = '// &
-                          trim(num2str(max_energy*g0,6))//' eV','diag')
+                          trim(num2str(max_energy*g0,6))//' eV','diag', tapwDebug)
          end do
 
          do i = 1, min(n_bands_near_fermi, 5)
-            call MIO_Print('  Band '//trim(num2str(band_indices(i)))//': C = '// &
-                          trim(num2str(chern_bands(i),6)),'diag')
+            call MIO_PrintDebug('  Band '//trim(num2str(band_indices(i)))//': C = '// &
+                          trim(num2str(chern_bands(i),6)),'diag', tapwDebug)
          end do
          if (n_bands_near_fermi > 5) then
-            call MIO_Print('  ... ('//trim(num2str(n_bands_near_fermi-5))//' more bands)','diag')
+            call MIO_PrintDebug('  ... ('//trim(num2str(n_bands_near_fermi-5))//' more bands)','diag', tapwDebug)
          end if
       end if
 
@@ -12328,21 +12546,21 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
                //trim(num2str(chern_total,6)),'diag')
 
       ! Validation: Check for reasonable Chern number values
-         call MIO_Print('=== Validation Checks for Spin '//trim(num2str(is))//' ===','diag')
+         call MIO_PrintDebug('=== Validation Checks for Spin '//trim(num2str(is))//' ===','diag', tapwDebug)
       if (abs(chern_total) > 10.0_dp) then
-            call MIO_Print('WARNING: Total Chern number unusually large for spin '//trim(num2str(is))//': ' &
-                  //trim(num2str(chern_total,6)),'diag')
+            call MIO_Warning('Total Chern number unusually large for spin '//trim(num2str(is))//': '  // &
+              trim(num2str(chern_total,6)),'diag')
       end if
 
       ! Check for NaN or infinite values
       do i = 1, n_bands_near_fermi
          if (chern_bands(i) /= chern_bands(i)) then  ! NaN check
-               call MIO_Print('ERROR: NaN detected in band '//trim(num2str(band_indices(i)))//' for spin ' &
+               call MIO_Warning('NaN detected in band '//trim(num2str(band_indices(i)))//' for spin ' &
                      //trim(num2str(is)),'diag')
          end if
       end do
 
-         call MIO_Print('Multi-band Chern calculation completed successfully for spin '//trim(num2str(is)),'diag')
+         call MIO_PrintDebug('Multi-band Chern calculation completed successfully for spin '//trim(num2str(is)),'diag', tapwDebug)
 
          ! Write results to output file - use target bands instead of all bands (include spin in filename)
       if (n_target_bands > 0 .and. n_target_bands <= n_bands_near_fermi .and. allocated(target_band_indices)) then
@@ -12362,10 +12580,10 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
       deallocate(chern_bands, berry_curv_bands)
    else
-      call MIO_Print('Warning: Not enough bands found near Fermi energy for Chern calculation','diag')
+      call MIO_Warning('Not enough bands found near Fermi energy for Chern calculation','diag')
    end if
 
-   call MIO_Print('Chern number calculation completed.','diag')
+   call MIO_Print('Chern number calculation finished','diag')
 
    ! Clean up stored TAPW data and position difference cache
    call cleanup_TAPW_storage()
@@ -12493,13 +12711,13 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
    ! Check if stored data is available
    if (.not. allocated(stored_eigenvectors) .or. .not. allocated(stored_hamiltonians)) then
-      call MIO_Print('Error: No stored TAPW data available for Chern calculation','diag')
+      call MIO_Warning('No stored TAPW data available for Chern calculation','diag')
       berry_curv_bands = 0.0_dp
       return
    end if
 
    if (kpoint_index > stored_nk .or. kpoint_index < 1) then
-      call MIO_Print('Error: k-point index '//trim(num2str(kpoint_index))//' out of range [1,'//trim(num2str(stored_nk)) &
+      call MIO_Warning('k-point index '//trim(num2str(kpoint_index))//' out of range [1,'//trim(num2str(stored_nk)) &
             //']','diag')
       berry_curv_bands = 0.0_dp
       return
@@ -12508,7 +12726,7 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    ! Check band indices bounds for all bands
    do i = 1, size(band_indices)
       if (band_indices(i) < 1 .or. band_indices(i) > stored_M) then
-         call MIO_Print('Error: Band index '//trim(num2str(band_indices(i)))//' out of range [1,' &
+         call MIO_Warning('Band index '//trim(num2str(band_indices(i)))//' out of range [1,' &
                //trim(num2str(stored_M))//']','diag')
          berry_curv_bands = 0.0_dp
          return
@@ -12517,9 +12735,9 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
    ! Check output array size matches input
    if (size(berry_curv_bands) /= size(band_indices)) then
-      call MIO_Print('Error: Output array size mismatch','diag')
-      call MIO_Print('  berry_curv_bands size: '//trim(num2str(size(berry_curv_bands))),'diag')
-      call MIO_Print('  band_indices size: '//trim(num2str(size(band_indices))),'diag')
+      call MIO_Warning('Output array size mismatch','diag')
+      call MIO_PrintDebug('  berry_curv_bands size: '//trim(num2str(size(berry_curv_bands))),'diag', tapwDebug)
+      call MIO_PrintDebug('  band_indices size: '//trim(num2str(size(band_indices))),'diag', tapwDebug)
       berry_curv_bands = 0.0_dp
       return
    end if
@@ -12527,7 +12745,7 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    ! FIXED: Use actual stored array dimensions instead of stored_M to avoid bounds errors
    ! Check if stored arrays exist and get their actual dimensions
    if (.not. allocated(stored_eigenvectors) .or. .not. allocated(stored_hamiltonians)) then
-      call MIO_Print('ERROR: Stored TAPW arrays not allocated','diag')
+      call MIO_Warning('Stored TAPW arrays not allocated','diag')
       berry_curv_bands = 0.0_dp
       return
    end if
@@ -12538,31 +12756,31 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
    ! Debug: Check for stored_M inconsistency
    if (kpoint_index == 1) then
-      if (tapwDebug) call MIO_Print('CRITICAL DEBUG: Dimension analysis','diag')
-      call MIO_Print('  stored_M value: '//trim(num2str(stored_M)),'diag')
-      call MIO_Print('  stored_eigenvectors actual size: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
-            //trim(num2str(size(stored_eigenvectors,2))),'diag')
-      call MIO_Print('  stored_hamiltonians actual size: '//trim(num2str(size(stored_hamiltonians,1)))//'x' &
-            //trim(num2str(size(stored_hamiltonians,2))),'diag')
-      call MIO_Print('  Using safe M = '//trim(num2str(M))//' (actual array dimensions)','diag')
+      call MIO_PrintDebug('CRITICAL DEBUG: Dimension analysis','diag', tapwDebug)
+      call MIO_PrintDebug('  stored_M value: '//trim(num2str(stored_M)),'diag', tapwDebug)
+      call MIO_PrintDebug('  stored_eigenvectors actual size: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
+            //trim(num2str(size(stored_eigenvectors,2))),'diag', tapwDebug)
+      call MIO_PrintDebug('  stored_hamiltonians actual size: '//trim(num2str(size(stored_hamiltonians,1)))//'x' &
+            //trim(num2str(size(stored_hamiltonians,2))),'diag', tapwDebug)
+      call MIO_PrintDebug('  Using safe M = '//trim(num2str(M))//' (actual array dimensions)','diag', tapwDebug)
 
       if (stored_M /= M) then
-         call MIO_Print('ERROR: stored_M ('//trim(num2str(stored_M))//') inconsistent with actual array size (' &
+         call MIO_Warning('stored_M ('//trim(num2str(stored_M))//') inconsistent with actual array size (' &
                //trim(num2str(M))//')','diag')
-         call MIO_Print('This indicates a serious bug in array allocation - using actual array size for safety','diag')
+         call MIO_PrintDebug('This indicates a serious bug in array allocation - using actual array size for safety','diag', tapwDebug)
       end if
    end if
 
    ! Debug: Check stored array dimensions
    if (kpoint_index == 1) then
-      call MIO_Print('Debug: Stored array info:','diag')
-      call MIO_Print('  stored_M: '//trim(num2str(stored_M)),'diag')
-      call MIO_Print('  stored_nk: '//trim(num2str(stored_nk)),'diag')
-      call MIO_Print('  stored_eigenvectors shape: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
-            //trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag')
-      call MIO_Print('  eigval_from_E size: '//trim(num2str(size(eigval_from_E))),'diag')
-      call MIO_Print('  Max band index requested: '//trim(num2str(maxval(band_indices))),'diag')
-      call MIO_Print('  Using M = '//trim(num2str(M))//' (min of stored_M and actual array dimensions)','diag')
+      call MIO_PrintDebug('Stored array info:','diag')
+      call MIO_PrintDebug('  stored_M: '//trim(num2str(stored_M)),'diag', tapwDebug)
+      call MIO_PrintDebug('  stored_nk: '//trim(num2str(stored_nk)),'diag', tapwDebug)
+      call MIO_PrintDebug('  stored_eigenvectors shape: '//trim(num2str(size(stored_eigenvectors,1)))//'x' &
+            //trim(num2str(size(stored_eigenvectors,2)))//'x'//trim(num2str(size(stored_eigenvectors,3))),'diag', tapwDebug)
+      call MIO_PrintDebug('  eigval_from_E size: '//trim(num2str(size(eigval_from_E))),'diag', tapwDebug)
+      call MIO_PrintDebug('  Max band index requested: '//trim(num2str(maxval(band_indices))),'diag', tapwDebug)
+      call MIO_PrintDebug('  Using M = '//trim(num2str(M))//' (min of stored_M and actual array dimensions)','diag', tapwDebug)
    end if
 
    ! Get stored data for this k-point with safe dimensions
@@ -12575,7 +12793,7 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
    ! Safe array assignment with bounds checking
    ! Check spin_index bounds
    if (spin_index < 1 .or. spin_index > stored_nspin) then
-      call MIO_Print('Error: spin_index '//trim(num2str(spin_index))//' out of range [1,'//trim(num2str(stored_nspin))//']','diag')
+      call MIO_Warning('spin_index '//trim(num2str(spin_index))//' out of range [1,'//trim(num2str(stored_nspin))//']','diag')
       berry_curv_bands = 0.0_dp
       return
    end if
@@ -12585,10 +12803,10 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
    ! Debug: Check eigenvalue array bounds
    if (kpoint_index == 1) then
-      call MIO_Print('Debug: Eigenvalue assignment:','diag')
-      call MIO_Print('  M (stored_M): '//trim(num2str(M)),'diag')
-      call MIO_Print('  eigval_from_E size: '//trim(num2str(size(eigval_from_E))),'diag')
-      call MIO_Print('  min(M, size(eigval_from_E)): '//trim(num2str(min(M,size(eigval_from_E)))),'diag')
+      call MIO_PrintDebug('Eigenvalue assignment:','diag')
+      call MIO_PrintDebug('  M (stored_M): '//trim(num2str(M)),'diag', tapwDebug)
+      call MIO_PrintDebug('  eigval_from_E size: '//trim(num2str(size(eigval_from_E))),'diag', tapwDebug)
+      call MIO_PrintDebug('  min(M, size(eigval_from_E)): '//trim(num2str(min(M,size(eigval_from_E)))),'diag', tapwDebug)
    end if
 
    ! CRITICAL FIX: Use TAPW eigenvalues instead of TB eigenvalues
@@ -12597,21 +12815,20 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
       if (size(stored_eigenvalues,1) >= M .and. size(stored_eigenvalues,2) >= kpoint_index &
             .and. size(stored_eigenvalues,3) >= spin_index) then
          eigval(1:M) = stored_eigenvalues(1:M,kpoint_index,spin_index)
-         call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index)),'diag')
-         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M)),6))//',' &
-               //trim(num2str(maxval(eigval(1:M)),6))//']','diag')
+         call MIO_PrintDebug('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index)),'diag', tapwDebug)
+         call MIO_PrintDebug('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M)),6))//',' &
+               //trim(num2str(maxval(eigval(1:M)),6))//']','diag', tapwDebug)
       else
-         call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
-         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
-               //trim(num2str(size(stored_eigenvalues,2))),'diag')
-         call MIO_Print('  Required: '//trim(num2str(M))//'x'//trim(num2str(kpoint_index)),'diag')
-         error stop 1
+         call MIO_Warning('stored_eigenvalues array too small','diag')
+         call MIO_PrintDebug('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+               //trim(num2str(size(stored_eigenvalues,2))),'diag', tapwDebug)
+         call MIO_Kill('  Required: '//trim(num2str(M))//'x'//trim(num2str(kpoint_index)),'diag','CalculateBerryAtKpointFromStored')
       end if
    else
-      call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
-      call MIO_Print('This will cause eigenvector-eigenvalue misalignment!','diag')
-      call MIO_Print('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//',' &
-            //trim(num2str(maxval(eigval_from_E),6))//']','diag')
+      call MIO_Warning('No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
+      call MIO_Warning('This will cause eigenvector-eigenvalue misalignment!','diag')
+      call MIO_PrintDebug('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//',' &
+            //trim(num2str(maxval(eigval_from_E),6))//']','diag', tapwDebug)
       ! Fallback to TB eigenvalues (this is wrong but prevents crash)
    if (size(eigval_from_E) >= M) then
       eigval(1:M) = eigval_from_E(1:M)
@@ -12623,16 +12840,16 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
    ! VERIFICATION: Check eigenvalues for first k-point
    if (kpoint_index == 1) then
-      call MIO_Print('=== EIGENVALUES VERIFICATION (k-point 1) ===','diag')
-      call MIO_Print('Eigenvalues dimensions: '//trim(num2str(size(eigval))),'diag')
-      call MIO_Print('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//',' &
-            //trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag')
-      call MIO_Print('Eigenvalue range: ['//trim(num2str(minval(eigval),6))//','//trim(num2str(maxval(eigval),6))//']','diag')
+      call MIO_PrintDebug('=== EIGENVALUES VERIFICATION (k-point 1) ===','diag', tapwDebug)
+      call MIO_PrintDebug('Eigenvalues dimensions: '//trim(num2str(size(eigval))),'diag', tapwDebug)
+      call MIO_PrintDebug('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//',' &
+            //trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag', tapwDebug)
+      call MIO_PrintDebug('Eigenvalue range: ['//trim(num2str(minval(eigval),6))//','//trim(num2str(maxval(eigval),6))//']','diag', tapwDebug)
    end if
 
    ! SANITY CHECK: Verify eigenvector-eigenvalue alignment (only if tapwDebug enabled)
    if (tapwDebug) then
-      call MIO_Print('=== EIGENVECTOR-EIGENVALUE ALIGNMENT CHECK ===','diag')
+      call MIO_PrintDebug('=== EIGENVECTOR-EIGENVALUE ALIGNMENT CHECK ===','diag', tapwDebug)
       call verify_eigenvector_eigenvalue_alignment(H_k, eigvec, eigval, M, kpoint_index)
    end if
 
@@ -12641,8 +12858,8 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
    ! Check if we have stored X matrix (TB parameters are now module-level)
    if (.not. allocated(stored_X_matrix)) then
-      call MIO_Print('ERROR: Stored X matrix not available for Option B Berry curvature','diag')
-      call MIO_Print('Falling back to old method (incorrect but functional)','diag')
+      call MIO_Warning('Stored X matrix not available for Option B Berry curvature','diag')
+      call MIO_PrintDebug('Falling back to old method (incorrect but functional)','diag', tapwDebug)
 
       ! Fallback to old method
       call build_TAPW_position_differences(delX, delY, M, saved_Gx, saved_Gy, saved_NG, saved_Nlabel)
@@ -12653,17 +12870,17 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
          end do
       end do
    else
-      call MIO_Print('Using Option B: Computing TB derivatives and projecting to TAPW space','diag')
+      call MIO_PrintDebug('Using Option B: Computing TB derivatives and projecting to TAPW space','diag', tapwDebug)
 
       ! Get actual k-point coordinates from stored k-points array
       if (allocated(stored_Kpts) .and. kpoint_index <= size(stored_Kpts, 2)) then
          current_kpt = stored_Kpts(:, kpoint_index)
          if (kpoint_index == 1) then
-            call MIO_Print('Using actual k-point coordinates: ['//trim(num2str(current_kpt(1),6))//','//&
-                          trim(num2str(current_kpt(2),6))//','//trim(num2str(current_kpt(3),6))//']','diag')
+            call MIO_PrintDebug('Using actual k-point coordinates: ['//trim(num2str(current_kpt(1),6))//','//&
+                          trim(num2str(current_kpt(2),6))//','//trim(num2str(current_kpt(3),6))//']','diag', tapwDebug)
          end if
       else
-         call MIO_Print('WARNING: Cannot access stored k-point, using Gamma point','diag')
+         call MIO_Warning('Cannot access stored k-point, using Gamma point','diag')
          current_kpt = [0.0_dp, 0.0_dp, 0.0_dp]
       end if
       allocate(dH_TB_dkx(nAt, nAt), dH_TB_dky(nAt, nAt))
@@ -12678,19 +12895,19 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
       ! DEBUG: Compare magnitudes before and after projection
       if (kpoint_index == 1) then
-         if (tapwDebug) call MIO_Print('DEBUG: Derivative magnitudes comparison:','diag')
-         call MIO_Print('  |dH_TB/dkx| max = '//trim(num2str(maxval(abs(dH_TB_dkx)),8)),'diag')
-         call MIO_Print('  |dH_TB/dky| max = '//trim(num2str(maxval(abs(dH_TB_dky)),8)),'diag')
-         call MIO_Print('  |dH_TAPW/dkx| max = '//trim(num2str(maxval(abs(dHdkx)),8)),'diag')
-         call MIO_Print('  |dH_TAPW/dky| max = '//trim(num2str(maxval(abs(dHdky)),8)),'diag')
-         call MIO_Print('  Amplification factor ≈ '//trim(num2str(maxval(abs(dHdkx))/max(maxval(abs(dH_TB_dkx)), &
-               1e-12_dp),2)),'diag')
+         call MIO_PrintDebug('Derivative magnitudes comparison:','diag', tapwDebug)
+         call MIO_PrintDebug('  |dH_TB/dkx| max = '//trim(num2str(maxval(abs(dH_TB_dkx)),8)),'diag', tapwDebug)
+         call MIO_PrintDebug('  |dH_TB/dky| max = '//trim(num2str(maxval(abs(dH_TB_dky)),8)),'diag', tapwDebug)
+         call MIO_PrintDebug('  |dH_TAPW/dkx| max = '//trim(num2str(maxval(abs(dHdkx)),8)),'diag', tapwDebug)
+         call MIO_PrintDebug('  |dH_TAPW/dky| max = '//trim(num2str(maxval(abs(dHdky)),8)),'diag', tapwDebug)
+         call MIO_PrintDebug('  Amplification factor ~ '// &
+           trim(num2str(maxval(abs(dHdkx))/max(maxval(abs(dH_TB_dkx)),  1e-12_dp),2)),'diag', tapwDebug)
       end if
 
       ! Clean up TB derivative matrices
       deallocate(dH_TB_dkx, dH_TB_dky)
 
-      call MIO_Print('Successfully computed Option B derivatives: dH^TAPW/dk = X† * (dH^TB/dk) * X','diag')
+      call MIO_PrintDebug('Successfully computed Option B derivatives: dH^TAPW/dk = X^H * (dH^TB/dk) * X','diag', tapwDebug)
    end if
 
    ! Calculate velocity matrix elements: V = eigvec^† * dH/dk * eigvec
@@ -12720,7 +12937,7 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
    ! Make regularization parameter configurable for testing
    call MIO_InputParameter('Diag.ChernEps', eps, 1.0e-10_dp)
-   if (tapwDebug) call MIO_Print('DEBUG: Using eps = '//trim(num2str(eps,12))//' for Berry curvature calculation','diag')
+   call MIO_PrintDebug('Using eps = '//trim(num2str(eps,12))//' for Berry curvature calculation','diag', tapwDebug)
 
    ! CRITICAL FIX: Use actual array dimensions for loop bounds, not M variable
    ! M might be corrupted or inconsistent - always use actual array sizes
@@ -12728,19 +12945,19 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
    ! Additional safety check before Berry curvature calculation
    if (kpoint_index == 1) then
-      call MIO_Print('Debug: About to calculate Berry curvature','diag')
-      call MIO_Print('  M variable value: '//trim(num2str(M)),'diag')
-      call MIO_Print('  M_safe (actual array bounds): '//trim(num2str(M_safe)),'diag')
-      call MIO_Print('  Vx matrix shape: '//trim(num2str(size(Vx,1)))//'x'//trim(num2str(size(Vx,2))),'diag')
-      call MIO_Print('  Vy matrix shape: '//trim(num2str(size(Vy,1)))//'x'//trim(num2str(size(Vy,2))),'diag')
-      call MIO_Print('  eigval array size: '//trim(num2str(size(eigval))),'diag')
-      call MIO_Print('  First band index to access: '//trim(num2str(band_indices(1))),'diag')
-      call MIO_Print('  Last band index to access: '//trim(num2str(band_indices(size(band_indices)))),'diag')
+      call MIO_PrintDebug('About to calculate Berry curvature','diag')
+      call MIO_PrintDebug('  M variable value: '//trim(num2str(M)),'diag', tapwDebug)
+      call MIO_PrintDebug('  M_safe (actual array bounds): '//trim(num2str(M_safe)),'diag', tapwDebug)
+      call MIO_PrintDebug('  Vx matrix shape: '//trim(num2str(size(Vx,1)))//'x'//trim(num2str(size(Vx,2))),'diag', tapwDebug)
+      call MIO_PrintDebug('  Vy matrix shape: '//trim(num2str(size(Vy,1)))//'x'//trim(num2str(size(Vy,2))),'diag', tapwDebug)
+      call MIO_PrintDebug('  eigval array size: '//trim(num2str(size(eigval))),'diag', tapwDebug)
+      call MIO_PrintDebug('  First band index to access: '//trim(num2str(band_indices(1))),'diag', tapwDebug)
+      call MIO_PrintDebug('  Last band index to access: '//trim(num2str(band_indices(size(band_indices)))),'diag', tapwDebug)
 
       if (M /= M_safe) then
-         call MIO_Print('CRITICAL WARNING: M variable ('//trim(num2str(M))//') differs from actual array bounds (' &
+         call MIO_Warning('CRITICAL WARNING: M variable ('//trim(num2str(M))//') differs from actual array bounds (' &
                //trim(num2str(M_safe))//')','diag')
-         call MIO_Print('This indicates M was corrupted after array allocation - using M_safe for loops','diag')
+         call MIO_PrintDebug('This indicates M was corrupted after array allocation - using M_safe for loops','diag', tapwDebug)
       end if
    end if
 
@@ -12748,7 +12965,7 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
       n = band_indices(i)  ! Current band index
       if (n <= M_safe .and. n >= 1) then  ! Use M_safe instead of M
          if (kpoint_index == 1 .and. i <= 3) then  ! Debug first few bands
-            call MIO_Print('Debug: Processing band '//trim(num2str(i))//' (index '//trim(num2str(n))//')','diag')
+            call MIO_PrintDebug('Processing band '//trim(num2str(i))//' (index '//trim(num2str(n))//')','diag')
          end if
 
          berry_sum = (0.0_dp, 0.0_dp)
@@ -12766,11 +12983,11 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
                   ! Python: (Vxnm*(Vynm.T)) means Vx(n,m) * Vy(m,n) - transpose, not conjugate transpose
                   berry_sum = berry_sum + (Vx(n,m) * Vy(m,n)) / ((eigval(n) - eigval(m))**2 + eps)
                else
-                  call MIO_Print('WARNING: Array bounds exceeded in Berry calculation','diag')
-                  call MIO_Print('  n='//trim(num2str(n))//', m='//trim(num2str(m))//', M='//trim(num2str(M)),'diag')
-                  call MIO_Print('  Vx size: '//trim(num2str(size(Vx,1)))//'x'//trim(num2str(size(Vx,2))),'diag')
-                  call MIO_Print('  Vy size: '//trim(num2str(size(Vy,1)))//'x'//trim(num2str(size(Vy,2))),'diag')
-                  call MIO_Print('  eigval size: '//trim(num2str(size(eigval))),'diag')
+                  call MIO_Warning('Array bounds exceeded in Berry calculation','diag')
+                  call MIO_PrintDebug('  n='//trim(num2str(n))//', m='//trim(num2str(m))//', M='//trim(num2str(M)),'diag', tapwDebug)
+                  call MIO_PrintDebug('  Vx size: '//trim(num2str(size(Vx,1)))//'x'//trim(num2str(size(Vx,2))),'diag', tapwDebug)
+                  call MIO_PrintDebug('  Vy size: '//trim(num2str(size(Vy,1)))//'x'//trim(num2str(size(Vy,2))),'diag', tapwDebug)
+                  call MIO_PrintDebug('  eigval size: '//trim(num2str(size(eigval))),'diag', tapwDebug)
                end if
             end if
          end do
@@ -12778,27 +12995,28 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
          ! DEBUG: Compare velocity matrix elements for first few bands
          if (kpoint_index == 1 .and. i <= 3) then
-            if (tapwDebug) call MIO_Print('DEBUG Option B: Velocity matrix elements for band '//trim(num2str(n))//':','diag')
-            call MIO_Print('  |Vx('//trim(num2str(n))//','//trim(num2str(n+1))//')| = '//trim(num2str(abs(Vx(n,n+1)),8)),'diag')
-            call MIO_Print('  |Vy('//trim(num2str(n))//','//trim(num2str(n+1))//')| = '//trim(num2str(abs(Vy(n,n+1)),8)),'diag')
-            call MIO_Print('  Berry curvature = '//trim(num2str(berry_curv_bands(i),8)),'diag')
+            call MIO_PrintDebug('Option B: Velocity matrix elements for band '//trim(num2str(n))//':','diag', &
+              tapwDebug)
+            call MIO_PrintDebug('  |Vx('//trim(num2str(n))//','//trim(num2str(n+1))//')| = '//trim(num2str(abs(Vx(n,n+1)),8)),'diag', tapwDebug)
+            call MIO_PrintDebug('  |Vy('//trim(num2str(n))//','//trim(num2str(n+1))//')| = '//trim(num2str(abs(Vy(n,n+1)),8)),'diag', tapwDebug)
+            call MIO_PrintDebug('  Berry curvature = '//trim(num2str(berry_curv_bands(i),8)),'diag', tapwDebug)
          end if
 
          ! Note: Large Berry curvature values are physically expected near band crossings
          ! No need to debug or cap these values - they're part of the physics
 
          if (kpoint_index == 1 .and. i <= 3) then  ! Debug first few bands
-            call MIO_Print('  Berry curvature: '//trim(num2str(berry_curv_bands(i),6)),'diag')
+            call MIO_PrintDebug('  Berry curvature: '//trim(num2str(berry_curv_bands(i),6)),'diag', tapwDebug)
             ! DEBUG: Check velocity matrix elements for first k-point
             if (i == 1) then
-               if (tapwDebug) call MIO_Print('  DEBUG: Velocity matrix elements for band '//trim(num2str(n))//':','diag')
-               call MIO_Print('    |Vx(n,n+1)| = '//trim(num2str(abs(Vx(n,min(n+1,M_safe))),8)),'diag')
-               call MIO_Print('    |Vy(n,n+1)| = '//trim(num2str(abs(Vy(n,min(n+1,M_safe))),8)),'diag')
-               call MIO_Print('    Energy gap = '//trim(num2str(abs(eigval(n) - eigval(min(n+1,M_safe))),8)),'diag')
+               call MIO_PrintDebug('Velocity matrix elements for band '//trim(num2str(n))//':','diag', tapwDebug)
+               call MIO_PrintDebug('    |Vx(n,n+1)| = '//trim(num2str(abs(Vx(n,min(n+1,M_safe))),8)),'diag', tapwDebug)
+               call MIO_PrintDebug('    |Vy(n,n+1)| = '//trim(num2str(abs(Vy(n,min(n+1,M_safe))),8)),'diag', tapwDebug)
+               call MIO_PrintDebug('    Energy gap = '//trim(num2str(abs(eigval(n) - eigval(min(n+1,M_safe))),8)),'diag', tapwDebug)
             end if
          end if
       else
-         call MIO_Print('WARNING: Band index '//trim(num2str(n))//' out of range [1,'//trim(num2str(M_safe))//']','diag')
+         call MIO_Warning('Band index '//trim(num2str(n))//' out of range [1,'//trim(num2str(M_safe))//']','diag')
          berry_curv_bands(i) = 0.0_dp  ! Band index out of range
       end if
    end do
@@ -12836,27 +13054,26 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
 
    ! Use actual TAPW matrix size from previous calculation
    if (M_tapw <= 0) then
-      call MIO_Print('ERROR: M_tapw not initialized. TAPW calculation must be performed first.','diag')
-      call MIO_Print('Current M_tapw = '//trim(num2str(M_tapw)),'diag')
-      error stop 1
+      call MIO_Warning('M_tapw not initialized. TAPW calculation must be performed first.','diag')
+      call MIO_Kill('Current M_tapw = '//trim(num2str(M_tapw)),'diag','GetTAPWHamiltonian')
    end if
 
    ! CRITICAL FIX: For Berry curvature calculation, use stored_M instead of M_tapw
    ! M_tapw might be different from what was used to allocate stored arrays
    if (.not. allocated(stored_hamiltonians) .or. .not. allocated(stored_eigenvectors)) then
-      call MIO_Print('ERROR: No stored TAPW data available','diag')
-      call MIO_Print('TAPW bands calculation must be performed before Chern calculation','diag')
-      error stop 1
+      call MIO_Warning('No stored TAPW data available','diag')
+      call MIO_Kill('TAPW bands calculation must be performed before Chern calculation','diag','GetTAPWHamiltonian')
    end if
 
    ! Use the stored M value to ensure consistency with stored arrays
    M = stored_M
-   call MIO_Print('Using M = '//trim(num2str(M))//' from stored TAPW data (stored_M)','diag')
+   call MIO_PrintDebug('Using M = '//trim(num2str(M))//' from stored TAPW data (stored_M)','diag', tapwDebug)
 
    ! Warn if M_tapw differs from stored_M
    if (M_tapw /= stored_M) then
-      call MIO_Print('WARNING: M_tapw ('//trim(num2str(M_tapw))//') differs from stored_M ('//trim(num2str(stored_M))//')','diag')
-      call MIO_Print('Using stored_M to maintain consistency with stored arrays','diag')
+      call MIO_Warning('M_tapw ('//trim(num2str(M_tapw))//') differs from stored_M ('//trim(num2str(stored_M))//')', &
+        'diag')
+      call MIO_PrintDebug('Using stored_M to maintain consistency with stored arrays','diag', tapwDebug)
    end if
 
    ! Allocate output arrays with stored dimensions
@@ -12868,12 +13085,11 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
    allocate(ELoc_temp(N))
    allocate(H0_temp(N))
 
-   call MIO_Print('Using stored TAPW Hamiltonian and eigenvectors from bands calculation','diag')
+   call MIO_PrintDebug('Using stored TAPW Hamiltonian and eigenvectors from bands calculation','diag', tapwDebug)
 
    ! Use the first k-point's data as reference (this should be improved for better k-point handling)
    if (stored_nk < 1) then
-      call MIO_Print('ERROR: No k-points stored in TAPW data','diag')
-      error stop 1
+      call MIO_Kill('No k-points stored in TAPW data','diag','GetTAPWHamiltonian')
    end if
 
    ! Extract Hamiltonian and eigenvectors from stored data (use first k-point as reference, spin 1)
@@ -12892,20 +13108,19 @@ subroutine GetTAPWHamiltonian(kpt, ucell, H0, maxNeigh, hopp, NList, Nneigh, nei
    call ZHEEV('N', 'U', M, H_proj, M, eigval, ZWorkLoc, lwork, DWorkLoc, info)
 
    if (info /= 0) then
-      call MIO_Print('ERROR in GetTAPWHamiltonian: ZHEEV failed with info = '//trim(num2str(info)),'diag')
-      error stop 1
+      call MIO_Kill('in GetTAPWHamiltonian: ZHEEV failed with info = '//trim(num2str(info)),'diag','GetTAPWHamiltonian')
    end if
 
-   call MIO_Print('Successfully extracted TAPW eigenvalues and eigenvectors','diag')
+   call MIO_PrintDebug('Successfully extracted TAPW eigenvalues and eigenvectors','diag', tapwDebug)
 
    ! Calculate position difference matrices for analytical derivatives using saved G-vectors
-   call MIO_Print('Computing analytical derivatives for TAPW projected space','diag')
+   call MIO_PrintDebug('Computing analytical derivatives for TAPW projected space','diag', tapwDebug)
 
    if (allocated(saved_Gx) .and. allocated(saved_Gy) .and. saved_NG > 0 .and. saved_Nlabel > 0) then
-      call MIO_Print('Building delX/delY matrices from '//trim(num2str(saved_NG))//' G-vectors','diag')
+      call MIO_PrintDebug('Building delX/delY matrices from '//trim(num2str(saved_NG))//' G-vectors','diag', tapwDebug)
       call build_TAPW_position_differences(delX, delY, M, saved_Gx, saved_Gy, saved_NG, saved_Nlabel)
    else
-      call MIO_Print('WARNING: No saved G-vectors found - using zero matrices','diag')
+      call MIO_Warning('No saved G-vectors found - using zero matrices','diag')
       delX = 0.0_dp
       delY = 0.0_dp
    end if
@@ -12956,31 +13171,31 @@ subroutine build_TAPW_position_differences(delX, delY, M, Gx, Gy, NG, Nlabel)
                ! Safe to use cached matrices
                delX = cached_delX
                delY = cached_delY
-               call MIO_Print('Using cached TAPW position difference matrices','diag')
+               call MIO_PrintDebug('Using cached TAPW position difference matrices','diag', tapwDebug)
                return
             else
-               call MIO_Print('WARNING: Cached matrix dimensions mismatch - recomputing','diag')
-               call MIO_Print('  Expected: '//trim(num2str(M))//'x'//trim(num2str(M)),'diag')
+               call MIO_Warning('Cached matrix dimensions mismatch - recomputing','diag')
+               call MIO_PrintDebug('  Expected: '//trim(num2str(M))//'x'//trim(num2str(M)),'diag', tapwDebug)
                if (allocated(cached_delX)) then
-                  call MIO_Print('  Cached delX: '//trim(num2str(size(cached_delX,1)))//'x' &
-                        //trim(num2str(size(cached_delX,2))),'diag')
+                  call MIO_PrintDebug('  Cached delX: '//trim(num2str(size(cached_delX,1)))//'x' &
+                        //trim(num2str(size(cached_delX,2))),'diag', tapwDebug)
                end if
                if (allocated(cached_delY)) then
-                  call MIO_Print('  Cached delY: '//trim(num2str(size(cached_delY,1)))//'x' &
-                        //trim(num2str(size(cached_delY,2))),'diag')
+                  call MIO_PrintDebug('  Cached delY: '//trim(num2str(size(cached_delY,1)))//'x' &
+                        //trim(num2str(size(cached_delY,2))),'diag', tapwDebug)
                end if
             end if
          else
-            call MIO_Print('WARNING: Cached matrices not allocated - recomputing','diag')
+            call MIO_Warning('Cached matrices not allocated - recomputing','diag')
          end if
       end if
    end if
 
-   call MIO_Print('TEMPORARY: Cache disabled - recomputing position difference matrices','diag')
+   call MIO_PrintDebug('TEMPORARY: Cache disabled - recomputing position difference matrices','diag', tapwDebug)
 
-   call MIO_Print('Computing TAPW position difference matrices (optimized block structure)','diag')
-   call MIO_Print('  Matrix size: '//trim(num2str(M))//' x '//trim(num2str(M)),'diag')
-   call MIO_Print('  Block structure: '//trim(num2str(Nlabel))//' labels × '//trim(num2str(NG))//' G-vectors','diag')
+   call MIO_PrintDebug('Computing TAPW position difference matrices (optimized block structure)','diag', tapwDebug)
+   call MIO_PrintDebug('  Matrix size: '//trim(num2str(M))//' x '//trim(num2str(M)),'diag', tapwDebug)
+   call MIO_PrintDebug('  Block structure: '//trim(num2str(Nlabel))//' labels x '//trim(num2str(NG))//' G-vectors','diag', tapwDebug)
 
    ! Compute using optimized block-structured approach
    call compute_position_differences_blocked(delX, delY, M, Gx, Gy, NG, Nlabel)
@@ -13001,7 +13216,7 @@ subroutine build_TAPW_position_differences(delX, delY, M, Gx, Gy, NG, Nlabel)
    cached_Nlabel = Nlabel
    cache_valid = .true.
 
-   call MIO_Print('TAPW position difference matrices cached for future use','diag')
+   call MIO_PrintDebug('TAPW position difference matrices cached for future use','diag', tapwDebug)
 
 end subroutine build_TAPW_position_differences
 
@@ -13061,19 +13276,20 @@ subroutine compute_TB_hamiltonian_derivatives(dH_TB_dkx, dH_TB_dky, N, KLoc, H0,
    real(dp) :: R(3)
    complex(dp) :: phase_factor, derivative_factor_x, derivative_factor_y
 
-   call MIO_Print('Computing TB Hamiltonian derivatives dH^TB/dk','diag')
+   call MIO_PrintDebug('Computing TB Hamiltonian derivatives dH^TB/dk','diag', tapwDebug)
 
    ! DEBUG: Check units and magnitudes
    if (N >= 1 .and. Nneigh(1) >= 1) then
-      if (tapwDebug) call MIO_Print('DEBUG: Units check for TB derivatives:','diag')
-      call MIO_Print('  KLoc = ['//trim(num2str(KLoc(1),6))//','//trim(num2str(KLoc(2),6))//',' &
-            //trim(num2str(KLoc(3),6))//'] (1/Angstrom)','diag')
+      call MIO_PrintDebug('Units check for TB derivatives:','diag', tapwDebug)
+      call MIO_PrintDebug('  KLoc = ['//trim(num2str(KLoc(1),6))//','//trim(num2str(KLoc(2),6))//',' &
+            //trim(num2str(KLoc(3),6))//'] (1/Ang)','diag', tapwDebug)
       if (NList(1,1) > 0 .and. NList(1,1) <= N) then
-         call MIO_Print('  First NeighD = ['//trim(num2str(NeighD(1,1,1),6))//','//trim(num2str(NeighD(2,1,1),6)) &
-               //'] (Angstrom)','diag')
-         call MIO_Print('  R used in derivatives = ['//trim(num2str(-NeighD(1,1,1),6))//',' &
-               //trim(num2str(-NeighD(2,1,1),6))//'] (Angstrom)','diag')
-         call MIO_Print('  k·R = '//trim(num2str(dot_product(KLoc(1:2), -NeighD(1:2,1,1)),6))//' (dimensionless)','diag')
+         call MIO_PrintDebug('  First NeighD = ['//trim(num2str(NeighD(1,1,1),6))//','//trim(num2str(NeighD(2,1,1),6)) &
+               //'] (Ang)','diag', tapwDebug)
+         call MIO_PrintDebug('  R used in derivatives = ['//trim(num2str(-NeighD(1,1,1),6))//',' &
+               //trim(num2str(-NeighD(2,1,1),6))//'] (Ang)','diag', tapwDebug)
+         call MIO_PrintDebug('  k.R = '//trim(num2str(dot_product(KLoc(1:2), -NeighD(1:2,1,1)),6))//' (dimensionless)', &
+           'diag', tapwDebug)
       end if
    end if
 
@@ -13113,7 +13329,7 @@ subroutine compute_TB_hamiltonian_derivatives(dH_TB_dkx, dH_TB_dky, N, KLoc, H0,
       end do
    end do
 
-   call MIO_Print('TB Hamiltonian derivatives computed','diag')
+   call MIO_PrintDebug('TB Hamiltonian derivatives computed','diag', tapwDebug)
 
 end subroutine compute_TB_hamiltonian_derivatives
 
@@ -13156,7 +13372,7 @@ subroutine compute_block_hamiltonian_derivatives(dH_Block_dkx, dH_Block_dky, N, 
    ! Note: lambdaR is already imported from ham module
    complex(dp) :: RashbaDerivative_x, RashbaDerivative_y
 
-   call MIO_Print('Computing block Hamiltonian derivatives dH^Block/dk for SOC','diag')
+   call MIO_PrintDebug('Computing block Hamiltonian derivatives dH^Block/dk for SOC','diag', tapwDebug)
 
    ! Initialize derivative matrices
    dH_Block_dkx = cmplx_0
@@ -13270,7 +13486,7 @@ subroutine compute_block_hamiltonian_derivatives(dH_Block_dkx, dH_Block_dky, N, 
       end do
    end if
 
-   call MIO_Print('Block Hamiltonian derivatives computed for SOC','diag')
+   call MIO_PrintDebug('Block Hamiltonian derivatives computed for SOC','diag', tapwDebug)
 
 end subroutine compute_block_hamiltonian_derivatives
 
@@ -13288,7 +13504,7 @@ subroutine project_TB_derivatives_to_TAPW(dH_TB_dkx, dH_TB_dky, X, N, M, dH_TAPW
    ! Local variables
    complex(dp), allocatable :: temp_x(:,:), temp_y(:,:)
 
-   call MIO_Print('Projecting TB derivatives to TAPW space','diag')
+   call MIO_PrintDebug('Projecting TB derivatives to TAPW space','diag', tapwDebug)
 
    ! Allocate temporary matrices
    allocate(temp_x(N,M), temp_y(N,M))
@@ -13310,7 +13526,7 @@ subroutine project_TB_derivatives_to_TAPW(dH_TB_dkx, dH_TB_dky, X, N, M, dH_TAPW
    ! Clean up
    deallocate(temp_x, temp_y)
 
-   call MIO_Print('TB derivatives successfully projected to TAPW space','diag')
+   call MIO_PrintDebug('TB derivatives successfully projected to TAPW space','diag', tapwDebug)
 
 end subroutine project_TB_derivatives_to_TAPW
 
@@ -13368,14 +13584,14 @@ subroutine transform_TAPW_eigenvectors_to_TB(eigvec_TAPW, X, N, M, eigvec_TB)
    complex(dp), intent(in) :: X(N,M)
    complex(dp), intent(out) :: eigvec_TB(N,M)
 
-   call MIO_Print('Transforming TAPW eigenvectors back to TB basis','diag')
-   call MIO_Print('  Input: '//trim(num2str(M))//' TAPW eigenvectors in '//trim(num2str(M))//'-dimensional space','diag')
-   call MIO_Print('  Output: '//trim(num2str(M))//' TB eigenvectors in '//trim(num2str(N))//'-dimensional space','diag')
+   call MIO_PrintDebug('Transforming TAPW eigenvectors back to TB basis','diag', tapwDebug)
+   call MIO_PrintDebug('  Input: '//trim(num2str(M))//' TAPW eigenvectors in '//trim(num2str(M))//'-dimensional space','diag', tapwDebug)
+   call MIO_PrintDebug('  Output: '//trim(num2str(M))//' TB eigenvectors in '//trim(num2str(N))//'-dimensional space','diag', tapwDebug)
 
    ! Transform eigenvectors: eigvec_TB = X * eigvec_TAPW
    call zgemm('N', 'N', N, M, M, cmplx_1, X, N, eigvec_TAPW, M, cmplx_0, eigvec_TB, N)
 
-   call MIO_Print('TAPW eigenvectors successfully transformed to TB basis','diag')
+   call MIO_PrintDebug('TAPW eigenvectors successfully transformed to TB basis','diag', tapwDebug)
 
 end subroutine transform_TAPW_eigenvectors_to_TB
 
@@ -13405,17 +13621,15 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    integer :: skipped_pairs, total_pairs, M_safe
    complex(dp) :: berry_sum
 
-   call MIO_Print('=== OPTION A: Berry curvature in TB basis ===','diag')
+   call MIO_PrintDebug('=== OPTION A: Berry curvature in TB basis ===','diag', tapwDebug)
 
    ! Check stored data availability (only need X matrix, TB parameters are module-level)
    if (.not. allocated(stored_X_matrix)) then
-      call MIO_Print('ERROR: Stored X matrix not available for Option A','diag')
-      error stop 1
+      call MIO_Kill('Stored X matrix not available for Option A','diag','CalculateBerryAtKpointFromStored_OptionA')
    end if
 
    if (.not. allocated(stored_hamiltonians) .or. .not. allocated(stored_eigenvectors)) then
-      call MIO_Print('ERROR: Stored TAPW data not available for Option A','diag')
-      error stop 1
+      call MIO_Kill('Stored TAPW data not available for Option A','diag','CalculateBerryAtKpointFromStored_OptionA')
    end if
 
    ! Get dimensions (use module-level variables directly)
@@ -13423,8 +13637,8 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    M_local = stored_M
    num_bands = size(band_indices)
 
-   call MIO_Print('Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands=' &
-         //trim(num2str(num_bands)),'diag')
+   call MIO_PrintDebug('Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands=' &
+         //trim(num2str(num_bands)),'diag', tapwDebug)
 
    ! Allocate arrays
    allocate(H_k(M_local,M_local), eigvec_TAPW(M_local,M_local), eigvec_TB(N_local,M_local))
@@ -13434,7 +13648,7 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
 
    ! Check spin_index bounds
    if (spin_index < 1 .or. spin_index > stored_nspin) then
-      call MIO_Print('Error: spin_index '//trim(num2str(spin_index))//' out of range [1,'//trim(num2str(stored_nspin))//']','diag')
+      call MIO_Warning('spin_index '//trim(num2str(spin_index))//' out of range [1,'//trim(num2str(stored_nspin))//']','diag')
       berry_curv_bands = 0.0_dp
       return
    end if
@@ -13449,21 +13663,20 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
       if (size(stored_eigenvalues,1) >= M_local .and. size(stored_eigenvalues,2) >= kpoint_index &
             .and. size(stored_eigenvalues,3) >= spin_index) then
          eigval(1:M_local) = stored_eigenvalues(1:M_local,kpoint_index,spin_index)
-         call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index)),'diag')
-         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//',' &
-               //trim(num2str(maxval(eigval(1:M_local)),6))//']','diag')
+         call MIO_PrintDebug('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index)),'diag', tapwDebug)
+         call MIO_PrintDebug('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//',' &
+               //trim(num2str(maxval(eigval(1:M_local)),6))//']','diag', tapwDebug)
       else
-         call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
-         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
-               //trim(num2str(size(stored_eigenvalues,2))),'diag')
-         call MIO_Print('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index)),'diag')
-         error stop 1
+         call MIO_Warning('stored_eigenvalues array too small','diag')
+         call MIO_PrintDebug('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+               //trim(num2str(size(stored_eigenvalues,2))),'diag', tapwDebug)
+         call MIO_Kill('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index)),'diag','CalculateBerryAtKpointFromStored_OptionA')
       end if
    else
-      call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
-      call MIO_Print('This will cause eigenvector-eigenvalue misalignment!','diag')
-      call MIO_Print('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//',' &
-            //trim(num2str(maxval(eigval_from_E),6))//']','diag')
+      call MIO_Warning('No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
+      call MIO_Warning('This will cause eigenvector-eigenvalue misalignment!','diag')
+      call MIO_PrintDebug('  TB eigenvalues range: ['//trim(num2str(minval(eigval_from_E),6))//',' &
+            //trim(num2str(maxval(eigval_from_E),6))//']','diag', tapwDebug)
       ! Fallback to TB eigenvalues (this is wrong but prevents crash)
    if (size(eigval_from_E) >= M_local) then
       eigval(1:M_local) = eigval_from_E(1:M_local)
@@ -13475,24 +13688,24 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
 
    ! VERIFICATION: Check eigenvalues for first k-point
    if (kpoint_index == 1) then
-      call MIO_Print('=== EIGENVALUES VERIFICATION (k-point 1) ===','diag')
-      call MIO_Print('Eigenvalues dimensions: '//trim(num2str(size(eigval))),'diag')
-      call MIO_Print('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//',' &
-            //trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag')
-      call MIO_Print('Eigenvalue range: ['//trim(num2str(minval(eigval),6))//','//trim(num2str(maxval(eigval),6))//']','diag')
+      call MIO_PrintDebug('=== EIGENVALUES VERIFICATION (k-point 1) ===','diag', tapwDebug)
+      call MIO_PrintDebug('Eigenvalues dimensions: '//trim(num2str(size(eigval))),'diag', tapwDebug)
+      call MIO_PrintDebug('First 5 eigenvalues: ['//trim(num2str(eigval(1),6))//','//trim(num2str(eigval(2),6))//',' &
+            //trim(num2str(eigval(3),6))//','//trim(num2str(eigval(4),6))//','//trim(num2str(eigval(5),6))//']','diag', tapwDebug)
+      call MIO_PrintDebug('Eigenvalue range: ['//trim(num2str(minval(eigval),6))//','//trim(num2str(maxval(eigval),6))//']','diag', tapwDebug)
    end if
 
    ! SANITY CHECK: Verify eigenvector-eigenvalue alignment (only if tapwDebug enabled)
    if (tapwDebug) then
-      call MIO_Print('=== EIGENVECTOR-EIGENVALUE ALIGNMENT CHECK ===','diag')
+      call MIO_PrintDebug('=== EIGENVECTOR-EIGENVALUE ALIGNMENT CHECK ===','diag', tapwDebug)
       call verify_eigenvector_eigenvalue_alignment(H_k, eigvec_TAPW, eigval, M_local, kpoint_index)
    end if
 
    ! Get actual k-point coordinates
    current_kpt = stored_Kpts(:, kpoint_index)
    if (tapwDebug) then
-   call MIO_Print('Using actual k-point coordinates: ['//trim(num2str(current_kpt(1),6))//','//&
-                  trim(num2str(current_kpt(2),6))//','//trim(num2str(current_kpt(3),6))//']','diag')
+   call MIO_PrintDebug('Using actual k-point coordinates: ['//trim(num2str(current_kpt(1),6))//','// &
+     trim(num2str(current_kpt(2),6))//','//trim(num2str(current_kpt(3),6))//']','diag', tapwDebug)
    end if
 
    ! Step 1: Compute TB Hamiltonian derivatives (use module-level variables directly)
@@ -13501,7 +13714,7 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
 
    ! Step 1.5: Check hermiticity of TB Hamiltonian derivatives (only if tapwDebug enabled)
    if (tapwDebug) then
-      call MIO_Print('Checking hermiticity of TB Hamiltonian derivatives','diag')
+      call MIO_PrintDebug('Checking hermiticity of TB Hamiltonian derivatives','diag', tapwDebug)
       call check_matrix_hermiticity(dH_TB_dkx, N_local, 'dH_TB_dkx')
       call check_matrix_hermiticity(dH_TB_dky, N_local, 'dH_TB_dky')
    end if
@@ -13520,16 +13733,16 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
          if (debug_band >= 1 .and. debug_band <= M_local) then
             norm_tapw = real(dot_product(eigvec_TAPW(:,debug_band), eigvec_TAPW(:,debug_band)))
             norm_tb = real(dot_product(eigvec_TB(:,debug_band), eigvec_TB(:,debug_band)))
-            if (tapwDebug) call MIO_Print('DEBUG Option A: Band '//trim(num2str(debug_band)) &
-                  //' norms AFTER renormalization:','diag')
-            call MIO_Print('  TAPW eigenvector norm: '//trim(num2str(sqrt(norm_tapw),8)),'diag')
-            call MIO_Print('  TB eigenvector norm: '//trim(num2str(sqrt(norm_tb),8))//' (should be 1.0)','diag')
+            call MIO_PrintDebug('Band '//trim(num2str(debug_band))  //' norms AFTER renormalization:','diag', &
+              tapwDebug)
+            call MIO_PrintDebug('  TAPW eigenvector norm: '//trim(num2str(sqrt(norm_tapw),8)),'diag', tapwDebug)
+            call MIO_PrintDebug('  TB eigenvector norm: '//trim(num2str(sqrt(norm_tb),8))//' (should be 1.0)','diag', tapwDebug)
          end if
       end block
    end if
 
    ! Step 3: Calculate velocity matrix elements in TB space
-   call MIO_Print('Computing velocity matrix elements in TB space','diag')
+   call MIO_PrintDebug('Computing velocity matrix elements in TB space','diag', tapwDebug)
 
    ! Note: eigvec_TB is N×M, so we compute M×M velocity matrices
    ! This is computationally expensive: (N×M)† * (N×N) * (N×M) = M×M
@@ -13560,7 +13773,7 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
 
    ! Step 5: Check hermiticity of velocity operators (only if tapwDebug enabled)
    if (tapwDebug) then
-      call MIO_Print('Checking hermiticity of velocity operators Vx_TB and Vy_TB','diag')
+      call MIO_PrintDebug('Checking hermiticity of velocity operators Vx_TB and Vy_TB','diag', tapwDebug)
       call check_matrix_hermiticity(Vx_TB, M_local, 'Vx_TB')
       call check_matrix_hermiticity(Vy_TB, M_local, 'Vy_TB')
    end if
@@ -13572,11 +13785,11 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
          n1 = band_indices(1)
          n2 = band_indices(2)
          if (n1 >= 1 .and. n1 <= M_local .and. n2 >= 1 .and. n2 <= M_local) then
-            if (tapwDebug) call MIO_Print('DEBUG Option A: Velocity matrix elements:','diag')
-            call MIO_Print('  |Vx_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = ' &
-                  //trim(num2str(abs(Vx_TB(n1,n2)),8)),'diag')
-            call MIO_Print('  |Vy_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = ' &
-                  //trim(num2str(abs(Vy_TB(n1,n2)),8)),'diag')
+            call MIO_PrintDebug('Velocity matrix elements:','diag', tapwDebug)
+            call MIO_PrintDebug('  |Vx_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = ' &
+                  //trim(num2str(abs(Vx_TB(n1,n2)),8)),'diag', tapwDebug)
+            call MIO_PrintDebug('  |Vy_TB('//trim(num2str(n1))//','//trim(num2str(n2))//')| = ' &
+                  //trim(num2str(abs(Vy_TB(n1,n2)),8)),'diag', tapwDebug)
          end if
       end block
    end if
@@ -13584,7 +13797,7 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    ! Step 5: Calculate Berry curvature for requested bands (same formula as Option B)
    ! Make regularization parameter configurable for testing
    call MIO_InputParameter('Diag.ChernEps', eps, 1.0e-10_dp)
-   if (tapwDebug) call MIO_Print('DEBUG: Using eps = '//trim(num2str(eps,12))//' for Berry curvature calculation','diag')
+   call MIO_PrintDebug('Using eps = '//trim(num2str(eps,12))//' for Berry curvature calculation','diag', tapwDebug)
    ! Make energy threshold configurable for testing
    call MIO_InputParameter('Diag.ChernEnergyThreshold', energy_threshold, 1.0e-4_dp)
 
@@ -13596,14 +13809,14 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
    skipped_pairs = 0
    total_pairs = 0
 
-   call MIO_Print('Computing Berry curvature for '//trim(num2str(num_bands))//' bands in TB space','diag')
+   call MIO_PrintDebug('Computing Berry curvature for '//trim(num2str(num_bands))//' bands in TB space','diag', tapwDebug)
 
    ! DEBUG: Compare velocity matrix elements between Option A and Option B
    if (kpoint_index == 1) then
-      if (tapwDebug) call MIO_Print('DEBUG: Comparing velocity matrices between Option A and Option B','diag')
-      call MIO_Print('  Option A uses Vx_TB, Vy_TB (TB basis)','diag')
-      call MIO_Print('  Option B uses Vx, Vy (TAPW basis)','diag')
-      call MIO_Print('  This comparison will help identify the root cause','diag')
+      call MIO_PrintDebug('Comparing velocity matrices between Option A and Option B','diag', tapwDebug)
+      call MIO_PrintDebug('  Option A uses Vx_TB, Vy_TB (TB basis)','diag', tapwDebug)
+      call MIO_PrintDebug('  Option B uses Vx, Vy (TAPW basis)','diag', tapwDebug)
+      call MIO_PrintDebug('  This comparison will help identify the root cause','diag', tapwDebug)
    end if
 
    ! CRITICAL FIX: Use actual array dimensions for loop bounds, same as Option B
@@ -13611,19 +13824,19 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
 
    ! Additional safety check before Berry curvature calculation
    if (kpoint_index == 1) then
-      call MIO_Print('Debug Option A: About to calculate Berry curvature','diag')
-      call MIO_Print('  M_local variable value: '//trim(num2str(M_local)),'diag')
-      call MIO_Print('  M_safe (actual array bounds): '//trim(num2str(M_safe)),'diag')
-      call MIO_Print('  Vx_TB matrix shape: '//trim(num2str(size(Vx_TB,1)))//'x'//trim(num2str(size(Vx_TB,2))),'diag')
-      call MIO_Print('  Vy_TB matrix shape: '//trim(num2str(size(Vy_TB,1)))//'x'//trim(num2str(size(Vy_TB,2))),'diag')
-      call MIO_Print('  eigval array size: '//trim(num2str(size(eigval))),'diag')
-      call MIO_Print('  First band index to access: '//trim(num2str(band_indices(1))),'diag')
-      call MIO_Print('  Last band index to access: '//trim(num2str(band_indices(size(band_indices)))),'diag')
+      call MIO_PrintDebug('About to calculate Berry curvature','diag')
+      call MIO_PrintDebug('  M_local variable value: '//trim(num2str(M_local)),'diag', tapwDebug)
+      call MIO_PrintDebug('  M_safe (actual array bounds): '//trim(num2str(M_safe)),'diag', tapwDebug)
+      call MIO_PrintDebug('  Vx_TB matrix shape: '//trim(num2str(size(Vx_TB,1)))//'x'//trim(num2str(size(Vx_TB,2))),'diag', tapwDebug)
+      call MIO_PrintDebug('  Vy_TB matrix shape: '//trim(num2str(size(Vy_TB,1)))//'x'//trim(num2str(size(Vy_TB,2))),'diag', tapwDebug)
+      call MIO_PrintDebug('  eigval array size: '//trim(num2str(size(eigval))),'diag', tapwDebug)
+      call MIO_PrintDebug('  First band index to access: '//trim(num2str(band_indices(1))),'diag', tapwDebug)
+      call MIO_PrintDebug('  Last band index to access: '//trim(num2str(band_indices(size(band_indices)))),'diag', tapwDebug)
 
       if (M_local /= M_safe) then
-         call MIO_Print('CRITICAL WARNING: M_local ('//trim(num2str(M_local))//') differs from actual array bounds (' &
+         call MIO_Warning('CRITICAL WARNING: M_local ('//trim(num2str(M_local))//') differs from actual array bounds (' &
                //trim(num2str(M_safe))//')','diag')
-         call MIO_Print('This indicates M_local was corrupted after array allocation - using M_safe for loops','diag')
+         call MIO_PrintDebug('This indicates M_local was corrupted after array allocation - using M_safe for loops','diag', tapwDebug)
       end if
    end if
 
@@ -13631,7 +13844,7 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
       n = band_indices(i)  ! Current band index
       if (n <= M_safe .and. n >= 1) then  ! Use M_safe instead of M_local (same as Option B)
          if (kpoint_index == 1 .and. i <= 3) then  ! Debug first few bands (same as Option B)
-            call MIO_Print('Debug Option A: Processing band '//trim(num2str(i))//' (index '//trim(num2str(n))//')','diag')
+            call MIO_PrintDebug('Processing band '//trim(num2str(i))//' (index '//trim(num2str(n))//')','diag')
          end if
 
          berry_sum = (0.0_dp, 0.0_dp)
@@ -13652,11 +13865,11 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
                   ! Python: (Vxnm*(Vynm.T)) means Vx(n,m) * Vy(m,n) - transpose, not conjugate transpose
                   berry_sum = berry_sum + (Vx_TB(n,m) * Vy_TB(m,n)) / ((eigval(n) - eigval(m))**2 + eps)
                else
-                  call MIO_Print('WARNING: Array bounds exceeded in Berry calculation','diag')
-                  call MIO_Print('  n='//trim(num2str(n))//', m='//trim(num2str(m))//', M_local='//trim(num2str(M_local)),'diag')
-                  call MIO_Print('  Vx_TB size: '//trim(num2str(size(Vx_TB,1)))//'x'//trim(num2str(size(Vx_TB,2))),'diag')
-                  call MIO_Print('  Vy_TB size: '//trim(num2str(size(Vy_TB,1)))//'x'//trim(num2str(size(Vy_TB,2))),'diag')
-                  call MIO_Print('  eigval size: '//trim(num2str(size(eigval))),'diag')
+                  call MIO_Warning('Array bounds exceeded in Berry calculation','diag')
+                  call MIO_PrintDebug('  n='//trim(num2str(n))//', m='//trim(num2str(m))//', M_local='//trim(num2str(M_local)),'diag', tapwDebug)
+                  call MIO_PrintDebug('  Vx_TB size: '//trim(num2str(size(Vx_TB,1)))//'x'//trim(num2str(size(Vx_TB,2))),'diag', tapwDebug)
+                  call MIO_PrintDebug('  Vy_TB size: '//trim(num2str(size(Vy_TB,1)))//'x'//trim(num2str(size(Vy_TB,2))),'diag', tapwDebug)
+                  call MIO_PrintDebug('  eigval size: '//trim(num2str(size(eigval))),'diag', tapwDebug)
                end if
             end if
          end do
@@ -13665,16 +13878,16 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
 
          ! DEBUG: Check actual energy differences being processed
          if (kpoint_index == 1 .and. i == 1) then
-            if (tapwDebug) call MIO_Print('DEBUG: Checking energy differences for first band:','diag')
+            call MIO_PrintDebug('Checking energy differences for first band:','diag', tapwDebug)
             block
                real(dp) :: energy_diff
                do m = 1, min(10, M_safe)
                   if (n /= m .and. n <= size(eigval) .and. m <= size(eigval)) then
                      energy_diff = abs(eigval(n) - eigval(m))
-                     call MIO_Print('  |E('//trim(num2str(n))//') - E('//trim(num2str(m))//')| = ' &
-                           //trim(num2str(energy_diff,12)),'diag')
+                     call MIO_PrintDebug('  |E('//trim(num2str(n))//') - E('//trim(num2str(m))//')| = ' &
+                           //trim(num2str(energy_diff,12)),'diag', tapwDebug)
                      if (energy_diff < 1.0e-6_dp) then
-                        call MIO_Print('    *** VERY SMALL ENERGY DIFFERENCE ***','diag')
+                        call MIO_PrintDebug('    *** VERY SMALL ENERGY DIFFERENCE ***','diag', tapwDebug)
                      end if
                   end if
                end do
@@ -13683,33 +13896,35 @@ subroutine CalculateBerryAtKpointFromStored_OptionA(kpoint_index, spin_index, ba
 
          ! DEBUG: Compare velocity matrix elements for first few bands
          if (kpoint_index == 1 .and. i <= 3) then
-            if (tapwDebug) call MIO_Print('DEBUG Option A: Velocity matrix elements for band '//trim(num2str(n))//':','diag')
-            call MIO_Print('  |Vx_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = ' &
-                  //trim(num2str(abs(Vx_TB(n,n+1)),8)),'diag')
-            call MIO_Print('  |Vy_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = ' &
-                  //trim(num2str(abs(Vy_TB(n,n+1)),8)),'diag')
-            call MIO_Print('  Berry curvature = '//trim(num2str(berry_curv_bands(i),8)),'diag')
+            call MIO_PrintDebug('Velocity matrix elements for band '//trim(num2str(n))//':','diag', tapwDebug)
+            call MIO_PrintDebug('  |Vx_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = ' &
+                  //trim(num2str(abs(Vx_TB(n,n+1)),8)),'diag', tapwDebug)
+            call MIO_PrintDebug('  |Vy_TB('//trim(num2str(n))//','//trim(num2str(n+1))//')| = ' &
+                  //trim(num2str(abs(Vy_TB(n,n+1)),8)),'diag', tapwDebug)
+            call MIO_PrintDebug('  Berry curvature = '//trim(num2str(berry_curv_bands(i),8)),'diag', tapwDebug)
          end if
       end if
    end do
 
-   call MIO_Print('Option A Berry curvature calculation completed','diag')
+   call MIO_PrintDebug('Option A Berry curvature calculation completed','diag', tapwDebug)
 
    ! DEBUG: Report statistics
    if (kpoint_index == 1) then
-      if (tapwDebug) call MIO_Print('DEBUG Option A: Energy threshold statistics:','diag')
-      call MIO_Print('  Total band pairs considered: '//trim(num2str(total_pairs)),'diag')
-      call MIO_Print('  Pairs skipped (|ΔE| < '//trim(num2str(energy_threshold,6))//'): '//trim(num2str(skipped_pairs)),'diag')
-      call MIO_Print('  Skipped percentage: '//trim(num2str(100.0_dp * skipped_pairs / max(total_pairs,1),2))//'%','diag')
-      call MIO_Print('  Grid density: '//trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y)),'diag')
-      call MIO_Print('  Total k-points: '//trim(num2str(nk_chern_x * nk_chern_y)),'diag')
+      call MIO_PrintDebug('Energy threshold statistics:','diag', tapwDebug)
+      call MIO_PrintDebug('  Total band pairs considered: '//trim(num2str(total_pairs)),'diag', tapwDebug)
+      call MIO_PrintDebug('  Pairs skipped (|DeltaE| < '//trim(num2str(energy_threshold,6))//'): '// &
+        trim(num2str(skipped_pairs)),'diag', tapwDebug)
+      call MIO_PrintDebug('  Skipped percentage: '//trim(num2str(100.0_dp * skipped_pairs / max(total_pairs,1),2))//'%','diag', tapwDebug)
+      call MIO_PrintDebug('  Grid density: '//trim(num2str(nk_chern_x))//'x'//trim(num2str(nk_chern_y)),'diag', tapwDebug)
+      call MIO_PrintDebug('  Total k-points: '//trim(num2str(nk_chern_x * nk_chern_y)),'diag', tapwDebug)
    end if
 
    ! Debug output for first few bands
    if (num_bands >= 1) then
-      call MIO_Print('Option A Berry curvature samples:','diag')
+      call MIO_PrintDebug('Option A Berry curvature samples:','diag', tapwDebug)
       do i = 1, min(3, num_bands)
-         call MIO_Print('  Band '//trim(num2str(band_indices(i)))//': Ω = '//trim(num2str(berry_curv_bands(i),8)),'diag')
+         call MIO_PrintDebug('  Band '//trim(num2str(band_indices(i)))//': Omega = '//trim(num2str(berry_curv_bands(i),8)), &
+           'diag', tapwDebug)
       end do
    end if
 
@@ -13757,20 +13972,18 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    use_block_derivatives = RashbaSOCterm
 
    if (use_block_derivatives) then
-      call MIO_Print('=== SOC-AWARE OPTION A (Rashba): Berry curvature with block derivatives ===','diag')
+      call MIO_PrintDebug('=== SOC-AWARE OPTION A (Rashba): Berry curvature with block derivatives ===','diag', tapwDebug)
    else
-      call MIO_Print('=== SOC-AWARE OPTION A (non-Rashba): Berry curvature with regular TB derivatives ===','diag')
+      call MIO_PrintDebug('=== SOC-AWARE OPTION A (non-Rashba): Berry curvature with regular TB derivatives ===','diag', tapwDebug)
    end if
 
    ! Check stored data availability
    if (.not. allocated(stored_X_matrix)) then
-      call MIO_Print('ERROR: Stored X matrix not available for SOC Option A','diag')
-      error stop 1
+      call MIO_Kill('Stored X matrix not available for SOC Option A','diag','CalculateBerryAtKpointFromStored_OptionA_withSOC')
    end if
 
    if (.not. allocated(stored_hamiltonians) .or. .not. allocated(stored_eigenvectors)) then
-      call MIO_Print('ERROR: Stored TAPW data not available for SOC Option A','diag')
-      error stop 1
+      call MIO_Kill('Stored TAPW data not available for SOC Option A','diag','CalculateBerryAtKpointFromStored_OptionA_withSOC')
    end if
 
    ! Get dimensions
@@ -13778,21 +13991,22 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    M_local = stored_M
    num_bands = size(band_indices)
 
-   call MIO_Print('SOC Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands=' &
-         //trim(num2str(num_bands)),'diag')
+   call MIO_PrintDebug('SOC Option A dimensions: N='//trim(num2str(N_local))//', M='//trim(num2str(M_local))//', bands=' &
+         //trim(num2str(num_bands)),'diag', tapwDebug)
 
    ! Check X matrix dimensions to determine if block or regular version should be used
    ! For Rashba: stored_X_matrix is 2N×M (from DiagH0TAPW_withBlockH)
    ! For non-Rashba SOC: stored_X_matrix is N×M (from DiagH0TAPW)
    if (use_block_derivatives) then
       if (size(stored_X_matrix, 1) /= 2*N_local) then
-         call MIO_Print('WARNING: Rashba enabled but X matrix is N×M (not 2N×M). This suggests non-Rashba TAPW was used.','diag')
-         call MIO_Print('Falling back to regular TB derivatives (non-block version).','diag')
+         call MIO_Warning('Rashba enabled but X matrix is NxM (not 2NxM). This suggests non-Rashba TAPW was used.', &
+           'diag')
+         call MIO_PrintDebug('Falling back to regular TB derivatives (non-block version).','diag', tapwDebug)
          use_block_derivatives = .false.
       end if
    else
       if (size(stored_X_matrix, 1) == 2*N_local) then
-         call MIO_Print('WARNING: Non-Rashba SOC but X matrix is 2N×M (block version). Using block derivatives.','diag')
+         call MIO_Warning('Non-Rashba SOC but X matrix is 2NxM (block version). Using block derivatives.','diag')
          use_block_derivatives = .true.
       end if
    end if
@@ -13812,12 +14026,12 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    if (kpoint_index <= size(stored_Kpts, 2)) then
       current_kpt = stored_Kpts(:, kpoint_index)
    else
-      call MIO_Print('Warning: kpoint_index exceeds stored k-points, using Γ point','diag')
+      call MIO_Warning('kpoint_index exceeds stored k-points, using Gamma point','diag')
       current_kpt = [0.0_dp, 0.0_dp, 0.0_dp]
    end if
 
-   call MIO_Print('Using k-point coordinates: ['//trim(num2str(current_kpt(1),6))//','//&
-                 trim(num2str(current_kpt(2),6))//','//trim(num2str(current_kpt(3),6))//']','diag')
+   call MIO_PrintDebug('Using k-point coordinates: ['//trim(num2str(current_kpt(1),6))//','//&
+                 trim(num2str(current_kpt(2),6))//','//trim(num2str(current_kpt(3),6))//']','diag', tapwDebug)
 
    ! Step 1: Compute Hamiltonian derivatives (block or regular depending on Rashba)
    if (use_block_derivatives) then
@@ -13830,7 +14044,7 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
 
    ! Check spin_index bounds
    if (spin_index < 1 .or. spin_index > stored_nspin) then
-      call MIO_Print('Error: spin_index '//trim(num2str(spin_index))//' out of range [1,'//trim(num2str(stored_nspin))//']','diag')
+      call MIO_Warning('spin_index '//trim(num2str(spin_index))//' out of range [1,'//trim(num2str(stored_nspin))//']','diag')
       berry_curv_bands = 0.0_dp
       return
    end if
@@ -13845,21 +14059,19 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
       if (size(stored_eigenvalues,1) >= M_local .and. size(stored_eigenvalues,2) >= kpoint_index &
             .and. size(stored_eigenvalues,3) >= spin_index) then
          eigval(1:M_local) = stored_eigenvalues(1:M_local,kpoint_index,spin_index)
-         call MIO_Print('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index))//', spin ' &
-               //trim(num2str(spin_index)),'diag')
-         call MIO_Print('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//',' &
-               //trim(num2str(maxval(eigval(1:M_local)),6))//']','diag')
+         call MIO_PrintDebug('Using stored TAPW eigenvalues for k-point '//trim(num2str(kpoint_index))//', spin ' &
+               //trim(num2str(spin_index)),'diag', tapwDebug)
+         call MIO_PrintDebug('  TAPW eigenvalues range: ['//trim(num2str(minval(eigval(1:M_local)),6))//',' &
+               //trim(num2str(maxval(eigval(1:M_local)),6))//']','diag', tapwDebug)
       else
-         call MIO_Print('ERROR: stored_eigenvalues array too small','diag')
-         call MIO_Print('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
-               //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag')
-         call MIO_Print('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index))//'x' &
-               //trim(num2str(spin_index)),'diag')
-         error stop 1
+         call MIO_Warning('stored_eigenvalues array too small','diag')
+         call MIO_PrintDebug('  Array size: '//trim(num2str(size(stored_eigenvalues,1)))//'x' &
+               //trim(num2str(size(stored_eigenvalues,2)))//'x'//trim(num2str(size(stored_eigenvalues,3))),'diag', tapwDebug)
+         call MIO_Kill('  Required: '//trim(num2str(M_local))//'x'//trim(num2str(kpoint_index))//'x' //trim(num2str(spin_index)),'diag','CalculateBerryAtKpointFromStored_OptionA_withSOC')
       end if
    else
-      call MIO_Print('ERROR: No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
-      call MIO_Print('This will cause eigenvector-eigenvalue misalignment!','diag')
+      call MIO_Warning('No stored TAPW eigenvalues available - using TB eigenvalues (WRONG!)','diag')
+      call MIO_Warning('This will cause eigenvector-eigenvalue misalignment!','diag')
       ! Fallback to eigval_from_E (this is wrong but prevents crash)
       if (size(eigval_from_E) >= M_local) then
          eigval(1:M_local) = eigval_from_E(1:M_local)
@@ -13882,10 +14094,10 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    ! For non-Rashba: Vx_TB(n,m) = ⟨ψ_TB_n| dH^TB/dkx |ψ_TB_m⟩ using N×N regular derivatives
 
    if (use_block_derivatives) then
-      call MIO_Print('Computing velocity matrix elements in TB block space (2N×2N)','diag')
+      call MIO_PrintDebug('Computing velocity matrix elements in TB block space (2Nx2N)','diag', tapwDebug)
       ! Note: eigvec_TB is 2N×M, dH_Block_dk is 2N×2N, so we compute M×M velocity matrices
    else
-      call MIO_Print('Computing velocity matrix elements in TB space (N×N)','diag')
+      call MIO_PrintDebug('Computing velocity matrix elements in TB space (NxN)','diag', tapwDebug)
       ! Note: eigvec_TB is N×M, dH_TB_dk is N×N, so we compute M×M velocity matrices
    end if
 
@@ -13959,11 +14171,11 @@ subroutine CalculateBerryAtKpointFromStored_OptionA_withSOC(kpoint_index, spin_i
    end do
 
    if (tapwDebug) then
-      call MIO_Print('SOC Option A: Skipped '//trim(num2str(skipped_pairs))//'/'//trim(num2str(total_pairs)) &
-            //' band pairs due to small energy differences','diag')
+      call MIO_PrintDebug('SOC Option A: Skipped '//trim(num2str(skipped_pairs))//'/'//trim(num2str(total_pairs))  // &
+        ' band pairs due to small energy differences','diag', tapwDebug)
    end if
 
-   call MIO_Print('SOC Option A: Berry curvature calculation completed for '//trim(num2str(num_bands))//' bands','diag')
+   call MIO_PrintDebug('SOC Option A: Berry curvature calculation completed for '//trim(num2str(num_bands))//' bands','diag', tapwDebug)
 
    ! Clean up
    deallocate(H_k, eigvec_TAPW, eigval)
@@ -13986,7 +14198,7 @@ subroutine cleanup_position_differences_cache()
    cached_NG = -1
    cached_Nlabel = -1
 
-   call MIO_Print('TAPW position difference cache cleared','diag')
+   call MIO_PrintDebug('TAPW position difference cache cleared','diag', tapwDebug)
 
 end subroutine cleanup_position_differences_cache
 
@@ -14012,7 +14224,7 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
     integer :: i, j, k, nnz, max_XdX_i, max_XdX_j
     integer :: G_i, G_j, label_i, label_j
 
-    call MIO_Print('=== TAPW Unitary Transformation Check ===','diag')
+    call MIO_PrintDebug('=== TAPW Unitary Transformation Check ===','diag', tapwDebug)
 
     ! 1. Check if X†X is close to identity (unitarity check)
     allocate(X_dagger_X(M, M))
@@ -14030,17 +14242,17 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
         end do
     end do
 
-    call MIO_Print('X†X unitarity check:','diag')
-    call MIO_Print('  Max deviation from identity: '//trim(num2str(unitary_error,8)),'diag')
+    call MIO_PrintDebug('X^HX unitarity check:','diag', tapwDebug)
+    call MIO_PrintDebug('  Max deviation from identity: '//trim(num2str(unitary_error,8)),'diag', tapwDebug)
 
     if (unitary_error < 1.0e-10_dp) then
-        call MIO_Print('  ✓ X is numerically unitary (excellent)','diag')
+        call MIO_PrintDebug('   X is numerically unitary (excellent)','diag', tapwDebug)
     else if (unitary_error < 1.0e-6_dp) then
-        call MIO_Print('  ✓ X is approximately unitary (good)','diag')
+        call MIO_PrintDebug('   X is approximately unitary (good)','diag', tapwDebug)
     else if (unitary_error < 1.0e-3_dp) then
-        call MIO_Print('  ⚠ X has some non-unitarity (acceptable for truncated G-set)','diag')
+        call MIO_PrintDebug('   X has some non-unitarity (acceptable for truncated G-set)','diag', tapwDebug)
     else
-        call MIO_Print('  ✗ X is significantly non-unitary (check G-vector completeness)','diag')
+        call MIO_PrintDebug('   X is significantly non-unitary (check G-vector completeness)','diag', tapwDebug)
     end if
 
     ! 1b. Also check X*X† (should be projection matrix for rectangular X)
@@ -14060,25 +14272,25 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
         end do
     end do
 
-    call MIO_Print('X*X† projection check:','diag')
-    call MIO_Print('  Max deviation from identity: '//trim(num2str(projection_error,8)),'diag')
+    call MIO_PrintDebug('X*X^H projection check:','diag', tapwDebug)
+    call MIO_PrintDebug('  Max deviation from identity: '//trim(num2str(projection_error,8)),'diag', tapwDebug)
 
     ! Find where the maximum errors actually occur
-    call MIO_Print('Locating maximum unitarity errors:','diag')
+    call MIO_PrintDebug('Locating maximum unitarity errors:','diag', tapwDebug)
 
     ! Find max error location in X†X
     outer_loop_XdX: do i = 1, M
         do j = 1, M
             if (i == j) then
                 if (abs(abs(X_dagger_X(i,j) - cmplx_1) - unitary_error) < 1.0e-12_dp) then
-                    call MIO_Print('  X†X max diagonal error at ('//trim(num2str(i))//','//trim(num2str(j))//'): '//&
-                                   trim(num2str(real(X_dagger_X(i,j)),8))//' (should be 1.0)','diag')
+                    call MIO_PrintDebug('  X^HX max diagonal error at ('//trim(num2str(i))//','//trim(num2str(j))//'): '// &
+                      trim(num2str(real(X_dagger_X(i,j)),8))//' (should be 1.0)','diag', tapwDebug)
                     exit outer_loop_XdX
                 end if
             else
                 if (abs(abs(X_dagger_X(i,j)) - unitary_error) < 1.0e-12_dp) then
-                    call MIO_Print('  X†X max off-diagonal error at ('//trim(num2str(i))//','//trim(num2str(j))//'): '//&
-                                   trim(num2str(real(X_dagger_X(i,j)),8))//' (should be 0.0)','diag')
+                    call MIO_PrintDebug('  X^HX max off-diagonal error at ('//trim(num2str(i))//','//trim(num2str(j))// &
+                      '): '// trim(num2str(real(X_dagger_X(i,j)),8))//' (should be 0.0)','diag', tapwDebug)
                     exit outer_loop_XdX
                 end if
             end if
@@ -14090,14 +14302,14 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
         do j = 1, N
             if (i == j) then
                 if (abs(abs(X_X_dagger(i,j) - cmplx_1) - projection_error) < 1.0e-12_dp) then
-                    call MIO_Print('  X*X† max diagonal error at ('//trim(num2str(i))//','//trim(num2str(j))//'): '//&
-                                   trim(num2str(real(X_X_dagger(i,j)),8))//' (should be 1.0)','diag')
+                    call MIO_PrintDebug('  X*X^H max diagonal error at ('//trim(num2str(i))//','//trim(num2str(j))//'): '// &
+                      trim(num2str(real(X_X_dagger(i,j)),8))//' (should be 1.0)','diag', tapwDebug)
                     exit outer_loop_XXd
                 end if
             else
                 if (abs(abs(X_X_dagger(i,j)) - projection_error) < 1.0e-12_dp) then
-                    call MIO_Print('  X*X† max off-diagonal error at ('//trim(num2str(i))//','//trim(num2str(j))//'): '//&
-                                   trim(num2str(real(X_X_dagger(i,j)),8))//' (should be 0.0)','diag')
+                    call MIO_PrintDebug('  X*X^H max off-diagonal error at ('//trim(num2str(i))//','//trim(num2str(j))// &
+                      '): '// trim(num2str(real(X_X_dagger(i,j)),8))//' (should be 0.0)','diag', tapwDebug)
                     exit outer_loop_XXd
                 end if
             end if
@@ -14105,7 +14317,7 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
     end do outer_loop_XXd
 
     ! Decode the problematic G-vector indices and coordinates for better diagnostics
-    call MIO_Print('G-vector pair analysis for maximum errors:','diag')
+    call MIO_PrintDebug('G-vector pair analysis for maximum errors:','diag', tapwDebug)
 
     ! Find the maximum off-diagonal error again to get indices
     max_XdX_error = 0.0_dp
@@ -14127,10 +14339,10 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
         G_j = (max_XdX_j - 1) / Nlabel + 1
         label_j = mod(max_XdX_j - 1, Nlabel) + 1
 
-        call MIO_Print('Problematic G-vector pair:','diag')
-        call MIO_Print('  Matrix indices: ('//trim(num2str(max_XdX_i))//', '//trim(num2str(max_XdX_j))//')','diag')
-        call MIO_Print('  G-vector indices: G('//trim(num2str(G_i))//'), G('//trim(num2str(G_j))//')','diag')
-        call MIO_Print('  Sublattice labels: '//trim(num2str(label_i))//', '//trim(num2str(label_j)),'diag')
+        call MIO_PrintDebug('Problematic G-vector pair:','diag', tapwDebug)
+        call MIO_PrintDebug('  Matrix indices: ('//trim(num2str(max_XdX_i))//', '//trim(num2str(max_XdX_j))//')','diag', tapwDebug)
+        call MIO_PrintDebug('  G-vector indices: G('//trim(num2str(G_i))//'), G('//trim(num2str(G_j))//')','diag', tapwDebug)
+        call MIO_PrintDebug('  Sublattice labels: '//trim(num2str(label_i))//', '//trim(num2str(label_j)),'diag', tapwDebug)
         if (G_i <= NG .and. G_j <= NG) then
             ! Use temporary variables to avoid complex expressions in num2str
             Gx_i = Gx(G_i)
@@ -14144,14 +14356,20 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
             diff_mag = sqrt(diff_x**2 + diff_y**2)
 
             ! Use simple print statements to avoid num2str issues
-            print *, '  G(', G_i, ') = [', Gx_i, ',', Gy_i, ']'
-            print *, '  G(', G_j, ') = [', Gx_j, ',', Gy_j, ']'
-            print *, '  |G(', G_i, ')| =', mag_i
-            print *, '  |G(', G_j, ')| =', mag_j
-            print *, '  G-vector difference: [', diff_x, ',', diff_y, ']'
-            print *, '  |ΔG| =', diff_mag
+            write(dbgmsg,'(*(g0,1x))') 'G(', G_i, ') = [', Gx_i, ',', Gy_i, ']'
+            call MIO_PrintDebug(trim(dbgmsg),'diag')
+            write(dbgmsg,'(*(g0,1x))') 'G(', G_j, ') = [', Gx_j, ',', Gy_j, ']'
+            call MIO_PrintDebug(trim(dbgmsg),'diag')
+            write(dbgmsg,'(*(g0,1x))') '|G(', G_i, ')| =', mag_i
+            call MIO_PrintDebug(trim(dbgmsg),'diag')
+            write(dbgmsg,'(*(g0,1x))') '|G(', G_j, ')| =', mag_j
+            call MIO_PrintDebug(trim(dbgmsg),'diag')
+            write(dbgmsg,'(*(g0,1x))') 'G-vector difference: [', diff_x, ',', diff_y, ']'
+            call MIO_PrintDebug(trim(dbgmsg),'diag')
+            write(dbgmsg,'(*(g0,1x))') '|DeltaG| =', diff_mag
+            call MIO_PrintDebug(trim(dbgmsg),'diag')
         else
-            call MIO_Print('  ERROR: G-vector indices out of bounds!','diag')
+            call MIO_Warning('G-vector indices out of bounds!','diag')
         end if
     end if
 
@@ -14197,7 +14415,7 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
     close(94)
 
     ! Calculate statistics for different regions
-    call MIO_Print('Regional unitarity analysis:','diag')
+    call MIO_PrintDebug('Regional unitarity analysis:','diag', tapwDebug)
 
     ! First 100x100 region statistics
     unitary_error = 0.0_dp
@@ -14210,7 +14428,7 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
             end if
         end do
     end do
-    call MIO_Print('  First 100×100 X†X region max error: '//trim(num2str(unitary_error,8)),'diag')
+    call MIO_PrintDebug('  First 100x100 X^HX region max error: '//trim(num2str(unitary_error,8)),'diag', tapwDebug)
 
     ! Last 100x100 region statistics (if matrix is large enough)
     if (M > 100) then
@@ -14224,27 +14442,28 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
                 end if
             end do
         end do
-        call MIO_Print('  Last 100×100 X†X region max error: '//trim(num2str(unitary_error,8)),'diag')
+        call MIO_PrintDebug('  Last 100x100 X^HX region max error: '//trim(num2str(unitary_error,8)),'diag', tapwDebug)
     end if
 
-    call MIO_Print('Matrix visualization files written:','diag')
-    call MIO_Print('  XdaggerX_matrix_region1.dat (first 100×100)','diag')
-    if (M > 200) call MIO_Print('  XdaggerX_matrix_region2.dat (middle region)','diag')
-    if (M > 100) call MIO_Print('  XdaggerX_matrix_region3.dat (last 100×100)','diag')
-    call MIO_Print('  XXdagger_matrix_region1.dat (first 100×100)','diag')
+    call MIO_PrintDebug('Matrix visualization files written:','diag', tapwDebug)
+    call MIO_PrintDebug('  XdaggerX_matrix_region1.dat (first 100x100)','diag', tapwDebug)
+    if (M > 200) call MIO_PrintDebug('  XdaggerX_matrix_region2.dat (middle region)','diag', tapwDebug)
+    if (M > 100) call MIO_PrintDebug('  XdaggerX_matrix_region3.dat (last 100x100)','diag', tapwDebug)
+    call MIO_PrintDebug('  XXdagger_matrix_region1.dat (first 100x100)','diag', tapwDebug)
 
     if (M == N) then
         if (projection_error < 1.0e-10_dp) then
-            call MIO_Print('  ✓ X*X† is numerically identity (square unitary matrix)','diag')
+            call MIO_PrintDebug('   X*X^H is numerically identity (square unitary matrix)','diag', tapwDebug)
         else if (projection_error < 1.0e-6_dp) then
-            call MIO_Print('  ✓ X*X† is approximately identity (good square matrix)','diag')
+            call MIO_PrintDebug('   X*X^H is approximately identity (good square matrix)','diag', tapwDebug)
         else if (projection_error < 1.0e-3_dp) then
-            call MIO_Print('  ⚠ X*X† has some deviation from identity','diag')
+            call MIO_PrintDebug('   X*X^H has some deviation from identity','diag', tapwDebug)
         else
-            call MIO_Print('  ✗ X*X† significantly deviates from identity','diag')
+            call MIO_PrintDebug('   X*X^H significantly deviates from identity','diag', tapwDebug)
         end if
     else
-        call MIO_Print('  Note: X is rectangular ('//trim(num2str(N))//'×'//trim(num2str(M))//'), X*X† is projection matrix','diag')
+        call MIO_PrintDebug('  Note: X is rectangular ('//trim(num2str(N))//'x'//trim(num2str(M))// &
+          '), X*X^H is projection matrix','diag', tapwDebug)
     end if
 
     ! 2. Reconstruct full Hamiltonian: T_reconstruct = X * Hproj * X†
@@ -14273,34 +14492,32 @@ subroutine verify_tapw_unitary_transformation(N, M, row_ptr, col_ind, values, X,
         end do
     end do
 
-    call MIO_Print('','diag')
-    call MIO_Print('Full Hamiltonian reconstruction check:','diag')
-    call MIO_Print('  Max |T_original - X*H_proj*X†|: '//trim(num2str(reconstruction_error,8)),'diag')
+    call MIO_PrintDebug('Full Hamiltonian reconstruction check:','diag', tapwDebug)
+    call MIO_PrintDebug('  Max |T_original - X*H_proj*X^H|: '//trim(num2str(reconstruction_error,8)),'diag', tapwDebug)
 
     if (reconstruction_error < 1.0e-10_dp) then
-        call MIO_Print('  ✓ Perfect reconstruction - G-set is complete!','diag')
+        call MIO_PrintDebug('   Perfect reconstruction - G-set is complete!','diag', tapwDebug)
     else if (reconstruction_error < 1.0e-6_dp) then
-        call MIO_Print('  ✓ Excellent reconstruction - G-set is nearly complete','diag')
+        call MIO_PrintDebug('   Excellent reconstruction - G-set is nearly complete','diag', tapwDebug)
     else if (reconstruction_error < 1.0e-3_dp) then
-        call MIO_Print('  ⚠ Good reconstruction - G-set captures main physics','diag')
+        call MIO_PrintDebug('   Good reconstruction - G-set captures main physics','diag', tapwDebug)
     else
-        call MIO_Print('  ✗ Poor reconstruction - G-set may be incomplete','diag')
-        call MIO_Print('    Consider increasing NG or checking G-vector selection','diag')
+        call MIO_PrintDebug('   Poor reconstruction - G-set may be incomplete','diag', tapwDebug)
+        call MIO_PrintDebug('    Consider increasing NG or checking G-vector selection','diag', tapwDebug)
     end if
 
     ! 3. Report G-vector coverage information
-    call MIO_Print('','diag')
-    call MIO_Print('G-vector coverage analysis:','diag')
-    call MIO_Print('  Total G-vectors used: '//trim(num2str(real(NG,dp),0)),'diag')
-    call MIO_Print('  Labels (sublattices): '//trim(num2str(real(Nlabel,dp),0)),'diag')
-    call MIO_Print('  TAPW subspace dimension: '//trim(num2str(real(M,dp),0))//' (vs full space: ' &
-          //trim(num2str(real(N,dp),0))//')','diag')
-    call MIO_Print('  Compression ratio: '//trim(num2str(real(N,dp)/real(M,dp),2)),'diag')
+    call MIO_PrintDebug('G-vector coverage analysis:','diag', tapwDebug)
+    call MIO_PrintDebug('  Total G-vectors used: '//trim(num2str(real(NG,dp),0)),'diag', tapwDebug)
+    call MIO_PrintDebug('  Labels (sublattices): '//trim(num2str(real(Nlabel,dp),0)),'diag', tapwDebug)
+    call MIO_PrintDebug('  TAPW subspace dimension: '//trim(num2str(real(M,dp),0))//' (vs full space: ' &
+          //trim(num2str(real(N,dp),0))//')','diag', tapwDebug)
+    call MIO_PrintDebug('  Compression ratio: '//trim(num2str(real(N,dp)/real(M,dp),2)),'diag', tapwDebug)
 
     ! Cleanup
     deallocate(X_dagger_X, X_X_dagger, T_full, reconstruction, temp)
 
-    call MIO_Print('=== End TAPW Unitary Check ===','diag')
+    call MIO_PrintDebug('=== End TAPW Unitary Check ===','diag', tapwDebug)
 
 end subroutine verify_tapw_unitary_transformation
 
@@ -14320,9 +14537,9 @@ subroutine diagnose_tapw_phase_consistency(KLoc, Gx, Gy, NG, XArray, N, Nlabel)
     real(dp) :: G_dot_r, k_dot_r
     integer :: i_atom, i_G
 
-    call MIO_Print('=== TAPW Phase Consistency Diagnostic ===','diag')
-    call MIO_Print('Checking consistency between X-matrix and Hamiltonian phases','diag')
-    call MIO_Print('Current k-point: ['//trim(num2str(KLoc(1),6))//','//trim(num2str(KLoc(2),6))//']','diag')
+    call MIO_PrintDebug('=== TAPW Phase Consistency Diagnostic ===','diag', tapwDebug)
+    call MIO_PrintDebug('Checking consistency between X-matrix and Hamiltonian phases','diag', tapwDebug)
+    call MIO_PrintDebug('Current k-point: ['//trim(num2str(KLoc(1),6))//','//trim(num2str(KLoc(2),6))//']','diag', tapwDebug)
 
     ! Check first few atoms and G-vectors
     do i_atom = 1, min(3, N)
@@ -14338,23 +14555,23 @@ subroutine diagnose_tapw_phase_consistency(KLoc, Gx, Gy, NG, XArray, N, Nlabel)
             ! Expected combined phase for TAPW
             expected_phase = exp(cmplx_i * (G_dot_r - k_dot_r))
 
-            call MIO_Print('Atom '//trim(num2str(i_atom))//', G-vector '//trim(num2str(i_G))//':','diag')
-            call MIO_Print('  Position: ['//trim(num2str(Rat(1,i_atom),4))//','//trim(num2str(Rat(2,i_atom),4))//']','diag')
-            call MIO_Print('  G·r = '//trim(num2str(G_dot_r,6))//', exp(iG·r) = ('//&
-                          trim(num2str(real(X_phase),6))//','//trim(num2str(aimag(X_phase),6))//')','diag')
-            call MIO_Print('  k·r = '//trim(num2str(k_dot_r,6))//', exp(-ik·r) = ('//&
-                          trim(num2str(real(H_phase),6))//','//trim(num2str(aimag(H_phase),6))//')','diag')
-            call MIO_Print('  Combined: exp(i(G-k)·r) = ('//&
-                          trim(num2str(real(expected_phase),6))//','//trim(num2str(aimag(expected_phase),6))//')','diag')
+            call MIO_PrintDebug('Atom '//trim(num2str(i_atom))//', G-vector '//trim(num2str(i_G))//':','diag', tapwDebug)
+            call MIO_PrintDebug('  Position: ['//trim(num2str(Rat(1,i_atom),4))//','//trim(num2str(Rat(2,i_atom),4))//']','diag', tapwDebug)
+            call MIO_PrintDebug('  G.r = '//trim(num2str(G_dot_r,6))//', exp(iG.r) = ('// trim(num2str(real(X_phase),6))// &
+              ','//trim(num2str(aimag(X_phase),6))//')','diag', tapwDebug)
+            call MIO_PrintDebug('  k.r = '//trim(num2str(k_dot_r,6))//', exp(-ik.r) = ('// trim(num2str(real(H_phase),6))// &
+              ','//trim(num2str(aimag(H_phase),6))//')','diag', tapwDebug)
+            call MIO_PrintDebug('  Combined: exp(i(G-k).r) = ('// trim(num2str(real(expected_phase),6))//','// &
+              trim(num2str(aimag(expected_phase),6))//')','diag', tapwDebug)
 
             ! Check if k=0 (Gamma point)
             if (sqrt(KLoc(1)**2 + KLoc(2)**2) < 1e-10) then
-                call MIO_Print('  → At Γ-point: k·r ≈ 0, phase ≈ 1','diag')
+                call MIO_PrintDebug('  -> At Gamma-point: k.r ~ 0, phase ~ 1','diag', tapwDebug)
             end if
         end do
     end do
 
-    call MIO_Print('=== End Phase Consistency Diagnostic ===','diag')
+    call MIO_PrintDebug('=== End Phase Consistency Diagnostic ===','diag', tapwDebug)
 
 end subroutine diagnose_tapw_phase_consistency
 
@@ -14371,7 +14588,7 @@ subroutine calculate_optimal_NGrange_for_complete_BZ(twist_angle_deg, user_NGran
     real(dp) :: twist_angle_rad, sin_half_theta
     integer :: NGrange_complete, NGrange_safe
 
-    call MIO_Print('=== TAPW G-Vector Grid Completeness Analysis ===','diag')
+    call MIO_PrintDebug('=== TAPW G-Vector Grid Completeness Analysis ===','diag', tapwDebug)
 
     ! Convert to radians
     twist_angle_rad = twist_angle_deg * pi / 180.0_dp
@@ -14385,43 +14602,40 @@ subroutine calculate_optimal_NGrange_for_complete_BZ(twist_angle_deg, user_NGran
     ! Add safety margin for numerical precision and edge effects
     NGrange_safe = nint(NGrange_complete * 1.2_dp)  ! 20% safety margin
 
-    call MIO_Print('G-vector grid completeness analysis:','diag')
-    call MIO_Print('  Twist angle: '//trim(num2str(twist_angle_deg,3))//' degrees','diag')
-    call MIO_Print('  sin(θ/2): '//trim(num2str(sin_half_theta,6)),'diag')
-    call MIO_Print('  NGrange for COMPLETE BZ coverage: '//trim(num2str(real(NGrange_complete,dp),0)),'diag')
-    call MIO_Print('  NGrange with safety margin: '//trim(num2str(real(NGrange_safe,dp),0)),'diag')
-    call MIO_Print('  User requested NGrange: '//trim(num2str(real(user_NGrange,dp),0)),'diag')
+    call MIO_PrintDebug('G-vector grid completeness analysis:','diag', tapwDebug)
+    call MIO_PrintDebug('  Twist angle: '//trim(num2str(twist_angle_deg,3))//' degrees','diag', tapwDebug)
+    call MIO_PrintDebug('  sin(theta/2): '//trim(num2str(sin_half_theta,6)),'diag', tapwDebug)
+    call MIO_PrintDebug('  NGrange for COMPLETE BZ coverage: '//trim(num2str(real(NGrange_complete,dp),0)),'diag', tapwDebug)
+    call MIO_PrintDebug('  NGrange with safety margin: '//trim(num2str(real(NGrange_safe,dp),0)),'diag', tapwDebug)
+    call MIO_PrintDebug('  User requested NGrange: '//trim(num2str(real(user_NGrange,dp),0)),'diag', tapwDebug)
 
     ! Determine which NGrange to use
     if (user_NGrange >= NGrange_safe) then
         optimal_NGrange = user_NGrange
-        call MIO_Print('  ✓ Using user NGrange (sufficient for complete BZ)','diag')
+        call MIO_PrintDebug('   Using user NGrange (sufficient for complete BZ)','diag', tapwDebug)
     else if (user_NGrange >= NGrange_complete) then
         optimal_NGrange = user_NGrange
-        call MIO_Print('  ⚠ Using user NGrange (complete but no safety margin)','diag')
+        call MIO_PrintDebug('   Using user NGrange (complete but no safety margin)','diag', tapwDebug)
     else
         optimal_NGrange = NGrange_safe
-        call MIO_Print('  ⚠ User NGrange TOO SMALL - using calculated safe value','diag')
-        call MIO_Print('    This ensures complete first BZ coverage for unitary TAPW','diag')
+        call MIO_PrintDebug('   User NGrange TOO SMALL - using calculated safe value','diag', tapwDebug)
+        call MIO_PrintDebug('    This ensures complete first BZ coverage for unitary TAPW','diag', tapwDebug)
     end if
 
-    call MIO_Print('  FINAL NGrange: '//trim(num2str(real(optimal_NGrange,dp),0)),'diag')
+    call MIO_PrintDebug('  FINAL NGrange: '//trim(num2str(real(optimal_NGrange,dp),0)),'diag', tapwDebug)
 
     ! Provide guidance for different regimes
     if (optimal_NGrange > 100) then
-        call MIO_Print('','diag')
-        call MIO_Print('NOTE: Large NGrange due to small twist angle.','diag')
-        call MIO_Print('      Consider using triangular truncation for efficiency.','diag')
-        call MIO_Print('      Set useTriangularTruncation=.true. in input.','diag')
+        call MIO_PrintDebug('NOTE: Large NGrange due to small twist angle.','diag', tapwDebug)
+        call MIO_PrintDebug('      Consider using triangular truncation for efficiency.','diag', tapwDebug)
+        call MIO_PrintDebug('      Set useTriangularTruncation=.true. in input.','diag', tapwDebug)
     else if (optimal_NGrange > 50) then
-        call MIO_Print('','diag')
-        call MIO_Print('NOTE: Moderate NGrange - good balance of completeness vs efficiency.','diag')
+        call MIO_PrintDebug('NOTE: Moderate NGrange - good balance of completeness vs efficiency.','diag', tapwDebug)
     else
-        call MIO_Print('','diag')
-        call MIO_Print('NOTE: Small NGrange - efficient but check unitary test results.','diag')
+        call MIO_PrintDebug('NOTE: Small NGrange - efficient but check unitary test results.','diag', tapwDebug)
     end if
 
-    call MIO_Print('=== End G-Vector Grid Analysis ===','diag')
+    call MIO_PrintDebug('=== End G-Vector Grid Analysis ===','diag', tapwDebug)
 
 end subroutine calculate_optimal_NGrange_for_complete_BZ
 
@@ -14436,7 +14650,7 @@ subroutine output_brillouin_zones_debug(aG, moireAngle, k_ref, rG)
    real(dp) :: b1(2), b2(2)      ! Reciprocal lattice vectors
    integer :: i
 
-   if (tapwDebug) call MIO_Print("DEBUG: Writing Brillouin zone data using rG vectors")
+   call MIO_PrintDebug("Writing Brillouin zone data using rG vectors",'diag', tapwDebug)
 
    ! Extract reciprocal lattice vectors (rG uses column storage: rG(:,i) = i-th vector)
    b1 = rG(:,1)  ! First reciprocal lattice vector
@@ -14466,7 +14680,7 @@ subroutine output_brillouin_zones_debug(aG, moireAngle, k_ref, rG)
    write(97, '(2F16.8)') b2(1), b2(2)
    close(97)
 
-   if (tapwDebug) call MIO_Print("DEBUG: Brillouin zone data written to brillouin_zones_debug.dat")
+   call MIO_PrintDebug("Brillouin zone data written to brillouin_zones_debug.dat",'diag', tapwDebug)
 
 end subroutine output_brillouin_zones_debug
 
@@ -14505,7 +14719,7 @@ subroutine output_moire_bz_debug(rcell)
    write(96, '(2F16.8)') moire_b2(1), moire_b2(2)
    close(96)
 
-   call MIO_Print("Moiré BZ data written to moire_bz_debug.dat",'diag')
+   call MIO_PrintDebug("Moire BZ data written to moire_bz_debug.dat",'diag', tapwDebug)
 
 end subroutine output_moire_bz_debug
 
@@ -14516,7 +14730,7 @@ subroutine output_kpath_debug()
 
    ! This is a placeholder - we'll need to modify the main routine to call this
    ! with the actual path data
-   call MIO_Print("K-path debug output placeholder - needs path data from main routine",'diag')
+   call MIO_PrintDebug("K-path debug output placeholder - needs path data from main routine",'diag')
 
 end subroutine output_kpath_debug
 
@@ -14526,17 +14740,17 @@ subroutine cleanup_TAPW_storage()
 
    if (allocated(stored_eigenvectors)) then
       deallocate(stored_eigenvectors)
-      call MIO_Print('Deallocated stored eigenvectors','diag')
+      call MIO_PrintDebug('Deallocated stored eigenvectors','diag', tapwDebug)
    end if
 
    if (allocated(stored_hamiltonians)) then
       deallocate(stored_hamiltonians)
-      call MIO_Print('Deallocated stored Hamiltonians','diag')
+      call MIO_PrintDebug('Deallocated stored Hamiltonians','diag', tapwDebug)
    end if
 
    if (allocated(stored_eigenvalues)) then
       deallocate(stored_eigenvalues)
-      call MIO_Print('Deallocated stored eigenvalues','diag')
+      call MIO_PrintDebug('Deallocated stored eigenvalues','diag', tapwDebug)
    end if
 
    ! Also the X matrix and the k-points: DiagH0TAPW allocates X again whenever the eigenvectors are
@@ -14599,7 +14813,7 @@ subroutine write_chern_tapw_results(band_indices, chern_bands, chern_total, nkx,
    write(unit_chern, '(A,F15.8)') '# Total deviation from integer: ', abs(chern_total - nint(chern_total))
 
    close(unit_chern)
-   call MIO_Print('TAPW Chern results written successfully','diag')
+   call MIO_PrintDebug('TAPW Chern results written successfully','diag', tapwDebug)
 
 end subroutine write_chern_tapw_results
 
@@ -14646,16 +14860,16 @@ subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngl
    integer :: i
 
    if (.not. tapwDebug) return  ! Skip if debug not enabled
-   call MIO_Print('=== TAPW NUMERICAL VERIFICATION ===','diag')
+   call MIO_PrintDebug('=== TAPW NUMERICAL VERIFICATION ===','diag', tapwDebug)
 
    ! DEBUG: Examine full rcell structure
-   if (tapwDebug) call MIO_Print('DEBUG: Full rcell matrix structure','diag')
-   call MIO_Print('   rcell(1,:) = ['//trim(adjustl(num2str(rcell(1,1),8)))//','//&
-                  trim(adjustl(num2str(rcell(1,2),8)))//','//trim(adjustl(num2str(rcell(1,3),8)))//']','diag')
-   call MIO_Print('   rcell(2,:) = ['//trim(adjustl(num2str(rcell(2,1),8)))//','//&
-                  trim(adjustl(num2str(rcell(2,2),8)))//','//trim(adjustl(num2str(rcell(2,3),8)))//']','diag')
-   call MIO_Print('   rcell(3,:) = ['//trim(adjustl(num2str(rcell(3,1),8)))//','//&
-                  trim(adjustl(num2str(rcell(3,2),8)))//','//trim(adjustl(num2str(rcell(3,3),8)))//']','diag')
+   call MIO_PrintDebug('Full rcell matrix structure','diag', tapwDebug)
+   call MIO_PrintDebug('   rcell(1,:) = ['//trim(adjustl(num2str(rcell(1,1),8)))//','// &
+     trim(adjustl(num2str(rcell(1,2),8)))//','//trim(adjustl(num2str(rcell(1,3),8)))//']','diag', tapwDebug)
+   call MIO_PrintDebug('   rcell(2,:) = ['//trim(adjustl(num2str(rcell(2,1),8)))//','// &
+     trim(adjustl(num2str(rcell(2,2),8)))//','//trim(adjustl(num2str(rcell(2,3),8)))//']','diag', tapwDebug)
+   call MIO_PrintDebug('   rcell(3,:) = ['//trim(adjustl(num2str(rcell(3,1),8)))//','// &
+     trim(adjustl(num2str(rcell(3,2),8)))//','//trim(adjustl(num2str(rcell(3,3),8)))//']','diag', tapwDebug)
 
    ! Calculate ucell_T from rcell (same as in generate_shifted_G_list)
    rcell_2d = rcell(1:2,1:2)  ! Extract 2D part
@@ -14665,12 +14879,12 @@ subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngl
    ! Calculate ucell_T from rcell using standard 2D lattice inversion
    ucell_T = reshape([b2(2), -b2(1), -b1(2), b1(1)], [2,2]) * (2.0_dp * pi) / det
 
-   if (tapwDebug) call MIO_Print('DEBUG: Extracted 2D components','diag')
-   call MIO_Print('   rcell_2d(1,:) = ['//trim(adjustl(num2str(rcell_2d(1,1),8)))//','//&
-                  trim(adjustl(num2str(rcell_2d(1,2),8)))//']','diag')
-   call MIO_Print('   rcell_2d(2,:) = ['//trim(adjustl(num2str(rcell_2d(2,1),8)))//','//&
-                  trim(adjustl(num2str(rcell_2d(2,2),8)))//']','diag')
-   call MIO_Print('   det = '//trim(adjustl(num2str(det,8))),'diag')
+   call MIO_PrintDebug('Extracted 2D components','diag', tapwDebug)
+   call MIO_PrintDebug('   rcell_2d(1,:) = ['//trim(adjustl(num2str(rcell_2d(1,1),8)))//','// &
+     trim(adjustl(num2str(rcell_2d(1,2),8)))//']','diag', tapwDebug)
+   call MIO_PrintDebug('   rcell_2d(2,:) = ['//trim(adjustl(num2str(rcell_2d(2,1),8)))//','// &
+     trim(adjustl(num2str(rcell_2d(2,2),8)))//']','diag', tapwDebug)
+   call MIO_PrintDebug('   det = '//trim(adjustl(num2str(det,8))),'diag', tapwDebug)
 
    ! 1. Direct–reciprocal duality check: ucell_T^T * rcell_2d should equal 2π * Identity
    ! CRITICAL FIX: We need transpose(ucell_T) * rcell_2d, not ucell_T * rcell_2d
@@ -14682,26 +14896,30 @@ subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngl
    trace_val = (ucell_rcell_prod(1,1) + ucell_rcell_prod(2,2)) / (2.0_dp * pi)
    off_diag_sum = (abs(ucell_rcell_prod(1,2)) + abs(ucell_rcell_prod(2,1))) / (2.0_dp * pi)
 
-   call MIO_Print('1. Direct-reciprocal duality: ucell_T^T * rcell_2d = 2π * Identity','diag')
-   call MIO_Print('   Normalized trace = '//trim(adjustl(num2str(trace_val,6)))//' (should be 2.0)','diag')
-   call MIO_Print('   Normalized off-diag sum = '//trim(adjustl(num2str(off_diag_sum,8)))//' (should be ~0.0)','diag')
-   call MIO_Print('   Max identity deviation = '//trim(adjustl(num2str(maxval(abs(identity_dev)),8)))//' (should be ~0.0)','diag')
+   call MIO_PrintDebug('1. Direct-reciprocal duality: ucell_T^T * rcell_2d = 2pi * Identity','diag', tapwDebug)
+   call MIO_PrintDebug('   Normalized trace = '//trim(adjustl(num2str(trace_val,6)))//' (should be 2.0)','diag', &
+     tapwDebug)
+   call MIO_PrintDebug('   Normalized off-diag sum = '//trim(adjustl(num2str(off_diag_sum,8)))//' (should be ~0.0)', &
+     'diag', tapwDebug)
+   call MIO_PrintDebug('   Max identity deviation = '//trim(adjustl(num2str(maxval(abs(identity_dev)),8)))// &
+     ' (should be ~0.0)','diag', tapwDebug)
    if (abs(trace_val - 2.0_dp) < 0.01_dp .and. off_diag_sum < 0.01_dp) then
-      call MIO_Print('   ✅ Duality check PASSED: Correct transpose relationship verified','diag')
+      call MIO_PrintDebug('    Duality check PASSED: Correct transpose relationship verified','diag', tapwDebug)
    else
-      call MIO_Print('   ❌ Duality check FAILED: Transpose/frame issue detected','diag')
+      call MIO_PrintDebug('    Duality check FAILED: Transpose/frame issue detected','diag', tapwDebug)
    end if
 
    ! 1b. Self-consistency check: rcell should equal 2π * inv(ucell_T)
-   call MIO_Print('1b. Self-consistency: rcell vs 2π * inv(ucell_T)','diag')
+   call MIO_PrintDebug('1b. Self-consistency: rcell vs 2pi * inv(ucell_T)','diag', tapwDebug)
    ! Calculate inv(ucell_T)
    det_rot = ucell_T(1,1)*ucell_T(2,2) - ucell_T(1,2)*ucell_T(2,1)
    rotation_matrix = reshape([ucell_T(2,2), -ucell_T(1,2), -ucell_T(2,1), ucell_T(1,1)], [2,2]) / det_rot
    rotation_matrix = rotation_matrix * (2.0_dp * pi)
    ! Check deviation
    identity_dev = rcell_2d - rotation_matrix
-   call MIO_Print('   Max rcell reconstruction error = '//trim(adjustl(num2str(maxval(abs(identity_dev)),8))),'diag')
-   call MIO_Print('   This should be ~0 for consistent lattice relationship','diag')
+   call MIO_PrintDebug('   Max rcell reconstruction error = '//trim(adjustl(num2str(maxval(abs(identity_dev)),8))), &
+     'diag', tapwDebug)
+   call MIO_PrintDebug('   This should be ~0 for consistent lattice relationship','diag', tapwDebug)
 
    ! 2. Rotation orthogonality check (if rotation is applied)
    if (abs(gGridRotationAngle) > 1.0e-10_dp) then
@@ -14715,43 +14933,49 @@ subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngl
       rot_orthog_dev(2,2) = rot_orthog_dev(2,2) - 1.0_dp
       det_rot = cos_rot*cos_rot + sin_rot*sin_rot
 
-      call MIO_Print('2. Rotation matrix orthogonality (θ='//trim(adjustl(num2str(gGridRotationAngle,3)))//'°)','diag')
-      call MIO_Print('   R^T R - I max deviation = '//trim(adjustl(num2str(maxval(abs(rot_orthog_dev)),8))),'diag')
-      call MIO_Print('   det(R) = '//trim(adjustl(num2str(det_rot,8)))//' (should be ~1.0)','diag')
+      call MIO_PrintDebug('2. Rotation matrix orthogonality (theta='//trim(adjustl(num2str(gGridRotationAngle,3)))// &
+        ' deg)','diag', tapwDebug)
+      call MIO_PrintDebug('   R^T R - I max deviation = '//trim(adjustl(num2str(maxval(abs(rot_orthog_dev)),8))), &
+        'diag', tapwDebug)
+      call MIO_PrintDebug('   det(R) = '//trim(adjustl(num2str(det_rot,8)))//' (should be ~1.0)','diag', tapwDebug)
    end if
 
    ! 3. k_ref in rcell basis (fractional coordinates)
    k_ref_frac = matmul(k_ref, ucell_T) / (2.0_dp * pi)
-   call MIO_Print('3. k_ref fractional coordinates in rcell basis','diag')
-   call MIO_Print('   k_ref_frac = ['//trim(adjustl(num2str(k_ref_frac(1),6)))//','//&
-                  trim(adjustl(num2str(k_ref_frac(2),6)))//']','diag')
-   call MIO_Print('   Note: Large values normal for moiré supercell (graphene K in moiré basis)','diag')
+   call MIO_PrintDebug('3. k_ref fractional coordinates in rcell basis','diag', tapwDebug)
+   call MIO_PrintDebug('   k_ref_frac = ['//trim(adjustl(num2str(k_ref_frac(1),6)))//','// &
+     trim(adjustl(num2str(k_ref_frac(2),6)))//']','diag', tapwDebug)
+   call MIO_PrintDebug('   Note: Large values normal for moire supercell (graphene K in moire basis)','diag', &
+     tapwDebug)
 
    ! 3b. Moiré scale factor analysis
-   call MIO_Print('3b. Moiré-graphene scale relationship','diag')
+   call MIO_PrintDebug('3b. Moire-graphene scale relationship','diag', tapwDebug)
    ! Expected graphene lattice constant
    expected_k_magnitude = 4.0_dp * pi / (3.0_dp * aG)
    ! Moiré lattice vector magnitudes
    magnitude_ratio = sqrt(rcell_2d(1,1)**2 + rcell_2d(2,1)**2)  ! |b1|
    det_rot = sqrt(rcell_2d(1,2)**2 + rcell_2d(2,2)**2)         ! |b2|
-   call MIO_Print('   Moiré |b1| = '//trim(adjustl(num2str(magnitude_ratio,6))),'diag')
-   call MIO_Print('   Moiré |b2| = '//trim(adjustl(num2str(det_rot,6))),'diag')
-   call MIO_Print('   Expected graphene |b| = 4π/(3a) = '//trim(adjustl(num2str(expected_k_magnitude,6))),'diag')
-   call MIO_Print('   Scale factors: |b1|/|b_graphene| = '//trim(adjustl(num2str(magnitude_ratio/expected_k_magnitude,3)))//&
-                  ', |b2|/|b_graphene| = '//trim(adjustl(num2str(det_rot/expected_k_magnitude,3))),'diag')
+   call MIO_PrintDebug('   Moire |b1| = '//trim(adjustl(num2str(magnitude_ratio,6))),'diag', tapwDebug)
+   call MIO_PrintDebug('   Moire |b2| = '//trim(adjustl(num2str(det_rot,6))),'diag', tapwDebug)
+   call MIO_PrintDebug('   Expected graphene |b| = 4pi/(3a) = '//trim(adjustl(num2str(expected_k_magnitude,6))), &
+     'diag', tapwDebug)
+   call MIO_PrintDebug('   Scale factors: |b1|/|b_graphene| = '// &
+     trim(adjustl(num2str(magnitude_ratio/expected_k_magnitude,3)))// ', |b2|/|b_graphene| = '// &
+     trim(adjustl(num2str(det_rot/expected_k_magnitude,3))),'diag', tapwDebug)
 
    ! 4. Nearest-G rounding sensitivity
-   call MIO_Print('4. Nearest-G rounding (Voronoi boundary check)','diag')
-   call MIO_Print('   k_ref_frac - nint(k_ref_frac) = ['//&
-                  trim(adjustl(num2str(k_ref_frac(1) - nint(k_ref_frac(1)),6)))//','//&
-                  trim(adjustl(num2str(k_ref_frac(2) - nint(k_ref_frac(2)),6)))//']','diag')
-   call MIO_Print('   Values near ±0.5 indicate Voronoi boundary sensitivity','diag')
+   call MIO_PrintDebug('4. Nearest-G rounding (Voronoi boundary check)','diag', tapwDebug)
+   call MIO_PrintDebug('   k_ref_frac - nint(k_ref_frac) = ['// &
+     trim(adjustl(num2str(k_ref_frac(1) - nint(k_ref_frac(1)),6)))//','// &
+     trim(adjustl(num2str(k_ref_frac(2) - nint(k_ref_frac(2)),6)))//']','diag', tapwDebug)
+   call MIO_PrintDebug('   Values near +-0.5 indicate Voronoi boundary sensitivity','diag', tapwDebug)
 
    ! Check if we're dangerously close to boundary
    if (abs(abs(k_ref_frac(1) - nint(k_ref_frac(1))) - 0.5_dp) < 0.01_dp .or. &
        abs(abs(k_ref_frac(2) - nint(k_ref_frac(2))) - 0.5_dp) < 0.01_dp) then
-      call MIO_Print('   ⚠️  WARNING: Very close to Voronoi boundary! G-vector selection may be unstable.','diag')
-      call MIO_Print('   Consider adjusting k_ref slightly or using higher precision.','diag')
+      call MIO_PrintDebug('   ?  WARNING: Very close to Voronoi boundary! G-vector selection may be unstable.','diag', &
+        tapwDebug)
+      call MIO_PrintDebug('   Consider adjusting k_ref slightly or using higher precision.','diag', tapwDebug)
    end if
 
    ! 5. Path round-trip test (if path provided)
@@ -14759,51 +14983,54 @@ subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngl
    havePath = .false.
    if (present(path_frac) .and. present(nPath)) havePath = (nPath > 0)
    if (havePath) then
-      call MIO_Print('5. Path coordinate round-trip test (first point)','diag')
+      call MIO_PrintDebug('5. Path coordinate round-trip test (first point)','diag', tapwDebug)
       ! frac → abs → frac
       path_abs = path_frac(1,1)*rcell_2d(:,1) + path_frac(2,1)*rcell_2d(:,2)
       path_roundtrip = matmul(path_abs, ucell_T) / (2.0_dp * pi)
-      call MIO_Print('   Original frac = ['//trim(adjustl(num2str(path_frac(1,1),6)))//','//&
-                     trim(adjustl(num2str(path_frac(2,1),6)))//']','diag')
-      call MIO_Print('   Round-trip frac = ['//trim(adjustl(num2str(path_roundtrip(1),6)))//','//&
-                     trim(adjustl(num2str(path_roundtrip(2),6)))//']','diag')
-      call MIO_Print('   Difference = ['//trim(adjustl(num2str(path_frac(1,1)-path_roundtrip(1),8)))//','//&
-                     trim(adjustl(num2str(path_frac(2,1)-path_roundtrip(2),8)))//']','diag')
+      call MIO_PrintDebug('   Original frac = ['//trim(adjustl(num2str(path_frac(1,1),6)))//','// &
+        trim(adjustl(num2str(path_frac(2,1),6)))//']','diag', tapwDebug)
+      call MIO_PrintDebug('   Round-trip frac = ['//trim(adjustl(num2str(path_roundtrip(1),6)))//','// &
+        trim(adjustl(num2str(path_roundtrip(2),6)))//']','diag', tapwDebug)
+      call MIO_PrintDebug('   Difference = ['//trim(adjustl(num2str(path_frac(1,1)-path_roundtrip(1),8)))//','// &
+        trim(adjustl(num2str(path_frac(2,1)-path_roundtrip(2),8)))//']','diag', tapwDebug)
    end if
 
    ! 6. G-grid frame verification
-   call MIO_Print('6. G-grid coordinate frame','diag')
-   call MIO_Print('   rcell b1 = ['//trim(adjustl(num2str(rcell(1,1),6)))//','//&
-                  trim(adjustl(num2str(rcell(2,1),6)))//']','diag')
-   call MIO_Print('   rcell b2 = ['//trim(adjustl(num2str(rcell(1,2),6)))//','//&
-                  trim(adjustl(num2str(rcell(2,2),6)))//']','diag')
-   call MIO_Print('   gGridRotationAngle = '//trim(adjustl(num2str(gGridRotationAngle,3)))//'°','diag')
-   call MIO_Print('   skipGRotation = '//merge('T','F',skipGRotation),'diag')
+   call MIO_PrintDebug('6. G-grid coordinate frame','diag', tapwDebug)
+   call MIO_PrintDebug('   rcell b1 = ['//trim(adjustl(num2str(rcell(1,1),6)))//','// &
+     trim(adjustl(num2str(rcell(2,1),6)))//']','diag', tapwDebug)
+   call MIO_PrintDebug('   rcell b2 = ['//trim(adjustl(num2str(rcell(1,2),6)))//','// &
+     trim(adjustl(num2str(rcell(2,2),6)))//']','diag', tapwDebug)
+   call MIO_PrintDebug('   gGridRotationAngle = '//trim(adjustl(num2str(gGridRotationAngle,3)))//' deg','diag', &
+     tapwDebug)
+   call MIO_PrintDebug('   skipGRotation = '//merge('T','F',skipGRotation),'diag', tapwDebug)
 
    ! 7. First few G-vectors
-   call MIO_Print('7. First 5 G-vectors and norms','diag')
-   call MIO_Print('   Compare with Python: should match G-vector order exactly','diag')
+   call MIO_PrintDebug('7. First 5 G-vectors and norms','diag', tapwDebug)
+   call MIO_PrintDebug('   Compare with Python: should match G-vector order exactly','diag', tapwDebug)
    do i = 1, min(5, NG)
-      call MIO_Print('   G('//trim(adjustl(num2str(real(i,dp),0)))//') = ['//&
-                     trim(adjustl(num2str(Gx(i),6)))//','//trim(adjustl(num2str(Gy(i),6)))//&
-                     '], |G| = '//trim(adjustl(num2str(sqrt(Gx(i)**2 + Gy(i)**2),6))),'diag')
+      call MIO_PrintDebug('   G('//trim(adjustl(num2str(real(i,dp),0)))//') = ['// trim(adjustl(num2str(Gx(i),6)))// &
+        ','//trim(adjustl(num2str(Gy(i),6)))// '], |G| = '//trim(adjustl(num2str(sqrt(Gx(i)**2 + Gy(i)**2),6))), &
+        'diag', tapwDebug)
    end do
 
    ! 7b. G-vector distance ordering verification
-   call MIO_Print('7b. G-vector distance ordering (should match Python np.unique)','diag')
+   call MIO_PrintDebug('7b. G-vector distance ordering (should match Python np.unique)','diag', tapwDebug)
    do i = 1, min(5, NG)
-      call MIO_Print('   Distance from k_ref: |G('//trim(adjustl(num2str(real(i,dp),0)))//')| = '//&
-                     trim(adjustl(num2str(sqrt((Gx(i)-k_ref(1))**2 + (Gy(i)-k_ref(2))**2),6))),'diag')
+      call MIO_PrintDebug('   Distance from k_ref: |G('//trim(adjustl(num2str(real(i,dp),0)))//')| = '// &
+        trim(adjustl(num2str(sqrt((Gx(i)-k_ref(1))**2 + (Gy(i)-k_ref(2))**2),6))),'diag', tapwDebug)
    end do
 
    ! 8. k_ref magnitude sanity check
    k_ref_magnitude = sqrt(k_ref(1)**2 + k_ref(2)**2)
    expected_k_magnitude = 4.0_dp * pi / (3.0_dp * aG)  ! |K| for graphene
    magnitude_ratio = k_ref_magnitude / expected_k_magnitude
-   call MIO_Print('8. k_ref magnitude sanity','diag')
-   call MIO_Print('   |k_ref| = '//trim(adjustl(num2str(k_ref_magnitude,6))),'diag')
-   call MIO_Print('   Expected |K| = 4π/(3aG) = '//trim(adjustl(num2str(expected_k_magnitude,6))),'diag')
-   call MIO_Print('   Ratio = '//trim(adjustl(num2str(magnitude_ratio,6)))//' (should be ~1.0 for K-point)','diag')
+   call MIO_PrintDebug('8. k_ref magnitude sanity','diag', tapwDebug)
+   call MIO_PrintDebug('   |k_ref| = '//trim(adjustl(num2str(k_ref_magnitude,6))),'diag', tapwDebug)
+   call MIO_PrintDebug('   Expected |K| = 4pi/(3aG) = '//trim(adjustl(num2str(expected_k_magnitude,6))),'diag', &
+     tapwDebug)
+   call MIO_PrintDebug('   Ratio = '//trim(adjustl(num2str(magnitude_ratio,6)))//' (should be ~1.0 for K-point)', &
+     'diag', tapwDebug)
 
    ! 9. Relative orientation between moiré and graphene lattices
    angle_moire_b1 = atan2(rcell(2,1), rcell(1,1)) * 180.0_dp / pi
@@ -14813,12 +15040,14 @@ subroutine verify_tapw_numerical_consistency(rcell, rG, k_ref, gGridRotationAngl
    if (relative_angle_diff > 180.0_dp) relative_angle_diff = relative_angle_diff - 360.0_dp
    if (relative_angle_diff < -180.0_dp) relative_angle_diff = relative_angle_diff + 360.0_dp
 
-   call MIO_Print('9. Relative lattice orientation','diag')
-   call MIO_Print('   Moiré b1 angle = '//trim(adjustl(num2str(angle_moire_b1,3)))//'°','diag')
-   call MIO_Print('   Graphene b1 angle = '//trim(adjustl(num2str(angle_graphene_b1,3)))//'°','diag')
-   call MIO_Print('   Relative rotation = '//trim(adjustl(num2str(relative_angle_diff,3)))//'°','diag')
+   call MIO_PrintDebug('9. Relative lattice orientation','diag', tapwDebug)
+   call MIO_PrintDebug('   Moire b1 angle = '//trim(adjustl(num2str(angle_moire_b1,3)))//' deg','diag', tapwDebug)
+   call MIO_PrintDebug('   Graphene b1 angle = '//trim(adjustl(num2str(angle_graphene_b1,3)))//' deg','diag', &
+     tapwDebug)
+   call MIO_PrintDebug('   Relative rotation = '//trim(adjustl(num2str(relative_angle_diff,3)))//' deg','diag', &
+     tapwDebug)
 
-   call MIO_Print('=== END VERIFICATION ===','diag')
+   call MIO_PrintDebug('=== END VERIFICATION ===','diag', tapwDebug)
 
 end subroutine verify_tapw_numerical_consistency
 
@@ -14832,7 +15061,7 @@ subroutine verify_x_matrix_norms(XArray, N, NG)
 
    ncols_to_check = min(5, NG)
    if (.not. tapwDebug) return  ! Skip if debug not enabled
-   call MIO_Print('=== X-MATRIX VERIFICATION ===','diag')
+   call MIO_PrintDebug('=== X-MATRIX VERIFICATION ===','diag', tapwDebug)
 
    ! Check first few column 2-norms
    do i = 1, ncols_to_check
@@ -14843,13 +15072,15 @@ subroutine verify_x_matrix_norms(XArray, N, NG)
    min_norm = minval(col_norms(1:ncols_to_check))
    avg_norm = sum(col_norms(1:ncols_to_check)) / real(ncols_to_check)
 
-   call MIO_Print('X-matrix column 2-norms (first '//trim(adjustl(num2str(real(ncols_to_check,dp),0)))//' columns):','diag')
+   call MIO_PrintDebug('X-matrix column 2-norms (first '//trim(adjustl(num2str(real(ncols_to_check,dp),0)))// &
+     ' columns):','diag', tapwDebug)
    do i = 1, ncols_to_check
-      call MIO_Print('  ||X(:,'//trim(adjustl(num2str(real(i,dp),0)))//')|| = '//trim(adjustl(num2str(col_norms(i),6))),'diag')
+      call MIO_PrintDebug('  ||X(:,'//trim(adjustl(num2str(real(i,dp),0)))//')|| = '// &
+        trim(adjustl(num2str(col_norms(i),6))),'diag', tapwDebug)
    end do
-   call MIO_Print('  Range: ['//trim(adjustl(num2str(min_norm,6)))//','//trim(adjustl(num2str(max_norm,6)))//&
-                  '], Avg = '//trim(adjustl(num2str(avg_norm,6))),'diag')
-   call MIO_Print('  Expected: ~1.0 for proper normalization','diag')
+   call MIO_PrintDebug('  Range: ['//trim(adjustl(num2str(min_norm,6)))//','//trim(adjustl(num2str(max_norm,6)))// &
+     '], Avg = '//trim(adjustl(num2str(avg_norm,6))),'diag', tapwDebug)
+   call MIO_PrintDebug('  Expected: ~1.0 for proper normalization','diag', tapwDebug)
 
 end subroutine verify_x_matrix_norms
 
@@ -14863,7 +15094,7 @@ subroutine verify_projected_hamiltonian_hermiticity(Hproj, M)
    integer :: i, j, count
 
    if (.not. tapwDebug) return  ! Skip if debug not enabled
-   call MIO_Print('=== PROJECTED HAMILTONIAN HERMITICITY ===','diag')
+   call MIO_PrintDebug('=== PROJECTED HAMILTONIAN HERMITICITY ===','diag', tapwDebug)
 
    max_hermitian_dev = 0.0_dp
    avg_hermitian_dev = 0.0_dp
@@ -14884,12 +15115,12 @@ subroutine verify_projected_hamiltonian_hermiticity(Hproj, M)
       avg_hermitian_dev = 0.0_dp
    end if
 
-   call MIO_Print('Projected H Hermiticity check:','diag')
-   call MIO_Print('  Matrix size M = '//trim(adjustl(num2str(real(M,dp),0)))//', elements checked = ' &
-         //trim(adjustl(num2str(real(count,dp),0))),'diag')
-   call MIO_Print('  Max |H(i,j) - H*(j,i)| = '//trim(adjustl(num2str(max_hermitian_dev,10))),'diag')
-   call MIO_Print('  Avg |H(i,j) - H*(j,i)| = '//trim(adjustl(num2str(avg_hermitian_dev,10))),'diag')
-   call MIO_Print('  Expected: ~0.0 for Hermitian matrix','diag')
+   call MIO_PrintDebug('Projected H Hermiticity check:','diag', tapwDebug)
+   call MIO_PrintDebug('  Matrix size M = '//trim(adjustl(num2str(real(M,dp),0)))//', elements checked = '  // &
+     trim(adjustl(num2str(real(count,dp),0))),'diag', tapwDebug)
+   call MIO_PrintDebug('  Max |H(i,j) - H*(j,i)| = '//trim(adjustl(num2str(max_hermitian_dev,10))),'diag', tapwDebug)
+   call MIO_PrintDebug('  Avg |H(i,j) - H*(j,i)| = '//trim(adjustl(num2str(avg_hermitian_dev,10))),'diag', tapwDebug)
+   call MIO_PrintDebug('  Expected: ~0.0 for Hermitian matrix','diag', tapwDebug)
 
 end subroutine verify_projected_hamiltonian_hermiticity
 
@@ -14910,7 +15141,7 @@ subroutine build_tapw_labels(layerIndex, species, N, label, Nlabel)
   allocate(raw_label(N))
   do i = 1, N
      if (layerIndex(i) < 0 .or. species(i) < 0) then
-        error stop "build_tapw_labels: negative layer/species not allowed"
+        call MIO_Kill("build_tapw_labels: negative layer/species not allowed","diag","build_tapw_labels")
      end if
      raw_label(i) = 10*layerIndex(i) + species(i)
   end do
@@ -14946,14 +15177,15 @@ subroutine build_tapw_labels(layerIndex, species, N, label, Nlabel)
            pos = j; exit
         end if
      end do
-     if (pos == 0) stop "build_tapw_labels: internal mapping error"
+     if (pos == 0) call MIO_Kill('build_tapw_labels: internal mapping error','diag','build_tapw_labels')
      label(i) = pos
   end do
 
   ! (Optional) debug print
-  call MIO_Print("TAPW labels (sorted):",'diag')
+  call MIO_PrintDebug("TAPW labels (sorted):",'diag', tapwDebug)
   do j = 1, Nlabel
-     print '(A,I0,A,I0)', "  code ", uniq(j), " -> contiguous ", j
+     write(dbgmsg,'(A,I0,A,I0)') "code", uniq(j), " -> contiguous ", j
+     call MIO_PrintDebug(trim(dbgmsg),'diag')
   end do
 
   deallocate(raw_label, uniq)
@@ -15006,21 +15238,21 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
     real(dp) :: max_debug_error, error
     integer :: max_i, max_j
 
-    if (tapwDebug) call MIO_Print('Building dense Hamiltonian matrix for TAPW transformation','diag')
+    call MIO_PrintDebug('Building dense Hamiltonian matrix for TAPW transformation','diag', tapwDebug)
 
     if (tapwDebug) then
        ! DEBUG: Check atomic positions used in dense TB construction (should be relaxed)
-       if (tapwDebug) call MIO_Print('DEBUG: First 3 atomic positions IN dense TB construction:','diag')
+       call MIO_PrintDebug('First 3 atomic positions IN dense TB construction:','diag', tapwDebug)
        do i = 1, min(3, N)
-           call MIO_Print('  Atom '//trim(num2str(i))//': ['//trim(num2str(Rat(1,i),6))//','//&
-                         trim(num2str(Rat(2,i),6))//','//trim(num2str(Rat(3,i),6))//']','diag')
+           call MIO_PrintDebug('  Atom '//trim(num2str(i))//': ['//trim(num2str(Rat(1,i),6))//','// &
+             trim(num2str(Rat(2,i),6))//','//trim(num2str(Rat(3,i),6))//']','diag', tapwDebug)
        end do
     end if
 
     ! For very large systems, warn about memory usage but continue with dense approach
     if (N > 1000000) then
-        call MIO_Print('Large system detected (N='//trim(num2str(N))//'), using dense TAPW transformation','diag')
-        call MIO_Print('WARNING: This will use significant memory for large systems','diag')
+        call MIO_PrintDebug('Large system detected (N='//trim(num2str(N))//'), using dense TAPW transformation','diag', tapwDebug)
+        call MIO_Warning('This will use significant memory for large systems','diag')
         ! Continue with dense matrix approach
     end if
 
@@ -15135,19 +15367,19 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
         end do
     end if
 
-    if (tapwDebug) call MIO_Print('Dense Hamiltonian matrix constructed, performing TAPW transformation','diag')
-    if (tapwDebug) call MIO_Print('  Matrix dimensions: H('//trim(num2str(N))//'×'//trim(num2str(N))//'), X(' &
-          //trim(num2str(N))//'×'//trim(num2str(M))//')','diag')
+    call MIO_PrintDebug('Dense Hamiltonian matrix constructed, performing TAPW transformation','diag', tapwDebug)
+    call MIO_PrintDebug('  Matrix dimensions: H('//trim(num2str(N))//'x'//trim(num2str(N))//'), X('  // &
+      trim(num2str(N))//'x'//trim(num2str(M))//')','diag', tapwDebug)
 
     ! Check hermiticity of dense Hamiltonian (only if tapwDebug enabled)
     if (tapwDebug) then
-       call MIO_Print('Checking hermiticity of dense TB Hamiltonian H_dense','diag')
+       call MIO_PrintDebug('Checking hermiticity of dense TB Hamiltonian H_dense','diag', tapwDebug)
        call check_matrix_hermiticity(H_dense, N, 'H_dense')
     end if
 
     ! DEBUG: Find the actual hermiticity violations (only if tapwDebug enabled)
     if (tapwDebug .and. N >= 2) then
-        call MIO_Print('DEBUG: Finding hermiticity violations:','diag')
+        call MIO_PrintDebug('Finding hermiticity violations:','diag', tapwDebug)
         max_debug_error = 0.0_dp
         max_i = 0
         max_j = 0
@@ -15164,45 +15396,48 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
         end do
 
         if (max_debug_error > 1e-12) then
-            call MIO_Print('  Maximum violation at H('//trim(num2str(max_i))//','//trim(num2str(max_j))//'):','diag')
-            call MIO_Print('  H('//trim(num2str(max_i))//','//trim(num2str(max_j))//') = '//&
-                         trim(num2str(real(H_dense(max_i,max_j)),8))//' + i*'//trim(num2str(aimag(H_dense(max_i,max_j)),8)),'diag')
-            call MIO_Print('  H('//trim(num2str(max_j))//','//trim(num2str(max_i))//') = '//&
-                         trim(num2str(real(H_dense(max_j,max_i)),8))//' + i*'//trim(num2str(aimag(H_dense(max_j,max_i)),8)),'diag')
-            call MIO_Print('  conjg(H('//trim(num2str(max_j))//','//trim(num2str(max_i))//')) = '//&
-                         trim(num2str(real(conjg(H_dense(max_j,max_i))),8))//' + i*' &
-                               //trim(num2str(aimag(conjg(H_dense(max_j,max_i))),8)),'diag')
-            call MIO_Print('  Error = '//trim(num2str(max_debug_error,8)),'diag')
+            call MIO_PrintDebug('  Maximum violation at H('//trim(num2str(max_i))//','//trim(num2str(max_j))//'):', &
+              'diag', tapwDebug)
+            call MIO_PrintDebug('  H('//trim(num2str(max_i))//','//trim(num2str(max_j))//') = '// &
+              trim(num2str(real(H_dense(max_i,max_j)),8))//' + i*'//trim(num2str(aimag(H_dense(max_i,max_j)),8)), &
+              'diag', tapwDebug)
+            call MIO_PrintDebug('  H('//trim(num2str(max_j))//','//trim(num2str(max_i))//') = '// &
+              trim(num2str(real(H_dense(max_j,max_i)),8))//' + i*'//trim(num2str(aimag(H_dense(max_j,max_i)),8)), &
+              'diag', tapwDebug)
+            call MIO_PrintDebug('  conjg(H('//trim(num2str(max_j))//','//trim(num2str(max_i))//')) = '// &
+              trim(num2str(real(conjg(H_dense(max_j,max_i))),8))//' + i*'  // &
+              trim(num2str(aimag(conjg(H_dense(max_j,max_i))),8)),'diag', tapwDebug)
+            call MIO_PrintDebug('  Error = '//trim(num2str(max_debug_error,8)),'diag', tapwDebug)
 
             ! DEBUG: Check if there are duplicate entries in neighbor list for problematic atoms
-            call MIO_Print('DEBUG: Checking neighbor list for atoms '//trim(num2str(max_i))//' and ' &
-                  //trim(num2str(max_j))//':','diag')
+            call MIO_PrintDebug('Checking neighbour list for atoms '//trim(num2str(max_i))//' and '  // &
+              trim(num2str(max_j))//':','diag', tapwDebug)
 
             ! Check if max_i has max_j as neighbor
             do j = 1, Nneigh(max_i)
                 if (NList(j, max_i) == max_j) then
-                    call MIO_Print('  Atom '//trim(num2str(max_i))//' has atom '//trim(num2str(max_j))//' as neighbor ' &
-                          //trim(num2str(j)),'diag')
-                    call MIO_Print('  NeighD = ['//trim(num2str(NeighD(1,j,max_i),6))//',' &
-                          //trim(num2str(NeighD(2,j,max_i),6))//']','diag')
-                    call MIO_Print('  hopp = '//trim(num2str(real(hopp(j,max_i)),8))//' + i*' &
-                          //trim(num2str(aimag(hopp(j,max_i)),8)),'diag')
+                    call MIO_PrintDebug('  Atom '//trim(num2str(max_i))//' has atom '//trim(num2str(max_j))// &
+                      ' as neighbour '  //trim(num2str(j)),'diag', tapwDebug)
+                    call MIO_PrintDebug('  NeighD = ['//trim(num2str(NeighD(1,j,max_i),6))//','  // &
+                      trim(num2str(NeighD(2,j,max_i),6))//']','diag', tapwDebug)
+                    call MIO_PrintDebug('  hopp = '//trim(num2str(real(hopp(j,max_i)),8))//' + i*'  // &
+                      trim(num2str(aimag(hopp(j,max_i)),8)),'diag', tapwDebug)
                 end if
             end do
 
             ! Check if max_j has max_i as neighbor
             do j = 1, Nneigh(max_j)
                 if (NList(j, max_j) == max_i) then
-                    call MIO_Print('  Atom '//trim(num2str(max_j))//' has atom '//trim(num2str(max_i))//' as neighbor ' &
-                          //trim(num2str(j)),'diag')
-                    call MIO_Print('  NeighD = ['//trim(num2str(NeighD(1,j,max_j),6))//',' &
-                          //trim(num2str(NeighD(2,j,max_j),6))//']','diag')
-                    call MIO_Print('  hopp = '//trim(num2str(real(hopp(j,max_j)),8))//' + i*' &
-                          //trim(num2str(aimag(hopp(j,max_j)),8)),'diag')
+                    call MIO_PrintDebug('  Atom '//trim(num2str(max_j))//' has atom '//trim(num2str(max_i))// &
+                      ' as neighbour '  //trim(num2str(j)),'diag', tapwDebug)
+                    call MIO_PrintDebug('  NeighD = ['//trim(num2str(NeighD(1,j,max_j),6))//','  // &
+                      trim(num2str(NeighD(2,j,max_j),6))//']','diag', tapwDebug)
+                    call MIO_PrintDebug('  hopp = '//trim(num2str(real(hopp(j,max_j)),8))//' + i*'  // &
+                      trim(num2str(aimag(hopp(j,max_j)),8)),'diag', tapwDebug)
                 end if
             end do
         else
-            call MIO_Print('  No significant hermiticity violations found','diag')
+            call MIO_PrintDebug('  No significant hermiticity violations found','diag', tapwDebug)
         end if
     end if
 
@@ -15215,12 +15450,13 @@ subroutine transform_dense_hamiltonian_tapw(N, M, X, Hproj, KLoc, cell, H0, maxN
 
     ! Check hermiticity of projected Hamiltonian after TAPW transformation (only if tapwDebug enabled)
     if (tapwDebug) then
-       call MIO_Print('Checking hermiticity of projected Hamiltonian Hproj','diag')
+       call MIO_PrintDebug('Checking hermiticity of projected Hamiltonian Hproj','diag', tapwDebug)
        call check_matrix_hermiticity(Hproj, M, 'Hproj')
     end if
 
-    if (tapwDebug) call MIO_Print('Dense TAPW transformation completed','diag')
-    if (tapwDebug) call MIO_Print('  Projected matrix dimensions: Hproj('//trim(num2str(M))//'×'//trim(num2str(M))//')','diag')
+    call MIO_PrintDebug('Dense TAPW transformation completed','diag', tapwDebug)
+    call MIO_PrintDebug('  Projected matrix dimensions: Hproj('//trim(num2str(M))//'x'//trim(num2str(M))//')','diag', &
+      tapwDebug)
 
     deallocate(H_dense, temp)
 end subroutine transform_dense_hamiltonian_tapw
@@ -15239,15 +15475,14 @@ subroutine read_rigid_positions_for_tapw(filename, N, rigid_positions)
     character(len=256) :: line, element
     real(dp) :: x, y, z
 
-    call MIO_Print('Reading rigid reference positions from: '//trim(filename),'diag')
+    call MIO_PrintDebug('reading rigid reference positions from '//trim(filename),'diag', tapwDebug)
 
     ! Open the rigid position file
     unit = 97
     open(unit=unit, file=trim(filename), status='old', action='read', iostat=i)
     if (i /= 0) then
-        call MIO_Print('ERROR: Cannot open rigid position file: '//trim(filename),'diag')
-        call MIO_Print('Make sure generateInit.xyz exists in the working directory','diag')
-        error stop 'Failed to open rigid position file'
+        call MIO_Warning('Cannot open rigid position file: '//trim(filename),'diag')
+        call MIO_Kill('Make sure generateInit.xyz exists in the working directory','diag','read_rigid_positions_for_tapw')
     end if
 
     ! Read cell vectors (3 lines) - we don't need them but must skip them
@@ -15258,10 +15493,9 @@ subroutine read_rigid_positions_for_tapw(filename, N, rigid_positions)
     ! Read number of atoms
     read(unit, *) N_file
     if (N_file /= N) then
-        call MIO_Print('ERROR: Atom count mismatch!','diag')
-        call MIO_Print('  Current system has '//trim(num2str(N))//' atoms','diag')
-        call MIO_Print('  Rigid file has '//trim(num2str(N_file))//' atoms','diag')
-        error stop 'Atom count mismatch between current system and rigid reference'
+        call MIO_Warning('Atom count mismatch!','diag')
+        call MIO_PrintDebug('current system has '//trim(num2str(N))//' atoms','diag', tapwDebug)
+        call MIO_Kill('  Rigid file has '//trim(num2str(N_file))//' atoms','diag','read_rigid_positions_for_tapw')
     end if
 
     ! Read atomic positions (columns 2, 3, 4 are x, y, z)
@@ -15274,8 +15508,8 @@ subroutine read_rigid_positions_for_tapw(filename, N, rigid_positions)
 
     close(unit)
 
-    call MIO_Print('Successfully read '//trim(num2str(N))//' rigid reference positions','diag')
-    call MIO_Print('These will be used for X matrix construction to ensure TAPW unitarity','diag')
+    call MIO_PrintDebug(trim(num2str(N))//' rigid reference positions read','diag', tapwDebug)
+    call MIO_PrintDebug('These will be used for X matrix construction to ensure TAPW unitarity','diag', tapwDebug)
 
 end subroutine read_rigid_positions_for_tapw
 
@@ -15303,7 +15537,7 @@ subroutine GetBandEnergyRange(band_index, min_energy, max_energy, spin_index)
 
    ! Check if stored data is available
    if (.not. allocated(stored_hamiltonians) .or. stored_nk == 0) then
-      call MIO_Print('WARNING: No stored Hamiltonian data for energy range calculation','diag')
+      call MIO_Warning('No stored Hamiltonian data for energy range calculation','diag')
       min_energy = 0.0_dp
       max_energy = 0.0_dp
       return
@@ -15311,7 +15545,8 @@ subroutine GetBandEnergyRange(band_index, min_energy, max_energy, spin_index)
 
    ! Check band index bounds
    if (band_index < 1 .or. band_index > stored_M) then
-      call MIO_Print('WARNING: Band index '//trim(num2str(band_index))//' out of range [1,'//trim(num2str(stored_M))//']','diag')
+      call MIO_Warning('Band index '//trim(num2str(band_index))//' out of range [1,'//trim(num2str(stored_M))//']', &
+        'diag')
       min_energy = 0.0_dp
       max_energy = 0.0_dp
       return
@@ -15338,8 +15573,8 @@ subroutine GetBandEnergyRange(band_index, min_energy, max_energy, spin_index)
 
    ! Check spin index bounds
    if (is_local < 1 .or. is_local > stored_nspin) then
-      call MIO_Print('WARNING: spin_index '//trim(num2str(is_local))//' out of range [1,'//trim(num2str(stored_nspin)) &
-            //'], using 1','diag')
+      call MIO_Warning('spin_index '//trim(num2str(is_local))//' out of range [1,'//trim(num2str(stored_nspin))  // &
+        '], using 1','diag')
       is_local = 1
    end if
 
@@ -15352,7 +15587,7 @@ subroutine GetBandEnergyRange(band_index, min_energy, max_energy, spin_index)
       call ZHEEV('N', 'U', M_safe, H_temp, M_safe, eigval_temp, work_temp, lwork, rwork_temp, info)
 
       if (info /= 0) then
-         call MIO_Print('WARNING: ZHEEV failed for k-point '//trim(num2str(ik))//' in GetBandEnergyRange','diag')
+         call MIO_Warning('ZHEEV failed for k-point '//trim(num2str(ik))//' in GetBandEnergyRange','diag')
          band_energies(ik) = 0.0_dp
       else
          ! Store eigenvalue for this band at this k-point
@@ -15387,6 +15622,9 @@ subroutine check_matrix_hermiticity(matrix, n, matrix_name)
    integer :: i, j
    real(dp) :: max_error, error
    complex(dp) :: diff
+   logical :: seen
+   character(len=32), save :: warned(16)
+   integer, save :: nwarned = 0
 
    max_error = 0.0_dp
 
@@ -15401,12 +15639,26 @@ subroutine check_matrix_hermiticity(matrix, n, matrix_name)
       end do
    end do
 
-   call MIO_Print('Hermiticity check for '//trim(matrix_name)//': max error = '//trim(num2str(max_error,8)),'diag')
+   call MIO_PrintDebug('Hermiticity check for '//trim(matrix_name)//': max error = '//trim(num2str(max_error,8)),'diag', tapwDebug)
 
    if (max_error > 1.0e-10_dp) then
-      call MIO_Print('WARNING: '//trim(matrix_name)//' is NOT hermitian! Max error = '//trim(num2str(max_error,8)),'diag')
+      ! once per matrix name: the same check runs at every k-point
+      seen = .false.
+      do i = 1, nwarned
+         if (trim(warned(i)) == trim(matrix_name)) seen = .true.
+      end do
+      if (.not. seen) then
+         call MIO_Warning(trim(matrix_name)//' is not Hermitian: max |A - A^H| = '//trim(num2str(max_error,8))// &
+           ' (reported once; every k-point is reported with Output.Debug)','diag')
+         if (nwarned < size(warned)) then
+            nwarned = nwarned + 1
+            warned(nwarned) = matrix_name
+         end if
+      else
+         call MIO_PrintDebug(trim(matrix_name)//' is not Hermitian: max |A - A^H| = '//trim(num2str(max_error,8)),'diag')
+      end if
    else
-      call MIO_Print(trim(matrix_name)//' is hermitian (error < 1e-10)','diag')
+      call MIO_PrintDebug(trim(matrix_name)//' is hermitian (error < 1e-10)','diag', tapwDebug)
    end if
 
 end subroutine check_matrix_hermiticity
@@ -15454,32 +15706,32 @@ subroutine verify_eigenvector_eigenvalue_alignment(H, eigvec, eigval, M, kpoint_
       if (abs(residual) > tolerance) then
          alignment_ok = .false.
          if (i <= 5) then  ! Only print first few violations to avoid spam
-            call MIO_Print('  MISALIGNMENT: Band '//trim(num2str(i))//' residual = '//trim(num2str(abs(residual),8)),'diag')
+            call MIO_Warning('  MISALIGNMENT: Band '//trim(num2str(i))//' residual = '//trim(num2str(abs(residual),8)),'diag')
          end if
       end if
    end do
 
    ! Report results
    if (alignment_ok) then
-      call MIO_Print('  ✓ Eigenvector-eigenvalue alignment verified (max residual = ' &
-            //trim(num2str(abs(max_residual),8))//')','diag')
+      call MIO_Print('   Eigenvector-eigenvalue alignment verified (max residual = '  // &
+        trim(num2str(abs(max_residual),8))//')','diag')
    else
-      call MIO_Print('  ✗ EIGENVECTOR-EIGENVALUE MISALIGNMENT DETECTED!','diag')
-      call MIO_Print('  ✗ Maximum residual = '//trim(num2str(abs(max_residual),8))//' (tolerance = ' &
-            //trim(num2str(tolerance,8))//')','diag')
-      call MIO_Print('  ✗ This indicates eigenvectors and eigenvalues are from different diagonalizations!','diag')
+      call MIO_Warning('   EIGENVECTOR-EIGENVALUE MISALIGNMENT DETECTED!','diag')
+      call MIO_PrintDebug('   Maximum residual = '//trim(num2str(abs(max_residual),8))//' (tolerance = '  // &
+        trim(num2str(tolerance,8))//')','diag', tapwDebug)
+      call MIO_PrintDebug('   This indicates eigenvectors and eigenvalues are from different diagonalizations!','diag', tapwDebug)
 
       ! Additional diagnostic for first few bands
       if (kpoint_index == 1) then
-         call MIO_Print('  DEBUG: First 3 eigenvalues and their residuals:','diag')
+         call MIO_PrintDebug('First 3 eigenvalues and their residuals:','diag')
          do i = 1, min(3, M)
             residual = cmplx_0
             do j = 1, M
                residual = residual + (H(j,i) - eigval(i) * eigvec(j,i)) * conjg(H(j,i) - eigval(i) * eigvec(j,i))
             end do
             residual = sqrt(residual)
-            call MIO_Print('    Band '//trim(num2str(i))//': λ = '//trim(num2str(eigval(i),6))//', residual = ' &
-                  //trim(num2str(abs(residual),8)),'diag')
+            call MIO_PrintDebug('    Band '//trim(num2str(i))//': lambda = '//trim(num2str(eigval(i),6))// &
+              ', residual = '  //trim(num2str(abs(residual),8)),'diag', tapwDebug)
          end do
       end if
    end if
@@ -15519,19 +15771,19 @@ subroutine add_high_symmetry_refinement(Kpts, ip, rcell, nk_x, nk_y)
    kx_step = 1.0_dp / (real(nk_x, dp) * refinement_factor)
    ky_step = 1.0_dp / (real(nk_y, dp) * refinement_factor)
 
-   call MIO_Print('  Adding refinement around Γ point','diag')
+   call MIO_PrintDebug('  Adding refinement around Gamma point','diag')
    call add_refinement_around_point(Kpts, ip, gamma, b1, b2, kx_step, ky_step, n_refine)
 
-   call MIO_Print('  Adding refinement around K point','diag')
+   call MIO_PrintDebug('  Adding refinement around K point','diag')
    call add_refinement_around_point(Kpts, ip, K_point, b1, b2, kx_step, ky_step, n_refine)
 
-   call MIO_Print('  Adding refinement around M point','diag')
+   call MIO_PrintDebug('  Adding refinement around M point','diag')
    call add_refinement_around_point(Kpts, ip, M_point, b1, b2, kx_step, ky_step, n_refine)
 
-   call MIO_Print('  Adding refinement around K'' point','diag')
+   call MIO_PrintDebug('  Adding refinement around K'' point','diag')
    call add_refinement_around_point(Kpts, ip, K_prime, b1, b2, kx_step, ky_step, n_refine)
 
-   call MIO_Print('  Total k-points after refinement: '//trim(num2str(ip)),'diag')
+   call MIO_PrintDebug('  Total k-points after refinement: '//trim(num2str(ip)),'diag')
 
 end subroutine add_high_symmetry_refinement
 
@@ -15653,22 +15905,22 @@ subroutine output_berry_curvature_data(kpoint_index, kpt, berry_curv_bands, band
 
    ! Print summary for first and last k-points
    if (kpoint_index == 1) then
-      call MIO_Print('=== BERRY CURVATURE OUTPUT ===','diag')
+      call MIO_PrintDebug('=== BERRY CURVATURE OUTPUT ===','diag', tapwDebug)
       call MIO_Print('Writing Berry curvature data to: '//trim(filename),'diag')
-      call MIO_Print('Target bands: '//trim(num2str(band_indices(1)))//' to '//trim(num2str(band_indices(n_target_bands))),'diag')
-      call MIO_Print('Format: kx, ky, BerryCurvature_band1, BerryCurvature_band2, ...','diag')
+      call MIO_PrintDebug('Target bands: '//trim(num2str(band_indices(1)))//' to '//trim(num2str(band_indices(n_target_bands))),'diag', tapwDebug)
+      call MIO_PrintDebug('Format: kx, ky, BerryCurvature_band1, BerryCurvature_band2, ...','diag', tapwDebug)
    end if
 
    ! Print hotspot detection for first k-point
    if (kpoint_index == 1) then
-      call MIO_Print('=== HOTSPOT DETECTION (k-point 1) ===','diag')
+      call MIO_PrintDebug('=== HOTSPOT DETECTION (k-point 1) ===','diag', tapwDebug)
       do i = 1, n_target_bands
          if (abs(berry_curv_bands(i)) > 1.0_dp) then
-            call MIO_Print('  HOTSPOT: Band '//trim(num2str(band_indices(i)))//' |Ω| = ' &
-                  //trim(num2str(abs(berry_curv_bands(i)),6)),'diag')
+            call MIO_PrintDebug('  HOTSPOT: Band '//trim(num2str(band_indices(i)))//' |Omega| = '  // &
+              trim(num2str(abs(berry_curv_bands(i)),6)),'diag', tapwDebug)
          else if (abs(berry_curv_bands(i)) > 0.1_dp) then
-            call MIO_Print('  Moderate: Band '//trim(num2str(band_indices(i)))//' |Ω| = ' &
-                  //trim(num2str(abs(berry_curv_bands(i)),6)),'diag')
+            call MIO_PrintDebug('  Moderate: Band '//trim(num2str(band_indices(i)))//' |Omega| = '  // &
+              trim(num2str(abs(berry_curv_bands(i)),6)),'diag', tapwDebug)
          end if
       end do
    end if
@@ -15813,8 +16065,8 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
    if (.not. SOCEnabledForLayer(layerIndex(i))) then
       ! Debug output when SOC is skipped due to layer control
       if (socDebug .and. i <= 5 .and. j == 1) then
-         call MIO_Print('SOC skipped: atom i='//trim(num2str(i))//' is in layer '//trim(num2str(layerIndex(i))) &
-               //' (not in SOCLayers list)', 'diag')
+         call MIO_PrintDebug('SOC skipped: atom i='//trim(num2str(i))//' is in layer '// &
+           trim(num2str(layerIndex(i)))  //' (not in SOCLayers list)','diag', socDebug)
       end if
       return
    end if
@@ -15826,23 +16078,24 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
    if (socDebug .and. i <= 2 .and. j <= 10) then  ! Show first 10 neighbors instead of just 2
       acc = 2.46_dp / sqrt(3.0_dp)
       dist = sqrt(neighD(1, j, i)**2.0_dp + neighD(2, j, i)**2.0_dp)
-      call MIO_Print('Rashba Check: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
-            //', layer_i='//trim(num2str(layerIndex(i)))//', layer_in='//trim(num2str(layerIndex(in))), 'diag')
-      call MIO_Print('Species_i='//trim(num2str(Species(i)))//', Species_in='//trim(num2str(Species(in)))//', dist=' &
-            //trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp)), 'diag')
+      call MIO_PrintDebug('Rashba Check: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='// &
+        trim(num2str(in))  //', layer_i='//trim(num2str(layerIndex(i)))//', layer_in='//trim(num2str(layerIndex(in))), &
+        'diag', socDebug)
+      call MIO_PrintDebug('Species_i='//trim(num2str(Species(i)))//', Species_in='//trim(num2str(Species(in)))// &
+        ', dist='  //trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp)),'diag', socDebug)
 
       ! Check each condition individually
       if (i == in) then
-         call MIO_Print('  -> REJECTED: Self-loop (i == in)', 'diag')
+         call MIO_PrintDebug('  -> REJECTED: Self-loop (i == in)','diag', socDebug)
       else if (layerIndex(i) /= layerIndex(in)) then
-         call MIO_Print('  -> REJECTED: Different layers', 'diag')
+         call MIO_PrintDebug('  -> REJECTED: Different layers','diag', socDebug)
       else if (Species(i) == Species(in)) then
-         call MIO_Print('  -> REJECTED: Same species', 'diag')
+         call MIO_PrintDebug('  -> REJECTED: Same species','diag', socDebug)
       else if (dist >= acc * 1.1_dp) then
-         call MIO_Print('  -> REJECTED: Distance too large (dist='//trim(num2str(dist))//' >= cutoff=' &
-               //trim(num2str(acc*1.1_dp))//')', 'diag')
+         call MIO_PrintDebug('  -> REJECTED: Distance too large (dist='//trim(num2str(dist))//' >= cutoff='  // &
+           trim(num2str(acc*1.1_dp))//')','diag', socDebug)
       else
-         call MIO_Print('  -> ALL CONDITIONS MET! (A-B nearest neighbor)', 'diag')
+         call MIO_PrintDebug('  -> ALL CONDITIONS MET! (A-B nearest neighbour)','diag', socDebug)
       end if
    end if
 
@@ -15859,9 +16112,9 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
 
      ! Debug: Rashba is being applied!
      if (socDebug .and. i <= 2 .and. j <= 10) then  ! Show first 10 neighbors instead of just 2
-        call MIO_Print('*** RASHBA APPLIED *** i='//trim(num2str(i))//', j='//trim(num2str(j))//', in=' &
-              //trim(num2str(in))//', dist='//trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp)) &
-              //' (A-B nearest neighbor)', 'diag')
+        call MIO_PrintDebug('*** RASHBA APPLIED *** i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='  // &
+          trim(num2str(in))//', dist='//trim(num2str(dist))//', cutoff='//trim(num2str(acc*1.1_dp))  // &
+          ' (A-B nearest neighbour)','diag', socDebug)
      end if
 
      dx = neighD(1, j, i)
@@ -15876,10 +16129,13 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
 
      ! Debug output for first few bonds
      if (socDebug .and. i <= 2 .and. j <= 10) then  ! Show first 10 neighbors instead of just 2
-        call MIO_Print('Rashba Debug: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
-              //', lambdaR='//trim(num2str(lambdaR))//', dx='//trim(num2str(dx))//', dy='//trim(num2str(dy)), 'diag')
-        call MIO_Print('RashbaHopp = '//trim(num2str(real(RashbaHopp)))//' + i*'//trim(num2str(aimag(RashbaHopp))), 'diag')
-        call MIO_Print('Adding to HLoc('//trim(num2str(i))//','//trim(num2str(in+N))//') = spin-flip term', 'diag')
+        call MIO_PrintDebug('Rashba Debug: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='// &
+          trim(num2str(in))  //', lambdaR='//trim(num2str(lambdaR))//', dx='//trim(num2str(dx))//', dy='// &
+          trim(num2str(dy)),'diag', socDebug)
+        call MIO_PrintDebug('RashbaHopp = '//trim(num2str(real(RashbaHopp)))//' + i*'// &
+          trim(num2str(aimag(RashbaHopp))),'diag', socDebug)
+        call MIO_PrintDebug('Adding to HLoc('//trim(num2str(i))//','//trim(num2str(in+N))//') = spin-flip term', &
+          'diag', socDebug)
      end if
 
      ! Spin-flip couplings (↑→↓ and ↓→↑)
@@ -15889,14 +16145,14 @@ subroutine ApplySpinFlipSOC(i, j, in, KLoc, R, N, HLoc)
      ! Debug: Check if we're accidentally adding diagonal terms (which would cause global shift)
      if (socDebug .and. i <= 2 .and. j <= 10) then
         if (i == in) then
-           call MIO_Print('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','//trim(num2str(i)) &
-                 //') - this causes global shift!', 'diag')
+           call MIO_PrintDebug('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','// &
+             trim(num2str(i))  //') - this causes global shift!','diag', socDebug)
         else if (i == in + N) then
-           call MIO_Print('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','//trim(num2str(in+N)) &
-                 //') - this causes global shift!', 'diag')
+           call MIO_PrintDebug('ERROR: Adding Rashba to diagonal term HLoc('//trim(num2str(i))//','// &
+             trim(num2str(in+N))  //') - this causes global shift!','diag', socDebug)
         else
-           call MIO_Print('OK: Adding Rashba to off-diagonal spin-flip term HLoc('//trim(num2str(i))//',' &
-                 //trim(num2str(in+N))//')', 'diag')
+           call MIO_PrintDebug('OK: Adding Rashba to off-diagonal spin-flip term HLoc('//trim(num2str(i))//','  // &
+             trim(num2str(in+N))//')','diag', socDebug)
         end if
      end if
 
@@ -15958,7 +16214,8 @@ subroutine BuildBlockHamiltonian(N, KLoc, cell, H0, maxN, hopp, NList, Nneigh, n
       ! Build hopping for both spin blocks
       ! Debug: Check neighbor count for first few atoms
       if (socDebug .and. i <= 2) then
-         call MIO_Print('BuildBlockHamiltonian: Atom '//trim(num2str(i))//' has '//trim(num2str(Nneigh(i)))//' neighbors', 'diag')
+         call MIO_PrintDebug('BuildBlockHamiltonian: Atom '//trim(num2str(i))//' has '//trim(num2str(Nneigh(i)))// &
+           ' neighbours','diag', socDebug)
       end if
 
       do j = 1, Nneigh(i)
@@ -15966,8 +16223,8 @@ subroutine BuildBlockHamiltonian(N, KLoc, cell, H0, maxN, hopp, NList, Nneigh, n
 
          ! Debug: Check if we're actually looping through all neighbors
          if (socDebug .and. i <= 2 .and. j <= 5) then
-            call MIO_Print('  Neighbor loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
-                  //', total_neighbors='//trim(num2str(Nneigh(i))), 'diag')
+            call MIO_PrintDebug('  Neighbour loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='// &
+              trim(num2str(in))  //', total_neighbors='//trim(num2str(Nneigh(i))),'diag', socDebug)
          end if
 
          ! Only set lower triangular elements (row >= col)
@@ -16009,9 +16266,9 @@ subroutine BuildBlockHamiltonian(N, KLoc, cell, H0, maxN, hopp, NList, Nneigh, n
    ! ZHEEV signature: (jobz, uplo, n, a, lda, w, work, lwork, rwork, info)
    call ZHEEV('N', 'L', 2*N, HBlock, 2*N, EBlock, ZWorkLoc, lwork_block, DWorkLoc, info)
    if (info /= 0) then
-      call MIO_Print('ZHEEV returned info = '//trim(num2str(info)), 'diag')
-      call MIO_Print('N = '//trim(num2str(N))//', 2*N = '//trim(num2str(2*N)), 'diag')
-      call MIO_Print('lwork_block = '//trim(num2str(lwork_block)), 'diag')
+      call MIO_Warning('ZHEEV returned info = '//trim(num2str(info)), 'diag')
+      call MIO_PrintDebug('N = '//trim(num2str(N))//', 2*N = '//trim(num2str(2*N)), 'diag', tapwDebug)
+      call MIO_PrintDebug('lwork_block = '//trim(num2str(lwork_block)), 'diag', tapwDebug)
       call MIO_Kill('Error in block Hamiltonian diagonalization', 'diag', 'BuildBlockHamiltonian')
    end if
 
@@ -16109,8 +16366,8 @@ subroutine BuildBlockHamiltonianOnly(N, KLoc, cell, H0, maxN, hopp, NList, Nneig
       ! Build hopping for both spin blocks
       ! Debug: Check neighbor count for first few atoms
       if (socDebug .and. i <= 2) then
-         call MIO_Print('BuildBlockHamiltonianOnly: Atom '//trim(num2str(i))//' has '//trim(num2str(Nneigh(i))) &
-               //' neighbors', 'diag')
+         call MIO_PrintDebug('BuildBlockHamiltonianOnly: Atom '//trim(num2str(i))//' has '// &
+           trim(num2str(Nneigh(i)))  //' neighbours','diag', socDebug)
       end if
 
       do j = 1, Nneigh(i)
@@ -16118,14 +16375,14 @@ subroutine BuildBlockHamiltonianOnly(N, KLoc, cell, H0, maxN, hopp, NList, Nneig
 
          ! Debug: Check if we're actually looping through all neighbors
          if (socDebug .and. i <= 2 .and. j <= 5) then
-            call MIO_Print('  Neighbor loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='//trim(num2str(in)) &
-                  //', total_neighbors='//trim(num2str(Nneigh(i))), 'diag')
+            call MIO_PrintDebug('  Neighbour loop: i='//trim(num2str(i))//', j='//trim(num2str(j))//', in='// &
+              trim(num2str(in))  //', total_neighbors='//trim(num2str(Nneigh(i))),'diag', socDebug)
          end if
 
          ! Debug: Progress indicator for atom 1
          if (socDebug .and. i == 1 .and. modulo(j, 10) == 0) then
-            call MIO_Print('BuildBlockHamiltonianOnly: Atom 1 progress: j='//trim(num2str(j))//'/' &
-                  //trim(num2str(Nneigh(i))), 'diag')
+            call MIO_PrintDebug('BuildBlockHamiltonianOnly: Atom 1 progress: j='//trim(num2str(j))//'/'  // &
+              trim(num2str(Nneigh(i))),'diag', socDebug)
          end if
 
          ! Only set lower triangular elements (row >= col)
@@ -16163,13 +16420,14 @@ subroutine BuildBlockHamiltonianOnly(N, KLoc, cell, H0, maxN, hopp, NList, Nneig
 
       ! Debug: Show completion of atom i in BuildBlockHamiltonianOnly
       if (socDebug .and. i <= 5) then
-         call MIO_Print('BuildBlockHamiltonianOnly: Finished atom '//trim(num2str(i)), 'diag')
+         call MIO_PrintDebug('BuildBlockHamiltonianOnly: Finished atom '//trim(num2str(i)),'diag', socDebug)
       end if
    end do
 
    ! Debug: Show completion of BuildBlockHamiltonianOnly
    if (socDebug) then
-      call MIO_Print('BuildBlockHamiltonianOnly: Completed for all atoms, moving to edge hopping', 'diag')
+      call MIO_PrintDebug('BuildBlockHamiltonianOnly: Completed for all atoms, moving to edge hopping','diag', &
+        socDebug)
    end if
 
    ! Edge hopping if applicable
@@ -16230,10 +16488,11 @@ subroutine DiagBlockHamiltonian(HBlock, EBlock, N)
 
    ! Debug: Warn about large matrix diagonalization
    if (socDebug) then
-      call MIO_Print('DiagBlockHamiltonian: Starting ZHEEV diagonalization for '//trim(num2str(2*N))//'×' &
-            //trim(num2str(2*N))//' matrix (this may take several minutes to hours for large systems)', 'diag')
-      call MIO_Print('  Matrix size: N='//trim(num2str(N))//', 2N='//trim(num2str(2*N))//', estimated memory: ~' &
-            //trim(num2str(int(2*N*2*N*16.0_dp/1024.0_dp/1024.0_dp/1024.0_dp)))//' GB', 'diag')
+      call MIO_PrintDebug('DiagBlockHamiltonian: Starting ZHEEV diagonalization for '//trim(num2str(2*N))//'x'  // &
+        trim(num2str(2*N))//' matrix (this may take several minutes to hours for large systems)','diag', socDebug)
+      call MIO_PrintDebug('  Matrix size: N='//trim(num2str(N))//', 2N='//trim(num2str(2*N))// &
+        ', estimated memory: ~'  //trim(num2str(int(2*N*2*N*16.0_dp/1024.0_dp/1024.0_dp/1024.0_dp)))//' GB','diag', &
+        socDebug)
    end if
 
    ! Diagonalize block Hamiltonian
@@ -16242,12 +16501,12 @@ subroutine DiagBlockHamiltonian(HBlock, EBlock, N)
 
    ! Debug: Confirm completion
    if (socDebug) then
-      call MIO_Print('DiagBlockHamiltonian: ZHEEV completed successfully', 'diag')
+      call MIO_PrintDebug('DiagBlockHamiltonian: ZHEEV completed successfully','diag', socDebug)
    end if
    if (info /= 0) then
-      call MIO_Print('ZHEEV returned info = '//trim(num2str(info)), 'diag')
-      call MIO_Print('N = '//trim(num2str(N))//', 2*N = '//trim(num2str(2*N)), 'diag')
-      call MIO_Print('lwork_block = '//trim(num2str(lwork_block)), 'diag')
+      call MIO_Warning('ZHEEV returned info = '//trim(num2str(info)), 'diag')
+      call MIO_PrintDebug('N = '//trim(num2str(N))//', 2*N = '//trim(num2str(2*N)), 'diag', tapwDebug)
+      call MIO_PrintDebug('lwork_block = '//trim(num2str(lwork_block)), 'diag', tapwDebug)
       call MIO_Kill('Error in block Hamiltonian diagonalization', 'diag', 'DiagBlockHamiltonian')
    end if
 
