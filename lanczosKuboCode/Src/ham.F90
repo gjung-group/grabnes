@@ -5072,6 +5072,9 @@ subroutine HamHopping
 
    ! Variables with one copy per thread in the parallel loops
    logical :: checking
+   logical :: bernalF2G2              ! Bernal interlayer branch with the F2G2 parameter set (see below)
+   logical :: legacyBernalTAB1        ! Interlayer.LegacyBernalTAB1: that branch as before November 2026
+   logical, allocatable :: bernalDimer(:)   ! Bernal branch: atom with an atom of the adjacent layer on top
    integer :: firstNN(3), i, iii, j, jj, jj1, jj2, k, kk, kkk, mm, mmm, nlay
    real(dp) :: aval, BLdelta, bval, CabG, d, del(3), delta, dist, distXY, distXYZ, dx, dxTemp, dy, dyTemp, &
          Fc, imagH, kappa0, kappa6, kappa6b, lambda0, lambda3, lambda6, lambda6b, realH, &
@@ -5859,6 +5862,44 @@ subroutine HamHopping
          aCC = aG/sqrt(3.0_dp)
          aBN1 = aBN/sqrt(3.0_dp)
          call HamHopSrivaniConstants()
+         ! Bernal interlayer branch (MoireEncapsulatedBilayer[BasedOnMoireCell], BernalReadXYZ). With the F2G2 set
+         ! (Intralayer.F2G2Model, the default, without BilayerOneParameter/ThreeParameters) it used to put the F2G2
+         ! tAB1 (0.1391 eV, the term between in-plane first neighbours) on the vertical dimer bonds and nothing
+         ! else. It now takes the bilayer F2G2 interlayer terms of HamHopInterlayerBernalF2G2 (dimer term tBA0),
+         ! the set used for the AB pairs of Stack.ModelFromTwist; dimer sites are measured from the structure.
+         bernalF2G2 = .false.
+         if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') &
+               .or. BernalReadXYZ) then
+            call MIO_InputParameter('Interlayer.LegacyBernalTAB1',legacyBernalTAB1,.false.)
+            bernalF2G2 = F2G2Model .and. .not. (BilayerOneParameter .or. BilayerThreeParameters)
+            if (bernalF2G2 .and. legacyBernalTAB1) then
+               bernalF2G2 = .false.
+               call MIO_Print('WARNING: Interlayer.LegacyBernalTAB1: Bernal interlayer hopping as before November 2026 '// &
+                    '(vertical dimer bonds only, with the F2G2 tAB1 = '//trim(num2str(-tAB1*g0,5))//' eV)','ham')
+            else if (bernalF2G2) then
+               call MIO_Print('Bernal interlayer hoppings: bilayer F2G2 set (dimer tBA0 = '//trim(num2str(-tBA0*g0,5))// &
+                    ' eV; Interlayer.LegacyBernalTAB1 .true. restores the former tAB1-only coupling)','ham')
+            end if
+         end if
+         if (bernalF2G2) then
+            allocate(bernalDimer(nAt))
+            bernalDimer = .false.
+            do i=1,nAt
+               do j=1,Nneigh(i)
+                  jj = NList(j,i)
+                  if (layerIndex(i) .eq. layerIndex(jj) + 1 .or. layerIndex(i).eq. layerIndex(jj)-1 &
+                        .or. layerIndex(i)+nLayers .eq. layerIndex(jj) + 1 .or. layerIndex(i)-nLayers .eq. layerIndex(jj)-1) then
+                     if (sqrt(NeighD(1,j,i)**2+NeighD(2,j,i)**2) < 0.5_dp*aCC) bernalDimer(i) = .true.
+                  end if
+               end do
+            end do
+            call MIO_Print('Bernal interlayer: '//trim(num2str(count(bernalDimer)))//' dimer sites of '// &
+                 trim(num2str(nAt))//' atoms','ham')
+            ! AB (Bernal) stacking: one sublattice of each layer is a dimer site, i.e. half of the atoms
+            if (abs(2*count(bernalDimer) - nAt) > nAt/10) call MIO_Print('WARNING: the structure is not AB stacked '// &
+                 '(half of the atoms should be dimer sites): the bilayer F2G2 interlayer terms of this branch, chosen '// &
+                 'by in-plane bond length, do not describe it','ham')
+         end if
          ! ---------------------------------------------------------------------
          !!!$OMP& PRIVATE (expFactor, dist, yDistance, DBShiftRatio,boundaryWidth, limit2, limit1, limit0), &
          !!!$OMP& PRIVATE (nnnn), &
@@ -6087,7 +6128,10 @@ subroutine HamHopping
                         .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') .or. BernalReadXYZ) then
                     if (frac) call AtomsSetCart()
                     dist = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
-                    if (abs(NeighD(1,j,i)) < 0.01_dp .and. abs(NeighD(2,j,i)) < 0.01_dp) then
+                    if (bernalF2G2) then
+                       call HamHopInterlayerBernalF2G2(i, j, bernalDimer(i) .neqv. bernalDimer(jj), &
+                            numberOfInterlayerHoppings)
+                    else if (abs(NeighD(1,j,i)) < 0.01_dp .and. abs(NeighD(2,j,i)) < 0.01_dp) then
                        hopp(j,i) = hopp(j,i) -tAB1
                        numberOfInterlayerHoppings = numberOfInterlayerHoppings + 1
                     else if (dist>aCC*0.95_dp .and. dist<aCC*1.05_dp .and. BilayerThreeParameters) then
@@ -6141,7 +6185,7 @@ subroutine HamHopping
                         .or. MIO_StringComp(str,'TwistedBilayerBasedOnMoireCell')) then
                    if (HamBondInABPair(layerIndex(i), layerIndex(jj))) then
                       ! untwisted AB pair found in the structure (Stack.ModelFromTwist): bilayer F2G2 model
-                      call HamHopInterlayerBernalF2G2(i, j, jj, numberOfInterlayerHoppings)
+                      call HamHopInterlayerBernalF2G2(i, j, hamF2G2Site(i) /= hamF2G2Site(jj), numberOfInterlayerHoppings)
                    else if(MIO_StringComp(BilayerModel,'Jeil')) then
                          call HamHopInterlayerJeil(i, j, dist, numberOfHAA1, numberOfHAA2, numberOfHAB1, &
                                numberOfHBA2, numberOfHBA1, numberOfHAB2)
@@ -6226,6 +6270,7 @@ subroutine HamHopping
         call MIO_Print(' HBA '//trim(num2str(numberOfHBA1))//' '//trim(num2str(numberOfHBA2)),'HamHopping')
 #endif /* DEBUG */
 
+        if (allocated(bernalDimer)) deallocate(bernalDimer)
         if (zz) call HamHopSecondMoire()
 
 ! --- Repeatation ended
@@ -11953,20 +11998,18 @@ end function HamF2G2IntralayerShell
 !! the sublattice labels of the two atoms, the kind of site measured from the structure is used instead
 !! (the labels are equal exactly when one atom is a dimer site and the other is not), so that the result
 !! does not depend on how the sublattices of the two layers are numbered.
-subroutine HamHopInterlayerBernalF2G2(i, j, jj, numberOfInterlayerHoppings)
+subroutine HamHopInterlayerBernalF2G2(i, j, mixed, numberOfInterlayerHoppings)
 
    ! Arguments
    integer, intent(in) :: i
    integer, intent(in) :: j
-   integer, intent(in) :: jj
+   logical, intent(in) :: mixed   ! one atom of the bond is a dimer site (atom of the other layer on top), the other not
    integer, intent(inout) :: numberOfInterlayerHoppings
 
    ! Other local variables
-   logical :: mixed
    real(dp) :: dxy
 
    dxy = sqrt(NeighD(1,j,i)**2.0_dp+NeighD(2,j,i)**2.0_dp)
-   mixed = (hamF2G2Site(i) /= hamF2G2Site(jj))
    if (dxy<0.2_dp) then
       hopp(j,i) = hopp(j,i) + tBA0
    else if (dxy>aCC*0.9_dp .and. dxy<aCC*1.1_dp) then
