@@ -721,6 +721,8 @@ subroutine HamOnSite()
    real(dp), parameter :: phi1= 1.884_dp, phi2 = 1.531_dp
 
    ! Switches and options read from the input
+   logical :: tBGLegacyOnSite   ! TBG.LegacyAnalyticOnSite: GBN.Angle and d in Angstrom (before November 2026)
+   real(dp) :: tBGAngleOnSite, onSiteAngle
    logical :: addDisplacements, BNBNDiag, BNBNtwoLayers, BNBNuseDisplacementFile, BNt2GBN, &
          cosinusModulationAddMassTerm, cosinusModulationUsingPeriod, cosinusModulationUsingPeriodY, &
          deactivateASubLattice, deactivateBSubLattice, deactivateUpperLayer, deactivateUpperLayers, &
@@ -2052,6 +2054,15 @@ subroutine HamOnSiteMoirePotential()
          PhiBpBp = PhiBpBp*pi/180.0_dp
       end if
       GBNAngle = GBNAngle*pi/180.0_dp
+      ! analytic tBG on-site term (TBG.Diag without TBG.UseDisplacementFile): TBG.Angle, as the tBG bond term
+      ! (HamHopBondTermsTBG). Until November 2026 it took GBN.Angle and passed d in Angstrom instead of units of aG.
+      call MIO_InputParameter('TBG.Angle',tBGAngleOnSite,0.0_dp)
+      tBGAngleOnSite = tBGAngleOnSite*pi/180.0_dp
+      call MIO_InputParameter('TBG.LegacyAnalyticOnSite',tBGLegacyOnSite,.false.)
+      onSiteAngle = GBNAngle
+      if (tBGDiag .and. .not. tBGLegacyOnSite) onSiteAngle = tBGAngleOnSite
+      if (tBGDiag .and. tBGLegacyOnSite) call MIO_Print('WARNING: TBG.LegacyAnalyticOnSite: the analytic tBG on-site '// &
+           'term uses GBN.Angle and d in Angstrom, as before November 2026','ham')
          GlobalPhi = Globalang*pi/180.0_dp
          GlobalPhi2 = Globalang2*pi/180.0_dp
       GlobalPhiL1 = GlobalPhiL1*pi/180.0_dp
@@ -2233,10 +2244,10 @@ subroutine HamOnSiteMoirePotential()
               !   !dy = displacements(2,i)
               !   !print*, "dx, dy", dx, dy
               else
-                 dx = ((1.0_dp+eps) * cos(GBNAngle) - 1.0_dp) * (Rat(1,i)) &
-                           - ((1.0_dp+eps) * sin(GBNAngle) * (Rat(2,i)))
-                 dy = ((1.0_dp+eps) * cos(GBNAngle) - 1.0_dp) * (Rat(2,i)) &
-                           + ((1.0_dp+eps) * sin(GBNAngle) * (Rat(1,i)))
+                 dx = ((1.0_dp+eps) * cos(onSiteAngle) - 1.0_dp) * (Rat(1,i)) &
+                           - ((1.0_dp+eps) * sin(onSiteAngle) * (Rat(2,i)))
+                 dy = ((1.0_dp+eps) * cos(onSiteAngle) - 1.0_dp) * (Rat(2,i)) &
+                           + ((1.0_dp+eps) * sin(onSiteAngle) * (Rat(1,i)))
               end if
               if (tBGDiag) then
                  call HamOnSiteAtomHarmonicTBG(i, dxTemp, dx, dyTemp, dy, Hjj, CApAp, PhiApAp, CApAp0, CBpBp, &
@@ -2445,13 +2456,22 @@ subroutine HamOnSiteAtomHarmonicTBG(i, dxTemp, dx, dyTemp, dy, Hjj, CApAp, PhiAp
                        dxTemp = -dx/aG
                        dyTemp = -dy/aG
                     end if
-                 else
+                 else if (tBGLegacyOnSite) then
                     if (layerIndex(i).eq.1) then
                        dxTemp = dx
                        dyTemp = dy
                     else if (layerIndex(i).eq.2) then
                        dxTemp = -dx
                        dyTemp = -dy
+                    end if
+                 else
+                    ! diagotBG takes d in units of aG, as the displacement-file branch above and the bond term
+                    if (layerIndex(i).eq.1) then
+                       dxTemp = dx/aG
+                       dyTemp = dy/aG
+                    else if (layerIndex(i).eq.2) then
+                       dxTemp = -dx/aG
+                       dyTemp = -dy/aG
                     end if
                  end if
                  if (tBGSwitchDxDy) then
