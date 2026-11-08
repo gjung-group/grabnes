@@ -12,6 +12,8 @@
 
 module input
 
+   use sys,                  only : SysPrint, SysWarning
+
    use file,                 only : cl_file
    use io,                   only : maxfnlen, maxinputl
 #ifdef _OPENMP
@@ -74,6 +76,14 @@ module input
    end interface
 
 contains
+
+!  Integer as a left-adjusted string (for messages).
+function itoa(i) result(str)
+   integer, intent(in) :: i
+   character(len=20) :: str
+   write(str,'(i0)') i
+end function itoa
+
 
 
 !****** Subroutine: InputInit *************************************************
@@ -261,8 +271,8 @@ subroutine InputCheckDuplicates()
          end if
       end do
       if (nrep > 1) then
-         write(*,'(A,I0,A)') 'input: WARNING: the key "'//trim(keys(i))//'" appears ', nrep, &
-           ' times in the input file; only its FIRST value is used.'
+         call SysWarning('the key "'//trim(keys(i))//'" appears '//trim(itoa(nrep))// &
+           ' times in the input file; only its first value is used.','input')
       end if
    end do
    ! keep the keys, each once, for the report of keys that the run never asked for
@@ -1644,10 +1654,10 @@ subroutine InputUnusedReport()
    if (nFileKeys == 0) return
    n = count(.not. fileKeyAsked(1:nFileKeys))
    if (n == 0) return
-   write(*,'(A,I0,A)') 'input: note: ', n, ' key(s) of the input file were not read in this run (misspelt, or not'// &
-     ' used by the selected calculation):'
+   call SysPrint(trim(itoa(n))//' input key(s) were not read in this run (misspelt, or not used by this '// &
+     'calculation):','input')
    do i=1,nFileKeys
-      if (.not. fileKeyAsked(i)) write(*,'(A)') 'input:    '//trim(fileKeysAsWritten(i))
+      if (.not. fileKeyAsked(i)) call SysPrint('  '//trim(fileKeysAsWritten(i)),'input')
    end do
 
 end subroutine InputUnusedReport
@@ -1672,8 +1682,8 @@ subroutine InputAliasReport()
    n = 0
    do i=1,nAlias
       if (aliasBoth(i)) then
-         write(*,'(A)') 'input: WARNING: the input file contains both "'//trim(aliasNew(i))//'" and its former name "'// &
-           trim(aliasOld(i))//'"; the value of "'//trim(aliasNew(i))//'" was used.'
+         call SysWarning('the input file contains both "'//trim(aliasNew(i))//'" and its former name "'// &
+           trim(aliasOld(i))//'"; the value of "'//trim(aliasNew(i))//'" was used.','input')
       else if (aliasOldUsed(i)) then
          n = n + 1
       end if
@@ -1686,15 +1696,15 @@ subroutine InputAliasReport()
    end if
    call InputMarkAsked('Input.ListFormerNames')
    if (list) then
-      write(*,'(A,I0,A)') 'input: note: ', n, ' key(s) of the input file are given under a former name, which keeps working:'
+      call SysPrint(trim(itoa(n))//' input key(s) use a former name, which keeps working:','input')
       do i=1,nAlias
          if (aliasOldUsed(i) .and. .not. aliasBoth(i)) then
-            write(*,'(A)') 'input:    '//trim(aliasOld(i))//'  ->  '//trim(aliasNew(i))
+            call SysPrint('  '//trim(aliasOld(i))//'  ->  '//trim(aliasNew(i)),'input')
          end if
       end do
    else
-      write(*,'(A,I0,A)') 'input: note: ', n, ' key(s) of the input file are given under a former name, which keeps '// &
-        'working ("Input.ListFormerNames .true." lists the present names).'
+      call SysPrint(trim(itoa(n))//' input key(s) use a former name, which still works '// &
+        '(Input.ListFormerNames lists them)','input')
    end if
 
 end subroutine InputAliasReport
