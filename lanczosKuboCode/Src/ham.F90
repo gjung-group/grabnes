@@ -5876,9 +5876,6 @@ subroutine HamHopping
                bernalF2G2 = .false.
                call MIO_Print('WARNING: Interlayer.LegacyBernalTAB1: Bernal interlayer hopping as before November 2026 '// &
                     '(vertical dimer bonds only, with the F2G2 tAB1 = '//trim(num2str(-tAB1*g0,5))//' eV)','ham')
-            else if (bernalF2G2) then
-               call MIO_Print('Bernal interlayer hoppings: bilayer F2G2 set (dimer tBA0 = '//trim(num2str(-tBA0*g0,5))// &
-                    ' eV; Interlayer.LegacyBernalTAB1 .true. restores the former tAB1-only coupling)','ham')
             end if
          end if
          if (bernalF2G2) then
@@ -5889,16 +5886,23 @@ subroutine HamHopping
                   jj = NList(j,i)
                   if (layerIndex(i) .eq. layerIndex(jj) + 1 .or. layerIndex(i).eq. layerIndex(jj)-1 &
                         .or. layerIndex(i)+nLayers .eq. layerIndex(jj) + 1 .or. layerIndex(i)-nLayers .eq. layerIndex(jj)-1) then
-                     if (sqrt(NeighD(1,j,i)**2+NeighD(2,j,i)**2) < 0.5_dp*aCC) bernalDimer(i) = .true.
+                     if (sqrt(NeighD(1,j,i)**2+NeighD(2,j,i)**2) < 0.2_dp) bernalDimer(i) = .true.
                   end if
                end do
             end do
-            call MIO_Print('Bernal interlayer: '//trim(num2str(count(bernalDimer)))//' dimer sites of '// &
-                 trim(num2str(nAt))//' atoms','ham')
-            ! AB (Bernal) stacking: one sublattice of each layer is a dimer site, i.e. half of the atoms
-            if (abs(2*count(bernalDimer) - nAt) > nAt/10) call MIO_Print('WARNING: the structure is not AB stacked '// &
-                 '(half of the atoms should be dimer sites): the bilayer F2G2 interlayer terms of this branch, chosen '// &
-                 'by in-plane bond length, do not describe it','ham')
+            ! AB (Bernal) stacking: one sublattice of each layer is a dimer site (an atom of the adjacent layer within
+            ! 0.2 A in plane, the vertical bond of HamHopInterlayerBernalF2G2), i.e. half of the atoms
+            if (abs(2*count(bernalDimer) - nAt) > nAt/10) then
+               bernalF2G2 = .false.
+               deallocate(bernalDimer)
+               call MIO_Print('WARNING: Bernal interlayer branch on a structure that is not AB stacked (dimer sites '// &
+                    'are not half of the atoms, e.g. a twisted cell): the former coupling is kept (tAB1 = '// &
+                    trim(num2str(-tAB1*g0,5))//' eV on vertically aligned pairs only), which is not a model of it','ham')
+            else
+               call MIO_Print('Bernal interlayer hoppings: bilayer F2G2 set (dimer tBA0 = '//trim(num2str(-tBA0*g0,5))// &
+                    ' eV; '//trim(num2str(count(bernalDimer)))//' dimer sites of '//trim(num2str(nAt))//' atoms; '// &
+                    'Interlayer.LegacyBernalTAB1 .true. restores the former tAB1-only coupling)','ham')
+            end if
          end if
          ! ---------------------------------------------------------------------
          !!!$OMP& PRIVATE (expFactor, dist, yDistance, DBShiftRatio,boundaryWidth, limit2, limit1, limit0), &
