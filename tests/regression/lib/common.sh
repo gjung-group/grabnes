@@ -181,7 +181,7 @@ run_solver() {
         printf '%s\n' "  FAIL: the solver exited with status $status (see $run_dir)"
         grep 'ERROR' "$run_dir/job.out" | sed -n '1,3p' | sed 's/^/  /'
         sed -n '1,5p' "$run_dir/job.err" | sed 's/^/  /'
-    elif ! grep -q '^0 errors, 0 warnings' "$run_dir/job.out"; then
+    elif ! grep -qE '^(mio: )?0 errors, 0 warnings' "$run_dir/job.out"; then
         printf '%s\n' "  FAIL: the solver did not report '0 errors, 0 warnings' (see $run_dir/job.out)"
     elif [ ! -s "$run_dir/$output" ]; then
         printf '%s\n' "  FAIL: the solver did not write $output"
