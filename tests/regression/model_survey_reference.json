@@ -128,7 +128,7 @@
   "status": "INERT"
  },
  "eff+tBGDiag": {
-  "fingerprint": "48254167013b5c06",
+  "fingerprint": "b26b930b754ae767",
   "status": "ok"
  },
  "eff+useLayerSpecificOnsiteEnergyTerms": {
@@ -712,31 +712,31 @@
   "status": "ok"
  },
  "tbg+BLKaxiras+BilayerOneParameter": {
-  "fingerprint": "92667d8f322c972d",
+  "fingerprint": "417f60f22edec660",
   "status": "ok"
  },
  "tbg+BLKaxiras+BilayerThreeParameters": {
-  "fingerprint": "92667d8f322c972d",
+  "fingerprint": "417f60f22edec660",
   "status": "ok"
  },
  "tbg+BLKaxiras+addExponentialDecayForDihedral": {
-  "fingerprint": "693fea41af682529",
+  "fingerprint": "7db370435f6aac1e",
   "status": "ok"
  },
  "tbg+BLKaxiras+addPressureDependence=F": {
-  "fingerprint": "c96127c2046d471d",
+  "fingerprint": "bf18f68c32e7b12d",
   "status": "ok"
  },
  "tbg+BLKaxiras+changeLatticeParameterForSrivaniModel": {
-  "fingerprint": "0459863fd86dfbf0",
+  "fingerprint": "a2e2fc6d54ca9355",
   "status": "ok"
  },
  "tbg+BLKaxiras+deactivateV3": {
-  "fingerprint": "0cbffee6646ba6f3",
+  "fingerprint": "652f6aea3799ec24",
   "status": "ok"
  },
  "tbg+BLKaxiras+deactivateV6": {
-  "fingerprint": "8cf33a52cbf353bd",
+  "fingerprint": "5c9634420b805451",
   "status": "ok"
  },
  "tbg+BLKaxiras+findThetasGeometrically": {
@@ -744,19 +744,19 @@
   "status": "ok"
  },
  "tbg+BLKaxiras+newFittingFunctions": {
-  "fingerprint": "92667d8f322c972d",
+  "fingerprint": "417f60f22edec660",
   "status": "ok"
  },
  "tbg+BLKaxiras+oldParameterSet": {
-  "fingerprint": "92667d8f322c972d",
+  "fingerprint": "417f60f22edec660",
   "status": "ok"
  },
  "tbg+BLKaxiras+onlyV0": {
-  "fingerprint": "92667d8f322c972d",
+  "fingerprint": "417f60f22edec660",
   "status": "ok"
  },
  "tbg+BLKaxiras+oppositedxdy": {
-  "fingerprint": "92667d8f322c972d",
+  "fingerprint": "417f60f22edec660",
   "status": "ok"
  },
  "tbg+BLKaxiras+sublatticeDependent": {
@@ -764,23 +764,23 @@
   "status": "REFUSED"
  },
  "tbg+BLKaxiras+sublatticeIndependent": {
-  "fingerprint": "92667d8f322c972d",
+  "fingerprint": "417f60f22edec660",
   "status": "ok"
  },
  "tbg+BLKaxiras+switchV3Sign": {
-  "fingerprint": "aea01d746bf0e825",
+  "fingerprint": "60eac54e859e48f5",
   "status": "ok"
  },
  "tbg+BLKaxiras+useBNGKaxiras": {
-  "fingerprint": "72b4f9b504efbe94",
-  "status": "REFUSED"
+  "fingerprint": "417f60f22edec660",
+  "status": "ok"
  },
  "tbg+BLKaxiras+useBNGSrivani": {
   "fingerprint": "2980973abce42fa7",
   "status": "ok"
  },
  "tbg+BLKaxiras+useOnlyVAB": {
-  "fingerprint": "92667d8f322c972d",
+  "fingerprint": "417f60f22edec660",
   "status": "ok"
  },
  "tbg+BLKaxiras+useTheta": {
@@ -788,35 +788,35 @@
   "status": "ok"
  },
  "tbg+BLKaxiras+useThetaIJ": {
-  "fingerprint": "92667d8f322c972d",
+  "fingerprint": "417f60f22edec660",
   "status": "ok"
  },
  "tbg+BLSrivani+BilayerOneParameter": {
-  "fingerprint": "13eeec627497171f",
+  "fingerprint": "989c574a047080af",
   "status": "ok"
  },
  "tbg+BLSrivani+BilayerThreeParameters": {
-  "fingerprint": "13eeec627497171f",
+  "fingerprint": "989c574a047080af",
   "status": "ok"
  },
  "tbg+BLSrivani+addExponentialDecayForDihedral": {
-  "fingerprint": "98e2ce64a448130a",
+  "fingerprint": "be6bb25f3a332ace",
   "status": "ok"
  },
  "tbg+BLSrivani+addPressureDependence=F": {
-  "fingerprint": "e8313931b44540b7",
+  "fingerprint": "49c08cfcf5027e67",
   "status": "ok"
  },
  "tbg+BLSrivani+changeLatticeParameterForSrivaniModel": {
-  "fingerprint": "1f40900018b871ad",
+  "fingerprint": "c3e0bacb034feb5e",
   "status": "ok"
  },
  "tbg+BLSrivani+deactivateV3": {
-  "fingerprint": "4977dad0d8088e71",
+  "fingerprint": "8318a8a36646b059",
   "status": "ok"
  },
  "tbg+BLSrivani+deactivateV6": {
-  "fingerprint": "9178523ab549d786",
+  "fingerprint": "71f36a385b93eba9",
   "status": "ok"
  },
  "tbg+BLSrivani+findThetasGeometrically": {
@@ -824,19 +824,19 @@
   "status": "ok"
  },
  "tbg+BLSrivani+newFittingFunctions": {
-  "fingerprint": "13eeec627497171f",
+  "fingerprint": "989c574a047080af",
   "status": "ok"
  },
  "tbg+BLSrivani+oldParameterSet": {
-  "fingerprint": "ac2123d83cc9dbb2",
+  "fingerprint": "d2a79a89abe46087",
   "status": "ok"
  },
  "tbg+BLSrivani+onlyV0": {
-  "fingerprint": "13eeec627497171f",
+  "fingerprint": "989c574a047080af",
   "status": "ok"
  },
  "tbg+BLSrivani+oppositedxdy": {
-  "fingerprint": "13eeec627497171f",
+  "fingerprint": "989c574a047080af",
   "status": "ok"
  },
  "tbg+BLSrivani+sublatticeDependent": {
@@ -844,15 +844,15 @@
   "status": "ok"
  },
  "tbg+BLSrivani+sublatticeIndependent": {
-  "fingerprint": "13eeec627497171f",
+  "fingerprint": "989c574a047080af",
   "status": "ok"
  },
  "tbg+BLSrivani+switchV3Sign": {
-  "fingerprint": "3e2d7e1064798d5d",
+  "fingerprint": "93cc802415fd8b85",
   "status": "ok"
  },
  "tbg+BLSrivani+useBNGKaxiras": {
-  "fingerprint": "e324dddda8bf8c12",
+  "fingerprint": "d70cb7a923458438",
   "status": "REFUSED"
  },
  "tbg+BLSrivani+useBNGSrivani": {
@@ -860,7 +860,7 @@
   "status": "ok"
  },
  "tbg+BLSrivani+useOnlyVAB": {
-  "fingerprint": "dfcbce6b1e9b5bd9",
+  "fingerprint": "c1d9a6c0a3b2f9e3",
   "status": "ok"
  },
  "tbg+BLSrivani+useTheta": {
@@ -868,7 +868,7 @@
   "status": "ok"
  },
  "tbg+BLSrivani+useThetaIJ": {
-  "fingerprint": "13eeec627497171f",
+  "fingerprint": "989c574a047080af",
   "status": "ok"
  },
  "tbg+BernalShift": {
@@ -1004,15 +1004,15 @@
   "status": "REFUSED"
  },
  "tbg+TypeOfBL_BLKaxiras": {
-  "fingerprint": "92667d8f322c972d",
+  "fingerprint": "417f60f22edec660",
   "status": "ok"
  },
  "tbg+TypeOfBL_BLKaxiras+NeighLevels1": {
-  "fingerprint": "679e491076904298",
+  "fingerprint": "4fa9a69822164fdb",
   "status": "ok"
  },
  "tbg+TypeOfBL_BLSrivani": {
-  "fingerprint": "13eeec627497171f",
+  "fingerprint": "989c574a047080af",
   "status": "ok"
  },
  "tbg+TypeOfBL_HTC": {
@@ -1156,7 +1156,7 @@
   "status": "REFUSED"
  },
  "tbg+useBNGKaxiras": {
-  "fingerprint": "e324dddda8bf8c12",
+  "fingerprint": "d70cb7a923458438",
   "status": "REFUSED"
  },
  "tbg+useLayerSpecificOnsiteEnergyTerms": {
@@ -1348,8 +1348,8 @@
   "status": "ok"
  },
  "xyz2_gbn+useBNGKaxiras": {
-  "fingerprint": "0b7e6578c4ca8399",
-  "status": "INERT"
+  "fingerprint": "d70cb7a923458438",
+  "status": "REFUSED"
  },
  "xyz2_gbn+useBNGSrivani": {
   "fingerprint": "0b7e6578c4ca8399",
