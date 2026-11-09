@@ -27,9 +27,10 @@ subroutine TBInit()
    real(dp) :: g, gdef
    real(dp) :: t2
 
+   call MIO_Section('Tight-binding parameters','tbpar')
    call MIO_InputParameter('TB.NeighLevels',tbnn,1)
    if (tbnn < 1) then
-      call MIO_Kill('TB.NeighLevels must be at least 1 (requested: '//trim(num2str(tbnn))//').','tbpar','TBInit')
+      call MIO_Kill('TB.NeighLevels must be at least 1 (requested: '//trim(num2str(tbnn))//')','tbpar','TBInit')
    end if
    call MIO_Allocate(gn,[4,4,tbnn],'gn','tbpar')
    if (MIO_InputSearchLabel('&begin TB.Hoppings.1',line,id)) then
@@ -40,7 +41,7 @@ subroutine TBInit()
       ! both arguments aliased the result is undefined (zero in optimised builds).
       gdef = -3.72_dp*aG + 12.14_dp
       call MIO_InputParameter('TB.Hopping',g0,gdef)
-      call MIO_Print('Hopping g0: '//trim(num2str(g0)),'tbpar')
+      call MIO_Print('Hopping g0: '//trim(num2str(g0,4))//' eV','tbpar')
       gn(2,1,1) = g0
       gn(1,1,1) = g0
       gn(2,2,1) = g0
@@ -94,9 +95,8 @@ subroutine TBInit()
    gn = gn/g0
    call MIO_InputParameter('Run.TypeOfSystem',line,'Graphene')
    if (MIO_StringComp(line,'Ribbons')  .or. MIO_StringComp(line,'Hybrid') .or. MIO_StringComp(line,'ReadXYZ')) then
-      call MIO_Print('Hopping C-C: '//trim(num2str(g0,3)),'tbpar')
-      call MIO_Print('Hopping B-N: '//trim(num2str(gn(4,3,1)*g0,3)),'tbpar')
-      call MIO_Print('')
+      call MIO_Print('Hopping C-C: '//trim(num2str(g0,4))//' eV','tbpar')
+      call MIO_Print('Hopping B-N: '//trim(num2str(gn(4,3,1)*g0,4))//' eV','tbpar')
    end if
    call MIO_InputParameter('Hubbard.U_C',U(1),3.0_dp)
    U(2) = U(1)

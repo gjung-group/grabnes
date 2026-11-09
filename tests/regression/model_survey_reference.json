@@ -584,7 +584,7 @@
   "status": "INERT"
  },
  "graphene_small@bands+SpinPolarized": {
-  "fingerprint": "c160848729b896ee",
+  "fingerprint": "785b61fd0d7d0b1d",
   "status": "REFUSED"
  },
  "graphene_small@bands+Zeeman+Spin-1": {
@@ -684,7 +684,7 @@
   "status": "REFUSED"
  },
  "sys_Trilayer+TrilayerAddShift": {
-  "fingerprint": "1c15b1d9dc0f3706",
+  "fingerprint": "c20c7fe23523d142",
   "status": "REFUSED"
  },
  "sys_Trilayer+TypeOfBL_Jeil": {
@@ -1152,7 +1152,7 @@
   "status": "INERT"
  },
  "tbg+twistedBLAddShift": {
-  "fingerprint": "1c15b1d9dc0f3706",
+  "fingerprint": "c20c7fe23523d142",
   "status": "REFUSED"
  },
  "tbg+useBNGKaxiras": {
@@ -1216,7 +1216,7 @@
   "status": "INERT"
  },
  "tbg_small@bands+SpinPolarized": {
-  "fingerprint": "c160848729b896ee",
+  "fingerprint": "785b61fd0d7d0b1d",
   "status": "REFUSED"
  },
  "tbg_small@bands+Zeeman+Spin-1": {

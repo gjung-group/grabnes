@@ -25,16 +25,11 @@ subroutine GrabnesStart(success)
    if (success) then
       call StartHeader()
       call MIO_InputParameter('Run.Description',desc,'')
-      if (desc/='') then
-         call MIO_Print('---- Description of the system ----','start')
-         call MIO_Print(desc,'start')
-         call MIO_Print('-------------------------------------------------------'&
-           //'-----------','start')
-      end if
+      if (desc/='') call MIO_Print('Description: '//trim(desc),'start')
       call MIO_InputParameter('Run.Prefix',sysname,'grabnes')
       prefix = sysname
+      call MIO_Print('Output prefix: '//trim(prefix),'start')
    end if
-   call MIO_Print('')
    !call MIO_InputParameter('Random.Test',rtest,.false.)
    !call MIO_InputParameter('Random.TestNumber',ntest,100)
    !if (rtest) then
@@ -58,25 +53,12 @@ subroutine StartHeader()
    use mio
    !use version,              only : VersionGet, VersionUpdate
 
-   character(len=65) :: mess
    character(len=10) :: proc
 
    !mess = 'GraBNES version: '//VersionGet()
    !call MIO_Print(mess)
    !mess = 'Last updated: '//VersionUpdate()
    !call MIO_Print(mess)
-#ifdef MPI
-   write(proc,'(i8)') nProc
-   if (nProc > 1) then
-      mess = 'Running MPI version on '//trim(adjustl(proc))//&
-        ' processors'
-   elseif (nProc == 1) then
-      mess = 'Running MPI version on 1 processor'
-   end if
-   call MIO_Print(mess)
-#else
-   call MIO_Print('Running in serial mode')
-#endif
    call MIO_Print('')
    call MIO_Print('    +----------------------------------------------------+')
    call MIO_Print('    | +------------------------------------------------+ |')
@@ -88,7 +70,15 @@ subroutine StartHeader()
    call MIO_Print('    | |                                                | |')
    call MIO_Print('    | +------------------------------------------------+ |')
    call MIO_Print('    +----------------------------------------------------+')
-   call MIO_Print('')
+   call MIO_Section('Run set-up','start')
+#ifdef MPI
+   write(proc,'(i0)') nProc
+   call MIO_Print('MPI processes: '//trim(proc),'start')
+#else
+   call MIO_Print('Serial build (no MPI)','start')
+#endif
+   write(proc,'(i0)') numThreads
+   call MIO_Print('OpenMP threads: '//trim(proc),'start')
 
 end subroutine StartHeader
 !****** End subroutine: StartHeader *******************************************

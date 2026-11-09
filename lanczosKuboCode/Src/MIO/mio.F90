@@ -29,7 +29,10 @@ module mio
    use string,     MIO_StringComp => StringComp
    use sys,        MIO_Warning => SysWarning, MIO_Kill => SysKill, &
                    MIO_KillFlush => SysKillFlush, MIO_Print => SysPrint, &
-                   MIO_IOErr => SysIOErr
+                   MIO_IOErr => SysIOErr, MIO_Section => SysSection, &
+                   MIO_Subsection => SysSubsection, &
+                   MIO_PrintDebug => SysPrintDebug, &
+                   MIO_Debugging => SysDebugging, MIO_SetDebug => SysSetDebug
    use timer
 
 #ifdef MPI
@@ -82,6 +85,8 @@ module mio
 
    ! sys module
    public :: MIO_Print
+   public :: MIO_Section, MIO_Subsection
+   public :: MIO_PrintDebug, MIO_Debugging, MIO_SetDebug
 
    public :: MIO_Warning
    public :: MIO_Kill, MIO_KillFlush
@@ -119,7 +124,9 @@ subroutine MIO_Initialize(program,success)
 
    character(len=10) :: date, time, zone
    character(len=65) :: mess
-   integer :: values(8)
+   character(len=512) :: mods
+   integer :: values(8), i0, i1
+   logical :: dbg
 
 #ifdef TIMER
    call TimerCount(program)
@@ -131,13 +138,37 @@ subroutine MIO_Initialize(program,success)
    call DebugInit()
 #endif /* DEBUG */
    call date_and_time(date,time,zone,values)
-   mess = '* Program started on '//trim(num2month(values(2)))//' '&
+   mess = 'Program started on '//trim(num2month(values(2)))//' '&
      //date(7:8)//' '//date(1:4)//' at '//time(1:2)//':'//time(3:4)// &
      ':'//time(5:6)
-   call MIO_Print(mess)
+   call MIO_Print(trim(mess),'mio')
    call OmpInit()
    call OptionsProcess()
    call InputInit(success)
+   if (success) then
+      ! Debug output: off by default. Output.Debug .true. = every module;
+      ! Output.DebugModules = a list of module names (e.g. "diag neigh").
+      call MIO_InputParameter('Output.Debug',dbg,.false.)
+      call MIO_SetDebug(dbg)
+      call MIO_InputParameter('Output.DebugModules',mods,'')
+      i0 = 1
+      do while (i0 <= len_trim(mods))
+         if (mods(i0:i0) == ' ' .or. mods(i0:i0) == ',') then
+            i0 = i0 + 1
+            cycle
+         end if
+         i1 = i0
+         do while (i1 < len_trim(mods))
+            if (mods(i1+1:i1+1) == ' ' .or. mods(i1+1:i1+1) == ',') exit
+            i1 = i1 + 1
+         end do
+         call MIO_SetDebug(.true.,mods(i0:i1))
+         i0 = i1 + 1
+      end do
+      if (dbg) call MIO_Print('Debug output is on for every module (Output.Debug)','mio')
+      if (len_trim(mods) > 0) call MIO_Print('Debug output is on for: '//trim(mods)// &
+        ' (Output.DebugModules)','mio')
+   end if
 
 end subroutine MIO_Initialize
 !****** End subroutine: MIO_Initialize ****************************************
@@ -158,12 +189,11 @@ subroutine MIO_Finalize()
    character(len=55) :: mess
    integer :: values(8)
 
+   call MIO_Section('Run summary','mio')
    call InputClose()
 #ifdef DEBUG
    call DebugClose()
 #endif /* DEBUG */
-   call MIO_Print('.......................................................'&
-     //'..................')
 #ifdef TIMER
    call TimerPrint()
 #endif /* TIMER */
@@ -171,10 +201,11 @@ subroutine MIO_Finalize()
    call CloseAll()
    call SysPrintErrors()
    call date_and_time(date,time,zone,values)
-   mess = '* Program finished on '//trim(num2month(values(2)))//' '&
+   mess = 'Program finished on '//trim(num2month(values(2)))//' '&
      //date(7:8)//' '//date(1:4)//' at '//time(1:2)//':'//time(3:4)// &
      ':'//time(5:6)
-   call MIO_Print(mess)
+   call MIO_Print('')
+   call MIO_Print(trim(mess),'mio')
 #ifdef MPI
    call MPIFin()
 #endif /* MPI */

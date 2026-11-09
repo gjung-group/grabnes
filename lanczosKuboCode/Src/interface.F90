@@ -47,15 +47,15 @@ subroutine InterfacePot1()
    call MIO_InputParameter('Interlayer.InterfaceAmpB',AmpB(3),0.56_dp)
    call MIO_InputParameter('Interlayer.InterfaceAmpCN',AmpN(1),AmpN(3))
    call MIO_InputParameter('Interlayer.InterfaceAmpCB',AmpB(1),AmpB(3))
-   call MIO_Print('Graphene-BN interface potential','ham')
+   call MIO_Subsection('Graphene-BN interface potential','interface')
    if (AmpB(1)/=AmpB(3) .or. AmpN(1)/=AmpN(3)) then
-      call MIO_Print('  Amp. B for C:  '//trim(num2str(AmpB(1),3))//' eV*Ang')
-      call MIO_Print('  Amp. N for C:  '//trim(num2str(AmpN(1),3))//' eV*Ang')
-      call MIO_Print('  Amp. B for BN: '//trim(num2str(AmpB(3),3))//' eV*Ang')
-      call MIO_Print('  Amp. N for BN: '//trim(num2str(AmpN(3),3))//' eV*Ang')
+      call MIO_Print('  Amp. B for C: '//trim(num2str(AmpB(1),3))//' eV*Ang','interface')
+      call MIO_Print('  Amp. N for C: '//trim(num2str(AmpN(1),3))//' eV*Ang','interface')
+      call MIO_Print('  Amp. B for BN: '//trim(num2str(AmpB(3),3))//' eV*Ang','interface')
+      call MIO_Print('  Amp. N for BN: '//trim(num2str(AmpN(3),3))//' eV*Ang','interface')
    else
-      call MIO_Print('  Amp. B: '//trim(num2str(AmpB(1),3))//' eV*Ang')
-      call MIO_Print('  Amp. N: '//trim(num2str(AmpN(1),3))//' eV*Ang')
+      call MIO_Print('  Amp. B: '//trim(num2str(AmpB(1),3))//' eV*Ang','interface')
+      call MIO_Print('  Amp. N: '//trim(num2str(AmpN(1),3))//' eV*Ang','interface')
    end if
    AmpB(2) = AmpB(1)
    AmpN(2) = AmpN(1)
@@ -66,16 +66,16 @@ subroutine InterfacePot1()
    lambda(:,2) = lambda(:,1)
    lambda(:,4) = lambda(:,3)
    if (lambda(1,1)==lambda(2,1)) then
-      call MIO_Print('  lambda for C:  '//trim(num2str(lambda(1,1),3))//' Ang')
+      call MIO_Print('  lambda for C: '//trim(num2str(lambda(1,1),3))//' Ang','interface')
    else
-      call MIO_Print('  lambda for C at B edge:  '//trim(num2str(lambda(1,1),3))//' Ang')
-      call MIO_Print('  lambda for C at N edge:  '//trim(num2str(lambda(2,1),3))//' Ang')
+      call MIO_Print('  lambda for C at B edge: '//trim(num2str(lambda(1,1),3))//' Ang','interface')
+      call MIO_Print('  lambda for C at N edge: '//trim(num2str(lambda(2,1),3))//' Ang','interface')
    end if
    if (lambda(1,3)==lambda(2,3)) then
-      call MIO_Print('  lambda for BN: '//trim(num2str(lambda(1,3),3))//' Ang')
+      call MIO_Print('  lambda for BN: '//trim(num2str(lambda(1,3),3))//' Ang','interface')
    else
-      call MIO_Print('  lambda for BN at B edge:  '//trim(num2str(lambda(1,3),3))//' Ang')
-      call MIO_Print('  lambda for BN at N edge:  '//trim(num2str(lambda(2,3),3))//' Ang')
+      call MIO_Print('  lambda for BN at B edge: '//trim(num2str(lambda(1,3),3))//' Ang','interface')
+      call MIO_Print('  lambda for BN at N edge: '//trim(num2str(lambda(2,3),3))//' Ang','interface')
    end if
    l = maxval(lambda)
    rmaxInt = l
@@ -178,7 +178,6 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
       end if
    end do
    call MIO_Print('Number of interface bonds: '//trim(num2str(nQ)),'interface')
-   call MIO_Print('')
    do i=inode1,inode2
       do j=1,nQ
          do icy=-NcellInt(2),NcellInt(2); do icx=-NcellInt(1),NcellInt(1)
@@ -204,7 +203,7 @@ subroutine InterfacePot2(H,Nneigh,NList,neighCell,neighD,Species,Nradii)
                d = norm(v)
                if (d < 20.0_dp  .and. d > Nradii(sz,1)) then
                   nEdgeN(i) = nEdgeN(i) + 1
-                  if (nEdgeN(i)>maxEdgeNeigh) call MIO_Kill('Number of edge neighbors > maxEdgeNeigh', &
+                  if (nEdgeN(i)>maxEdgeNeigh) call MIO_Kill('more edge neighbours than maxEdgeNeigh', &
                     'interface','InterfacePot2')
                   NeI(nEdgeN(i),i) = edgeIndx(j)
                   NedgeCell(:,nEdgeN(i),i) = [icx,icy,0]

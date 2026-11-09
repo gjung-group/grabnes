@@ -85,7 +85,8 @@ subroutine moireBLShiftValue(mS)
       tauY2= ymin2 + mS*(ymax2-ymin2)/mSStep
       if (mSi /= mSf) then
          write(prefix,'(a,f0.4,a,f0.4,a,f0.4,a,f0.4)') 'X1_',tauX1,'_Y1_', tauY1,'_X2_',tauX2,'_Y2_',tauY2
-         call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'moireBLShift')
+         call MIO_Section('Bilayer shift '//trim(num2str(mS))//' of '//trim(num2str(mSi))//'..'//trim(num2str(mSf)),'moire')
+         call MIO_Print("Writing files in folder '"//trim(prefix)//"'",'moire')
          prefix = './'//trim(prefix)
          call system('mkdir '//trim(prefix))
          prefix = trim(prefix)//'/'//trim(sysname)

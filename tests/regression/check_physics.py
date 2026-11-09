@@ -35,6 +35,7 @@ Exit status 1 if a check fails. Requires NumPy.
 import argparse
 import math
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -224,8 +225,14 @@ def input_messages(r):
         problems.append(f"{len(rows[0])} levels instead of 18: the first value of the repeated key CellSize was not used")
     if 'the key "CellSize" appears 2 times' not in log:
         problems.append("the repeated key CellSize is not reported")
-    listed = log.split("were not read in this run")[1].split("....")[0].split() if "were not read in this run" in log else []
-    print("  keys reported as not read: " + (", ".join(x for x in listed if x not in ("input:", "(misspelt,", "or", "not", "used", "by", "the", "selected", "calculation):")) or "none"))
+    listed = []
+    if "were not read in this run" in log:
+        after = log.split("were not read in this run")[1].split("\n")[1:]
+        for line in after:   # one key per line, "input:   <key>"
+            if not line.startswith("input:   "):
+                break
+            listed.append(line.split()[1])
+    print("  keys reported as not read: " + (", ".join(listed) or "none"))
     if "TB.NeighLevel" not in listed:
         problems.append("the misspelt key TB.NeighLevel is not listed as not read")
     if "TB.NeighLevels" in listed or "CellSize" in listed:
@@ -237,7 +244,7 @@ def twist_measure(r):
     r.run("twist_measure", TBG + "Stack.MeasureTwist .true.\n")
     log = open(os.path.join(r.a.work, "twist_measure", "job.out")).read()
     cell = [float(l.split()[-2]) for l in log.split("\n") if l.startswith("cell: Angle:")]
-    rows = [l.split() for l in log.split("\n") if l.startswith("ham:   1 - 2")]
+    rows = [l.split() for l in log.split("\n") if re.match(r"ham:\s+1\s+-\s+2\s", l)]
     if not cell or not rows:
         return ["the angle of the cell or the measured twist is missing from the output"]
     measured, verdict = abs(float(rows[0][4])), " ".join(rows[0][5:])

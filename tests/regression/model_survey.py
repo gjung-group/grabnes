@@ -155,7 +155,7 @@ def refusal_fingerprint(lines):
     error count that SysKill prints after it."""
     text = []
     for line in lines:
-        if re.match(r"\d+ errors?, \d+ warnings?", line) or line.startswith("***"):
+        if re.match(r"(\w+: )?\d+ errors?, \d+ warnings?", line) or line.startswith("***"):
             break
         text.append(re.sub(r"^\w+: ", "", line))
     return hashlib.sha1(" ".join(" ".join(text).split()).encode()).hexdigest()[:16]

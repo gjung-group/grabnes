@@ -73,7 +73,7 @@ function NeighShellCutoff2(nshell,aCC) result(cut2)
 
    if (nshell < 1 .or. nshell > maxShells) then
       call MIO_Kill('TB.NeighLevels must be between 1 and '//trim(num2str(maxShells))// &
-        ' (requested: '//trim(num2str(nshell))//').','neigh','NeighShellCutoff2')
+        ' (requested: '//trim(num2str(nshell))//')','neigh','NeighShellCutoff2')
    end if
    cut2 = (0.5_dp*(shellRadius(nshell)+shellRadius(nshell+1))*aCC)**2
 
@@ -160,7 +160,7 @@ subroutine NeighSearchLayered(natoms,x,y,z,A1,A2,cut2intra,cut2inter,periodicZ,A
    call MIO_TimerCount('nsearch')
 #endif /* TIMER */
    det = A1(1)*A2(2) - A1(2)*A2(1)
-   if (abs(det) < tiny(1.0_dp)) call MIO_Kill('The in-plane lattice vectors are parallel','neigh','NeighSearchLayered')
+   if (abs(det) < tiny(1.0_dp)) call MIO_Kill('the in-plane lattice vectors are parallel','neigh','NeighSearchLayered')
    rmax = sqrt(max(cut2intra,cut2inter))
    dzmax = dzInter
    if (secondLayer) dzmax = dzSecond
@@ -184,7 +184,7 @@ subroutine NeighSearchLayered(natoms,x,y,z,A1,A2,cut2intra,cut2inter,periodicZ,A
    zlo = minval(z) - dzmax; zhi = maxval(z) + dzmax
    n3 = 0
    if (periodicZ) then
-      if (A3 <= 0.0_dp) call MIO_Kill('The period along z must be positive','neigh','NeighSearchLayered')
+      if (A3 <= 0.0_dp) call MIO_Kill('the period along z must be positive','neigh','NeighSearchLayered')
       n3 = ceiling((zhi-zlo)/A3)
    end if
 
@@ -299,7 +299,7 @@ subroutine NeighSearchLayered(natoms,x,y,z,A1,A2,cut2intra,cut2inter,periodicZ,A
      trim(num2str(maxval(Nneigh)))//' neighbours per atom, '// &
      trim(num2str(sum(Nneigh)))//' in total','neigh')
    if (nclose > 0) then
-      call MIO_Print('WARNING: '//trim(num2str(nclose))//' intralayer neighbour entries have an in-plane length '// &
+      call MIO_Warning(''//trim(num2str(nclose))//' intralayer neighbour entries have an in-plane length '// &
         'between '//trim(num2str(sqrt(NeighIntraWarn2),4))//' and '//trim(num2str(sqrt(cut2intra),4))// &
         ' Ang, close to the search radius. In a strained or corrugated structure pairs of the last shell '// &
         'can lie beyond the radius and are then missing. Check the structure and, if needed, set '// &
@@ -459,7 +459,7 @@ subroutine NeighReadDataFiles()
    call MIO_Debug('NeighReadDataFiles',0)
 #endif /* DEBUG */
 
-   call MIO_Print('Reading the neighbours from the file v instead of searching for them','neigh')
+   call MIO_Print('Neighbours read from the file v (Neigh.ReadDetails)','neigh')
    call MIO_Allocate(Nneigh,[inode1],[inode2],'Nneigh','neigh')
    open(1,FILE='v',STATUS='old')
    do i=1,nAt
@@ -617,7 +617,7 @@ subroutine NeighList()
    ! Use this if less than 36 atoms in the system 2*3*3*2 (BL)
    call MIO_InputParameter('Neigh.CompareAll.UltraSmall',ultrasmall,.false.)
    if (.not. (small .or. ultrasmall)) then
-      call MIO_Print('WARNING: the neighbour search NeighList (Neigh.fastNNnotsquare .false.) without '// &
+      call MIO_Warning('the neighbour search NeighList (Neigh.fastNNnotsquare .false.) without '// &
         'Neigh.CompareAll .true. gave bands that differ by several eV from the default search for every '// &
         'graphene cell tested (72 to 3200 atoms). Use the default search, or set Neigh.CompareAll .true.','neigh')
    end if
@@ -627,8 +627,7 @@ subroutine NeighList()
    call MIO_Allocate(neighCell,[1,1,inode1],[3,maxNeigh,inode2],'neighCell','neigh')
    call MIO_Allocate(NeighD,[1,1,inode1],[3,maxNeigh,inode2],'NeighD','neigh')
    if (frac) call AtomsSetCart()
-   call MIO_Print('')
-   call MIO_Print('Generating neighbor list','neigh')
+   call MIO_Print('Building the neighbour lists','neigh')
    if (ultrasmall) then
       do i=1,nAt
       r0 = Nradii(tbnn,(Species(i)-1)/2 + 1) ! The cut radius. Taken as the maximum distance that the
@@ -667,7 +666,7 @@ subroutine NeighList()
          end do
 
       end do
-      call MIO_Print('Finished ultrasmall routine','neigh')
+      call MIO_PrintDebug('ultrasmall neighbour search finished','neigh')
 
       num0 = 0
       num1 = 0
@@ -707,22 +706,8 @@ subroutine NeighList()
 
       end do
 
-      PRINT*,' 0 neighbors: ',num0
-      PRINT*,' 1 neighbors: ',num1
-      PRINT*,' 2 neighbors: ',num2
-      PRINT*,' 3 neighbors: ',num3
-      PRINT*,' 4 neighbors: ',num4
-      PRINT*,' 5 neighbors: ',num5
-      PRINT*,' 6 neighbors: ',num6
-      PRINT*,' 7 neighbors: ',num7
-      PRINT*,' 8 neighbors: ',num8
-      PRINT*,' 9 neighbors: ',num9
-      PRINT*,' 10 neighbors: ',num10
-      PRINT*,' 11 neighbors: ',num11
-      PRINT*,' 12 neighbors: ',num12
-      PRINT*,' 13 neighbors: ',num13
-      PRINT*,' 14 neighbors: ',num14
-      PRINT*,'>14 neighbors: ',nAt-(num0+num1+num2+num3+num4+num5+num6+num7+num8+num9+num10+num11+num12+num13+num14)
+      call NeighCountsPrint([num0,num1,num2,num3,num4,num5,num6,num7,num8,num9,num10,num11,num12,num13,num14], &
+        nAt-(num0+num1+num2+num3+num4+num5+num6+num7+num8+num9+num10+num11+num12+num13+num14))
 
    else if (small) then
       !$OMP PARALLEL PRIVATE (v, d,ncell,i,j,ix,iy)
@@ -790,7 +775,7 @@ subroutine NeighList()
                      if (d<(r0+0.1_dp)) then
                         Nneigh(i) = Nneigh(i) + 1
                         if (Nneigh(i)>maxNeigh)  then
-                           call MIO_Kill('More neighbors than expected found',&
+                           call MIO_Kill('More neighbours than expected found',&
                              'neigh','NeighList')
                         end if
                         NList(Nneigh(i),i) = k
@@ -840,12 +825,13 @@ subroutine NeighList()
    call MIO_InputParameter('Neigh.SafetyCheck',l,.false.)
    call MIO_InputParameter('Neigh.ExpectedNumber',expectedNumber,3)
    if (l) then
-      call MIO_Print('Performing some safetycheck','neigh')
+      call MIO_Print('Neigh.SafetyCheck: atoms with fewer than '//trim(num2str(expectedNumber))// &
+        ' neighbours (atom, neighbours):','neigh')
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL PRIVATE (i, j, ii, v, d, tester)
       do i=in1,in2
         if(Nneigh(i).lt.expectedNumber) then
-           call MIO_Print(trim(num2str(i))//'    '//trim(num2str(Nneigh(i))),'neigh')
+           call MIO_Print('  '//trim(num2str(i))//'  '//trim(num2str(Nneigh(i))),'neigh')
            do j=1,nAt
              if (abs(Rat(3,i)-Rat(3,j))<0.1_dp) then ! only consider inplane atoms for this check
                 do ix=-5,5; do iy=-5,5
@@ -863,7 +849,7 @@ subroutine NeighList()
                       if (tester) then
                         Nneigh(i) = Nneigh(i) + 1
                         if (Nneigh(i)>maxNeigh)  then
-                           call MIO_Kill('More neighbors than expected found',&
+                           call MIO_Kill('More neighbours than expected found',&
                              'neigh','NeighList')
                         end if
                         NList(Nneigh(i),i) = j
@@ -886,24 +872,16 @@ subroutine NeighList()
 
    call MIO_InputParameter('Neigh.Print',prnt,.false.)
    if (prnt) then
-      call MIO_Print('Neighbor list','neigh')
-      call MIO_Print('  ____________________________________________','neigh')
-      call MIO_Print(' |         |         |         |              |','neigh')
-      call MIO_Print(' |  Atom 1 |  Atom 2 | # neigh |     Cell     |','neigh')
-      call MIO_Print(' |_________|_________|_________|______________|','neigh')
-      call MIO_Print(' |         |         |         |              |','neigh')
+      call MIO_Print('Neighbour list (Neigh.Print):','neigh')
+      call MIO_Print('     Atom   Neighbour    Slot          Cell','neigh')
       do i=inode1,inode2
          do j=1,Nneigh(i)
-            write(mess,'(a,i4,a,i4,a,i4,a,3i4,a)') ' |   ',i,'  |   ', &
-              NList(j,i),'  |   ',j, '  |', &
-              neighCell(:,j,i),'  |'
+            write(mess,'(i9,i12,i8,3i6)') i, NList(j,i), j, neighCell(:,j,i)
             if (Nneigh(i) /= 3) mess = trim(mess)//' *'
             call MIO_Print(mess,'neigh')
          end do
       end do
-      call MIO_Print(' |_________|_________|_________|______________|','neigh')
    end if
-   call MIO_Print('')
 
 #ifdef TIMER
    call MIO_TimerCount('neigh::p2')
@@ -1056,8 +1034,7 @@ subroutine NeighListOld()
    call MIO_Allocate(NeighD,(/1,1,inode1/),(/3,3,inode2/),'NeighD','neigh')
    if (frac) call AtomsSetCart()
    call MIO_Allocate(pos,(/inode1/),(/inode2/),'pos','neigh')
-   call MIO_Print('')
-   call MIO_Print('Generating neighbor list','neigh')
+   call MIO_Print('Building the neighbour lists','neigh')
    if (small) then
       do i=inode1,inode2
          do j=1,nAt
@@ -1230,24 +1207,16 @@ subroutine NeighListOld()
 
    call MIO_InputParameter('Neigh.Print',prnt,.false.)
    if (prnt) then
-      call MIO_Print('Neighbor list','neigh')
-      call MIO_Print('  ____________________________________________','neigh')
-      call MIO_Print(' |         |         |         |              |','neigh')
-      call MIO_Print(' |  Atom 1 |  Atom 2 | # neigh |     Cell     |','neigh')
-      call MIO_Print(' |_________|_________|_________|______________|','neigh')
-      call MIO_Print(' |         |         |         |              |','neigh')
+      call MIO_Print('Neighbour list (Neigh.Print):','neigh')
+      call MIO_Print('     Atom   Neighbour    Slot          Cell','neigh')
       do i=inode1,inode2
          do j=1,Nneigh(i)
-            write(mess,'(a,i4,a,i4,a,i4,a,3i4,a)') ' |   ',i,'  |   ', &
-              NList(j,i),'  |   ',j, '  |', &
-              neighCell(:,j,i),'  |'
+            write(mess,'(i9,i12,i8,3i6)') i, NList(j,i), j, neighCell(:,j,i)
             if (Nneigh(i) /= 3) mess = trim(mess)//' *'
             call MIO_Print(mess,'neigh')
          end do
       end do
-      call MIO_Print(' |_________|_________|_________|______________|','neigh')
    end if
-   call MIO_Print('')
    call MIO_Deallocate(pos,'pos','neigh')
 
 #ifdef MPI
@@ -1396,7 +1365,7 @@ subroutine NeighIndxCell(isec,secd,insec,ncell, &
             if (secAt(i-1)==is) then
                i = i-1
             else
-               call MIO_Kill('Problem with atom indices for neighbors. (1)','neigh','NeighIndxCell')
+               call MIO_Kill('inconsistent atom indices in the neighbour cells (check 1)','neigh','NeighIndxCell')
             end if
          end if
       else
@@ -1406,7 +1375,7 @@ subroutine NeighIndxCell(isec,secd,insec,ncell, &
             i = i + 1
          end if
          if (i < 1 .or. i > nAt) then
-            call MIO_Kill('Problem with atom indices for neighbors. (2)', &
+            call MIO_Kill('inconsistent atom indices in the neighbour cells (check 2)', &
               'neigh','NeighIndxCell')
          end if
       end if
@@ -1424,7 +1393,7 @@ subroutine NeighIndxCell(isec,secd,insec,ncell, &
             if (secAt(i+1)==is) then
                i = i+1
             else
-               call MIO_Kill('Problem with atom indices for neighbors. (3)','neigh','NeighIndxCell')
+               call MIO_Kill('inconsistent atom indices in the neighbour cells (check 3)','neigh','NeighIndxCell')
             end if
          end if
       else
@@ -1433,7 +1402,7 @@ subroutine NeighIndxCell(isec,secd,insec,ncell, &
          else
             i = i + 1
          end if
-         if (i < 1 .or. i > nAt) call MIO_Kill('Problem with atom indices for neighbors. (4)', &
+         if (i < 1 .or. i > nAt) call MIO_Kill('inconsistent atom indices in the neighbour cells (check 4)', &
            'neigh','NeighIndxCell')
       end if
    end do
@@ -1620,8 +1589,7 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
 
        dx=0.0_dp;dy=0.0_dp;dz=0.0_dp !;dr=0.0_dp
 
-       PRINT*,''
-       call MIO_Print('Building nearest neighbor data...','neigh')
+       call MIO_Print('Building the neighbour lists','neigh')
        num0 = 0
        num1 = 0
        num2 = 0
@@ -1858,26 +1826,9 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
 
        DEALLOCATE(cells)
 
-       PRINT*,' 0 neighbors: ',num0
-       PRINT*,' 1 neighbors: ',num1
-       PRINT*,' 2 neighbors: ',num2
-       PRINT*,' 3 neighbors: ',num3
-       PRINT*,' 4 neighbors: ',num4
-       PRINT*,' 5 neighbors: ',num5
-       PRINT*,' 6 neighbors: ',num6
-       PRINT*,' 7 neighbors: ',num7
-       PRINT*,' 8 neighbors: ',num8
-       PRINT*,' 9 neighbors: ',num9
-       PRINT*,' 10 neighbors: ',num10
-       PRINT*,' 11 neighbors: ',num11
-       PRINT*,' 12 neighbors: ',num12
-       PRINT*,' 13 neighbors: ',num13
-       PRINT*,' 14 neighbors: ',num14
-       PRINT*,'>10 neighbors: ',natoms-(num0+num1+num2+num3+num4+num5+num6+num7+num8+num9+num10+num11+num12+num13+num14)
+       call NeighCountsPrint([num0,num1,num2,num3,num4,num5,num6,num7,num8,num9,num10,num11,num12,num13,num14], &
+         natoms-(num0+num1+num2+num3+num4+num5+num6+num7+num8+num9+num10+num11+num12+num13+num14))
 
-       PRINT*,''
-       call MIO_Print('...done','neigh')
-       PRINT*,''
 
        call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
        NList2 = NList
@@ -2049,7 +2000,7 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
    dx=0.0_dp;dy=0.0_dp;dz=0.0_dp !;dr=0.0_dp
 
    PRINT*,''
-   call MIO_Print('Building nearest neighbor data...','neigh')
+   call MIO_Print('Building nearest neighbour data...','neigh')
    num0 = 0
    num1 = 0
    num2 = 0
@@ -2256,8 +2207,8 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
           END IF
        END DO
        safetycounter = safetycounter + 1
-       if (safetycounter == 101) call MIO_Print('WARNING: the neighbor search repeated its completion loop more '// &
-         'than 100 times; check the neighbor lists','neigh')
+       if (safetycounter == 101) call MIO_Warning('the neighbour search repeated its completion loop more '// &
+         'than 100 times; check the neighbour lists','neigh')
      ENDIF
 
    ! Count the number of atoms with 1, 2, 3, 4, 5 nearest neighbors
@@ -2315,18 +2266,8 @@ subroutine fastNNnotsquareNotRectangle(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2
 
    DEALLOCATE(cells)
 
-   PRINT*,' 0 neighbors: ',num0
-   PRINT*,' 1 neighbors: ',num1
-   PRINT*,' 2 neighbors: ',num2
-   PRINT*,' 3 neighbors: ',num3
-   PRINT*,' 4 neighbors: ',num4
-   PRINT*,' 5 neighbors: ',num5
-   PRINT*,' 6 neighbors: ',num6
-   PRINT*,' 7 neighbors: ',num7
-   PRINT*,' 8 neighbors: ',num8
-   PRINT*,' 9 neighbors: ',num9
-   PRINT*,' 10 neighbors: ',num10
-   PRINT*,'>10 neighbors: ',natoms-(num0+num1+num2+num3+num4+num5+num6+num7+num8+num9+num10)
+   call NeighCountsPrint([num0,num1,num2,num3,num4,num5,num6,num7,num8,num9,num10], &
+     natoms-(num0+num1+num2+num3+num4+num5+num6+num7+num8+num9+num10))
 
    PRINT*,''
    call MIO_Print('...done','neigh')
@@ -2619,13 +2560,8 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
    ENDDO
    DEALLOCATE(cells)
 
-   PRINT*,'  0 neighbors: ',num0
-   PRINT*,'  1 neighbors: ',num1
-   PRINT*,'  2 neighbors: ',num2
-   PRINT*,'  3 neighbors: ',num3
-   PRINT*,'  4 neighbors: ',num4
-   PRINT*,'  5 neighbors: ',num5
-   PRINT*,' >5 neighbors: ',natoms-(num0+num1+num2+num3+num4+num5)
+   call NeighCountsPrint([num0,num1,num2,num3,num4,num5], &
+     natoms-(num0+num1+num2+num3+num4+num5))
 
    call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    NList2 = NList
@@ -2739,5 +2675,24 @@ SUBROUTINE fastNN(natoms, x,y,z, aCC,cutoff, A1,A2, maxnn)
 #endif /* DEBUG */
 
 END SUBROUTINE fastNN
+
+
+!> One line with the number of atoms per neighbour count (non-empty counts only), then the atoms
+!! above the last count. Shared by the neighbour searches.
+subroutine NeighCountsPrint(counts, nAbove)
+
+   integer, intent(in) :: counts(0:), nAbove
+
+   character(len=1024) :: line
+   integer :: k
+
+   line = 'Neighbours per atom (count: atoms):'
+   do k=0,ubound(counts,1)
+      if (counts(k) > 0) line = trim(line)//'  '//trim(num2str(k))//': '//trim(num2str(counts(k)))
+   end do
+   if (nAbove > 0) line = trim(line)//'  >'//trim(num2str(ubound(counts,1)))//': '//trim(num2str(nAbove))
+   call MIO_Print(trim(line),'neigh')
+
+end subroutine NeighCountsPrint
 
 end module neigh

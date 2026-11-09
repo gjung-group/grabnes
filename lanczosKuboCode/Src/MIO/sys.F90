@@ -18,6 +18,19 @@ module sys
 
    integer, save :: nerr = 0, nwarn = 0
 
+   ! Debug output (Output.Debug / Output.DebugModules, read in MIO_Initialize).
+   ! Off by default: SysPrintDebug prints nothing unless it is switched on for
+   ! every module or for the calling module.
+   integer, parameter :: maxdbgmod = 32
+   logical, save :: debugAll = .false.
+   integer, save :: ndbgmod = 0
+   character(len=16), save :: dbgmod(maxdbgmod)
+
+   ! Width of a printed line (module prefix included) before SysPrint wraps it.
+   integer, parameter :: printWidth = 110
+   ! Width of a section header.
+   integer, parameter :: headerWidth = 78
+
    public :: SysKill
    public :: SysWarning
    public :: SysIOErr
@@ -27,6 +40,11 @@ module sys
    public :: SysPrint
    public :: SysPrintErrors
    public :: SysKillFlush
+   public :: SysSection
+   public :: SysSubsection
+   public :: SysPrintDebug
+   public :: SysDebugging
+   public :: SysSetDebug
 
    interface SysPrint
       module procedure SysPrint_mod, SysPrint__
@@ -64,6 +82,9 @@ subroutine SysKill(message,module,func,hold)
    logical, intent(in), optional :: hold
 
    integer :: ierr
+#ifdef MPI
+   integer(8) :: c0, c1, crate
+#endif /* MPI */
 
    nerr = nerr+1
    call SysPrint('#################################################################')
@@ -83,6 +104,16 @@ subroutine SysKill(message,module,func,hold)
    ! sure the error message above is written first.
    flush(6)
 #ifdef MPI
+   ! Only the first process prints. When every process stops at the same
+   ! check, give it time to write the message before another process aborts
+   ! the run.
+   if (.not. IsPNode) then
+      call system_clock(c0, crate)
+      c1 = c0
+      do while (real(c1 - c0, kind(1.0d0)) < 2.0d0*crate)
+         call system_clock(c1)
+      end do
+   end if
    call MPI_Abort(MPI_COMM_WORLD,1,ierr)
 #endif /* MPI */
    stop
@@ -152,40 +183,45 @@ subroutine SysPrint_mod(message,module)
 
    implicit none
 
-   integer, parameter :: maxl = 66
-
    character(len=*), intent(in) :: message, module
-   integer :: istr, lstr, indx, iostat, nl, il, i
+   integer :: istr, lstr, indx, iostat, i, maxl
+   logical :: first
 
    lstr = len_trim(message)
+   ! room left on a line after "module: "; continuation lines are indented
+   ! by two more spaces so that a wrapped message reads as one item
+   maxl = max(printWidth - len_trim(module) - 4, 20)
 #ifdef MPI
    iostat = 0
    if (IsPNode) then
 #endif /* MPI */
       if (lstr > maxl) then
-         nl = lstr/maxl+2
          i = 1
-         do il = 1,nl
+         first = .true.
+         do
             indx = min(maxl+i-1,lstr)
             if (lstr-i >= maxl) then
-               do istr=indx+1,i,-1
+               do istr=indx+1,i+1,-1
                   if (message(istr:istr) == ' ') then
                      indx = istr
                      exit
                   end if
                end do
-               if (indx==i) then
-                  indx = min(maxl+i-1,lstr)
-                  write(*,*) 'MIN', maxl+i-1,lstr,indx
-               end if
             end if
-            write(stdout,'(a)',IOSTAT=iostat) module//': ' &
-              //message(i:indx)
+            if (first) then
+               write(stdout,'(a)',IOSTAT=iostat) trim(module)//': ' &
+                 //trim(message(i:indx))
+            else
+               write(stdout,'(a)',IOSTAT=iostat) trim(module)//':   ' &
+                 //trim(adjustl(message(i:indx)))
+            end if
+            first = .false.
             i = indx+1
+            if (i > lstr) exit
             if (len_trim(message(i:))==0 .or. iostat/=0) exit
          end do
       else
-         write(stdout,'(a)',IOSTAT=iostat) module//': '//trim(message)
+         write(stdout,'(a)',IOSTAT=iostat) trim(module)//': '//trim(message)
       end if
 #ifdef MPI
    end if
@@ -272,7 +308,7 @@ subroutine SysPrintErrors(final)
    else
       mess = trim(mess)//' warnings'
    end if
-   call SysPrint(mess)
+   call SysPrint(trim(mess),'mio')
 
 end subroutine SysPrintErrors
 !****** End subroutine: SysPrintErrors ****************************************
@@ -308,6 +344,154 @@ subroutine SysKillFlush()
 
 end subroutine SysKillFlush
 !****** End subroutine: SysKillFlush ******************************************
+!******************************************************************************
+
+!****** Subroutine: SysSection ************************************************
+!******************************************************************************
+!
+!  Print a section header: a blank line, then one line of '=' that carries
+! the title and the module. One header per stage of a run (system set-up, neighbour search,
+! Hamiltonian, band structure, ...), so that a reader can find the stage in
+! the output at a glance.
+!
+! INPUT -----------------------------------------------------------------------
+!
+! character(*) title              : Title of the section
+! character(*) module             : Module that called this subroutine
+!
+!******************************************************************************
+subroutine SysSection(title,module)
+
+   implicit none
+
+   character(len=*), intent(in) :: title, module
+   character(len=headerWidth) :: line
+   integer :: lt, lm
+
+   ! "===== Title ========== [module]", one line, headerWidth wide
+   call SysPrint('')
+   line = repeat('=',headerWidth)
+   lt = min(len_trim(title), headerWidth-10)
+   lm = len_trim(module)
+   line(7:7+lt+1) = ' '//title(1:lt)//' '
+   if (8 + lt + lm + 4 <= headerWidth) line(headerWidth-lm-2:headerWidth) = ' ['//trim(module)//']'
+   call SysPrint(trim(line))
+
+end subroutine SysSection
+!****** End subroutine: SysSection ********************************************
+!******************************************************************************
+
+
+!****** Subroutine: SysSubsection *********************************************
+!******************************************************************************
+!
+!  Print a sub-section title inside a section: "module: --- title ---".
+!
+!******************************************************************************
+subroutine SysSubsection(title,module)
+
+   implicit none
+
+   character(len=*), intent(in) :: title, module
+
+   call SysPrint('--- '//trim(title)//' ---',module)
+
+end subroutine SysSubsection
+!****** End subroutine: SysSubsection *****************************************
+!******************************************************************************
+
+
+!****** Subroutine: SysSetDebug ***********************************************
+!******************************************************************************
+!
+!  Switch debug output on or off, for every module (no module given) or for
+! one module.
+!
+!******************************************************************************
+subroutine SysSetDebug(on,module)
+
+   implicit none
+
+   logical, intent(in) :: on
+   character(len=*), intent(in), optional :: module
+
+   integer :: i
+
+   if (.not. present(module)) then
+      debugAll = on
+      return
+   end if
+   do i=1,ndbgmod
+      if (trim(dbgmod(i)) == trim(module)) then
+         if (.not. on) then
+            dbgmod(i) = dbgmod(ndbgmod)
+            ndbgmod = ndbgmod - 1
+         end if
+         return
+      end if
+   end do
+   if (on .and. ndbgmod < maxdbgmod) then
+      ndbgmod = ndbgmod + 1
+      dbgmod(ndbgmod) = module
+   end if
+
+end subroutine SysSetDebug
+!****** End subroutine: SysSetDebug *******************************************
+!******************************************************************************
+
+
+!****** Function: SysDebugging ************************************************
+!******************************************************************************
+!
+!  True if debug output is on for this module (or for every module). Use it
+! to skip the computation of a diagnostic that is only printed.
+!
+!******************************************************************************
+logical function SysDebugging(module)
+
+   implicit none
+
+   character(len=*), intent(in) :: module
+
+   integer :: i
+
+   SysDebugging = debugAll
+   if (SysDebugging) return
+   do i=1,ndbgmod
+      if (trim(dbgmod(i)) == trim(module)) then
+         SysDebugging = .true.
+         return
+      end if
+   end do
+
+end function SysDebugging
+!****** End function: SysDebugging ********************************************
+!******************************************************************************
+
+
+!****** Subroutine: SysPrintDebug *********************************************
+!******************************************************************************
+!
+!  Print a debug line, "module: DEBUG: message", only when debug output is on
+! for the module (Output.Debug, Output.DebugModules) or when 'force' is true
+! (a module's own debug key, e.g. Diag.TAPWDebug).
+!
+!******************************************************************************
+subroutine SysPrintDebug(message,module,force)
+
+   implicit none
+
+   character(len=*), intent(in) :: message, module
+   logical, intent(in), optional :: force
+
+   logical :: on
+
+   on = SysDebugging(module)
+   if (present(force)) on = on .or. force
+   if (on) call SysPrint('DEBUG: '//trim(message),module)
+
+end subroutine SysPrintDebug
+!****** End subroutine: SysPrintDebug *****************************************
 !******************************************************************************
 
 #include "ioerror.f90"

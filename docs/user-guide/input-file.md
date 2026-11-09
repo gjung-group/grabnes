@@ -53,13 +53,13 @@ used and the solver prints a warning.
 
 ## What the solver reports about the input
 
-At the end of `job.out`:
+At the end of `job.out`, in the *Run summary* section:
 
-- `input: note: N key(s) of the input file are given under a former name` —
+- `input: N input key(s) use a former name, which still works` —
   nothing to do. `Input.ListFormerNames .true.` lists them with their present
   names.
-- `input: note: N key(s) of the input file were not read in this run`, followed
-  by the keys. A key in this list is either **misspelt** or belongs to a part of
+- `input: N input key(s) were not read in this run`, followed
+  by the keys, one per line. A key in this list is either **misspelt** or belongs to a part of
   the code that the selected calculation does not use (the Kubo keys in a band
   calculation, for instance). Look through the list after the first run of a new
   input: a misspelt key is otherwise taken at its default without any other
@@ -107,3 +107,14 @@ A solver built with `-DDEBUG` (add it to `FCFLAGS` in `make.sys`) writes
 `debug.log`, one line when a routine is entered and one when it is left, and
 prints additional diagnostic output. After a crash the last line of `debug.log`
 names the routine that was running.
+
+## Layout of `job.out` and debug output
+
+Every line starts with the module that printed it (`cell:`, `neigh:`, `ham:`,
+`diag:`, ...), and each stage of the run opens with a header framed by lines of
+stars. Debug output is off by default: `Output.Debug .true.` switches it on for
+every module, `Output.DebugModules diag neigh` for the listed modules only, and
+a feature's own key (`Diag.TAPWDebug`, `Diag.socDebug`) for that feature. These
+two `Output.*` keys are read by the I/O library and do not appear in the
+generated key table. The rules are in
+[`../development/output-style.md`](../development/output-style.md).

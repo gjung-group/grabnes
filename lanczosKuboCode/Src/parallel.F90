@@ -64,7 +64,6 @@ subroutine ParallelDiv()
    if (nDiv/=1) then
       call MIO_Print('Cell divided in '//trim(num2str(xDiv))//'x'// &
         trim(num2str(yDiv))//' subcells','parallel')
-      call MIO_Print('')
    end if
 #ifdef MPI
    !$OMP Parallel
