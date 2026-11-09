@@ -5133,7 +5133,12 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     ! PARDISO variables
 
-    INTEGER :: nnn, nnz
+    INTEGER :: nnz
+    ! 64-bit PARDISO interface (pardiso_64): the factor of a > ~1e6-atom H exceeds 2^31 non-zeros (the 32-bit call
+    ! printed a negative factor size at 1.3e6 atoms and stopped in the analysis at 1.65e6)
+    INTEGER(8) :: nnn
+    INTEGER(8), allocatable :: ia8(:), ja8(:)
+    character(len=24) :: nzbuf
 
 !C.. Internal solver memory pointer for 64-bit architectures
     INTEGER*8 pt(64)
@@ -5143,13 +5148,13 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 !C.. This is OK in both cases
 !    TYPE(MKL_PARDISO_HANDLE) pt(64)
 !C.. All other variables
-    INTEGER maxfct, mnum, mtype, phase, nrhs, msglvl
-    INTEGER iparm(64)
+    INTEGER(8) maxfct, mnum, mtype, phase, nrhs, msglvl
+    INTEGER(8) iparm(64)
     INTEGER, allocatable :: ia(:) ! row_ptr
     INTEGER, allocatable :: ja(:) ! col_ind
-    INTEGER idum(1)
+    INTEGER(8) idum(1)
     complex(dp) ::  ddum(1)
-    integer error
+    integer(8) error
     complex(dp), allocatable :: a(:) ! values
 
     DATA nrhs /1/, maxfct /1/, mnum /1/
@@ -5283,6 +5288,9 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
        ! values = H - sigma (initialize_sparse_matrix). PARDISO wants the upper triangle of the Hermitian matrix,
        ! columns sorted; the solves below then apply OP = (H - sigma)^(-1).
        call sparse_upper_sorted(N, row_ptr, col_ind, values, ia, ja, a)
+       allocate(ia8(size(ia)), ja8(size(ja)))
+       ia8 = ia
+       ja8 = ja
        if (countStates) then
           dE0(1) = 0.0_dp
           call sparse_count_below(N, ia, ja, a, 1, dE0, nbelow0, countOK)
@@ -5298,13 +5306,14 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
        msglvl = 0
        nnn = N
        phase = 12       ! analysis + numerical factorisation
-       call pardiso(pt, maxfct, mnum, mtype, phase, nnn, a, ia, ja, idum, nrhs, iparm, msglvl, ddum, ddum, error)
+       call pardiso_64(pt, maxfct, mnum, mtype, phase, nnn, a, ia8, ja8, idum, nrhs, iparm, msglvl, ddum, ddum, error)
        if (error /= 0) then
           print *, 'DiagHamSparse: PARDISO factorisation error ', error
           error stop 1
        end if
-       call MIO_Print('DiagHamSparse: factor of H - shift: '//trim(num2str(iparm(18)))//' non-zeros, '// &
-          trim(num2str(iparm(14)))//' perturbed pivots','diag')
+       write(nzbuf,'(i0)') iparm(18)
+       call MIO_Print('DiagHamSparse: factor of H - shift: '//trim(nzbuf)//' non-zeros, '// &
+          trim(num2str(int(iparm(14))))//' perturbed pivots','diag')
     end if
     call znaupd(ido, bmat, nn, which, nev, tol, resid, ncv, v, nn, iparam, ipntr, workd, workl, lworkl, rwork, info)
 
@@ -5408,7 +5417,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
            if (ido == -1 .or. ido == 1) then
                ! y = (H - sigma)^(-1) x with the factor computed above
                phase = 33
-               call pardiso(pt, maxfct, mnum, mtype, phase, nnn, a, ia, ja, idum, nrhs, iparm, msglvl, &
+               call pardiso_64(pt, maxfct, mnum, mtype, phase, nnn, a, ia8, ja8, idum, nrhs, iparm, msglvl, &
                             workd(ipntr(1)), workd(ipntr(2)), error)
                if (error /= 0) then
                   print *, 'DiagHamSparse: PARDISO solve error ', error
@@ -5513,7 +5522,8 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
 
     if (useShift) then
        phase = -1  ! release the solve factor before the count matrices are factorised
-       call pardiso(pt, maxfct, mnum, mtype, phase, nnn, a, ia, ja, idum, nrhs, iparm, msglvl, ddum, ddum, error)
+       call pardiso_64(pt, maxfct, mnum, mtype, phase, nnn, a, ia8, ja8, idum, nrhs, iparm, msglvl, ddum, ddum, error)
+       deallocate(ia8, ja8)
        ! ARPACK returns the levels unordered; d already holds E = sigma + 1/theta (zneupd, mode 3)
        nconv = min(iparam(5), nev)
        allocate(esort(nconv))
@@ -5635,12 +5645,13 @@ subroutine sparse_count_below(N, ia, ja, a, nE, dE, nbelow, ok)
     real(dp), intent(in) :: dE(nE)
     integer, intent(out) :: nbelow(nE)
     logical, intent(out) :: ok
-    integer, allocatable :: ib(:), jb(:), idg(:), lptr(:), lcol(:), lfill(:)
+    integer(8), allocatable :: ib(:), jb(:)     ! 64-bit PARDISO interface (pardiso_64), see DiagHamSparse
+    integer, allocatable :: idg(:), lptr(:), lcol(:), lfill(:)
     real(dp), allocatable :: b(:), bw(:), lval(:)
     integer :: i, j, k, l, nU, nB, M, ie
     logical :: cplx
     integer*8 :: ptc(64)
-    integer :: iparmc(64), maxfct, mnum, mtype, phase, nrhs, msglvl, error, idum(1)
+    integer(8) :: iparmc(64), maxfct, mnum, mtype, phase, nrhs, msglvl, error, idum(1), M8
     real(dp) :: ddum(1)
 
     nU = ia(N+1) - 1
@@ -5735,8 +5746,9 @@ subroutine sparse_count_below(N, ia, ja, a, nE, dE, nbelow, ok)
     msglvl = 0
     mtype = -2
     ok = .true.
+    M8 = M
     phase = 11
-    call pardiso(ptc, maxfct, mnum, mtype, phase, M, b, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
+    call pardiso_64(ptc, maxfct, mnum, mtype, phase, M8, b, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
     if (error /= 0) then
        print *, 'sparse_count_below: PARDISO analysis error ', error
        error stop 1
@@ -5745,7 +5757,7 @@ subroutine sparse_count_below(N, ia, ja, a, nE, dE, nbelow, ok)
        bw = b
        bw(idg) = bw(idg) - dE(ie)
        phase = 22
-       call pardiso(ptc, maxfct, mnum, mtype, phase, M, bw, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
+       call pardiso_64(ptc, maxfct, mnum, mtype, phase, M8, bw, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
        if (error /= 0) then
           print *, 'sparse_count_below: PARDISO factorisation error ', error
           error stop 1
@@ -5753,15 +5765,15 @@ subroutine sparse_count_below(N, ia, ja, a, nE, dE, nbelow, ok)
        if (iparmc(14) /= 0 .or. iparmc(22) + iparmc(23) /= M) ok = .false.
        if (cplx) then
           if (mod(iparmc(23), 2) /= 0) ok = .false.
-          nbelow(ie) = iparmc(23)/2
+          nbelow(ie) = int(iparmc(23)/2)
        else
-          nbelow(ie) = iparmc(23)
+          nbelow(ie) = int(iparmc(23))
        end if
     end do
     if (.not. ok) call MIO_Print('sparse_count_below: WARNING perturbed or zero pivots - the count is not exact; '// &
        'move the energy slightly','diag')
     phase = -1
-    call pardiso(ptc, maxfct, mnum, mtype, phase, M, bw, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
+    call pardiso_64(ptc, maxfct, mnum, mtype, phase, M8, bw, ib, jb, idum, nrhs, iparmc, msglvl, ddum, ddum, error)
     deallocate(ib, jb, b, bw, idg)
 end subroutine sparse_count_below
 
@@ -16350,6 +16362,20 @@ subroutine pardiso(pt, maxfct, mnum, mtype, phase, n, a, ia, ja, perm, nrhs, ipa
      'without MKL (-DNO_MKL)','diag','pardiso')
 
 end subroutine pardiso
+
+subroutine pardiso_64(pt, maxfct, mnum, mtype, phase, n, a, ia, ja, perm, nrhs, iparm, msglvl, b, x, error)
+
+   use mio
+
+   integer(8) :: pt(*)
+   integer(8) :: maxfct, mnum, mtype, phase, n, ia(*), ja(*), perm(*), nrhs, iparm(*), msglvl, error
+   complex(8) :: a(*), b(*), x(*)
+
+   error = -1
+   call MIO_Kill('Diag.SparseUseShift and Diag.SparseCount need MKL PARDISO; this executable was built '// &
+     'without MKL (-DNO_MKL)','diag','pardiso_64')
+
+end subroutine pardiso_64
 
 integer function mkl_get_max_threads()
 
