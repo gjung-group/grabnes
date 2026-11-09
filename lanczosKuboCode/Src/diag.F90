@@ -602,6 +602,8 @@ subroutine DiagBands()
    use tbpar,                only : g0
    use constants,            only : pi, twopi
 
+   character(len=100), allocatable :: vtxMsg(:)   ! path vertices, printed after the k-point loop
+   integer :: nVtx
    integer :: nPts0, nPath, ip, ptsTot, i, j, u, is, uu, uuu, uuuu, neig, i_eig
    integer :: nPathIn                       ! vertices of Bands.Path (nPath is reused below to count printed vertices)
    real(dp), pointer :: path(:,:)=>NULL(), Kpts(:,:)=>NULL(), E(:,:,:)=>NULL()
@@ -959,10 +961,13 @@ subroutine DiagBands()
       hv = -huge(0.0_dp)
       lc = huge(0.0_dp)
       E = 0.0_dp
-      call MIO_Print('Path with '//trim(num2str(nPath))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
       nPathIn = nPath
       nPath = 1
-      call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
+      ! path vertices are printed together after the k-point loop (see 'Bands written to')
+      if (allocated(vtxMsg)) deallocate(vtxMsg)
+      allocate(vtxMsg(nPathIn+1))
+      nVtx = 1
+      vtxMsg(1) = '  Vertex 1: 1, '//trim(num2str(0.0_dp,6))
       !      !if (modulo(ip,int(ptsTot/10)).eq.0) print*, "progress is: ", ip/int(ptsTot/10)*10, "percent"
       !             !write(uu,*) (HLoc(j,i),j=1,nAt)
       !         !call DiagHamSparse(nAt,nspin,is,HLoc,ELoc,KptsLoc,ucell,H0,maxNeigh,hopp,NList,Nneigh,neighCell)
@@ -1082,7 +1087,7 @@ subroutine DiagBands()
             end if
             if (sum(nPts(:nPath))==ip-1) then
                nPath = nPath+1
-               call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ip))//', '//trim(num2str(d,6)),'diag')
+               call DiagBandsVertex(nPath, ip, d)
             end if
          end do
       else if (sparseDiagSolver) then
@@ -1205,7 +1210,7 @@ subroutine DiagBands()
                end if
                if (.not. calculate3DTAPWBands .and. sum(nPts(:nPath))==ip-1) then
                   nPath = nPath+1
-                  call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ip))//', '//trim(num2str(d,6)),'diag')
+                  call DiagBandsVertex(nPath, ip, d)
                end if
             end do
          end if
@@ -1469,7 +1474,7 @@ subroutine DiagBands()
                   end if
                   if (.not. calculate3DTAPWBands .and. sum(nPts(:nPath))==ip-1) then
                      nPath = nPath+1
-                     call MIO_Print('  Vertex '//trim(num2str(nPath))//': '//trim(num2str(ip))//', '//trim(num2str(d,6)),'diag')
+                     call DiagBandsVertex(nPath, ip, d)
                   end if
                end do
             end if
@@ -1489,6 +1494,12 @@ subroutine DiagBands()
       !call file%Close()
       call MIO_Deallocate(E,'E','diag')
       close(u)
+      if (.not. calculate3DTAPWBands .and. allocated(vtxMsg)) then
+         call MIO_Print('Path with '//trim(num2str(nPathIn))//' vertices (vertex: k-point, path length in 1/Ang):','diag')
+         do i = 1, nVtx
+            call MIO_Print(trim(vtxMsg(i)),'diag')
+         end do
+      end if
       call MIO_Print('Bands written to '//trim(flnm),'diag')
    end if
 
@@ -1504,6 +1515,17 @@ subroutine DiagBands()
 #ifdef DEBUG
    call MIO_Debug('DiagBands',1)
 #endif /* DEBUG */
+
+contains
+
+   subroutine DiagBandsVertex(iv, ik, dist)
+      integer, intent(in) :: iv, ik
+      real(dp), intent(in) :: dist
+      if (nVtx < size(vtxMsg)) then
+         nVtx = nVtx + 1
+         vtxMsg(nVtx) = '  Vertex '//trim(num2str(iv))//': '//trim(num2str(ik))//', '//trim(num2str(dist,6))
+      end if
+   end subroutine DiagBandsVertex
 
 end subroutine DiagBands
 

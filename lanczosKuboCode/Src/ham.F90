@@ -2296,7 +2296,7 @@ subroutine HamOnSiteMoirePotential()
       else
          call MIO_InputParameter('Moire.Sachs',l,.false.)
          if (l) then
-           call MIO_Print('Sachs moire potential:','ham')
+           call MIO_Print('Sachs moire potential, amplitudes:','ham')
            call MIO_Print('  A: '//trim(num2str(A,4)),'ham')
            call MIO_Print('  B: '//trim(num2str(B,4)),'ham')
            call MIO_Print('  C: '//trim(num2str(C,4)),'ham')
@@ -2313,7 +2313,7 @@ subroutine HamOnSiteMoirePotential()
          call MIO_InputParameter('Moire.Jeil',l,.false.)
          call MIO_InputParameter('Structure.SingleLayerXYZ',singleLayerXYZ,.false.)
          if (l) then
-           call MIO_Print('Jung moire potential added','ham')
+           call MIO_PrintDebug('Jung moire potential added to the on-site energies','ham')
            call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
            call MIO_InputParameter('Trilayer.FanZhang',FanZhang,.false.)
            if (MIO_StringComp(str,'MoireEncapsulatedBilayer') &
