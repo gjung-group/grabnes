@@ -4,6 +4,14 @@
 The list is extracted from the calls to MIO_InputParameter, MIO_InputFindBlock and
 MIO_InputBlock in lanczosKuboCode/Src; nothing is maintained by hand. A key read in several
 routines is listed once per distinct default, because the default can differ between them.
+The description of a key is the block of FORD documentation lines (`!!`) that directly
+follows a line reading it, written as a Markdown item (FORD adds it to the documentation of
+the routine):
+
+    call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+      !! - `Kubo.Epsilon`: broadening of the continued fraction [eV].
+
+A row of the table joins the texts of its reading sites.
 
     python3 tools/input/list_input_keys.py            # writes docs/user-guide/input-keys.md
     python3 tools/input/list_input_keys.py --check    # exit 1 if that file is out of date
@@ -21,6 +29,7 @@ CALL = re.compile(r"MIO_InputParameter\s*\(\s*'([^']+)'\s*,\s*([^,]+?)\s*,\s*(.+
 BLOCK = re.compile(r"MIO_Input(?:FindBlock|Block)\s*\(\s*'([^']+)'", re.I)
 ROUTINE = re.compile(r"^\s*(?:recursive\s+)?(subroutine|function)\s+(\w+)", re.I)
 EV_KEYS = set()     # keys read through HamInputEnergyEV: in eV, while the default applies in units of g0
+DESCRIPTIONS = {}   # (key in lower case, 'file: routine'): the '!!' texts that follow its reading lines there
 
 
 def kind(default):
@@ -57,7 +66,8 @@ def collect():
             if not name.lower().endswith((".f90", ".inc")) or "MIO" in os.path.relpath(folder, SRC).split(os.sep):
                 continue
             routine = "-"
-            for line in open(os.path.join(folder, name), errors="replace"):
+            lines = open(os.path.join(folder, name), errors="replace").read().split("\n")
+            for i, line in enumerate(lines):
                 code = line.split("!")[0] if line.lstrip().startswith("!") else line
                 m = ROUTINE.match(code)
                 if m:
@@ -78,6 +88,20 @@ def collect():
                     default = re.sub(r"_dp\b", "", raw)
                     rows.setdefault((key.lower(), default, False), [key, default, kind(raw), [], False])[3].append(
                         f"{name}: {routine}")
+                read = [m.group(1) for m in re.finditer(r"(?:MIO_InputParameter|HamInputEnergyEV)\s*\(\s*'([^']+)'", code, re.I)]
+                read += re.findall(r"HamInputHBN\s*\(\s*'([^']+)'", code, re.I)
+                if len(read) == 1:   # a '!!' block after a line that reads two keys would be ambiguous
+                    doc = []
+                    for nxt in lines[i + 1:]:
+                        if not nxt.lstrip().startswith("!!"):
+                            break
+                        doc.append(nxt.lstrip()[2:].strip())
+                    text = " ".join(t for t in doc if t)
+                    # FORD appends these lines to the doc of the routine, so they start with "- `Key`: "
+                    text = re.sub(r"^-\s*`" + re.escape(read[0]) + r"`\s*:\s*", "", text, flags=re.I)
+                    texts = DESCRIPTIONS.setdefault((read[0].lower(), f"{name}: {routine}"), [])
+                    if text and text not in texts:
+                        texts.append(text)
                 for m in BLOCK.finditer(code):
                     blocks.setdefault(m.group(1).lower(), [m.group(1), []])[1].append(f"{name}: {routine}")
     return rows, blocks
@@ -106,19 +130,26 @@ def render():
            "more than once, the first value is used and the solver prints a warning. A key that is not listed here is",
            "not read; the keys of the input file that the run did not read are listed at the end of the output.", "",
            "The default shown is the expression in the source; where it is not a literal, it is computed from other",
-           "input. \"Read in\" names the source file and routine, which is where to look for what the key does: most",
-           "keys have no other documentation yet.", "",
+           "input. \"Read in\" names the source file and routine, which is where to look for what the key does.", "",
            "A default marked (g0) belongs to a key that is given in eV: the default itself is in units of `TB.Hopping`.", "",
            "\"Former name\" is the name of the key before October 2026. It keeps working: an input file may use either",
            "name (if both are given, the present name is used and the solver prints a warning).", "",
-           "| Key | Former name | Type | Default | Read in |", "| --- | --- | --- | --- | --- |"]
+           "The description comes from the documentation comment (`!!`) after the lines of the source that read",
+           "the key in the routines of its row; an empty description means that none has been written yet.", "",
+           "| Key | Former name | Type | Default | Read in | Description |", "| --- | --- | --- | --- | --- | --- |"]
     for k in sorted(keys):
         for key, default, typ, where, ev in sorted(keys[k], key=lambda r: (r[1], r[4])):
             places = sorted(set(where))
             shown = "; ".join(places[:3]) + (f"; ... ({len(places)} places)" if len(places) > 3 else "")
             was = ", ".join(f"`{x}`" for x in former.get(k, []))
             mark = " (g0)" if ev else ""   # per reading site: a key can be read in eV in one routine only
-            out.append(f"| `{key}` | {was} | {typ} | `{default.replace('|', '/')}{mark}` | {shown} |")
+            texts = []
+            for place in places:
+                texts += [t for t in DESCRIPTIONS.get((k, place), []) if t not in texts]
+            # what the key does first; notes on one reading site ("Here: ...") after it
+            texts.sort(key=lambda t: t.lower().startswith("here"))
+            text = " ".join(texts).replace("|", "/")
+            out.append(f"| `{key}` | {was} | {typ} | `{default.replace('|', '/')}{mark}` | {shown} | {text} |")
     out += ["", "## Blocks", "", "| Block | Read in |", "| --- | --- |"]
     for k in sorted(blocks):
         name, where = blocks[k]

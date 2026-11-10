@@ -209,10 +209,16 @@ subroutine DiagDOS()
 
    call MIO_Subsection('DOS by diagonalisation','diag')
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+     !! - `Diag.KGrid`: Number of k-points along each reciprocal lattice vector (three integers) of the k-grid of the DOS,
+     !!   projected DOS, 3-D bands and spectral cuts; Monkhorst-Pack points for the DOS.
    call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+     !! - `Kubo.Epsilon`: Diagonalisation DOS: width of the Gaussian broadening of every level [eV].
    call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
+     !! - `Kubo.NumberofEnergyPoints`: Diagonalisation DOS: number of points of the energy grid from DOS.Emin to DOS.Emax.
    call MIO_InputParameter('DOS.Emin',E1,-10.0_dp)
+     !! - `DOS.Emin`: Lower end of the energy grid of the diagonalisation DOS [eV].
    call MIO_InputParameter('DOS.Emax',E2,10.0_dp)
+     !! - `DOS.Emax`: Upper end of the energy grid of the diagonalisation DOS [eV].
    call MIO_Allocate(DOS,[Epts,nspin],'DOS','diag')
    DOS = 0.0d0
    call MIO_Allocate(E,Epts,'E','diag')
@@ -402,6 +408,7 @@ subroutine DiagPDOS()
         E(i2) = E1 + (E2-E1)*(i2-1)/(Epts-1)
    end do
    call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
+     !! - `Kubo.NumberOfLayers`: Here (DiagPDOS): number of layers onto which the DOS is projected.
    allocate(EStoreS(nAt,ptot,nspin), WStore(numberOfLayers,nAt,ptot,nspin))
    WStore = 0.0_dp
    do is=1,nspin
@@ -639,14 +646,30 @@ subroutine DiagBands()
 #endif /* TIMER */
 
    call MIO_InputParameter('Bands.NumPoints',nPts0,100)
+     !! - `Bands.NumPoints`: k-points on the first leg of Bands.Path; the other legs get points in proportion to their length (all
+     !!   the same with Bands.UseSameNumberOfPoints).
    call MIO_InputParameter('Bands.SparseNeig',neig,100)
+     !! - `Bands.SparseNeig`: Diag.SparseSolver: number of eigenvalues computed per k-point.
    call MIO_InputParameter('Bands.UseDifferentLatticeVectors',useDifferentLatticeVectors,.false.)
+     !! - `Bands.UseDifferentLatticeVectors`: Set ucell(1,2) and rcell(2,1) to zero before the path is built (rectangular-cell
+     !!   variant; see DiagBands).
    call MIO_InputParameter('Bands.UseSameNumberOfPoints',useSameNumberOfPoints,.false.)
+     !! - `Bands.UseSameNumberOfPoints`: Every leg of Bands.Path gets Bands.NumPoints points, whatever its length.
    call MIO_InputParameter('Output.KeepWaveFunction',keepWaveFunction,.false.)
+     !! - `Output.KeepWaveFunction`: Dense diagonalisation that also writes the eigenvectors. Refused together with TAPW.Use or
+     !!   Diag.SparseSolver (it replaced those paths silently before).
     call MIO_InputParameter('Diag.SparseSolver',sparseDiagSolver,.false.)
+      !! - `Diag.SparseSolver`: Bands by sparse ARPACK diagonalisation (DiagHamSparse): Bands.SparseNeig levels nearest E = 0, or
+      !!   nearest Diag.SparseSetShift with Diag.SparseUseShift. Cannot be combined with TAPW.Use.
     call MIO_InputParameter('TAPW.Use',useTAPW,.false.)
+      !! - `TAPW.Use`: Bands in the valley-projected plane-wave basis (TAPW): H is projected on plane waves around one graphene
+      !!   valley (Diag.N_G, Diag.MoireAngle, Diag.UseKprimeValley); far fewer states than atoms.
     call MIO_InputParameter('TAPW.UseDenseMatrix',useDenseMatrixTAPW,.false.)
+      !! - `TAPW.UseDenseMatrix`: TAPW: project a dense N x N Hamiltonian (memory 16 N^2 bytes) instead of the sparse one; the
+      !!   sparse path is the one for large cells.
     call MIO_InputParameter('TAPW.BlockMatrixFree',tapwBlockMatrixFree,.false.)
+      !! - `TAPW.BlockMatrixFree`: Spinful block TAPW without the dense 2N x 2N block (matrix-free H*X): much faster, little
+      !!   memory.
     ! Diag.SparseSolver is tested before TAPW.Use in the k loops below: it would replace TAPW with the sparse
     ! solver on the full Hamiltonian, without a message (the band file then holds no TAPW states)
     if (useTAPW .and. sparseDiagSolver) call MIO_Kill('TAPW.Use and Diag.SparseSolver cannot be combined: the '// &
@@ -662,7 +685,10 @@ subroutine DiagBands()
        block
           logical :: zeeman, pzeeman
           call MIO_InputParameter('Zeeman.Term',zeeman,.false.)
+            !! - `Zeeman.Term`: Zeeman shift of the two spin sectors (needs Zeeman.SpinPolarized .true.; no effect, with a warning,
+            !!   in a one-spin run).
           call MIO_InputParameter('Zeeman.PseudoTerm',pzeeman,.false.)
+            !! - `Zeeman.PseudoTerm`: Pseudo-Zeeman term: not implemented, no effect (a warning is printed).
           if (zeeman .or. pzeeman .or. IsingSOCterm) then
              call MIO_Warning('ZeemanTerm, PseudoZeemanTerm and IsingSOCterm are implemented for TAPW '// &
                'calculations only (useTAPW .true.); they have NO effect on this calculation.','diag')
@@ -1236,7 +1262,10 @@ subroutine DiagBands()
          ! Cache TAPW-related inputs once outside the OpenMP region to avoid nested timer/input
          if (useTAPW .and. .not. tapw_cfg_initialized) then
             call MIO_InputParameter('TAPW.aG',tapw_cfg_aG,2.46019_dp)
+              !! - `TAPW.aG`: TAPW: graphene lattice constant of the plane-wave basis [Angstrom]; default 2.46019, the cells often
+              !!   use 2.46.
             call MIO_InputParameter('Diag.SparseSetShift',tapw_cfg_shift,0.0_dp)
+              !! - `Diag.SparseSetShift`: Here: copied for the TAPW path, which does not use it at present.
             call MIO_InputParameter('Diag.SparseUseShift',tapw_cfg_useShift,.false.)
             call MIO_InputParameter('Diag.SparseSaveRitz',tapw_cfg_saveRitz,.false.)
             call MIO_InputParameter('Diag.SparseSetTol',tapw_cfg_tol,0.1_dp)
@@ -2063,7 +2092,9 @@ subroutine DiagSpectralWindow(E1,E2)
    real(dp), intent(out) :: E1, E2
 
    call HamInputEnergyEV('Spectral.Emin',E1,-1.0_dp,since='2026-10-30')
+     !! - `Spectral.Emin`: Lower end of the energy grid of the spectral function [eV] (units of g0 before November 2026).
    call HamInputEnergyEV('Spectral.Emax',E2,1.0_dp,since='2026-10-30')
+     !! - `Spectral.Emax`: Upper end of the energy grid of the spectral function [eV] (units of g0 before November 2026).
 
 end subroutine DiagSpectralWindow
 
@@ -2076,6 +2107,8 @@ subroutine DiagSpectralEpsilon(eps)
    real(dp), intent(out) :: eps
 
    call HamInputEnergyEV('Kubo.Epsilon',eps,0.01_dp,since='2026-11-07')
+     !! - `Kubo.Epsilon`: Spectral function: Gaussian width of Spectral.UseGaussianBroadening / GaussianConvolution [eV] (units of
+     !!   g0 before November 2026).
 
 end subroutine DiagSpectralEpsilon
 
@@ -2142,6 +2175,7 @@ subroutine DiagSpectralFunction()
 #endif /* TIMER */
 
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
+     !! - `Spectral.NumPoints`: k-points on the first leg of Spectral.Path; the other legs in proportion to their length.
 
    if (MIO_InputFindBlock('Spectral.Path',nPath)) then
       call MIO_Subsection('Spectral function','diag')
@@ -2202,6 +2236,8 @@ subroutine DiagSpectralFunction()
       call MIO_Print('  Vertex 1: 1, '//trim(num2str(0.0_dp,6)),'diag')
       call MIO_Allocate(Pkc,[1,1],[ptsTot,2],'Pkc','diag')
       call MIO_InputParameter('Kubo.NumberofEnergyPoints',Epts,1000)
+        !! - `Kubo.NumberofEnergyPoints`: Spectral function: number of points of the energy grid from Spectral.Emin to
+        !!   Spectral.Emax.
       call DiagSpectralWindow(E1,E2)
       call MIO_Allocate(Energy,Epts,'Energy','diag')
       call DiagSpectralEpsilon(eps)
@@ -2220,6 +2256,7 @@ subroutine DiagSpectralFunction()
       AkeGaussian = 0.0_dp
       is = 1
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
+        !! - `Spectral.GaussianConvolution`: Spectral function: write the weights convolved with a Gaussian of width Kubo.Epsilon.
       do iee=1,Epts2
           if (Epts2 <= Epts) then
              gaussian(iee) = exp(-(Energy(iee)-Energy(Epts2/2))**2/(2.0_dp*eps**2))
@@ -2401,6 +2438,7 @@ subroutine DiagSpectralFunctionKGrid()
       d = 0.0_dp
       GVec = matmul(rcell,[1,0,0]) ! we only want to translate them by one reciprocal lattice vector
       call MIO_InputParameter('Structure.CellSize', cellSize, 1)
+        !! - `Structure.CellSize`: Here: the graphene-lattice path is divided by CellSize to give the k of the cell.
       Kpts(1,1) = KptsG(1,1)/cellSize
       Kpts(2,1) = KptsG(2,1)/cellSize
       Kpts(3,1) = KptsG(3,1)
@@ -2636,21 +2674,35 @@ subroutine DiagSpectralFunctionKGridInequivalent()
    call MIO_InputParameter('Spectral.NumPoints',nPts0,100)
 
    call MIO_InputParameter('Spectral.WeiKu',WeiKu,.false.)
+     !! - `Spectral.WeiKu`: Unfolded spectral weight per layer and sublattice on a graphene reference lattice (Wei Ku method),
+     !!   files <prefix>.spectral<layer><A|B>.
    call MIO_InputParameter('Spectral.UseGaussianBroadening',useGaussianBroadening,.false.)
+     !! - `Spectral.UseGaussianBroadening`: Spectral.WeiKu: spread each level over the energy grid with a Gaussian of width
+     !!   Kubo.Epsilon.
    call DiagSpectralEpsilon(eps)
    call MIO_InputParameter('Spectral.WeiKuOld',WeiKuOld,.false.)
+     !! - `Spectral.WeiKuOld`: Spectral.WeiKu: use the older weight routine (A and B weights only).
    call MIO_InputParameter('Spectral.Nishi',Nishi,.false.)
+     !! - `Spectral.Nishi`: Unfolding weights of the Nishi routine (sub-cell translations).
    call MIO_InputParameter('Spectral.Lee',Lee,.false.)
+     !! - `Spectral.Lee`: Unfolding weights of the Lee routine.
    call MIO_InputParameter('Spectral.FoldByOne',foldByOne,.false.)
+     !! - `Spectral.FoldByOne`: Fold the graphene-lattice k into the cell's zone by subtracting G10 + G01.
    call MIO_InputParameter('Spectral.FoldByZero',foldByZero,.false.)
+     !! - `Spectral.FoldByZero`: Do not fold the graphene-lattice k (use it as it is).
    call MIO_InputParameter('Spectral.UseCoordinates',useCoordinates,.false.)
+     !! - `Spectral.UseCoordinates`: Spectral.Path points in Cartesian coordinates [1/Angstrom] instead of reciprocal-lattice
+     !!   units.
    if (MIO_InputSearchLabel('Structure.MoireCellParameters',line,id)) then
        call MIO_InputParameter('Structure.MoireCellParameters',mmm,[0,0,0,0])
+         !! - `Structure.MoireCellParameters`: Here: sets the angle of Spectral.RotateReferenceSystem.
        call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
        gcell(:,1) = [aG,0.0_dp,0.0_dp]
        gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp,0.0_dp]
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
        call MIO_InputParameter('Spectral.RotateReferenceSystem',rotateRefSystem,.false.)
+         !! - `Spectral.RotateReferenceSystem`: Rotate the graphene reference lattice by the angle of
+         !!   Structure.MoireCellParameters.
        gcell1 = gcell
        if (rotateRefSystem .eqv. .true.) then
            gg = mmm(1)**2 + mmm(2)**2 + mmm(1)*mmm(2)
@@ -2671,8 +2723,11 @@ subroutine DiagSpectralFunctionKGridInequivalent()
        gcell1 = gcell   ! sub-cell lattice of Spectral.Nishi (was left unset without Structure.MoireCellParameters)
    end if
    call MIO_InputParameter('Spectral.AlignReferenceSystem',alignRefSystem,.false.)
+     !! - `Spectral.AlignReferenceSystem`: Rotate the graphene reference lattice by Spectral.AlignmentAngle (a layer unfolds under
+     !!   its own orientation).
    if (alignRefSystem .eqv. .true.) then
        call MIO_InputParameter('Spectral.AlignmentAngle',alignmentAngle,0.0d0)
+         !! - `Spectral.AlignmentAngle`: Spectral.AlignReferenceSystem: orientation of the reference lattice [degrees].
        phi = alignmentAngle
        aa = -phi*pi/180.0_dp
        rot(:,1) = [cos(aa),-sin(aa),0.0_dp]
@@ -2883,8 +2938,11 @@ subroutine DiagSpectralFunctionKGridInequivalent()
       AkeGaussian2 = 0.0_dp
       is = 1
       call MIO_InputParameter('Spectral.topBottomRatio',topBottomRatio,1.0_dp)
+        !! - `Spectral.topBottomRatio`: Passed to the unfolding weight routines, which do not use it at present.
       call MIO_InputParameter('Spectral.GaussianConvolution',GaussConv,.false.)
       call MIO_InputParameter('Spectral.energyGridResolution',energyGridResolution,0.005_dp)
+        !! - `Spectral.energyGridResolution`: A level adds its weight to every energy point closer than this [eV]: points further
+        !!   apart than twice it lose levels (a warning is printed).
       call DiagSpectralCheckGrid(E1,E2,Epts,energyGridResolution)
       do iee=1,Epts2
           if (Epts2 <= Epts) then
@@ -3728,6 +3786,7 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
        gcell(:,3) = [0.0_dp,0.0_dp,40.0_dp]
        call MIO_InputParameter('Spectral.RotateReferenceSystem',rotateRefSystem,.false.)
        call MIO_InputParameter('Spectral.RotateOpposite',rotateOpposite,.false.)
+         !! - `Spectral.RotateOpposite`: Spectral.RotateReferenceSystem: rotate by the opposite angle.
        gcell1 = gcell
        if (rotateRefSystem .eqv. .true.) then
            gg = mmm(1)**2 + mmm(2)**2 + mmm(1)*mmm(2)
@@ -3780,6 +3839,8 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCut()
    call MIO_Subsection('Spectral function around K1 (2/3,1/3)','diag')
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
+     !! - `Spectral.KGridCut`: Constant-energy cuts: half side of the k box around graphene K = (2/3,1/3) [1/Angstrom], sampled by
+     !!   Diag.KGrid.
    ptot = nk(1)*nk(2)*nk(3)
    call MIO_Allocate(Kgrid,[3,ptot],'Kgrid','diag')
    ik = 0
@@ -4800,8 +4861,12 @@ subroutine DiagSpectralFunctionKGridInequivalentEnergyCutNickDale()
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
    call MIO_InputParameter('Spectral.KGridCut',gridCut,0.1_dp)
    call MIO_InputParameter('Spectral.KGridCutX',gridCutX,0.1_dp)
+     !! - `Spectral.KGridCutX`: NickDale cut: length of the kx line from graphene K [1/Angstrom].
    call MIO_InputParameter('Spectral.KGridCutY',gridCutY,0.1_dp)
+     !! - `Spectral.KGridCutY`: NickDale cut: the line is at ky = K_y + KGridCutY [1/Angstrom].
    call MIO_InputParameter('Spectral.KGridLowerGridHalf',lowerGridHalf,.false.)
+     !! - `Spectral.KGridLowerGridHalf`: NickDale cut: the kx line runs from K_x - KGridCutX to K_x instead of K_x to K_x +
+     !!   KGridCutX.
    if (nk(2) > 1) call MIO_Warning('this spectral cut is a line along kx at ky = K_y + Spectral.KGridCutY: '// &
      'the '//trim(num2str(nk(2)))//' rows of Diag.KGrid along y are identical copies','diag')
    ptot = nk(1)*nk(2)*nk(3)
@@ -5205,6 +5270,8 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     ! Shift-invert converges on the levels nearest the shift in a few restarts: a 2*nev+1 basis is enough, and the
     ! regular-mode 10*nev would not fit in memory for the hundreds of levels this mode is meant for.
     call MIO_InputParameter('Diag.SparseUseShift',useShift,.false.)
+      !! - `Diag.SparseUseShift`: Diag.SparseSolver: shift-invert mode (MKL PARDISO), the Bands.SparseNeig levels nearest
+      !!   Diag.SparseSetShift; output <prefix>.SparseEig.
     if (useShift) ncv = min(N, max(2*nev+1, 20))
     lworkl= 3*NCV**2 + 5*NCV
 
@@ -5229,14 +5296,18 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     iparam(1) = 1
     iparam(3) = max_iter
     call MIO_InputParameter('Diag.SparseSetShift',shift,0.0_dp)
+      !! - `Diag.SparseSetShift`: Diag.SparseUseShift: energy around which the levels are computed [eV].
     call MIO_InputParameter('Diag.SparseUseShift',useShift,.false.)
     call MIO_InputParameter('Diag.SparseSaveRitz',saveRitz,.false.)
+      !! - `Diag.SparseSaveRitz`: Diag.SparseSolver: also compute the eigenvectors (Ritz vectors) in ARPACK.
     if (useShift) then
        which = 'LM'
        iparam(7) = 3
        ! Diag.SparseSetShift is in eV, like every other energy in Gendata.in; H is in units of g0 internally
        sigma = cmplx(shift/g0, 0.0_dp, kind=dp)
        call MIO_InputParameter('Diag.SparseCount',countStates,.false.)
+         !! - `Diag.SparseCount`: Diag.SparseUseShift: count exactly the states below the shift (so level indices are absolute) and
+         !!   check completeness ('complete T/F' per k in <prefix>.SparseEig).
        call MIO_Print('DiagHamSparse: shift-invert, '//trim(num2str(nev))//' eigenvalues nearest Diag.SparseSetShift = '// &
           trim(num2str(shift,6))//' eV (PARDISO, complex Hermitian)','diag')
     else
@@ -5249,6 +5320,7 @@ subroutine DiagHamSparse(N, ns, is, ELoc, KLoc, cell, H0, maxN, hopp, NList, Nne
     if (useShift) then
        ! the regular-mode default 0.1 is far too loose for a list of interior eigenvalues
        call MIO_InputParameter('Diag.SparseSetTol',tol,1.0e-9_dp)
+         !! - `Diag.SparseSetTol`: Diag.SparseSolver: ARPACK tolerance (default 1e-9 in shift-invert mode, 0.1 otherwise).
     else
        call MIO_InputParameter('Diag.SparseSetTol',tol,0.1_dp)
     end if
@@ -6276,6 +6348,8 @@ subroutine DiagH0TAPW(N, ns, is, ELoc, KLoc, cell_real, H0, maxN, hopp, NList, N
 
        ! Control distance-based ordering with input parameter
        call MIO_InputParameter('TAPW.UseTriangularDistanceOrder', useTriangularDistanceOrder, .true.)
+         !! - `TAPW.UseTriangularDistanceOrder`: Diag.TriangularTruncation: order the triangular G list by distance (default)
+         !!   instead of grid order.
        if (useTriangularDistanceOrder) then
           call MIO_PrintDebug('TRIANGULAR: Distance-based ordering ENABLED (default)','diag', tapwDebug)
        else
@@ -10724,6 +10798,7 @@ subroutine DiagHamChern(N,ns,is,HLoc,ChernLoc,KLoc,cell,H0,maxN,hopp,NList,Nneig
    delta_ky = 0.01d0
 
    call MIO_InputParameter('Kubo.Epsilon',eps,0.001_dp)
+     !! - `Kubo.Epsilon`: Here (DiagHamChern, refused): regularisation of the energy denominators.
 
    HLoc = 0.0_dp
    do i=1,N
@@ -11038,6 +11113,7 @@ subroutine DiagSpectralWeightNishi(N,ns,is,Pkc,E,KIn,KGIn,cell,H0,maxN,hopp,NLis
    RtspVec(6,:) = [matmul(cellts,[-1,-1,0])]
 
    call MIO_InputParameter('Spectral.numberOfTS',nTS,1)
+     !! - `Spectral.numberOfTS`: Spectral.Nishi: number of sub-cell translations (set to 6 by the routine).
 
    nTS = 6
 
@@ -12076,10 +12152,15 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
 
    ! Make energy window and band selection method configurable
    call MIO_InputParameter('Diag.ChernEnergyWindow', energy_window_eV, 0.2_dp)
+     !! - `Diag.ChernEnergyWindow`: Diag.ChernCalculation: energy window around Diag.Chern_EF for the band selection [eV].
    call MIO_InputParameter('Diag.ChernAllOccupiedBands', use_all_occupied_bands, .false.)
+     !! - `Diag.ChernAllOccupiedBands`: Diag.ChernCalculation: sum over all bands below the Fermi energy.
    call MIO_InputParameter('Diag.ChernNBands', n_chern_bands, 30)
+     !! - `Diag.ChernNBands`: Diag.ChernCalculation: number of bands included.
 
    call MIO_InputParameter('Diag.ChernUseOptionA', use_option_a, .false.)
+     !! - `Diag.ChernUseOptionA`: Diag.ChernCalculation: Berry curvature from the velocities in the TB basis instead of the TAPW
+     !!   basis.
 
    if (use_option_a) then
       call MIO_PrintDebug('*** USING OPTION A: Berry curvature in TB basis (colleague''s approach) ***','diag', tapwDebug)
@@ -12087,8 +12168,12 @@ subroutine CalculateChernTAPW(Kpts, nk, E, nAt, nspin, ucell, H0, maxNeigh, hopp
       call MIO_PrintDebug('*** USING OPTION B: Berry curvature in TAPW basis (default approach) ***','diag', tapwDebug)
    end if
    call MIO_InputParameter('Diag.ChernBandsBelowFermi', n_bands_below_fermi, 30)
+     !! - `Diag.ChernBandsBelowFermi`: Diag.ChernCalculation: bands below the Fermi energy included.
    call MIO_InputParameter('Diag.ChernBandsAboveFermi', n_bands_above_fermi, 30)
+     !! - `Diag.ChernBandsAboveFermi`: Diag.ChernCalculation: bands above the Fermi energy included.
    call MIO_InputParameter('Diag.ChernTargetBands', n_target_bands, 2)
+     !! - `Diag.ChernTargetBands`: Diag.ChernCalculation: number of bands closest to the Fermi energy whose Chern numbers are
+     !!   reported.
 
    ! Convert Fermi energy from eV to internal units (g0)
    fermi_energy_internal = fermi_energy / g0
@@ -12965,12 +13050,16 @@ subroutine CalculateBerryAtKpointFromStored(kpoint_index, spin_index, band_indic
 
    ! Make energy threshold configurable for testing
    call MIO_InputParameter('Diag.ChernEnergyThreshold', energy_threshold, 1.0e-4_dp)
+     !! - `Diag.ChernEnergyThreshold`: Diag.ChernCalculation: pairs of levels closer than this [units of g0] are left out of the
+     !!   Kubo sum.
 
    ! Add proper energy broadening parameter in eV
    call MIO_InputParameter('Diag.ChernEtaEV', eta_eV, 1.0e-6_dp)
+     !! - `Diag.ChernEtaEV`: Diag.ChernCalculation: read but not used at present.
 
    ! Make regularization parameter configurable for testing
    call MIO_InputParameter('Diag.ChernEps', eps, 1.0e-10_dp)
+     !! - `Diag.ChernEps`: Diag.ChernCalculation: eps in the denominator (E_n - E_m)^2 + eps of the Kubo sum [units of g0^2].
    call MIO_PrintDebug('Using eps = '//trim(num2str(eps,12))//' for Berry curvature calculation','diag', tapwDebug)
 
    ! CRITICAL FIX: Use actual array dimensions for loop bounds, not M variable

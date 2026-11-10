@@ -28,13 +28,17 @@ subroutine moireBLShiftInit()
 #endif /* TIMER */
 
    call MIO_InputParameter('Moire.BLShiftDefinedValues',u,.false.)
+     !! - `Moire.BLShiftDefinedValues`: moireBLShift.Calc: one calculation with the shifts Moire.Bilayer{Bottom,Top}{X,Y}Shift.
    call MIO_InputParameter('Moire.BLShiftRange',v,.false.)
+     !! - `Moire.BLShiftRange`: moireBLShift.Calc: sweep each shift from its Moire.Bilayer*Min to *Max in Moire.BLShiftRangeSteps
+     !!   steps.
    if (u) then
       mSi = 0
       mSf = mSi
       mSStep = 1
    else if (v) then
       call MIO_InputParameter('Moire.BLShiftRangeSteps',mSStep,10)
+        !! - `Moire.BLShiftRangeSteps`: Moire.BLShiftRange: number of steps of the shift sweep.
       mSi = 0
       mSf = mSi + mSStep
    end if
@@ -67,18 +71,30 @@ subroutine moireBLShiftValue(mS)
    call MIO_InputParameter('Moire.BLShiftRange',v,.false.)
    if (u) then
       call MIO_InputParameter('Moire.BilayerBottomXShift',tauX1,0.0_dp)
+        !! - `Moire.BilayerBottomXShift`: Moire.BLShiftDefinedValues: x shift of the bottom layer (written into the output prefix).
       call MIO_InputParameter('Moire.BilayerBottomYShift',tauY1,0.0_dp)
+        !! - `Moire.BilayerBottomYShift`: Moire.BLShiftDefinedValues: y shift of the bottom layer.
       call MIO_InputParameter('Moire.BilayerTopXShift',tauX2,0.0_dp)
+        !! - `Moire.BilayerTopXShift`: Moire.BLShiftDefinedValues: x shift of the top layer.
       call MIO_InputParameter('Moire.BilayerTopYShift',tauY2,0.0_dp)
+        !! - `Moire.BilayerTopYShift`: Moire.BLShiftDefinedValues: y shift of the top layer.
    else if (v) then
       call MIO_InputParameter('Moire.BilayerBottomXMin',xmin1,0.0_dp)
+        !! - `Moire.BilayerBottomXMin`: Moire.BLShiftRange: first x shift of the bottom layer.
       call MIO_InputParameter('Moire.BilayerBottomXMax',xmax1,0.0_dp)
+        !! - `Moire.BilayerBottomXMax`: Moire.BLShiftRange: last x shift of the bottom layer.
       call MIO_InputParameter('Moire.BilayerBottomYMin',ymin1,0.0_dp)
+        !! - `Moire.BilayerBottomYMin`: Moire.BLShiftRange: first y shift of the bottom layer.
       call MIO_InputParameter('Moire.BilayerBottomYMax',ymax1,0.0_dp)
+        !! - `Moire.BilayerBottomYMax`: Moire.BLShiftRange: last y shift of the bottom layer.
       call MIO_InputParameter('Moire.BilayerTopXMin',xmin2,0.0_dp)
+        !! - `Moire.BilayerTopXMin`: Moire.BLShiftRange: first x shift of the top layer.
       call MIO_InputParameter('Moire.BilayerTopXMax',xmax2,0.0_dp)
+        !! - `Moire.BilayerTopXMax`: Moire.BLShiftRange: last x shift of the top layer.
       call MIO_InputParameter('Moire.BilayerTopYMin',ymin2,0.0_dp)
+        !! - `Moire.BilayerTopYMin`: Moire.BLShiftRange: first y shift of the top layer.
       call MIO_InputParameter('Moire.BilayerTopYMax',ymax2,0.0_dp)
+        !! - `Moire.BilayerTopYMax`: Moire.BLShiftRange: last y shift of the top layer.
       tauX1= xmin1 + mS*(xmax1-xmin1)/mSStep
       tauY1= ymin1 + mS*(ymax1-ymin1)/mSStep
       tauX2= xmin2 + mS*(xmax2-xmin2)/mSStep

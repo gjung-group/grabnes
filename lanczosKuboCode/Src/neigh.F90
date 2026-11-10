@@ -333,6 +333,8 @@ subroutine NeighFinishSearch()
    call MIO_Allocate(NList2,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    NList2 = NList
    call MIO_InputParameter('Output.WriteDataFiles',prnt,.false.)
+     !! - `Output.WriteDataFiles`: Write the neighbour lists and the Hamiltonian to files (v, dx, dy, dz, pos, neighCell.dat,
+     !!   neighD.dat, <prefix>.e, <prefix>.s.mag, ...): a complete export of H, large for big cells.
    if (prnt) call NeighWriteDataFiles()
 
 #ifdef DEBUG
@@ -361,6 +363,7 @@ subroutine NeighSetRadii()
 #endif /* DEBUG */
 
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+     !! - `Run.TypeOfSystem`: Here: BoronNitride uses the hBN lattice constant for every neighbour radius.
    call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    do i=1,min(tbnn,maxShells)
       Nradii(i,1) = shellRadius(i)*aG/sqrt(3.0_dp)*1.1_dp
@@ -478,6 +481,8 @@ subroutine NeighReadDataFiles()
    close(1)
 
    call MIO_InputParameter('Neigh.ReadDetails',readNeighborDetails,.false.)
+     !! - `Neigh.ReadDetails`: With Output.ReadDataFiles: also read neighCell.dat and neighD.dat (image cell and bond vector of
+     !!   each pair).
    if (readNeighborDetails) then
       open(21,FILE='neighCell.dat',STATUS='old')
       open(22,FILE='neighD.dat',STATUS='old')
@@ -564,7 +569,10 @@ subroutine NeighList()
    inplaneNeigh=sum(numN(1:tbnn))
    if (MIO_StringComp(str,'Graphene_Over_BN')) then
       call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
+        !! - `Structure.InterlayerDistance`: Here (NeighList): sets the interlayer neighbour radius sqrt((1.1 aBN)^2/3 + d^2).
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,2)
+        !! - `Neigh.LayerNeighbors`: NeighList (Neigh.fastNNnotsquare .false.): interlayer neighbours per atom reserved in the
+        !!   list.
       maxNeigh = inplaneNeigh + outplaneNeigh
       call MIO_Allocate(Nradii,[tbnn+1,2],'Nradii','neigh')
    else if (MIO_StringComp(str,'BilayerGraphene_Over_BN')) then ! optimize this
@@ -609,19 +617,27 @@ subroutine NeighList()
       end do
    end if
    call MIO_InputParameter('Neigh.LayerDistFactor',distFact,1.0_dp) ! to increase the cutoff for outerlayer neighbors
+     !! - `Neigh.LayerDistFactor`: NeighList with Neigh.BLInPlaneInteractionRadius: in-plane cutoff 1.1 aG/sqrt(3) times this
+     !!   factor.
    if (outplaneNeigh/=0) then
       Nradii(tbnn+1,:) = sqrt((aBN*1.1_dp)**2/3.0_dp + d**2)! * distFact
    end if
    rmax = maxval(Nradii)
    call MIO_InputParameter('Neigh.CompareAll',small,.false.)
+     !! - `Neigh.CompareAll`: NeighList: compare every pair of atoms (with the 3 x 3 neighbouring cells). Without it NeighList is
+     !!   known to give wrong bands; a warning is printed.
    ! Use this if less than 36 atoms in the system 2*3*3*2 (BL)
    call MIO_InputParameter('Neigh.CompareAll.UltraSmall',ultrasmall,.false.)
+     !! - `Neigh.CompareAll.UltraSmall`: NeighList: as Neigh.CompareAll with the 7 x 7 neighbouring cells, for cells of fewer than
+     !!   ~36 atoms.
    if (.not. (small .or. ultrasmall)) then
       call MIO_Warning('the neighbour search NeighList (Neigh.fastNNnotsquare .false.) without '// &
         'Neigh.CompareAll .true. gave bands that differ by several eV from the default search for every '// &
         'graphene cell tested (72 to 3200 atoms). Use the default search, or set Neigh.CompareAll .true.','neigh')
    end if
    call MIO_InputParameter('Neigh.BLInPlaneInteractionRadius',BLInPlaneInteractionRadius,.false.)
+     !! - `Neigh.BLInPlaneInteractionRadius`: NeighList: select neighbours by their in-plane distance (z ignored) within the
+     !!   in-plane cutoff.
    call MIO_Allocate(NList,[1,inode1],[maxNeigh,inode2],'NList','neigh')
    call MIO_Allocate(Nneigh,[inode1],[inode2],'Nneigh','neigh')
    call MIO_Allocate(neighCell,[1,1,inode1],[3,maxNeigh,inode2],'neighCell','neigh')
@@ -823,7 +839,9 @@ subroutine NeighList()
       !$OMP END PARALLEL
    end if
    call MIO_InputParameter('Neigh.SafetyCheck',l,.false.)
+     !! - `Neigh.SafetyCheck`: NeighList: list the atoms with fewer than Neigh.ExpectedNumber neighbours.
    call MIO_InputParameter('Neigh.ExpectedNumber',expectedNumber,3)
+     !! - `Neigh.ExpectedNumber`: Neigh.SafetyCheck: minimum expected number of neighbours per atom.
    if (l) then
       call MIO_Print('Neigh.SafetyCheck: atoms with fewer than '//trim(num2str(expectedNumber))// &
         ' neighbours (atom, neighbours):','neigh')
@@ -871,6 +889,8 @@ subroutine NeighList()
 #endif /* TIMER */
 
    call MIO_InputParameter('Neigh.Print',prnt,.false.)
+     !! - `Neigh.Print`: Print the neighbour list (atom, neighbour, slot, image cell) in the output; atoms without 3 entries are
+     !!   marked.
    if (prnt) then
       call MIO_Print('Neighbour list (Neigh.Print):','neigh')
       call MIO_Print('     Atom   Neighbour    Slot          Cell','neigh')
@@ -1024,6 +1044,7 @@ subroutine NeighListOld()
    call MIO_InputParameter('Structure.LatticeParameter',alatt,2.46_dp)
    r0 = alatt/sqrt(3.0_dp)
    call MIO_InputParameter('Neigh.Distance',r0,alatt/sqrt(3.0_dp))
+     !! - `Neigh.Distance`: NeighListOld: first-neighbour distance [Angstrom]; pairs within 1.1 times it are neighbours.
    r0 = r0*1.1_dp
    call MIO_InputParameter('Neigh.CompareAll',small,.false.)
 
@@ -1435,11 +1456,14 @@ subroutine fastNNnotsquare(natoms,x,y,z,cutoff2,cutoff2bis,A1,A2)
 #endif /* DEBUG */
 
    call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
+     !! - `Output.ReadDataFiles`: Here: the neighbour lists are read from the files v, dx, dy, dz instead of searched.
    if (readDataFiles) then
       call NeighReadDataFiles()
    else
       ! pairs two layers apart (4.5 < |dz| < 7.5 A), as in the z-periodic search; the key was ignored here before
       call MIO_InputParameter('Interlayer.AddSecondLayerInteractions',addSecondLayerInteractions,.false.)
+        !! - `Interlayer.AddSecondLayerInteractions`: Also pair atoms two layers apart (4.5 < |dz| < 7.5 Angstrom) in the neighbour
+        !!   search, for the models with next-layer hoppings.
       call NeighSearchLayered(natoms,x,y,z,A1,A2,cutoff2,cutoff2bis,.false.,0.0_dp,addSecondLayerInteractions)
       call NeighFinishSearch()
    end if
@@ -1547,6 +1571,8 @@ subroutine fastNNnotsquareSmall(natoms,x,y,z,aCC,cutoff2,cutoff2bis,A1,A2,maxnn)
 
       call MIO_InputParameter('Structure.SuperCell',sCell,1)
       call MIO_InputParameter('Neigh.Only000Cell',only000Cell,.false.)
+        !! - `Neigh.Only000Cell`: fastNNnotsquareSmall: keep only the first-neighbour image in the home cell when assigning image
+        !!   cells.
          do i=1,nAt
             do j=1,Nneigh(i) ! different from ultraSmall because here we already know the neighbors
                if (only000Cell) then

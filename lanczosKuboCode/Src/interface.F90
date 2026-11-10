@@ -38,15 +38,26 @@ subroutine InterfacePot1()
 #endif /* DEBUG */
 
    call MIO_InputParameter('Interlayer.InterfaceClambda',lambda(1,1),6.78_dp)
+     !! - `Interlayer.InterfaceClambda`: Edge potential A exp(-r/lambda)/r of a graphene/hBN interface: decay length lambda on
+     !!   carbon [Angstrom]. InterfacePot1, which reads it, is not called at present.
    call MIO_InputParameter('Interlayer.InterfaceBNlambda',lambda(1,3),12.56_dp)
+     !! - `Interlayer.InterfaceBNlambda`: Edge potential: decay length lambda on B and N [Angstrom] (InterfacePot1, not called).
    call MIO_InputParameter('Interlayer.InterfaceClambda_B',lambda(1,1),lambda(1,1))
+     !! - `Interlayer.InterfaceClambda_B`: Edge potential: lambda on carbon from a B edge [Angstrom] (InterfacePot1, not called).
    call MIO_InputParameter('Interlayer.InterfaceClambda_N',lambda(2,1),lambda(1,1))
+     !! - `Interlayer.InterfaceClambda_N`: Edge potential: lambda on carbon from an N edge [Angstrom] (InterfacePot1, not called).
    call MIO_InputParameter('Interlayer.InterfaceBNlambda_B',lambda(1,3),lambda(1,3))
+     !! - `Interlayer.InterfaceBNlambda_B`: Edge potential: lambda on BN from a B edge [Angstrom] (InterfacePot1, not called).
    call MIO_InputParameter('Interlayer.InterfaceBNlambda_N',lambda(2,3),lambda(1,3))
+     !! - `Interlayer.InterfaceBNlambda_N`: Edge potential: lambda on BN from an N edge [Angstrom] (InterfacePot1, not called).
    call MIO_InputParameter('Interlayer.InterfaceAmpN',AmpN(3),0.56_dp)
+     !! - `Interlayer.InterfaceAmpN`: Edge potential: amplitude A of N edges [eV Angstrom] (InterfacePot1, not called).
    call MIO_InputParameter('Interlayer.InterfaceAmpB',AmpB(3),0.56_dp)
+     !! - `Interlayer.InterfaceAmpB`: Edge potential: amplitude A of B edges [eV Angstrom] (InterfacePot1, not called).
    call MIO_InputParameter('Interlayer.InterfaceAmpCN',AmpN(1),AmpN(3))
+     !! - `Interlayer.InterfaceAmpCN`: Edge potential: amplitude of N edges on carbon [eV Angstrom] (InterfacePot1, not called).
    call MIO_InputParameter('Interlayer.InterfaceAmpCB',AmpB(1),AmpB(3))
+     !! - `Interlayer.InterfaceAmpCB`: Edge potential: amplitude of B edges on carbon [eV Angstrom] (InterfacePot1, not called).
    call MIO_Subsection('Graphene-BN interface potential','interface')
    if (AmpB(1)/=AmpB(3) .or. AmpN(1)/=AmpN(3)) then
       call MIO_Print('  Amp. B for C: '//trim(num2str(AmpB(1),3))//' eV*Ang','interface')
@@ -94,8 +105,11 @@ subroutine InterfacePot1()
    NcellInt(1) = ceiling(rmaxInt/ucell(1,1))
    NcellInt(2) = ceiling(rmaxInt/ucell(2,2))
    call MIO_InputParameter('Interface.EdgeHopping',edgeHopp,.false.)
+     !! - `Interface.EdgeHopping`: Edge hopping correction at a graphene/hBN interface (InterfacePot1, not called at present).
    call MIO_InputParameter('Interface.EdgeHoppingAmp',Ampeh,0.2_dp)
+     !! - `Interface.EdgeHoppingAmp`: Interface.EdgeHopping: amplitude (InterfacePot1, not called at present).
    call MIO_InputParameter('Interface.EdgeHoppingDamp',dampeh,0.65_dp)
+     !! - `Interface.EdgeHoppingDamp`: Interface.EdgeHopping: damping (InterfacePot1, not called at present).
 
 #ifdef DEBUG
    call MIO_Debug('InterfacePot1',1)

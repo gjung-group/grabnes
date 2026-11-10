@@ -45,7 +45,10 @@ subroutine GaussPot(H,strength)
 
    if (frac) call AtomsSetCart()
    call MIO_InputParameter('Disorder.GaussPotPercentage',per,1.0_dp)
+     !! - `Disorder.GaussPotPercentage`: Gaussian disorder: percentage of the atoms that carry a Gaussian impurity potential.
    call MIO_InputParameter('Disorder.GaussPotRange',sigma,1.0_dp)
+     !! - `Disorder.GaussPotRange`: Gaussian disorder: width sigma of each impurity, exp(-r^2/(2 sigma^2)) [Angstrom]; random
+     !!   amplitudes in [-w/2, w/2].
    w = strength
    call MIO_Subsection('Gaussian potential','gauss')
    call MIO_Print('  Percentage: '//trim(num2str(per,3))//'%','gauss')
@@ -168,7 +171,9 @@ subroutine GaussPotDefinedPositions(H)
 
    if (frac) call AtomsSetCart()
    call MIO_InputParameter('Strain.BubbleGaussPotRange',sigma,1.0_dp)
+     !! - `Strain.BubbleGaussPotRange`: Strain.BubbleGaussian: width sigma of the Gaussian potential at each bubble [Angstrom].
    call MIO_InputParameter('Strain.BubbleGaussPotStrength',w,1.0_dp)
+     !! - `Strain.BubbleGaussPotStrength`: Strain.BubbleGaussian: amplitude of the Gaussian potential at each bubble [units of g0].
    call MIO_Subsection('Gaussian potential','gauss')
    call MIO_Print('  Range: '//trim(num2str(sigma,3))//' Ang','gauss')
    call MIO_Print('  Strength: '//trim(num2str(w,3))//' g0','gauss')
@@ -238,8 +243,11 @@ subroutine GaussHeight()
 
    if (frac) call AtomsSetCart()
    call MIO_InputParameter('Strain.GaussHeightPercentage',per,1.0_dp)
+     !! - `Strain.GaussHeightPercentage`: RandomStrain (refused at present): percentage of atoms that carry a Gaussian bump.
    call MIO_InputParameter('Strain.GaussHeightRange',sigma,1.0_dp)
+     !! - `Strain.GaussHeightRange`: RandomStrain (refused at present): width sigma of each bump [Angstrom].
    call MIO_InputParameter('Strain.GaussHeightStrength',w,1.0_dp)
+     !! - `Strain.GaussHeightStrength`: RandomStrain (refused at present): height amplitude of the bumps (added to z) [Angstrom].
    call MIO_Subsection('Gaussian height','gauss')
    call MIO_Print('  Percentage: '//trim(num2str(per,3))//'%','gauss')
    call MIO_Print('  Range: '//trim(num2str(sigma,3))//' Ang','gauss')

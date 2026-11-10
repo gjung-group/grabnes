@@ -42,12 +42,21 @@ subroutine CellGet()
 #endif /* TIMER */
 
    call MIO_InputParameter('Structure.LatticeParameter',aG,2.46_dp)
+     !! - `Structure.LatticeParameter`: Graphene lattice constant aG [Angstrom]; the cells built by the code are multiples of it.
    call MIO_InputParameter('Structure.LatticeParameterBN',aBN,2.505_dp)
+     !! - `Structure.LatticeParameterBN`: hBN lattice constant [Angstrom] (cells built from Structure.MoireCellParameters set it
+     !!   from the indices).
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+     !! - `Run.TypeOfSystem`: Kind of structure: built by the code (Graphene, BoronNitride, Ribbons,
+     !!   TwistedBilayerBasedOnMoireCell, ...) or read from a file (ReadXYZ). It selects the cell, the atoms and parts of the
+     !!   Hamiltonian.
    call MIO_Section('Cell','cell')
    call MIO_Print('Type of system: '//trim(str),'cell')
    call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
+     !! - `Structure.CellHeight`: Length of the third (out-of-plane) cell vector [Angstrom] for the cells built by the code.
    call MIO_InputParameter('Structure.SuperCell',sCell,1)
+     !! - `Structure.SuperCell`: Repeat the cell N x N in the plane (the atoms are copied, no reordering: copy 0 holds the original
+     !!   atoms). Equivalent to an N x N k-sampling of the original cell for local quantities.
    ! Default of the interlayer distance: 3.35 Ang everywhere since October 2026 (3.22 Ang before in the
    ! generators, the neighbor search and parts of the Hamiltonian; it matters for structures read from a file too)
    if (.not. (MIO_StringComp(str,'Graphene') .or. MIO_StringComp(str,'BoronNitride'))) then
@@ -57,14 +66,21 @@ subroutine CellGet()
       end if
    end if
    call MIO_InputParameter('Structure.SuperCellAsymmetric',l,.false.)
+     !! - `Structure.SuperCellAsymmetric`: Repeat the cell Structure.SuperCell times along a1 and Structure.SuperCellY times along
+     !!   a2.
    call MIO_InputParameter('Structure.SuperCellY',sCell2,1)
+     !! - `Structure.SuperCellY`: Structure.SuperCellAsymmetric: number of copies along the second lattice vector.
    if (MIO_StringComp(str,'Graphene') .or. MIO_StringComp(str,'BoronNitride') &
     .or. MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer')) then
       call MIO_InputParameter('Structure.BasedOnMoireCellParameters',ll,.false.)
+        !! - `Structure.BasedOnMoireCellParameters`: Graphene / BoronNitride / TwistedBilayer cells: build the commensurate cell
+        !!   from the four indices of Structure.MoireCellParameters instead of CellSize x CellSize graphene cells.
       if (ll) then
           uc(:,1) = (/aG,0.0_dp/)
           uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
           call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
+            !! - `Structure.MoireCellParameters`: Four integers m1 m2 m3 m4 of the commensurate moire cell: a1 = m1 a + m2 b on the
+            !!   first lattice, (m3, m4) on the second; the twist angle and lattice ratio follow from them and are printed.
           call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
             '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
             'cell')
@@ -97,6 +113,8 @@ subroutine CellGet()
           aBN = aG ! added this, not sure if necessary
       else
           call MIO_InputParameter('Structure.CellSize',n,50)
+            !! - `Structure.CellSize`: Number of graphene cells along each lattice vector of a cell built by the code (TypeOfSystem
+            !!   Graphene, BoronNitride); the cell is CellSize*SuperCell graphene cells on a side.
           call MIO_Print('Length of unit cell: '//trim(num2str(n*aG,5))// &
             ' Ang','cell')
              n = n*sCell
@@ -308,8 +326,11 @@ subroutine CellGet()
       ucell(:,:2) = ucell(:,:2)*sCell
    else if (MIO_StringComp(str,'Ribbons')) then
       call MIO_InputParameter('Structure.RibbonType',str,'Zigzag')
+        !! - `Structure.RibbonType`: TypeOfSystem Ribbons: edge of the ribbons, Zigzag or Armchair.
       call MIO_InputParameter('Structure.GrapheneWidth',nC,9)
+        !! - `Structure.GrapheneWidth`: TypeOfSystem Ribbons: width of the graphene ribbon, in rows of the ribbon cell.
       call MIO_InputParameter('Structure.BNWidth',nBN,9)
+        !! - `Structure.BNWidth`: TypeOfSystem Ribbons: width of the hBN ribbon, in rows of the ribbon cell.
       aBN = aG
       if (MIO_StringComp(str,'Zigzag')) then
          ucell(:,1) = [aG,0.0_dp,0.0_dp]
@@ -325,6 +346,8 @@ subroutine CellGet()
       end if
    else if (MIO_StringComp(str,'ReadXYZ')) then
       call MIO_InputParameter('Structure.XYZFile',str,trim(prefix)//'.xyz')
+        !! - `Structure.XYZFile`: TypeOfSystem ReadXYZ: structure file. Its first three lines are the lattice vectors [Angstrom],
+        !!   the atoms follow.
       open(1,FILE=str,STATUS='old')
       do i=1,3
          read(1,*) (ucell(j,i),j=1,3)

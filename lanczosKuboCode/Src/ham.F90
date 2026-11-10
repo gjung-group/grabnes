@@ -301,23 +301,31 @@ subroutine HamInit()
 
    call MIO_Section('Hamiltonian','ham')
    call MIO_InputParameter('Zeeman.Term',Zterm,.false.)
+     !! - `Zeeman.Term`: Spin Zeeman shift +-Zeeman.Factor x Zeeman.Bmag on the spin sector Zeeman.Spin; with Zeeman.SpinPolarized
+     !!   both sectors. Follows SOC.LayerControl unless Zeeman.FollowSOCLayers .false.
    call MIO_InputParameter('Zeeman.PseudoTerm',PZterm,.false.)
+     !! - `Zeeman.PseudoTerm`: Pseudo-Zeeman term (Zeeman.PseudoFactor): not implemented, no effect.
    if (Zterm) then
       call MIO_InputParameter('Zeeman.Spin',spin,1)
+        !! - `Zeeman.Spin`: Zeeman.Term in a one-spin run: spin sector computed, 1 (up) or -1 / 2 (down).
       if (spin==2) then
          spin=-1
       else if (spin/=1 .and. spin/=-1) then
          call MIO_Kill('Wrong spin index','ham','HamInit')
       end if
       call MIO_InputParameter('Zeeman.Factor',gZeeman,0.00033_dp)
+        !! - `Zeeman.Factor`: Zeeman.Term: Zeeman energy per tesla [eV/T]; the shift is Factor x Zeeman.Bmag.
       gZeeman = gZeeman/g0
       call MIO_Print('Zeeman term: spin sector '//trim(num2str(spin))//'/2','ham')
    end if
    if (PZterm) then
       call MIO_InputParameter('Zeeman.PseudoFactor',gPZeeman,0.00016_dp)
+        !! - `Zeeman.PseudoFactor`: Zeeman.PseudoTerm: factor [eV/T] (the term is not implemented).
       gPZeeman = gPZeeman/g0
    end if
    call MIO_InputParameter('Zeeman.SpinPolarized',l,.false.)
+     !! - `Zeeman.SpinPolarized`: Two spin sectors (nspin = 2), needed by the spinful terms (Zeeman, SOC). Refused unless
+     !!   Hubbard.EnableSCF .false.
    if (l) then
       nspin = 2
    else
@@ -326,34 +334,44 @@ subroutine HamInit()
 
    ! Read SOC term flags and parameters
    call MIO_InputParameter('SOC.Intrinsic',IntrinsicSOCterm,.false.)
+     !! - `SOC.Intrinsic`: Spin-independent sublattice mass +-SOC.LambdaI (not Kane-Mele, see SOC.KaneMele).
    if (IntrinsicSOCterm) then
       call MIO_InputParameter('SOC.LambdaI',lambdaI,0.0_dp)
+        !! - `SOC.LambdaI`: SOC.Intrinsic: amplitude [eV].
       lambdaI = lambdaI / g0  ! Normalize by g0 for consistency with other SOC terms
       call MIO_Print('Intrinsic SOC (sublattice mass): lambda_I = '//trim(num2str(lambdaI,6)),'ham')
    end if
 
    call MIO_InputParameter('SOC.Ising',IsingSOCterm,.false.)
+     !! - `SOC.Ising`: Ising (valley-Zeeman) spin-orbit term +-SOC.LambdaIsing.
    if (IsingSOCterm) then
       call MIO_InputParameter('SOC.LambdaIsing',lambdaIsing,0.0_dp)
+        !! - `SOC.LambdaIsing`: SOC.Ising: amplitude [eV].
       lambdaIsing = lambdaIsing / g0  ! Normalize by g0 for consistency with other SOC terms
       call MIO_Print('Ising SOC: lambda_Ising = '//trim(num2str(lambdaIsing,6)),'ham')
    end if
 
    call MIO_InputParameter('SOC.Rashba',RashbaSOCterm,.false.)
+     !! - `SOC.Rashba`: Rashba spin-orbit term on the first-neighbour bonds (spinful block TAPW path).
    if (RashbaSOCterm) then
       call MIO_InputParameter('SOC.LambdaR',lambdaR,0.0_dp)
+        !! - `SOC.LambdaR`: SOC.Rashba: amplitude [eV]; the K-point splitting is 3 LambdaR (2/3 of the Gmitra lambda_R).
       lambdaR = lambdaR / g0  ! Normalize by g0 for consistency with other SOC terms
       call MIO_Print('Rashba SOC: lambda_R = '//trim(num2str(lambdaR,6)),'ham')
    end if
 
    call MIO_InputParameter('SOC.PIA',PIASOCterm,.false.)
+     !! - `SOC.PIA`: Pseudospin-inversion-asymmetry SOC term (Gmitra), spinful TAPW only.
    if (PIASOCterm) then
       ! [eV]; SOC.LambdaPIAA / SOC.LambdaPIAB per sublattice (default SOC.LambdaPIA for both).
       ! Until November 2026 the term was a spin-independent on-site shift lambdaPIA (dense paths) plus a
       ! non-Hermitian first-neighbour term lambdaPIA (d_y + i d_x) on the sparse path.
       call MIO_InputParameter('SOC.LambdaPIA',lambdaPIA,0.0_dp)
+        !! - `SOC.LambdaPIA`: SOC.PIA: amplitude for both sublattices [eV].
       call MIO_InputParameter('SOC.LambdaPIAA',lambdaPIAA,lambdaPIA)
+        !! - `SOC.LambdaPIAA`: SOC.PIA: amplitude on sublattice A [eV] (default SOC.LambdaPIA).
       call MIO_InputParameter('SOC.LambdaPIAB',lambdaPIAB,lambdaPIA)
+        !! - `SOC.LambdaPIAB`: SOC.PIA: amplitude on sublattice B [eV] (default SOC.LambdaPIA).
       call MIO_Print('Pseudo-inversion asymmetry SOC (Gmitra et al. 2016) with lambda_PIA A, B = '// &
            trim(num2str(lambdaPIAA,6))//', '//trim(num2str(lambdaPIAB,6))//' eV','ham')
       lambdaPIA = lambdaPIA / g0
@@ -365,16 +383,24 @@ subroutine HamInit()
    ! Default .true. since 2026-10-16 (NL): the former Rashba term has the wrong Bloch phase away from K/Gamma.
    ! It only matters when a spinful bond term is on (Rashba, Kane-Mele, interlayer); see below.
    call MIO_InputParameter('SOC.RashbaConsistentPhase',RashbaConsistentPhase,.true.)
+     !! - `SOC.RashbaConsistentPhase`: .true. (default since 2026-10-16): spinful bond terms carry the same Bloch phase as the
+     !!   hopping. .false. restores the former Rashba phase, exact only at K and Gamma (warning printed).
    call MIO_InputParameter('SOC.RashbaAngle',rashbaAngle,0.0_dp)
+     !! - `SOC.RashbaAngle`: SOC.Rashba: rotation of the Rashba spin texture (radial component) [degrees].
    rashbaAngle = rashbaAngle*acos(-1.0_dp)/180.0_dp
    call MIO_InputParameter('SOC.KaneMele',KaneMeleSOCterm,.false.)
+     !! - `SOC.KaneMele`: Kane-Mele intrinsic spin-orbit term on second-neighbour bonds, SOC.LambdaKM.
    if (KaneMeleSOCterm) then
       call MIO_InputParameter('SOC.LambdaKM',lambdaKM,0.0_dp)
+        !! - `SOC.LambdaKM`: SOC.KaneMele: amplitude lambda_KM [eV] (gap 2 lambda_KM in a single layer).
       lambdaKM = lambdaKM/g0
    end if
    call MIO_InputParameter('SOC.Interlayer',InterlayerSOCterm,.false.)
+     !! - `SOC.Interlayer`: Interlayer spin-orbit term lambda_4 between same-sublattice sites of adjacent untwisted graphene
+     !!   layers, i (lambda/3) c_ij sgn(dz) (d x s)_z.
    if (InterlayerSOCterm) then
       call MIO_InputParameter('SOC.LambdaInterlayer',lambdaIL,0.0_dp)
+        !! - `SOC.LambdaInterlayer`: SOC.Interlayer: amplitude [eV].
       lambdaIL = lambdaIL/g0
    end if
    if ((KaneMeleSOCterm .or. InterlayerSOCterm .or. PIASOCterm .or. rashbaAngle /= 0.0_dp) .and. &
@@ -404,9 +430,12 @@ subroutine HamInit()
    end if
 
    call MIO_InputParameter('Zeeman.FollowSOCLayers',zeemanFollowSOC,.true.)
+     !! - `Zeeman.FollowSOCLayers`: With SOC.LayerControl: the Zeeman term acts on the same layers as SOC (.false.: every layer).
 
    ! Layer-specific SOC control
    call MIO_InputParameter('SOC.LayerControl',SOCLayerControl,.false.)
+     !! - `SOC.LayerControl`: Apply the SOC terms only to the layers listed in SOCLayers (e.g. 'SOCLayers 1 5'); otherwise every
+     !!   layer.
    if (SOCLayerControl) then
       ! Use new variable-length input parameter function
       call MIO_InputParameterVariable('SOCLayers', tempSOCLayers, nSOCLayersRead, maxSOCLayers)
@@ -450,6 +479,7 @@ subroutine HamInit()
 
    ! Layer-specific Haldane control
    call MIO_InputParameter('Haldane.LayerControl',HaldaneLayerControl,.false.)
+     !! - `Haldane.LayerControl`: Apply the Haldane term only to the layers listed in HaldaneLayers; otherwise see Haldane.NNN.
    if (HaldaneLayerControl) then
       ! Use new variable-length input parameter function
       call MIO_InputParameterVariable('HaldaneLayers', tempHaldaneLayers, nHaldaneLayersRead, maxHaldaneLayers)
@@ -480,6 +510,7 @@ subroutine HamInit()
       ! HaldaneLayerControl disabled - allocate empty array (means apply to all layers)
       allocate(HaldaneLayersArray(0))
       call MIO_InputParameter('Haldane.NNN',haldaneOn,.false.)
+        !! - `Haldane.NNN`: Haldane second-neighbour term (Haldane.* keys) on every layer.
       if (haldaneOn) call MIO_Print('Haldane term on every layer','ham')
    end if
 
@@ -488,8 +519,13 @@ subroutine HamInit()
    ! It is based on a binning approach.
    call MIO_Subsection('Neighbour search','neigh')
    call MIO_InputParameter('Neigh.fastNN',l,.false.)
+     !! - `Neigh.fastNN`: Neighbour search fastNN: refused (it reads past the end of its bins).
    call MIO_InputParameter('Neigh.fastNNnotsquare',ll,.true.)
+     !! - `Neigh.fastNNnotsquare`: Binned neighbour search, the default and best tested one; .false. selects NeighList (see
+     !!   Neigh.CompareAll).
    call MIO_InputParameter('Neigh.fastNNnotsquareNotRectangle',lll,.false.)
+     !! - `Neigh.fastNNnotsquareNotRectangle`: Neighbour search fastNNnotsquareNotRectangle: refused (it reads past the end of its
+     !!   bins).
    if (ll) call MIO_Print('Search: binned (Neigh.fastNNnotsquare, the default)','neigh')
    call MIO_Print('Graphene lattice parameter aG: '//trim(num2str(aG,5))//' Ang','neigh')
    if (l .or. ((.not. ll) .and. lll)) then
@@ -515,6 +551,7 @@ subroutine HamInit()
       ! neighbour arrays are sized by the search itself.
       nShells = tbnn
       call MIO_InputParameter('Neigh.CutAtNN3',cutAtNN3,.false.)
+        !! - `Neigh.CutAtNN3`: Deprecated: limits the search to three intralayer shells; use TB.NeighLevels 3.
       if (cutAtNN3) then
          ! Legacy flag: it limited the search to three shells when
          ! TB.NeighLevels was larger than 2.
@@ -528,6 +565,8 @@ subroutine HamInit()
       ! last shell can lie beyond the rigid-lattice radius. Pairs of further
       ! shells that it brings in get the hopping their distance implies.
       call MIO_InputParameter('Neigh.IntralayerRadius',intraRadius,0.0_dp)
+        !! - `Neigh.IntralayerRadius`: In-plane radius of the intralayer neighbour search [Angstrom], replacing the shell table's:
+        !!   for strained or corrugated cells (strained cells need 5.1134 to reproduce the search before October 2026).
       if (intraRadius > 0.0_dp) then
          cutoff2 = intraRadius**2
          NeighIntraWarn2 = (0.98_dp*intraRadius)**2
@@ -536,6 +575,8 @@ subroutine HamInit()
         trim(num2str(sqrt(cutoff2),4))//' Ang','neigh')
       if (intraRadius > 0.0_dp) call MIO_Print('  (radius set by Neigh.IntralayerRadius)','neigh')
       call MIO_InputParameter('Intralayer.F2G2Model',F2G2Model,.true.)
+        !! - `Intralayer.F2G2Model`: F2G2 intralayer model (5 shells); .false.: the 8-shell parameter set. A warning lists shells
+        !!   not searched.
       modelShells = 8
       if (F2G2Model) modelShells = 5
       if (nShells < modelShells) then
@@ -544,13 +585,20 @@ subroutine HamInit()
            '); raise TB.NeighLevels to include them','neigh')
       end if
       call MIO_InputParameter('Neigh.LayerNeighbors',outplaneNeigh,0)
+        !! - `Neigh.LayerNeighbors`: Search interlayer neighbours (any value but 0); 0: no interlayer pairs.
       call MIO_InputParameter('Stack.Bulk',bulk,.false.)
+        !! - `Stack.Bulk`: The cell is periodic along z too (graphite-like stack): interlayer pairs across the z boundary are kept.
+        !!   DiagHamSparse samples k_z = 0 only.
       call MIO_InputParameter('Stack.BulkSmall',bulksmall,.false.)
+        !! - `Stack.BulkSmall`: Stack.Bulk: neighbour search for small cells (fastNNnotsquareBulkSmall).
       call MIO_InputParameter('Stack.NonBulkSmall',small,.false.)
+        !! - `Stack.NonBulkSmall`: Slab (non-periodic z) with the neighbour search for small cells.
       call MIO_InputParameter('Structure.InterlayerDistance',d,3.35_dp)
+        !! - `Structure.InterlayerDistance`: Here: read by the neighbour search set-up.
       if (outplaneNeigh/=0) then
          call MIO_Print('Interlayer neighbours: searched (Neigh.LayerNeighbors)','neigh')
          call MIO_InputParameter('Neigh.LayerDistFactor',distFact,1.0_dp) ! to increase the cutoff for outerlayer neighbors
+           !! - `Neigh.LayerDistFactor`: In-plane radius of the interlayer neighbour search: 1.1 aG/sqrt(3) times this factor.
          cutoff2bis = (aG/sqrt(3.0_dp)*1.1_dp*distFact)**2.0_dp
       else
          call MIO_Print('Interlayer neighbours: none (Neigh.LayerNeighbors 0)','neigh')
@@ -609,6 +657,7 @@ subroutine HamInit()
    ! Structure.DisplacementsFromPositions: stacking displacements from the rigid and relaxed structures
    call HamDisplacementsFromPositions()
    call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
+     !! - `Output.ReadDataFiles`: Here: the on-site energies are read from generate.e (units of g0) instead of computed.
    if (readDataFiles) then
       ! generate.e is the file Output.WriteDataFiles writes (HamHopWriteTables): H0 already in units of g0,
       ! like the hoppings of generate.s
@@ -628,13 +677,17 @@ subroutine HamInit()
    hopp = 0.0_dp
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
    call MIO_InputParameter('Moire.Strain',moireStrain,.false.)
+     !! - `Moire.Strain`: Modify the hoppings by a model moire strain (Moire.StrainFactor, Moire.HeightAmp).
    if (moireStrain) then
       call MIO_InputParameter('Moire.StrainFactor',strFactor,3.37_dp)
+        !! - `Moire.StrainFactor`: Moire.Strain: beta of the hopping law t = exp(-beta (d/d_CC - 1)).
       call MIO_InputParameter('Moire.HeightAmp',hStr,0.1_dp)
+        !! - `Moire.HeightAmp`: Moire.Strain: amplitude of the height modulation [Angstrom].
       call MIO_Print('Moire.Strain: hoppings modified by the moire strain, factor '//trim(num2str(strFactor,2)),'ham')
       dCC = aG/sqrt(3.0_dp)
    end if
    call MIO_InputParameter('Strain.RandomStrain',randomStrain,.false.)
+     !! - `Strain.RandomStrain`: Random Gaussian height bumps (Strain.GaussHeight*): refused at present.
    if (randomStrain) then
      call MIO_Kill('RandomStrain is not supported at present: the routine it calls (GaussHeight) uses a '// &
        'work array that is never allocated.','ham','HamInit')
@@ -650,11 +703,14 @@ subroutine HamInit()
      end if
    end if
    call MIO_InputParameter('Output.PrintBubble',printBubble,.false.)
+     !! - `Output.PrintBubble`: Strain bubble diagnostic around a hard-coded atom: refused at present.
    if (printBubble) then
      call MIO_Kill('printBubble is not supported: it is a diagnostic with a hard-coded atom index (3328).', &
        'ham','HamInit')
      call MIO_InputParameter('Strain.BubbleSigmaR',sigma,1.0_dp)
+       !! - `Strain.BubbleSigmaR`: Output.PrintBubble (refused): Gaussian width of the height bump [Angstrom].
      call MIO_InputParameter('Strain.BubbleHeight',w,1.0_dp)
+       !! - `Strain.BubbleHeight`: Output.PrintBubble (refused): height of the Gaussian bump [Angstrom].
      if (frac) call AtomsSetCart()
      do i=1,nAt
          dx = Rat(1,3328) - Rat(1,i)
@@ -795,40 +851,93 @@ subroutine HamOnSite()
    H0Bottom = 0.0_dp
    H0Top = 0.0_dp
    call MIO_InputParameter('Stack.GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
+     !! - `Stack.GBNtwoLayersF2G2s`: Stack.GBNtwoLayers with F2G2 intralayer parameters for both graphene and hBN.
    call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
+     !! - `Stack.GBNtwoLayers`: Graphene on one hBN layer (ReadXYZ cells): intralayer shells from the in-plane bond length,
+     !!   distance-dependent C-B and C-N interlayer hoppings.
    call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
+     !! - `Stack.BNBNtwoLayers`: Two hBN layers: refused (no interlayer hopping is implemented).
    ! Its interlayer routine adds no hopping (only a message) and its intralayer uses the graphene F2G2 values
    if (BNBNtwoLayers) call MIO_Kill('Stack.BNBNtwoLayers is not implemented: it adds no interlayer hopping and '// &
         'its intralayer hoppings are the graphene values, not those of hBN.','ham','HamOnSite')
    call MIO_InputParameter('Stack.T2GBN',t2GBN,.false.)
+     !! - `Stack.T2GBN`: Stack model flag: selects the twisted bilayer graphene on hBN (three layers) branches of the on-site and
+     !!   hopping terms (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.T2BG',t2BG,.false.)
+     !! - `Stack.T2BG`: Stack model flag; read here but not used in HamOnSite.
    call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
+     !! - `Stack.T3BG`: Stack model flag: selects the six-layer T3BG branches of the on-site and hopping terms (HamOnSite,
+     !!   HamHopping).
    call MIO_InputParameter('Stack.EncapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
+     !! - `Stack.EncapsulatedThreeLayers`: Stack model flag: selects the hBN-encapsulated graphene (three layers) branches of the
+     !!   on-site and hopping terms (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.EncapsulatedFourLayers',encapsulatedFourLayers,.false.)
+     !! - `Stack.EncapsulatedFourLayers`: Stack model flag: selects the hBN-encapsulated bilayer (four layers) branches of the
+     !!   on-site and hopping terms (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.EncapsulatedFiveLayers',encapsulatedFiveLayers,.false.)
+     !! - `Stack.EncapsulatedFiveLayers`: Stack model flag: selects the five-layer encapsulated stack branches of the on-site and
+     !!   hopping terms (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.EncapsulatedSixLayers',encapsulatedSixLayers,.false.)
+     !! - `Stack.EncapsulatedSixLayers`: Stack model flag: selects the six-layer encapsulated stack branches of the on-site and
+     !!   hopping terms (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.EncapsulatedSevenLayers',encapsulatedSevenLayers,.false.)
+     !! - `Stack.EncapsulatedSevenLayers`: Stack model flag: selects the seven-layer encapsulated stack branches of the on-site and
+     !!   hopping terms (HamOnSite, HamHopping).
    call MIO_InputParameter('Potential.UseLayerSpecificOnsiteEnergyTerms',useLayerSpecificOnsiteEnergyTerms,.false.)
+     !! - `Potential.UseLayerSpecificOnsiteEnergyTerms`: Use the per-layer carbon on-site energies TB.OnSiteC1_LB, C2_LB, C1_LT,
+     !!   C2_LT.
    call MIO_InputParameter('Stack.T3GwithBN',t3GwithBN,.false.)
+     !! - `Stack.T3GwithBN`: Stack model flag: selects the twisted trilayer graphene with hBN branches of the on-site and hopping
+     !!   terms (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.BNt2GBN',BNt2GBN,.false.)
+     !! - `Stack.BNt2GBN`: Stack model flag: selects the hBN / twisted bilayer graphene / hBN branches of the on-site and hopping
+     !!   terms (HamOnSite, HamHopping).
   call MIO_InputParameter('Moire.DontUseInplaneMoire',dontUseInplaneMoire,.false.)
+    !! - `Moire.DontUseInplaneMoire`: Skip the harmonic in-plane moire on-site term for GBNtwoLayers and the encapsulated stacks.
   call MIO_InputParameter('Stack.TwoLayers',twoLayers,.false.)
+    !! - `Stack.TwoLayers`: Stack model flag: selects the two-layer graphene branches of the on-site and hopping terms (HamOnSite,
+    !!   HamHopping).
   call MIO_InputParameter('Stack.ThreeLayers',threeLayers,.false.)
+    !! - `Stack.ThreeLayers`: Stack model flag: selects the three-layer graphene branches of the on-site and hopping terms
+    !!   (HamOnSite, HamHopping).
   call MIO_InputParameter('Stack.FourLayersSandwiched',fourLayersSandwiched,.false.)
+    !! - `Stack.FourLayersSandwiched`: Stack model flag: selects the four-layer sandwiched graphene branches of the on-site and
+    !!   hopping terms (HamOnSite, HamHopping).
   call MIO_InputParameter('Stack.HelicalTwistedMBM',helicalTwistedMBM,.false.)
+    !! - `Stack.HelicalTwistedMBM`: Stack model flag: selects the helical-twisted four-layer (mono-bi-mono) branches of the on-site
+    !!   and hopping terms (HamOnSite, HamHopping).
   call MIO_InputParameter('Stack.FiveLayersSandwiched',fiveLayersSandwiched,.false.)
+    !! - `Stack.FiveLayersSandwiched`: Stack model flag: selects the five-layer graphene branches of the on-site and hopping terms
+    !!   (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.SixLayersSandwiched',sixLayersSandwiched,.false.)
+     !! - `Stack.SixLayersSandwiched`: Stack model flag: selects the six-layer graphene branches of the on-site and hopping terms
+     !!   (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.SevenLayersSandwiched',sevenLayersSandwiched,.false.)
+     !! - `Stack.SevenLayersSandwiched`: Stack model flag: selects the seven-layer graphene branches of the on-site and hopping
+     !!   terms (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.EightLayersSandwiched',eightLayersSandwiched,.false.)
+     !! - `Stack.EightLayersSandwiched`: Stack model flag: selects the eight-layer graphene branches of the on-site and hopping
+     !!   terms (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.TenLayersSandwiched',tenLayersSandwiched,.false.)
+     !! - `Stack.TenLayersSandwiched`: Stack model flag: selects the ten-layer graphene branches of the on-site and hopping terms
+     !!   (HamOnSite, HamHopping).
    call MIO_InputParameter('Stack.TwentyLayersSandwiched',twentyLayersSandwiched,.false.)
+     !! - `Stack.TwentyLayersSandwiched`: Stack model flag: selects the twenty-layer graphene branches of the on-site and hopping
+     !!   terms (HamOnSite, HamHopping).
    call MIO_InputParameter('Intralayer.ForceBilayerF2G2Intralayer',forceBilayerF2G2Intralayer,.false.)
+     !! - `Intralayer.ForceBilayerF2G2Intralayer`: Multilayer stacks: Bernal-bilayer F2G2 intralayer parameters instead of the
+     !!   single-layer ones.
    ! middleTwist: single-layer F2G2 parameters in every layer of the multilayer
    ! stacks. It is the default unless the Bernal-bilayer parameters are requested
    ! with forceBilayerF2G2Intralayer (same rule in HamHopping).
    call MIO_InputParameter('Stack.MiddleTwist',middleTwist,.not. forceBilayerF2G2Intralayer)
+     !! - `Stack.MiddleTwist`: Single-layer F2G2 parameters in every layer of the multilayer stacks; default .true. unless
+     !!   Intralayer.ForceBilayerF2G2Intralayer. A threeLayers stack then gets the averaged on-site energy.
    call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
+     !! - `Stack.FourLayers`: Stack model flag: selects the four-layer graphene branches of the on-site and hopping terms
+     !!   (HamOnSite, HamHopping).
    call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
+     !! - `Structure.ReadRigidXYZ`: Here: the rigid positions enter the on-site terms of the displacement-based models.
 #ifdef DEBUG
    call MIO_Print('On-site energies B, N, C1, C2 [g0]: '//trim(num2str(e0_B,6))//' '//trim(num2str(e0_N,6))//' '// &
      trim(num2str(e0_C1,6))//' '//trim(num2str(e0_C2,6)),'ham')
@@ -841,16 +950,29 @@ subroutine HamOnSite()
       Ho = H0
    end if
    call MIO_InputParameter('Moire.Potential',l,.false.)
+     !! - `Moire.Potential`: Moire on-site potential (HamOnSiteMoirePotential): the G/hBN effective model needs one of
+     !!   MoireH0AndHZ, MoireOnlyH0, MoireOnlyHZ, MoireNoH0AndHZ. No effect for ReadXYZ + GBNtwoLayers.
    call MIO_InputParameter('Moire.PreFactor',moirePreFactor,1.0_dp)
+     !! - `Moire.PreFactor`: Moire.Potential: factor on the amplitudes of the moire potential.
    call MIO_InputParameter('TBG.Diag',tBGDiag,.false.)
+     !! - `TBG.Diag`: Stacking-dependent on-site term of twisted bilayer graphene (from the local stacking displacements).
    call MIO_InputParameter('TBG.DiagPRB',tBGDiagPRB,.false.)
+     !! - `TBG.DiagPRB`: TBG.Diag: use the amplitudes Interlayer.CAA, CBB, ... instead of the default set.
    call MIO_InputParameter('BNBN.Diag',BNBNDiag,.false.)
+     !! - `BNBN.Diag`: Stacking-dependent on-site term of an hBN bilayer.
    call MIO_InputParameter('Moire.LatticePercent',eps,-0.018181818181818_dp)
+     !! - `Moire.LatticePercent`: Lattice mismatch epsilon of the moire potential, d(r) = ((1+eps) R(theta) - 1) r; commensurate
+     !!   G/hBN in a CellSize cell wants -1/CellSize.
    if (l) call HamOnSiteMoirePotential()
    call MIO_InputParameter('Moire.BilayerElectricField',u,.false.)
+     !! - `Moire.BilayerElectricField`: Layer potential (displacement field) of Moire.BilayerElectricShift; the profile follows the
+     !!   stack flag (e.g. Stack.FiveLayersSandwiched). Without this flag the shift does nothing.
    call MIO_InputParameter('Moire.BilayerElectricShift',ElectricShift,0.150_dp)
+     !! - `Moire.BilayerElectricShift`: Moire.BilayerElectricField: potential difference between the outer layers [eV].
    call MIO_InputParameter('Moire.BilayerElectricFieldInvert',invertE,.false.)
+     !! - `Moire.BilayerElectricFieldInvert`: Moire.BilayerElectricField: invert the field for atoms beyond half the cell in x.
    call MIO_InputParameter('Structure.CellSize',n,55)
+     !! - `Structure.CellSize`: Here: half the cell length in x, CellSize*SuperCell*aG/2, for Moire.BilayerElectricFieldInvert.
    invertEposX = (n*sCell*aG)/2.0
    ElectricShift = ElectricShift/g0
   call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
@@ -864,16 +986,23 @@ subroutine HamOnSite()
    call MIO_InputParameter('Stack.TwentyLayersSandwiched',twentyLayersSandwiched,.false.)
    if (u) call HamOnSiteLayerPotential()
    call MIO_InputParameter('Trilayer.FanZhang',FanZhang,.false.)
+     !! - `Trilayer.FanZhang`: On-site terms of the Fan-Zhang trilayer model (HamOnSiteTrilayerFanZhang).
    if (FanZhang) call HamOnSiteTrilayerFanZhang()
 
    call MIO_InputParameter('Potential.AddSublatticeMassterm',u,.false.)
+     !! - `Potential.AddSublatticeMassterm`: Sublattice mass: Species 1 gets -m/2, Species 2 +m/2, m =
+     !!   Potential.SublatticeMassterm.
    call MIO_InputParameter('Potential.OnlyBottomLayerMassTerm',onlyBottomLayerMassTerm,.false.)
+     !! - `Potential.OnlyBottomLayerMassTerm`: Potential.AddSublatticeMassterm on the bottom layer only.
    call MIO_InputParameter('Potential.SublatticeMassterm',massterm,0.150_dp)
+     !! - `Potential.SublatticeMassterm`: Potential.AddSublatticeMassterm: mass m [eV].
    massterm = massterm/g0
    if (u) call HamOnSiteSublatticeMass()
 
    call MIO_InputParameter('Potential.AddOnsiteEnergyShift',u,.false.)
+     !! - `Potential.AddOnsiteEnergyShift`: Add Potential.OnsiteEnergyShift to every on-site energy.
    call MIO_InputParameter('Potential.OnsiteEnergyShift',onsiteEnergyShift,0.150_dp)
+     !! - `Potential.OnsiteEnergyShift`: Potential.AddOnsiteEnergyShift: shift [eV].
    onsiteEnergyShift = onsiteEnergyShift/g0
    if (u) then
       call MIO_Print('Disorder.OnsiteShift: on-site energy shift added','ham')
@@ -885,10 +1014,15 @@ subroutine HamOnSite()
    end if
 
    call MIO_InputParameter('Strain.Bubbles',l,.false.)
+     !! - `Strain.Bubbles`: Disorder: shift the on-site energy by Disorder.OnsiteShift on randomly chosen cells of a CheckerDivider
+     !!   x CheckerDivider checkerboard (fraction Disorder.CheckerDensity).
    if (l) then
       call HamInputEnergyEV('Disorder.OnsiteShift',onsiteShift,0.1_dp)
+        !! - `Disorder.OnsiteShift`: Strain.Bubbles: on-site shift of the chosen cells [eV] (units of g0 before 2026-10-14).
       call MIO_InputParameter('Disorder.CheckerDivider',checkerDivider,10)
+        !! - `Disorder.CheckerDivider`: Strain.Bubbles: the cell is divided into D x D checkerboard cells.
       call MIO_InputParameter('Disorder.CheckerDensity',checkerDensity,0.1_dp)
+        !! - `Disorder.CheckerDensity`: Strain.Bubbles: fraction of checkerboard cells that are shifted.
       allocate(checkerActivate(checkerDivider,checkerDivider))
       activatedCheckers = 0
       call RandSeedFromInput()
@@ -927,15 +1061,20 @@ subroutine HamOnSite()
 
    ! PNP
    call MIO_InputParameter('Potential.PNP',l,.false.)
+     !! - `Potential.PNP`: Step p-n-p potential along x: -PNPAmp outside, +PNPAmp inside the central region (HamOnSitePNP).
    if (l) call HamOnSitePNP()
 
    call MIO_InputParameter('Potential.PNPKink',l,.false.)
+     !! - `Potential.PNPKink`: Smooth p-n-p junction along x: Potential.PNPAmp x tanh steps of width Potential.PNPDelta at L/4 and
+     !!   3L/4 (HamOnSitePNPKink).
    if (l) call HamOnSitePNPKink()
 
    ! changes for sinus function
    call MIO_InputParameter('Potential.SinusModulation',l,.false.)
+     !! - `Potential.SinusModulation`: Legacy: add sin(2 pi N x / L) with amplitude 1 g0 (no amplitude key); do not use.
    if (l) then
       call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
+        !! - `Potential.SinusNumberOfPeriod`: Potential.SinusModulation: number N of periods in the cell.
       call MIO_InputParameter('Structure.CellSize',n,50)
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i)
@@ -949,11 +1088,19 @@ subroutine HamOnSite()
    ! changes for sinus function
 
    call MIO_InputParameter('Potential.SinusModulationUsingPeriod',sinusModulationUsingPeriod,.false.)
+     !! - `Potential.SinusModulationUsingPeriod`: Add Potential.SinusFactor x sin(2 pi x / Potential.SinusModulationPeriod); x is
+     !!   Cartesian, so it is lattice-periodic only for suitable periods.
    if (sinusModulationUsingPeriod) then
       call MIO_InputParameter('Potential.SinusModulationPeriod',sinusModulationPeriod,135.0_dp)
+        !! - `Potential.SinusModulationPeriod`: Period of the sine modulation [Angstrom] (absolute length, not a fraction of the
+        !!   cell).
       call MIO_InputParameter('Potential.SinusModulationAddMassTerm',sinusModulationAddMassTerm,.false.)
+        !! - `Potential.SinusModulationAddMassTerm`: Replace the sine modulation by its staggered form SinusMassTermFactor x
+        !!   sin(...) x (-1)^Species.
       call HamInputEnergyEV('Potential.SinusFactor',sinusFactor,0.01_dp)
+        !! - `Potential.SinusFactor`: Amplitude of the sine modulation [eV] (units of g0 before 2026-10-14).
       call HamInputEnergyEV('Potential.SinusMassTermFactor',sinusFactor2,0.01_dp)
+        !! - `Potential.SinusMassTermFactor`: Amplitude of the staggered sine modulation [eV] (units of g0 before 2026-10-14).
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i)
       do i = 1,nAt
@@ -970,6 +1117,7 @@ subroutine HamOnSite()
    ! changes for sinus function
 
    call MIO_InputParameter('Potential.SinusModulationUsingPeriodYDirection',sinusModulationUsingPeriodY,.false.)
+     !! - `Potential.SinusModulationUsingPeriodYDirection`: As Potential.SinusModulationUsingPeriod, along y.
    if (sinusModulationUsingPeriodY) then
       call MIO_InputParameter('Potential.SinusModulationPeriod',sinusModulationPeriod,135.0_dp)
       call MIO_InputParameter('Potential.SinusModulationAddMassTerm',sinusModulationAddMassTerm,.false.)
@@ -991,11 +1139,17 @@ subroutine HamOnSite()
    ! changes for cosinus function
 
    call MIO_InputParameter('Potential.CosinusModulationUsingPeriod',cosinusModulationUsingPeriod,.false.)
+     !! - `Potential.CosinusModulationUsingPeriod`: Add Potential.CosinusFactor x cos(2 pi x / Potential.CosinusModulationPeriod).
    if (cosinusModulationUsingPeriod) then
       call MIO_InputParameter('Potential.CosinusModulationPeriod',cosinusModulationPeriod,135.0_dp)
+        !! - `Potential.CosinusModulationPeriod`: Period of the cosine modulation [Angstrom].
       call MIO_InputParameter('Potential.CosinusModulationAddMassTerm',cosinusModulationAddMassTerm,.false.)
+        !! - `Potential.CosinusModulationAddMassTerm`: Replace the cosine modulation by CosinusMassTermFactor x cos(...) x
+        !!   (-1)^Species.
       call HamInputEnergyEV('Potential.CosinusFactor',cosinusFactor,0.01_dp)
+        !! - `Potential.CosinusFactor`: Amplitude of the cosine modulation [eV] (units of g0 before 2026-10-14).
       call HamInputEnergyEV('Potential.CosinusMassTermFactor',cosinusFactor2,0.01_dp)
+        !! - `Potential.CosinusMassTermFactor`: Amplitude of the staggered cosine modulation [eV] (units of g0 before 2026-10-14).
       if (frac) call AtomsSetCart()
       !$OMP PARALLEL DO PRIVATE(i)
       do i = 1,nAt
@@ -1012,6 +1166,7 @@ subroutine HamOnSite()
    ! changes for cosinus function
 
    call MIO_InputParameter('Potential.CosinusModulationUsingPeriodYDirection',cosinusModulationUsingPeriodY,.false.)
+     !! - `Potential.CosinusModulationUsingPeriodYDirection`: As Potential.CosinusModulationUsingPeriod, along y.
    if (cosinusModulationUsingPeriodY) then
       call MIO_InputParameter('Potential.CosinusModulationPeriod',cosinusModulationPeriod,135.0_dp)
       call MIO_InputParameter('Potential.CosinusModulationAddMassTerm',cosinusModulationAddMassTerm,.false.)
@@ -1032,32 +1187,44 @@ subroutine HamOnSite()
 
    ! square function
    call MIO_InputParameter('Potential.SquareFunction',l,.false.)
+     !! - `Potential.SquareFunction`: Staggered potential -+(-1)^Species A following the sign of sin(2 pi N x/L) sin(2 pi N y/L)
+     !!   (HamOnSiteSquareFunction).
    if (l) call HamOnSiteSquareFunction()
    ! square function
 
    ! square function 2
    call MIO_InputParameter('Potential.SquareFunction2',l,.false.)
+     !! - `Potential.SquareFunction2`: Staggered square-wave potential on honeycomb-sized regions (HamOnSiteSquareFunction2).
    if (l) call HamOnSiteSquareFunction2()
    ! square function 2
 
    ! zterm1d
    call MIO_InputParameter('Potential.Zterm1D',l,.false.)
+     !! - `Potential.Zterm1D`: Staggered potential that changes sign with sin(2 pi N x / L) (HamOnSiteZterm1D).
    if (l) call HamOnSiteZterm1D()
 
    call MIO_InputParameter('Potential.Zterm1DKink',l,.false.)   ! only works for 2 periods
+     !! - `Potential.Zterm1DKink`: Staggered potential with smooth tanh kinks along x (HamOnSiteZterm1DKink); written for two
+     !!   periods.
    if (l) call HamOnSiteZterm1DKink()
 
    ! zterm1d
    ! squarechecker
  call MIO_InputParameter('Potential.SquareChecker2219',l,.false.)
+   !! - `Potential.SquareChecker2219`: Staggered checkerboard potential with fixed periods 22 x 19 in the cell
+   !!   (HamOnSiteSquareChecker).
       if (l) call HamOnSiteSquareChecker()
 
    ! squarechecker
    call MIO_InputParameter('Disorder.SublatticeDisorder',l,.false.)
+     !! - `Disorder.SublatticeDisorder`: Random on-site disorder on a fraction Disorder.SublattPct of the Species-2 atoms.
    if (l) then
       call RandSeedFromInput()
       call HamInputEnergyEV('Disorder.SublattAmp',A,2.0_dp,since='2026-11-07')
+        !! - `Disorder.SublattAmp`: Disorder.SublatticeDisorder: width w of the random energies [eV] (units of g0 before
+        !!   2026-11-07).
       call MIO_InputParameter('Disorder.SublattPct',pct,0.1_dp)
+        !! - `Disorder.SublattPct`: Disorder.SublatticeDisorder: fraction of the atoms affected.
       call MIO_Print('Sublattice disorder: w = '//trim(num2str(A,4)),'ham')
       do i=inode1,inode2
          call random_number(rand)
@@ -1068,9 +1235,11 @@ subroutine HamOnSite()
    end if
 
    call MIO_InputParameter('Disorder.Anderson',l,.false.)
+     !! - `Disorder.Anderson`: Anderson disorder: random on-site energies of width Disorder.AndersonAmp on every atom.
    if (l) then
       call RandSeedFromInput()
       call HamInputEnergyEV('Disorder.AndersonAmp',A,1.0_dp,since='2026-11-07')
+        !! - `Disorder.AndersonAmp`: Disorder.Anderson: width w of the uniform distribution [eV] (units of g0 before 2026-11-07).
       call MIO_Print('Anderson disorder: w = '//trim(num2str(A,4)),'ham')
       do i=inode1,inode2
          call random_number(rand)
@@ -1078,10 +1247,14 @@ subroutine HamOnSite()
       end do
    end if
    call MIO_InputParameter('Disorder.DeltaDisorder',l,.false.)
+     !! - `Disorder.DeltaDisorder`: Delta-like impurity disorder (HamOnSiteDeltaDisorder; Disorder.DeltaAmp, DeltaSkewFactor).
    if (l) call HamOnSiteDeltaDisorder()
    call MIO_InputParameter('Disorder.GaussDisorder',l,.false.)
+     !! - `Disorder.GaussDisorder`: Gaussian impurities of strength Disorder.GaussPotStrength (Disorder.GaussPot* keys).
    if (l) then
       call HamInputEnergyEV('Disorder.GaussPotStrength',A,1.0_dp,since='2026-11-07')
+        !! - `Disorder.GaussPotStrength`: Disorder.GaussDisorder: amplitude w of the Gaussian impurities [eV] (units of g0 before
+        !!   2026-11-07).
       call GaussPot(H0,A)
    end if
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
@@ -1091,10 +1264,16 @@ subroutine HamOnSite()
    end if
 
    call MIO_InputParameter('Potential.FourLayerOnsiteShifts',l,.false.)
+     !! - `Potential.FourLayerOnsiteShifts`: Add the on-site shifts Stack.FourLayerShift1..4 to the atoms of layers 1..4
+     !!   (four-layer stacks only), e.g. for a screened displacement-field profile.
    call MIO_InputParameter('Stack.FourLayerShift1',layerShift1,0.0_dp)
+     !! - `Stack.FourLayerShift1`: Potential.FourLayerOnsiteShifts: on-site shift of layer 1 [eV].
    call MIO_InputParameter('Stack.FourLayerShift2',layerShift2,0.0_dp)
+     !! - `Stack.FourLayerShift2`: Potential.FourLayerOnsiteShifts: on-site shift of layer 2 [eV].
    call MIO_InputParameter('Stack.FourLayerShift3',layerShift3,0.0_dp)
+     !! - `Stack.FourLayerShift3`: Potential.FourLayerOnsiteShifts: on-site shift of layer 3 [eV].
    call MIO_InputParameter('Stack.FourLayerShift4',layerShift4,0.0_dp)
+     !! - `Stack.FourLayerShift4`: Potential.FourLayerOnsiteShifts: on-site shift of layer 4 [eV].
    layerShift1 = layerShift1/g0
    layerShift2 = layerShift2/g0
    layerShift3 = layerShift3/g0
@@ -1125,6 +1304,8 @@ subroutine HamOnSite()
    ! of the SIMULATION CELL: on an NxN supercell of a moire cell it is an N-fold superlattice
    ! potential.  CDWAmplitude is in eV (divided by g0 below); CDWPeriod is NOT used.
    call MIO_InputParameter('Potential.HelicalTwistedMBM_CDW',helicalTwistedMBM_CDW,.false.)
+     !! - `Potential.HelicalTwistedMBM_CDW`: C3-symmetric trigonal CDW, (A/3) [cos 2 pi S f1 + cos 2 pi S f2 + cos 2 pi S (f1+f2)]
+     !!   in fractional coordinates, S = SuperCell; Potential.CDWAmplitude, CDWUseMassTerm.
    if (helicalTwistedMBM_CDW) call HamOnSiteTrigonalCDW()
 
    ! ------------------------------------------------------------------------
@@ -1158,10 +1339,13 @@ subroutine HamOnSite()
    ! otherwise the potential is not periodic and the run is aborted.
    ! ------------------------------------------------------------------------
    call MIO_InputParameter('Moire.CDW',moireCDW,.false.)
+     !! - `Moire.CDW`: On-site CDW [A + A_m (-1)^Species] (1/nQ) sum_q cos(2 pi (h f1 + k f2)/D + phase) on every atom, q from the
+     !!   block moireCDW.Qvectors in units of the cell's reciprocal lattice (moireCDW.* keys).
    if (moireCDW) call HamOnSiteMoireCDW()
 
    ! Moire.Fourier (opt-in): on-site part of the general moire term (bond part in HamHopping)
    call MIO_InputParameter('Moire.Fourier',l,.false.)
+     !! - `Moire.Fourier`: General moire term given by Fourier components: on-site part here, bond part in HamHopping.
    if (l) call HamOnSiteMoireFourier()
 
 #ifdef DEBUG
@@ -1178,9 +1362,13 @@ subroutine HamOnSiteMoireCDW()
 #endif /* DEBUG */
 
       call MIO_InputParameter('moireCDW.Amplitude',cdwScalar,0.0_dp)
+        !! - `moireCDW.Amplitude`: Moire.CDW: scalar amplitude A [eV].
       call MIO_InputParameter('moireCDW.MassAmplitude',cdwMass,0.0_dp)
+        !! - `moireCDW.MassAmplitude`: Moire.CDW: staggered amplitude A_m, multiplied by (-1)^Species [eV].
       call MIO_InputParameter('moireCDW.Phase',cdwPhase,0.0_dp)
+        !! - `moireCDW.Phase`: Moire.CDW: phase of every cosine [rad].
       call MIO_InputParameter('moireCDW.Denominator',Dcdw,1)
+        !! - `moireCDW.Denominator`: Moire.CDW: denominator D of the wave vectors q = (h, k)/D; the cell must be periodic for them.
       if (Dcdw < 1) call MIO_Kill('moireCDW.Denominator must be >= 1','ham','HamOnSite')
       if (.not. MIO_InputFindBlock('moireCDW.Qvectors',nQcdw)) then
          call MIO_Kill('moireCDW requires a moireCDW.Qvectors block','ham','HamOnSite')
@@ -1190,6 +1378,7 @@ subroutine HamOnSiteMoireCDW()
 
       ! commensurability of the simulation supercell with the potential
       call MIO_InputParameter('Structure.SuperCellX',scX,1)
+        !! - `Structure.SuperCellX`: Here: checks that the moireCDW wave vectors are periodic in the supercell.
       call MIO_InputParameter('Structure.SuperCellY',scY,1)
       if (scX == scY) then
          scX = sCell
@@ -1262,9 +1451,12 @@ subroutine HamOnSiteTrigonalCDW()
 
          call MIO_Subsection('Trigonal CDW (helicalTwistedMBM_CDW)','ham')
          call MIO_InputParameter('Potential.CDWAmplitude',CDWAmplitude,0.01_dp)
+           !! - `Potential.CDWAmplitude`: Potential.HelicalTwistedMBM_CDW: amplitude A [eV].
          CDWAmplitude = CDWAmplitude/g0
          call MIO_InputParameter('Potential.CDWPeriod',CDWPeriod,1.0_dp)
+           !! - `Potential.CDWPeriod`: Read but not used: the trigonal CDW period is set by Structure.SuperCell.
          call MIO_InputParameter('Potential.CDWUseMassTerm',l,.false.)
+           !! - `Potential.CDWUseMassTerm`: Potential.HelicalTwistedMBM_CDW: multiply the CDW by (-1)^Species.
          if (.not. frac) call AtomsSetFrac()
          call MIO_PrintDebug('trigonal CDW evaluated in fractional coordinates','ham')
          call MIO_Print('  CDW period: '//trim(num2str(CDWPeriod,5))//' (in fractional units, 1.0 = full simulation cell)','ham')
@@ -1312,8 +1504,10 @@ subroutine HamOnSiteDeltaDisorder()
 
       call RandSeedFromInput()
       call HamInputEnergyEV('Disorder.DeltaAmp',A,1.0_dp)
+        !! - `Disorder.DeltaAmp`: Disorder.DeltaDisorder: amplitude w [eV] (units of g0 before 2026-10-14).
       call MIO_Print('Delta disorder: w = '//trim(num2str(A,4)),'ham')
       call MIO_InputParameter('Disorder.DeltaSkewFactor',AA,1.0_dp)
+        !! - `Disorder.DeltaSkewFactor`: Disorder.DeltaDisorder: skew factor of the distribution.
       call MIO_Print('Delta disorder: skewFactor = '//trim(num2str(AA,4)),'ham')
       tot = 0.0_dp
       tot2 = 0.0_dp
@@ -1358,6 +1552,8 @@ subroutine HamOnSiteSquareChecker()
 
       call MIO_InputParameter('Structure.CellSize',n,50)
       call HamInputEnergyEV('Potential.AmplitudeOfSquare',A,1.0_dp)
+        !! - `Potential.AmplitudeOfSquare`: Amplitude A of the staggered square / checker potentials [eV] (units of g0 before
+        !!   2026-10-14).
       if (frac) call AtomsSetCart()
 
       !$OMP PARALLEL DO PRIVATE(i,H)
@@ -1400,7 +1596,9 @@ subroutine HamOnSiteZterm1DKink()
       if (frac) call AtomsSetCart()
       call MIO_InputParameter('Structure.CellSize',n,50)
       call HamInputEnergyEV('Potential.Zterm1DAmp',Amp3,0.01_dp)
+        !! - `Potential.Zterm1DAmp`: Potential.Zterm1DKink: amplitude of the tanh profile [eV] (units of g0 before 2026-10-14).
       call MIO_InputParameter('Potential.Zterm1DDelta',delta,10.0_dp)
+        !! - `Potential.Zterm1DDelta`: Potential.Zterm1DKink: width of the tanh steps [Angstrom].
       limit0 = 0.0_dp
       limit1 = (n*sCell*aG)*1.0_dp/4.0_dp
       limit2 = (n*sCell*aG)*2.0_dp/4.0_dp
@@ -1440,6 +1638,7 @@ subroutine HamOnSiteZterm1D()
       call MIO_InputParameter('Potential.SinusNumberOfPeriod',sinusNumberOfPeriod,1)
       call MIO_InputParameter('Structure.CellSize',n,50)
       call HamInputEnergyEV('Potential.AmplitudeOfSquare3',Amp3,0.01_dp)
+        !! - `Potential.AmplitudeOfSquare3`: Potential.Zterm1D: amplitude [eV] (units of g0 before 2026-10-14).
 
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = 1,nAt
@@ -1469,15 +1668,21 @@ subroutine HamOnSiteSquareFunction2()
 #endif /* DEBUG */
 
       call MIO_InputParameter('Potential.NumberOfWidthHoneycomb',NOWH,1)
+        !! - `Potential.NumberOfWidthHoneycomb`: Potential.SquareFunction2: size of the regions in graphene cells.
       call MIO_InputParameter('Structure.CellSize',n,50)
       call HamInputEnergyEV('Potential.AmplitudeOfSquare2',Amp2,0.01_dp)
+        !! - `Potential.AmplitudeOfSquare2`: Potential.SquareFunction2: amplitude [eV] (units of g0 before 2026-10-14).
       call MIO_InputParameter('Potential.PhaseOfSquareX',P1,0.0_dp)
+        !! - `Potential.PhaseOfSquareX`: Potential.SquareFunction2: phase of the x factor [rad].
       call MIO_InputParameter('Potential.PhaseOfSquareY',P2,0.0_dp)
+        !! - `Potential.PhaseOfSquareY`: Potential.SquareFunction2: phase of the y factor [rad].
       if (frac) call AtomsSetCart()
 
       call MIO_InputParameter('Potential.TwoDimension',l,.false.)
+        !! - `Potential.TwoDimension`: Potential.SquareFunction2: modulation along x and y (otherwise x only).
       if (l) then
         call MIO_InputParameter('Potential.AddZTerm',l,.false.)
+          !! - `Potential.AddZTerm`: Potential.SquareFunction(2): add the staggered z term.
            if (l) then
 
       !$OMP PARALLEL DO PRIVATE(i,H)
@@ -1512,6 +1717,7 @@ subroutine HamOnSiteSquareFunction2()
 
       else
       call MIO_InputParameter('Potential.ArmChairShape',l,.false.)
+        !! - `Potential.ArmChairShape`: Potential.SquareFunction2: regions of armchair shape.
       if (l) then
       !$OMP PARALLEL DO PRIVATE(i,H)
       do i = 1,nAt
@@ -1563,6 +1769,7 @@ subroutine HamOnSiteSquareFunction()
       if (frac) call AtomsSetCart()
 
       call MIO_InputParameter('Potential.TwoDimensional',l,.false.)
+        !! - `Potential.TwoDimensional`: Potential.SquareFunction: modulation along x and y (otherwise x only).
       if (l) then
 
         call MIO_InputParameter('Potential.AddZTerm',l,.false.)
@@ -1631,6 +1838,7 @@ subroutine HamOnSitePNPKink()
       if (frac) call AtomsSetCart()
       call MIO_InputParameter('Structure.CellSize',n,50)
       call HamInputEnergyEV('Potential.PNPAmp',PNPAmp,0.01_dp)
+        !! - `Potential.PNPAmp`: Amplitude of the p-n-p potential [eV] (units of g0 before 2026-10-14).
       call MIO_InputParameter('Potential.PNPDelta',delta,10.0_dp)
       limit0 = 0.0_dp
       limit1 = (n*sCell*aG)*1.0_dp/4.0_dp
@@ -1736,9 +1944,13 @@ subroutine HamOnSiteTrilayerFanZhang()
 
       do i=1,nAt
        call MIO_InputParameter('Trilayer.U1',u1,0.0_dp)
+         !! - `Trilayer.U1`: Trilayer.FanZhang: on-site potential of layer 1 [eV].
        call MIO_InputParameter('Trilayer.U2',u2,0.0_dp)
+         !! - `Trilayer.U2`: Trilayer.FanZhang: on-site potential of layer 2 [eV].
        call MIO_InputParameter('Trilayer.U3',u3,0.0_dp)
+         !! - `Trilayer.U3`: Trilayer.FanZhang: on-site potential of layer 3 [eV].
        call MIO_InputParameter('Trilayer.Delta',trDelta,0.0_dp)
+         !! - `Trilayer.Delta`: Trilayer.FanZhang: Delta term of the model [eV].
        u1 = u1/g0
        u2 = u2/g0
        u3 = u3/g0
@@ -1874,33 +2086,55 @@ subroutine HamOnSiteMoirePotential()
 #endif /* DEBUG */
 
       call MIO_InputParameter('Moire.Sachs',l,.false.)
+        !! - `Moire.Sachs`: Moire potential of Sachs et al., PRB 84, 195414 (2011), amplitudes Moire.PotA, PotB, PotC.
       if (l) then
          call MIO_Print('Moire potential: Sachs et al., PRB 84, 195414 (2011)','ham')
          call MIO_InputParameter('Moire.PotA',A,0.0186_dp)
+           !! - `Moire.PotA`: Moire.Sachs: amplitude A [eV].
          call MIO_InputParameter('Moire.PotB',B,0.042_dp)
+           !! - `Moire.PotB`: Moire.Sachs: amplitude B [eV].
          call MIO_InputParameter('Moire.PotC',C,0.0_dp)
+           !! - `Moire.PotC`: Moire.Sachs: constant term C [eV].
       end if
 ! --- New parameters for the moire pattern ---
       call MIO_InputParameter('Moire.Jeil',l,.false.)
+        !! - `Moire.Jeil`: G/hBN moire potential of Jung et al., PRB 89, 205414 (2014): amplitudes Moire.PotC0, PotCz, PotCab and
+        !!   phases Moire.PotPhi0, PotPhiz, PotPhiab (the effective model).
       if (l) then
          call MIO_Print('Moire potential: Jung et al., PRB 89, 205414 (2014)','ham')
          call MIO_InputParameter('Moire.PreFactor',moirePreFactor,1.0_dp)
+           !! - `Moire.PreFactor`: Here: factor on Moire.PotC0, PotCz, PotCab.
          call MIO_InputParameter('Moire.PotC0',C0,-0.01013_dp)
+           !! - `Moire.PotC0`: Moire.Jeil: amplitude C0 of the scalar moire term [eV].
          C0 = C0/g0*moirePreFactor
          call MIO_InputParameter('Moire.PotCz',Cz,-0.00901_dp)
+           !! - `Moire.PotCz`: Moire.Jeil: amplitude Cz of the mass (sublattice-odd) term [eV].
          Cz = Cz/g0*moirePrefactor
          call MIO_InputParameter('Moire.PotCab',Cab,0.01134_dp)
+           !! - `Moire.PotCab`: Moire.Jeil: amplitude Cab of the off-diagonal (bond) term [eV].
          Cab = Cab/g0*moirePrefactor
          call MIO_InputParameter('Moire.PotPhi0',Phi0,1.510233401750693_dp)
+           !! - `Moire.PotPhi0`: Moire.Jeil: phase of the C0 term [rad].
          call MIO_InputParameter('Moire.PotPhiz',Phiz,0.147131255943122_dp)
+           !! - `Moire.PotPhiz`: Moire.Jeil: phase of the Cz term [rad].
          call MIO_InputParameter('Moire.PotPhiab',Phiab,0.342084533390889_dp)
+           !! - `Moire.PotPhiab`: Moire.Jeil: phase of the Cab term [rad].
 
          call MIO_InputParameter('Moire.DistanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
+           !! - `Moire.DistanceDependentEffectiveModel`: Moire.Jeil amplitudes scaled with the local interlayer distance z: C(z) =
+           !!   C exp(-B (z - z0)).
          call MIO_InputParameter('Moire.BfactorC0',BfactorC0,3.1_dp)
+           !! - `Moire.BfactorC0`: Moire.DistanceDependentEffectiveModel: decay B of C0 [1/Angstrom].
          call MIO_InputParameter('Moire.BfactorCz',BfactorCz,3.1_dp)
+           !! - `Moire.BfactorCz`: Moire.DistanceDependentEffectiveModel: decay B of Cz [1/Angstrom].
          call MIO_InputParameter('Structure.InterlayerDistance',z0,3.35_dp)
+           !! - `Structure.InterlayerDistance`: Here: reference distance z0 of Moire.DistanceDependentEffectiveModel [Angstrom].
          call MIO_InputParameter('Potential.SublatticeBasis',sublatticeBasis,.false.)
+           !! - `Potential.SublatticeBasis`: Moire potential from the AA/BB sublattice form (diagoH0FromAABB) instead of the
+           !!   C0/phase form.
          call MIO_InputParameter('Structure.AddDisplacements',addDisplacements,.false.)
+           !! - `Structure.AddDisplacements`: Add the stacking displacements read from the file to the analytic ones (needs a
+           !!   displacement file).
          if (addDisplacements) then
             if (.not. associated(displacements)) then
                call MIO_Kill('addDisplacements needs the table of displacements, which is read only with '// &
@@ -1912,6 +2146,7 @@ subroutine HamOnSiteMoirePotential()
 
       if (.not. frac) call AtomsSetFrac()
       call MIO_InputParameter('Moire.Trilayer',l,.false.)
+        !! - `Moire.Trilayer`: Two moire potentials of a trilayer (needs Moire.Sachs; Moire.PotA1..B2, Moire.Trin1/m1/n2/m2).
       call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
       call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
       call MIO_InputParameter('Stack.T2GBN',t2GBN,.false.)
@@ -1923,13 +2158,17 @@ subroutine HamOnSiteMoirePotential()
       call MIO_InputParameter('Stack.EncapsulatedSixLayers',encapsulatedSixLayers,.false.)
       call MIO_InputParameter('Stack.EncapsulatedSevenLayers',encapsulatedSevenLayers,.false.)
       call MIO_InputParameter('Moire.RemoveTopMoireInL2',removeTopMoireInL2,.false.)
+        !! - `Moire.RemoveTopMoireInL2`: Leave out the moire term from the top interface in layer 2 (see HamOnSiteMoirePotential).
       call MIO_InputParameter('Stack.T3GwithBN',t3GWithBN,.false.)
       call MIO_InputParameter('Stack.BNt2GBN',BNt2GBN,.false.)
       call MIO_InputParameter('Stack.GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
       call MIO_InputParameter('GBN.UseDisplacementFile',GBNuseDisplacementFile,.false.)
       call MIO_InputParameter('TBG.UseDisplacementFile',tBGuseDisplacementFile,.false.)
       call MIO_InputParameter('BNBN.UseDisplacementFile',BNBNuseDisplacementFile,.false.)
+        !! - `BNBN.UseDisplacementFile`: BNBN.Diag with per-atom stacking displacements from Structure.DisplacementsFile.
       call MIO_InputParameter('GBN.UseHarmonicApprox',GBNuseHarmonicApprox,.false.)
+        !! - `GBN.UseHarmonicApprox`: Stack.GBNtwoLayers: harmonic (first-shell) G/hBN on-site moire term; TBG.Diag and BNBN.Diag
+        !!   are then switched off.
       ! For GBNtwoLayers with GBNuseHarmonicApprox, automatically disable tBGDiag and BNBNDiag
       ! to ensure the harmonic approximation path is taken instead
       if (GBNtwoLayers .and. GBNuseHarmonicApprox) then
@@ -1943,15 +2182,25 @@ subroutine HamOnSiteMoirePotential()
          end if
       end if
       call MIO_InputParameter('GBN.Angle',GBNAngle,0.0_dp)
+        !! - `GBN.Angle`: Twist angle of the analytic G/hBN stacking displacements [degrees].
       call MIO_InputParameter('Stack.GlobalTwist',Globalang,0.0_dp)
+        !! - `Stack.GlobalTwist`: Rotate the stacking displacements read from the file by this angle before use [degrees].
       call MIO_InputParameter('Stack.GlobalTwist2',Globalang2,0.0_dp)
+        !! - `Stack.GlobalTwist2`: As Stack.GlobalTwist, for the second set of displacements [degrees].
       call MIO_InputParameter('Stack.GlobalPhiL1',GlobalPhiL1,0.0_dp)
+        !! - `Stack.GlobalPhiL1`: Rotation of the displacements of layer 1 [degrees] (layer-resolved stacks).
       call MIO_InputParameter('Stack.GlobalPhiL2',GlobalPhiL2,0.0_dp)
+        !! - `Stack.GlobalPhiL2`: Rotation of the displacements of layer 2 [degrees].
       call MIO_InputParameter('Stack.GlobalPhiL2a',GlobalPhiL2a,0.0_dp)
+        !! - `Stack.GlobalPhiL2a`: Rotation of the bottom-interface displacements of layer 2 [degrees] (encapsulated layers).
       call MIO_InputParameter('Stack.GlobalPhiL2b',GlobalPhiL2b,0.0_dp)
+        !! - `Stack.GlobalPhiL2b`: Rotation of the top-interface displacements of layer 2 [degrees].
       call MIO_InputParameter('Stack.GlobalPhiL3',GlobalPhiL3,0.0_dp)
+        !! - `Stack.GlobalPhiL3`: Rotation of the displacements of layer 3 [degrees].
       call MIO_InputParameter('Structure.RotationAngle',rotationAngle,0.0_dp)
+        !! - `Structure.RotationAngle`: Rotation angle [degrees] used by the hopping terms (HamHopping); read here but not used.
       call MIO_InputParameter('TBG.SwitchDxDy',tBGSwitchDxDy,.false.)
+        !! - `TBG.SwitchDxDy`: TBG.Diag: exchange the x and y components of the stacking displacement.
       ! Initialize global variables to avoid using uninitialized values
       CAA_global = 0.0_dp
       CBB_global = 0.0_dp
@@ -1968,28 +2217,52 @@ subroutine HamOnSiteMoirePotential()
       if (tBGDiag) then
          if (tBGDiagPRB) then
              call MIO_InputParameter('Interlayer.CAA',CAA_global,0.00110_dp)
+               !! - `Interlayer.CAA`: Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude
+               !!   C_AA on sublattice A of layer 1 [eV]; the defaults depend on the model.
              CAA_global = CAA_global/g0
              call MIO_InputParameter('Interlayer.CBB',CBB_global,0.00110_dp)
+               !! - `Interlayer.CBB`: Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude
+               !!   C_BB on sublattice B of layer 1 [eV]; the defaults depend on the model.
              CBB_global = CBB_global/g0
              call MIO_InputParameter('Interlayer.CAA0',CAA0_global,0.0_dp)
+               !! - `Interlayer.CAA0`: Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): constant
+               !!   part C_AA0 on sublattice A of layer 1 [eV]; the defaults depend on the model.
              CAA0_global = CAA0_global/g0
              call MIO_InputParameter('Interlayer.CBB0',CBB0_global,0.0_dp)
+               !! - `Interlayer.CBB0`: Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): constant
+               !!   part C_BB0 on sublattice B of layer 1 [eV]; the defaults depend on the model.
              CBB0_global = CBB0_global/g0
              call MIO_InputParameter('Interlayer.CApAp',CApAp_global,0.00110_dp)
+               !! - `Interlayer.CApAp`: Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude
+               !!   C_A'A' on sublattice A of layer 2 [eV]; the defaults depend on the model.
              CApAp_global = CApAp_global/g0
              call MIO_InputParameter('Interlayer.CBpBp',CBpBp_global,0.00110_dp)
+               !! - `Interlayer.CBpBp`: Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude
+               !!   C_B'B' on sublattice B of layer 2 [eV]; the defaults depend on the model.
              CBpBp_global = CBpBp_global/g0
              call MIO_InputParameter('Interlayer.CApAp0',CApAp0_global,0.0_dp)
+               !! - `Interlayer.CApAp0`: Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): constant
+               !!   part on sublattice A of layer 2 [eV]; the defaults depend on the model.
              CApAp0_global = CApAp0_global/g0
              call MIO_InputParameter('Interlayer.CBpBp0',CBpBp0_global,0.0_dp)
+               !! - `Interlayer.CBpBp0`: Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): constant
+               !!   part on sublattice B of layer 2 [eV]; the defaults depend on the model.
              CBpBp0_global = CBpBp0_global/g0
              call MIO_InputParameter('Interlayer.PhiAA',PhiAA_global,82.54_dp)
+               !! - `Interlayer.PhiAA`: Stacking-dependent on-site term: phase of the AA harmonic [degrees]; the defaults depend on
+               !!   the model.
              PhiAA_global = PhiAA_global*pi/180.0_dp
              call MIO_InputParameter('Interlayer.PhiBB',PhiBB_global,-82.54_dp)
+               !! - `Interlayer.PhiBB`: Stacking-dependent on-site term: phase of the BB harmonic [degrees]; the defaults depend on
+               !!   the model.
              PhiBB_global = PhiBB_global*pi/180.0_dp
              call MIO_InputParameter('Interlayer.PhiApAp',PhiApAp_global,-82.54_dp)
+               !! - `Interlayer.PhiApAp`: Stacking-dependent on-site term: phase of the A'A' harmonic [degrees]; the defaults
+               !!   depend on the model.
              PhiApAp_global = PhiApAp_global*pi/180.0_dp
              call MIO_InputParameter('Interlayer.PhiBpBp',PhiBpBp_global,82.54_dp)
+               !! - `Interlayer.PhiBpBp`: Stacking-dependent on-site term: phase of the B'B' harmonic [degrees]; the defaults
+               !!   depend on the model.
              PhiBpBp_global = PhiBpBp_global*pi/180.0_dp
          else
              call MIO_Print('tBG intralayer moire terms: interlayer-distance dependent (Srivani parametrisation)','ham')
@@ -2049,8 +2322,11 @@ subroutine HamOnSiteMoirePotential()
       ! analytic tBG on-site term (TBG.Diag without TBG.UseDisplacementFile): TBG.Angle, as the tBG bond term
       ! (HamHopBondTermsTBG). Until November 2026 it took GBN.Angle and passed d in Angstrom instead of units of aG.
       call MIO_InputParameter('TBG.Angle',tBGAngleOnSite,0.0_dp)
+        !! - `TBG.Angle`: Twist angle of the analytic tBG stacking displacements [degrees] (on-site and bond terms).
       tBGAngleOnSite = tBGAngleOnSite*pi/180.0_dp
       call MIO_InputParameter('TBG.LegacyAnalyticOnSite',tBGLegacyOnSite,.false.)
+        !! - `TBG.LegacyAnalyticOnSite`: Analytic tBG on-site term as before November 2026 (GBN.Angle, d in Angstrom); warning
+        !!   printed.
       onSiteAngle = GBNAngle
       if (tBGDiag .and. .not. tBGLegacyOnSite) onSiteAngle = tBGAngleOnSite
       if (tBGDiag .and. tBGLegacyOnSite) call MIO_Warning('TBG.LegacyAnalyticOnSite: the analytic tBG on-site '// &
@@ -2063,6 +2339,7 @@ subroutine HamOnSiteMoirePotential()
       GlobalPhiL2b = GlobalPhiL2b*pi/180.0_dp
       GlobalPhiL3 = GlobalPhiL3*pi/180.0_dp
       call MIO_InputParameter('Output.WriteDataFiles',writeData,.false.)
+        !! - `Output.WriteDataFiles`: Here: also writes the moire on-site terms to Hjj1, Hjj2.
       if (writeData) then
          open(588,FILE='Hjj1')
          open(589,FILE='Hjj2')
@@ -2263,13 +2540,21 @@ subroutine HamOnSiteMoirePotential()
          if (.not. w) call MIO_Kill('Moire.Trilayer uses the amplitudes Moire.PotA, Moire.PotB and Moire.PotC, '// &
               'which are read only with Moire.Sachs .true.; without it they were never set.','ham','HamOnSite')
          call MIO_InputParameter('Moire.PotA1',A1,A)
+           !! - `Moire.PotA1`: Moire.Trilayer: amplitude A of the first moire [eV] (default Moire.PotA).
          call MIO_InputParameter('Moire.PotB1',B1,B)
+           !! - `Moire.PotB1`: Moire.Trilayer: amplitude B of the first moire [eV] (default Moire.PotB).
          call MIO_InputParameter('Moire.PotA2',A2,A)
+           !! - `Moire.PotA2`: Moire.Trilayer: amplitude A of the second moire [eV] (default Moire.PotA).
          call MIO_InputParameter('Moire.PotB2',B2,B)
+           !! - `Moire.PotB2`: Moire.Trilayer: amplitude B of the second moire [eV] (default Moire.PotB).
          call MIO_InputParameter('Moire.Trin1',n1,0)
+           !! - `Moire.Trin1`: Moire.Trilayer: n1 of the moire periods n1 aG/m1 and n1 n2 aG/m2.
          call MIO_InputParameter('Moire.Trim1',m1,0)
+           !! - `Moire.Trim1`: Moire.Trilayer: m1 of the first period n1 aG/m1 (non-zero).
          call MIO_InputParameter('Moire.Trin2',n2,0)
+           !! - `Moire.Trin2`: Moire.Trilayer: n2 of the second period n1 n2 aG/m2.
          call MIO_InputParameter('Moire.Trim2',m2,0)
+           !! - `Moire.Trim2`: Moire.Trilayer: m2 of the second period n1 n2 aG/m2 (non-zero).
          if (m1 == 0 .or. m2 == 0) call MIO_Kill('Moire.Trilayer needs non-zero Moire.Trim1 and Moire.Trim2 '// &
               '(the two moire periods are n1*aG/m1 and n1*n2*aG/m2).','ham','HamOnSite')
          call MIO_Print('  A1: '//trim(num2str(A1,4)),'ham')
@@ -2312,29 +2597,42 @@ subroutine HamOnSiteMoirePotential()
          end if
          call MIO_InputParameter('Moire.Jeil',l,.false.)
          call MIO_InputParameter('Structure.SingleLayerXYZ',singleLayerXYZ,.false.)
+           !! - `Structure.SingleLayerXYZ`: ReadXYZ: the structure is a single layer (selects the single-layer branch of the moire
+           !!   potential).
          if (l) then
            call MIO_PrintDebug('Jung moire potential added to the on-site energies','ham')
            call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
            call MIO_InputParameter('Trilayer.FanZhang',FanZhang,.false.)
+             !! - `Trilayer.FanZhang`: Here: selects the trilayer branch of the moire potential.
            if (MIO_StringComp(str,'MoireEncapsulatedBilayer') &
                  .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') &
                  .or. (MIO_StringComp(str,'ReadXYZ') .and. .not.(singleLayerXYZ))) then
              call MIO_PrintDebug('moire potential branch: encapsulated bilayer or ReadXYZ multilayer','ham')
              call MIO_InputParameter('Moire.OnlyH0',l,.false.)
+               !! - `Moire.OnlyH0`: Moire potential: apply only the scalar term H0 (one of OnlyH0, OnlyHZ, NoH0AndHZ, H0AndHZ is
+               !!   required).
              call MIO_InputParameter('Moire.OnlyHZ',w,.false.)
+               !! - `Moire.OnlyHZ`: Moire potential: apply only the mass term HZ.
              call MIO_InputParameter('Moire.NoH0AndHZ',v,.false.)
+               !! - `Moire.NoH0AndHZ`: Moire potential: apply neither H0 nor HZ (bond terms only).
              call MIO_InputParameter('Moire.H0AndHZ',u,.false.)
+               !! - `Moire.H0AndHZ`: Moire potential: apply both the scalar H0 and the mass HZ terms.
              if (.not. (l .or. w .or. v .or. u)) then
                 call MIO_Kill('The moire potential needs one of MoireH0AndHZ, MoireOnlyH0, MoireOnlyHZ or '// &
                   'MoireNoH0AndHZ set to .true. to say which on-site terms are applied; without any of them the '// &
                   'terms were never set. MoireH0AndHZ .true. applies both.','ham','HamOnSite')
              end if
              call MIO_InputParameter('Moire.BilayerTopAngle',MoireBilayerTopAngle,0.0_dp)
+               !! - `Moire.BilayerTopAngle`: Encapsulated bilayer: twist angle of the top hBN relative to the graphene [degrees].
              MoireBilayerTopAngleGrad = MoireBilayerTopAngle*pi/180.0_dp
              call MIO_InputParameter('Moire.BilayerBottomAngle',MoireBilayerBottomAngle,0.0_dp)
+               !! - `Moire.BilayerBottomAngle`: Encapsulated bilayer: twist angle of the bottom hBN relative to the graphene
+               !!   [degrees].
              MoireBilayerBottomAngleGrad = MoireBilayerBottomAngle*pi/180.0_dp
              call MIO_InputParameter('Moire.BLDeactivateUpperLayer',deactivateUpperLayer,.false.)
+               !! - `Moire.BLDeactivateUpperLayer`: Encapsulated bilayer: no moire term on layer 2.
              call MIO_InputParameter('Moire.TDBLDeactivateUpperLayers',deactivateUpperLayers,.false.)
+               !! - `Moire.TDBLDeactivateUpperLayers`: Multilayer: no moire term on any layer above layer 1.
              if (frac) call AtomsSetCart()
              call HamOnSiteMoireEffectiveBilayer()
            !        ! add onsite energies
@@ -2350,10 +2648,16 @@ subroutine HamOnSiteMoirePotential()
                   'terms were never set. MoireH0AndHZ .true. applies both.','ham','HamOnSite')
              end if
              call MIO_InputParameter('Moire.Kekule',z,.false.)
+               !! - `Moire.Kekule`: Kekule-type moire on-site term (HamOnSiteMoireKekule; Moire.KekuleAngle, KekuleEpsFactor).
              call MIO_InputParameter('Moire.AddSecondMoire',zz,.false.)
+               !! - `Moire.AddSecondMoire`: Second moire on the same graphene (effective model): same amplitudes and phases, slot 2
+               !!   = Moire.Twisted2, TwistAngle2, LatticePercent x LatticePercentFactor, SecondMoireMassFactor.
              call MIO_InputParameter('Moire.LatticePercentFactor',epsFactor,1.0_dp)
+               !! - `Moire.LatticePercentFactor`: Moire.AddSecondMoire: lattice mismatch of the second moire = Moire.LatticePercent
+               !!   x this factor.
              call MIO_InputParameter('Structure.BasedOnMoireCellParameters',ll,.false.)
              call MIO_InputParameter('Moire.SwitchHzjj',switchHzjj,.false.)
+               !! - `Moire.SwitchHzjj`: Read but not used at present.
 
              if (ll) then
                  twistAngleGrad = -phiForEffectiveModel*pi/180.0_dp
@@ -2361,23 +2665,39 @@ subroutine HamOnSiteMoirePotential()
                  call MIO_InputParameter('Structure.MoireCellParameters',nnn,[0,0,0,0])
              else
                  call MIO_InputParameter('Moire.TwistAngle',twistAngle,0.0_dp)
+                   !! - `Moire.TwistAngle`: Moire.Twisted: twist angle theta of the first moire, d(r) = ((1+eps) R(theta) - 1) r
+                   !!   [degrees].
                  call MIO_InputParameter('Moire.TwistAngle2',twistAngle2,0.0_dp)
+                   !! - `Moire.TwistAngle2`: Moire.Twisted2: twist angle of the second moire (Moire.AddSecondMoire) [degrees].
                  twistAngleGrad = twistAngle*pi/180.0_dp
                  twistAngleGrad2 = twistAngle2*pi/180.0_dp
              end if
              call MIO_InputParameter('Moire.Twisted',twisted,.false.)
+               !! - `Moire.Twisted`: The first moire includes the twist Moire.TwistAngle (otherwise lattice mismatch only).
              call MIO_InputParameter('Moire.Twisted2',twisted2,.false.)
+               !! - `Moire.Twisted2`: The second moire includes the twist Moire.TwistAngle2.
              call MIO_InputParameter('Intralayer.DeactivateASubLattice',deactivateASubLattice,.false.)
+               !! - `Intralayer.DeactivateASubLattice`: Moire potential: skip the moire term on the Species-2 atoms.
              call MIO_InputParameter('Intralayer.DeactivateBSubLattice',deactivateBSubLattice,.false.)
+               !! - `Intralayer.DeactivateBSubLattice`: Moire potential: skip the moire term on the Species-1 atoms.
              call MIO_InputParameter('Moire.LayerShift1',shift1,0.0_dp)
+               !! - `Moire.LayerShift1`: Moire potential: added to the y component of the stacking displacement of the first
+               !!   (bottom) moire [Angstrom].
              call MIO_InputParameter('Moire.LayerShift2',shift2,0.0_dp)
+               !! - `Moire.LayerShift2`: Moire potential: shift of the second moire pattern [Angstrom].
              phi2M= atan((1.0_dp+eps)*sin(twistAngleGrad2)/((1.0_dp+eps)*cos(twistAngleGrad2)-1.0_dp))
              shift2_x = shift2*cos(phi2M)
              shift2_y = shift2*sin(phi2M)
              call MIO_InputParameter('Moire.SecondMoireRotateFirst',rotateFirst,.true.)
+               !! - `Moire.SecondMoireRotateFirst`: Moire.AddSecondMoire: build the displacement with the rotation applied first
+               !!   (default).
              call MIO_InputParameter('Moire.SecondMoireMassFactor',sign2,1.0_dp)
+               !! - `Moire.SecondMoireMassFactor`: Moire.AddSecondMoire: factor (sign) of the mass term of the second moire; < 0
+               !!   flips BN to NB.
              call MIO_InputParameter('Moire.FirstMoireMassFactor',sign1,1.0_dp)
+               !! - `Moire.FirstMoireMassFactor`: Factor (sign) of the mass term of the first moire; < 0 flips BN to NB.
              call MIO_InputParameter('Potential.MinZ',minZ,1.0_dp)
+               !! - `Potential.MinZ`: Read but not used at present.
              if (frac) call AtomsSetCart()
              call HamOnSiteMoireEffective()
              H0Bottom = H0
@@ -2388,9 +2708,12 @@ subroutine HamOnSiteMoirePotential()
          end if
       end if
       call MIO_InputParameter('Moire.SymmetricPot',l,.false.)
+        !! - `Moire.SymmetricPot`: Symmetric moire potential with amplitudes Moire.SymmA, Moire.SymmB.
       if (l) then
          call MIO_InputParameter('Moire.SymmA',A,0.01_dp)
+           !! - `Moire.SymmA`: Moire.SymmetricPot: amplitude A [eV].
          call MIO_InputParameter('Moire.SymmB',B,0.01_dp)
+           !! - `Moire.SymmB`: Moire.SymmetricPot: amplitude B [eV].
          call MIO_Print('Symmetric part:','ham')
          call MIO_Print('  A: '//trim(num2str(A,4)),'ham')
          call MIO_Print('  B: '//trim(num2str(B,4)),'ham')
@@ -3331,8 +3654,10 @@ subroutine HamOnSiteMoireKekule()
                 if (frac) call AtomsSetCart()
                 call MIO_InputParameter('Moire.PotC',C,0.0_dp)
                 call MIO_InputParameter('Moire.KekuleAngle',KekuleAngle,30.0_dp)
+                  !! - `Moire.KekuleAngle`: Moire.Kekule: angle of the Kekule pattern [degrees].
                 KekuleAngleGrad = KekuleAngle*pi/180.0_dp
                 call MIO_InputParameter('Moire.KekuleEpsFactor',KekuleEpsFactor,sqrt(3.0_dp))
+                  !! - `Moire.KekuleEpsFactor`: Moire.Kekule: the lattice mismatch enters as Moire.LatticePercent / this factor.
                 !$OMP PARALLEL DO PRIVATE(i,dx,dy,dxPrime,dyPrime,Hkjj,C0d,Czd)
                 do i=1,nAt
                   ! >>> unset markers
@@ -3392,7 +3717,11 @@ subroutine HamOnSiteSpeciesEnergies()
    eBsite = e0_B
    eNsite = e0_N
    call MIO_InputParameter('Interlayer.TypeOfBL',blSite,'None')
+     !! - `Interlayer.TypeOfBL`: Interlayer hopping model: None, Koshino, Jeil, Mayou, BLKaxiras, BLSrivani, ... (see HamHopping);
+     !!   also selects matching on-site energies (e.g. BLKaxiras with Interlayer.UseBNGKaxiras).
    call MIO_InputParameter('Interlayer.UseBNGKaxiras',bngSite,.false.)
+     !! - `Interlayer.UseBNGKaxiras`: With TypeOfBL BLKaxiras: the G/hBN interlayer model (Eq. 4) with the hBN 8-shell intralayer
+     !!   set and its B / N on-site energies; needs a stack flag (e.g. Stack.TwoLayers).
    if (bngSite .and. MIO_StringComp(blSite,'BLKaxiras')) then
       if (.not. MIO_InputSearchLabel('TB.OnSiteB')) eBsite = 2.2021_dp/g0
       if (.not. MIO_InputSearchLabel('TB.OnSiteN')) eNsite = -1.9124_dp/g0
@@ -3819,14 +4148,20 @@ subroutine HamMeasureLayerTwist()
 #endif /* DEBUG */
 
    call MIO_InputParameter('Stack.MeasureTwist',measure,.false.)
+     !! - `Stack.MeasureTwist`: Report the twist of every interface measured from the structure.
    call MIO_InputParameter('Stack.ModelFromTwist',hamModelFromTwist,.false.)
+     !! - `Stack.ModelFromTwist`: Untwisted AB pairs found in the structure get the bilayer F2G2 intra- and interlayer model
+     !!   (Jung-MacDonald PRB 89 035405); AA and twisted pairs keep the two-centre model.
    call MIO_InputParameter('Stack.AlignModelEnergies',hamAlignModelEnergies,.false.)
+     !! - `Stack.AlignModelEnergies`: With Stack.ModelFromTwist: shift the AB-pair sites so their K-point energy matches the
+     !!   single-layer set.
    if (hamAlignModelEnergies .and. .not. hamModelFromTwist) then
       call MIO_Kill('Stack.AlignModelEnergies acts on the AB pairs found by Stack.ModelFromTwist: set that '// &
         'switch too, or remove Stack.AlignModelEnergies','ham','HamMeasureLayerTwist')
    end if
    if (measure .or. hamModelFromTwist) then
       call MIO_InputParameter('Stack.TwistTolerance',tol,0.05_dp)
+        !! - `Stack.TwistTolerance`: Stack.MeasureTwist / ModelFromTwist: twists below this count as untwisted [degrees].
       nL = maxval(layerIndex(inode1:inode2))
       allocate(z(nL), nBond(nL), nC(nL), nBN(nL), phi(nL), coh(nL))
       z = (0.0_dp,0.0_dp)
@@ -4169,14 +4504,21 @@ subroutine HamCheckHermiticity()
 
 
    call MIO_InputParameter('Moire.OffDiag',moireOD,.false.)
+     !! - `Moire.OffDiag`: Off-diagonal (bond) moire term of the G/hBN effective model, Cab. Evaluated at atom i: H slightly
+     !!   non-Hermitian unless Moire.OffDiagMidpoint.
    call MIO_InputParameter('TBG.OffDiag',tbgOD,.false.)
+     !! - `TBG.OffDiag`: Off-diagonal (bond) stacking-dependent term of twisted bilayer graphene.
    call MIO_InputParameter('GBN.OffDiag',gbnOD,.false.)
+     !! - `GBN.OffDiag`: Off-diagonal (bond) stacking-dependent term of G/hBN, from atom i's displacement.
    call MIO_InputParameter('Haldane.NNN',haldane,.false.)
    call MIO_InputParameter('Haldane.SpecifyPhase',haldanePhase,.false.)
    haldanePhase = haldane .and. haldanePhase
    call MIO_InputParameter('Strain.StrainedMoire',strMoire,.false.)
+     !! - `Strain.StrainedMoire`: Strained-moire hopping term (checked for Hermiticity here).
    if (.not. (moireOD .or. tbgOD .or. gbnOD .or. haldanePhase .or. strMoire)) return
    call MIO_InputParameter('Moire.OffDiagMidpoint',moireMid,.false.)
+     !! - `Moire.OffDiagMidpoint`: Moire.OffDiag: evaluate the bond term at the bond midpoint (one shared routine for both moire
+     !!   slots): Hermitian H, needed for recursion runs. Plain effective model only.
 
    maxAsym = 0.0_dp
    npairs = 0
@@ -4579,6 +4921,7 @@ subroutine HamMoireFourierSetup()
 
    ! input cell = simulation cell / SuperCell (same logic as moireCDW)
    call MIO_InputParameter('Structure.SuperCellX',scX,1)
+     !! - `Structure.SuperCellX`: Here: input cell = simulation cell / SuperCell for the Moire.Fourier wave vectors.
    call MIO_InputParameter('Structure.SuperCellY',scY,1)
    if (scX == scY) then
       scX = sCell
@@ -4599,8 +4942,12 @@ subroutine HamMoireFourierSetup()
 
    ! valley of U
    call MIO_InputParameter('Moire.FourierKprime',kp,.false.)
+     !! - `Moire.FourierKprime`: Moire.Fourier: the term U is given for the K' valley.
    call MIO_InputParameter('Moire.FourierGrapheneAngle',ang,0.0_dp)
+     !! - `Moire.FourierGrapheneAngle`: Moire.Fourier: orientation of the graphene lattice [degrees].
    call MIO_InputParameter('Moire.FourierLatticeConstant',aL,aG)
+     !! - `Moire.FourierLatticeConstant`: Moire.Fourier: graphene lattice constant of the Fourier components [Angstrom] (default
+     !!   aG).
    if (kp) then
       refF = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp]
    else
@@ -4721,6 +5068,8 @@ subroutine HamHopValleyZeeman()
    integer :: i, j, in, nu, nb
 
    call MIO_InputParameter('Valley.Zeeman',lam,0.0_dp)
+     !! - `Valley.Zeeman`: Valley Zeeman term lambda i nu_ij s_i /(3 sqrt 3) on the graphene second-neighbour bonds of each layer
+     !!   (= tau_z at the Dirac points) [eV]; 0 = off. Added before the Peierls phase.
    if (lam == 0.0_dp) return
    tV = lam/g0/(3.0_dp*sqrt(3.0_dp))
    nb = 0
@@ -5298,6 +5647,8 @@ subroutine HamHopping
    ! the 3-D length of the actual bond. Implemented for GBNtwoLayers, single MPI rank.
    call MIO_Subsection('Hopping terms','ham')
    call MIO_InputParameter('Strain.ShellsFromRigidPositions',shellsFromRigid,.false.)
+     !! - `Strain.ShellsFromRigidPositions`: GBNtwoLayers: take the shell of every intralayer bond from its in-plane length in a
+     !!   rigid reference structure (Strain.ShellsRigidFile, same atom order); the strain law keeps the 3-D length.
    if (shellsFromRigid) call HamHopShellsFromRigid()
 
    counter1 = 0
@@ -5305,8 +5656,12 @@ subroutine HamHopping
    numberOfInterlayerHoppings = 0
    flux = Bmag*pi/fluxq
    call MIO_InputParameter('Moire.Strain',moireStrain,.false.)
+     !! - `Moire.Strain`: Here: the moire-strain hopping law is applied in HamHopping.
    call MIO_InputParameter('MagField.FrankMagneticField',Frank,.false.)
+     !! - `MagField.FrankMagneticField`: Peierls phases from a bond-direction gauge for a rectangular graphene cell
+     !!   (HamHopMagneticField), with MagField.Integer flux quanta.
    call MIO_InputParameter('MagField.Integer',mB,1)
+     !! - `MagField.Integer`: Here: number of flux quanta of MagField.FrankMagneticField.
    if (moireStrain) then
       if (.not. frac) call AtomsSetFrac()
       !$OMP PARALLEL DO PRIVATE(v1,v2,h1,h2,d)
@@ -5338,6 +5693,8 @@ subroutine HamHopping
          numberOfHBA2 = 0
 
          call MIO_InputParameter('Interlayer.ChangeLatticeParameterForSrivaniModel',changeLatticeParameterForSrivaniModel,.false.)
+           !! - `Interlayer.ChangeLatticeParameterForSrivaniModel`: BLSrivani: compute rbar with aG = 2.43898 Angstrom, the lattice
+           !!   constant of the fit.
          if (changeLatticeParameterForSrivaniModel) then
             aGSrivani = 2.4389777651302801_dp
             call MIO_Print('rbar computed with aG = 2.43 Ang (the lattice constant of the Srivani fit)','ham')
@@ -5346,50 +5703,79 @@ subroutine HamHopping
          end if
 
          call MIO_InputParameter('Intralayer.RemoveF2G2Flag',removeF2G2Flag,.false.)
+           !! - `Intralayer.RemoveF2G2Flag`: Switch Intralayer.F2G2Model off (use the 8-shell parameter set).
          if (removeF2G2Flag) then
             F2G2Model = .false.
          else
             call MIO_InputParameter('Intralayer.F2G2Model',F2G2Model,.true.)
+              !! - `Intralayer.F2G2Model`: Here: F2G2 intralayer hoppings (otherwise the 8-shell parameter set).
          end if
          call MIO_InputParameter('Stack.ThreeLayerShort',threeLayerShort,.false.)
+           !! - `Stack.ThreeLayerShort`: Three-layer stacks: short-range interlayer model with hoppings tB1A2 (atoms on top of each
+           !!   other) and tA1A2 / tA1B2 (first ring).
          call MIO_InputParameter('Stack.GBNtwoLayersF2G2s',GBNtwoLayersF2G2s,.false.)
          call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
          call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
          call MIO_InputParameter('TBG.OffDiag',tBGOffDiag,.false.)
+           !! - `TBG.OffDiag`: Here: the tBG bond term is added in HamHopping.
          call MIO_InputParameter('TBG.OffDiagPRB',tBGOffDiagPRB,.false.)
+           !! - `TBG.OffDiagPRB`: TBG.OffDiag: alternative parameter set (see HamHopping).
          call MIO_InputParameter('Moire.LatticePercent',eps,-0.018181818181818_dp)
+           !! - `Moire.LatticePercent`: Here: lattice mismatch of the moire bond terms.
          call MIO_InputParameter('Moire.PotCab',Cab,0.01134_dp)
+           !! - `Moire.PotCab`: Here: amplitude of the off-diagonal moire term on graphene bonds [eV].
          call MIO_InputParameter('Moire.PotCabBN',CabBN,0.004418_dp)
+           !! - `Moire.PotCabBN`: Amplitude of the off-diagonal moire term on hBN bonds [eV].
          Cab = Cab/g0
          CabBN = CabBN/g0
          call MIO_InputParameter('Interlayer.BilayerOneParameter',BilayerOneParameter,.false.)
+           !! - `Interlayer.BilayerOneParameter`: Bernal bilayer with one interlayer hopping, Intralayer.BilayertAB1 (default 0.361
+           !!   eV).
          call MIO_InputParameter('Intralayer.BilayerThreeParameters',BilayerThreeParameters,.false.)
+           !! - `Intralayer.BilayerThreeParameters`: Bernal bilayer with three interlayer hoppings tAB1, tAB3, tAB4.
          call MIO_InputParameter('Moire.BfactorCab',BfactorCab,3.3_dp)
+           !! - `Moire.BfactorCab`: Moire.DistanceDependentEffectiveModel: decay B of Cab [1/Angstrom].
          call MIO_InputParameter('Structure.InterlayerDistance',z0,3.35_dp)
+           !! - `Structure.InterlayerDistance`: Here: reference distance z0 of the distance-dependent Cab [Angstrom].
          if (BilayerOneParameter) then
              call MIO_InputParameter('Intralayer.BilayertAB1',tAB1,0.361_dp)
+               !! - `Intralayer.BilayertAB1`: Bernal-bilayer hopping t_AB1 (first set: one-parameter model) [eV] of the bilayer
+               !!   F2G2 / few-parameter models; the default depends on the parameter set read here.
              tAB1 = -tAB1/g0 ! Add minus sign to compensate for intrinsic minus sign
          else if (BilayerThreeParameters) then
              call MIO_InputParameter('Intralayer.BilayertAB1',tAB1,0.361_dp)
              tAB1 = -tAB1/g0
              call MIO_InputParameter('Intralayer.BilayertAB3',tAB3,0.283_dp)
+               !! - `Intralayer.BilayertAB3`: Bernal-bilayer hopping t_AB3 [eV] of the bilayer F2G2 / few-parameter models; the
+               !!   default depends on the parameter set read here.
              tAB3 = -tAB3/g0
              call MIO_InputParameter('Intralayer.BilayertAB4',tAB4,0.138_dp)
+               !! - `Intralayer.BilayertAB4`: Bernal-bilayer hopping t_AB4 [eV] of the bilayer F2G2 / few-parameter models; the
+               !!   default depends on the parameter set read here.
              tAB4 = -tAB4/g0
          else if (F2G2Model) then
              call MIO_InputParameter('Intralayer.BilayertAA1',tAA1,0.09244_dp)
+               !! - `Intralayer.BilayertAA1`: Bernal-bilayer hopping t_AA1 [eV] of the bilayer F2G2 / few-parameter models; the
+               !!   default depends on the parameter set read here.
              tAA1 = -tAA1/g0
              call MIO_InputParameter('Intralayer.BilayertAA3',tAA2,-0.02299_dp)
+               !! - `Intralayer.BilayertAA3`: Bernal-bilayer hopping t_AA3 [eV] of the bilayer F2G2 model (stored as tAA2).
              tAA2 = -tAA2/g0
              call MIO_InputParameter('Intralayer.BilayertAB1',tAB1,0.1391_dp)
              tAB1 = -tAB1/g0
              call MIO_InputParameter('Intralayer.BilayertAB3',tAB2,-0.07211_dp)
              tAB2 = -tAB2/g0
              call MIO_InputParameter('Intralayer.BilayertBA0',tBA0,0.331_dp)
+               !! - `Intralayer.BilayertBA0`: Bernal-bilayer hopping t_BA0 (dimer) [eV] of the bilayer F2G2 / few-parameter models;
+               !!   the default depends on the parameter set read here.
              tBA0 = -tBA0/g0
              call MIO_InputParameter('Intralayer.BilayertBA2',tBA2,-0.01016_dp)
+               !! - `Intralayer.BilayertBA2`: Bernal-bilayer hopping t_BA2 [eV] of the bilayer F2G2 / few-parameter models; the
+               !!   default depends on the parameter set read here.
              tBA2 = -tBA2/g0
              call MIO_InputParameter('Intralayer.BilayertBA5',tBA5,0.0001_dp)
+               !! - `Intralayer.BilayertBA5`: Bernal-bilayer hopping t_BA5 [eV] of the bilayer F2G2 / few-parameter models; the
+               !!   default depends on the parameter set read here.
              tBA5 = -tBA5/g0
          end if
          if (hamModelFromTwist .and. .not. (BilayerOneParameter .or. BilayerThreeParameters .or. F2G2Model)) then
@@ -5412,16 +5798,21 @@ subroutine HamHopping
          call MIO_InputParameter('Trilayer.FanZhang',FanZhang,.false.)
          if (FanZhang) then
              call MIO_InputParameter('Trilayer.Gamma3',tr3,0.0_dp)
+               !! - `Trilayer.Gamma3`: Trilayer.FanZhang: gamma3 [eV]; also the former source of gamma1 when Trilayer.Gamma1 is
+               !!   absent (warning).
              ! tr1 is the vertical dimer hopping (gamma1). It was read from Trilayer.Gamma3; without the new key
              ! the old value is kept, with a warning, so that existing inputs give the same result.
              call MIO_InputParameter('Trilayer.Gamma1',tr1,hamUnset)
+               !! - `Trilayer.Gamma1`: Trilayer.FanZhang: vertical dimer hopping gamma1 [eV].
              if (ieee_is_nan(tr1)) then
                 tr1 = tr3
                 call MIO_Warning('Trilayer.Gamma1 not set: the vertical (dimer) hopping takes the value of '// &
                    'Trilayer.Gamma3, as before. Set Trilayer.Gamma1 explicitly.','ham')
              end if
              call MIO_InputParameter('Trilayer.Gamma4',tr4,0.0_dp)
+               !! - `Trilayer.Gamma4`: Trilayer.FanZhang: gamma4 [eV].
              call MIO_InputParameter('Trilayer.Gamma2',tr2,0.0_dp)
+               !! - `Trilayer.Gamma2`: Trilayer.FanZhang: gamma2 [eV].
              call MIO_InputParameter('Trilayer.Delta',trDelta,0.0_dp)
              tr1 = tr1/g0
              tr2 = tr2/g0
@@ -5429,17 +5820,21 @@ subroutine HamHopping
              tr4 = tr4/g0
          end if
          call MIO_InputParameter('Moire.PotPhiab',Phiab,0.342084533390889_dp)
+           !! - `Moire.PotPhiab`: Here: phase of the off-diagonal moire bond term [rad].
          if (tBGOffDiag) then
                PhiabG = 0.0_dp
          else
             call MIO_InputParameter('Moire.PotPhiabG',PhiabG,3.5_dp)
+              !! - `Moire.PotPhiabG`: Phase of the off-diagonal moire term on graphene bonds [degrees] (0 with TBG.OffDiag).
          end if
          PhiabG = PhiabG*pi/180.0_dp
          call MIO_InputParameter('Moire.PotPhiabBN',PhiabBN,26.1_dp)
+           !! - `Moire.PotPhiabBN`: Phase of the off-diagonal moire term on hBN bonds [degrees].
          PhiabBN = PhiabBN*pi/180.0_dp
 
          call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
          call MIO_InputParameter('Interlayer.TypeOfBL',BilayerModel,'None')
+           !! - `Interlayer.TypeOfBL`: Here: selects the interlayer hopping branch of HamHopping.
          if (MIO_StringComp(BilayerModel,'Jeil')) then
             call MIO_Kill('TypeOfBL Jeil is not supported at present: its neighbour bookkeeping reads beyond '// &
               'its arrays for every structure tested (tests/regression/model_survey.py). Use another '// &
@@ -5447,7 +5842,11 @@ subroutine HamHopping
          end if
          ! then we don't have to change the code and keep the bilayer parts even for the single layer
          call MIO_InputParameter('Interlayer.TypeOfSL',SinglelayerModel,'None')
+           !! - `Interlayer.TypeOfSL`: Intralayer model name for single-layer systems (same names as Interlayer.TypeOfBL, e.g.
+           !!   HTC).
          call MIO_InputParameter('Interlayer.AddExponentialDecayForDihedral',addExponentialDecayForDihedral,.false.)
+           !! - `Interlayer.AddExponentialDecayForDihedral`: Multiply the interlayer hopping of that branch by exp(-(d -
+           !!   Structure.InterlayerDistance) / Interlayer.BLdelta), d = 3-D bond length.
          call MIO_InputParameter('Moire.BilayerTopAngle',MoireBilayerTopAngle,0.0_dp)
          MoireBilayerTopAngleGrad = MoireBilayerTopAngle*pi/180.0_dp
          call MIO_InputParameter('Moire.BilayerBottomAngle',MoireBilayerBottomAngle,0.0_dp)
@@ -5483,6 +5882,7 @@ subroutine HamHopping
          call MIO_InputParameter('Moire.LayerShift2',shift2,0.0_dp)
          call MIO_InputParameter('Moire.SecondMoireRotateFirst',rotateFirst,.true.)
          call MIO_InputParameter('Interlayer.MinDelta',minDelta,1.0_dp)
+           !! - `Interlayer.MinDelta`: Read but not used at present.
          phi2M= atan((1.0_dp+eps)*sin(twistAngleGrad2)/((1.0_dp+eps)*cos(twistAngleGrad2)-1.0_dp))
          shift2_x = shift2*cos(phi2M)
          shift2_y = shift2*sin(phi2M)
@@ -5493,6 +5893,7 @@ subroutine HamHopping
          twistedBilayerAngle = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*deltaAngle*gAngle))
          twistedBilayerAngleGrad = twistedBilayerAngle
          call MIO_InputParameter('Interlayer.TwistedBLtbt',tbt,0.113_dp)
+           !! - `Interlayer.TwistedBLtbt`: Interlayer AA amplitude t_bt of the analytic twisted-bilayer interlayer model [eV].
          tbt = tbt/g0
 
          ! Koshino
@@ -5504,8 +5905,13 @@ subroutine HamHopping
          ! original Moon-Koshino value, with KoshinoIntralayer; 3.5 eV, the
          ! calibration that goes with the F2G2-type intralayer models, otherwise.
          call MIO_InputParameter('Intralayer.KoshinoIntralayer',KoshinoIntralayer,.false.)
+           !! - `Intralayer.KoshinoIntralayer`: Moon-Koshino intralayer hopping (Vpppi0 also used in-plane; its default becomes 2.7
+           !!   eV).
          if (KoshinoIntralayer) then
             call MIO_InputParameter('Interlayer.Vpppi0',vpppi0,2.7_dp)
+              !! - `Interlayer.Vpppi0`: Two-centre V_pp_pi^0 [eV]: pi part of the interlayer hopping in every two-centre model, and
+              !!   the intralayer first-neighbour hopping with KoshinoIntralayer. Default 2.7 with KoshinoIntralayer, 3.5
+              !!   otherwise.
             call MIO_Print('Two-centre Vpppi0 = '//trim(num2str(vpppi0,4))// &
               ' eV (intralayer and interlayer; default 2.7 with KoshinoIntralayer)','ham')
          else
@@ -5517,45 +5923,72 @@ subroutine HamHopping
          end if
          vpppi0 = vpppi0/g0
          call MIO_InputParameter('Interlayer.Vppsigma0',vppsigma0,0.48_dp)
+           !! - `Interlayer.Vppsigma0`: Two-centre V_pp_sigma^0 of the interlayer hopping [eV].
          call MIO_InputParameter('Interlayer.BLdelta',BLdelta,0.184_dp*aG)
+           !! - `Interlayer.BLdelta`: Two-centre decay length delta of the interlayer hopping [Angstrom] (default 0.184 aG).
          vppsigma0 = -vppsigma0/g0
          ! Optional: interlayer two-center hopping with local p_z orbital axes
          ! (corrugated sheets). Default .false. keeps the legacy global-z
          ! expression with the same operands; radial Vpppi/Vppsigma/BLdelta unchanged.
          call MIO_InputParameter('Interlayer.CorrugatedInterlayerTwoCenter',corrugatedInterlayerTwoCenter,.false.)
+           !! - `Interlayer.CorrugatedInterlayerTwoCenter`: Two-centre interlayer hopping with local p_z axes (corrugated sheets)
+           !!   instead of the global z.
          ! Mayou
          qpi = aCC*2.218_dp
          lc = 0.265_dp
          rc = 6.14_dp
 
          call MIO_InputParameter('Structure.InterlayerDistance',interlayerdistance,3.35_dp)
+           !! - `Structure.InterlayerDistance`: Here: interlayer distance of the Mayou model's q_sigma [Angstrom].
          qsigma = interlayerdistance * 2.218_dp
          call MIO_InputParameter('Moire.DistanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
          ! (Intralayer.F2G2Model is read once above, unless Intralayer.RemoveF2G2Flag: a second read here
          !  with default .true. undid that flag)
          call MIO_InputParameter('Intralayer.UseOldGrapheneF2G2',useOldGrapheneF2G2,.false.) ! default true
+           !! - `Intralayer.UseOldGrapheneF2G2`: Older graphene F2G2 parameter set (nonzero t4).
          call MIO_InputParameter('Interlayer.DeactivateInterlayer',deactivateInterlayer,.false.)
+           !! - `Interlayer.DeactivateInterlayer`: Drop the interlayer bonds of the model branches that test it.
          call MIO_InputParameter('Interlayer.DeactivateInterlayer12',deactivateInterlayer12,.false.)
+           !! - `Interlayer.DeactivateInterlayer12`: Drop the interlayer bonds between layers 1 and 2.
          call MIO_InputParameter('Interlayer.DeactivateInterlayer23',deactivateInterlayer23,.false.)
+           !! - `Interlayer.DeactivateInterlayer23`: Drop the interlayer bonds between layers 2 and 3.
          call MIO_InputParameter('Interlayer.DeactivateInterlayer34',deactivateInterlayer34,.false.)
+           !! - `Interlayer.DeactivateInterlayer34`: Drop the interlayer bonds between layers 3 and 4.
          call MIO_InputParameter('Interlayer.DeactivateInterlayert2GBN1to2',deactivateInterlayert2GBN1to2,.false.)
+           !! - `Interlayer.DeactivateInterlayert2GBN1to2`: Stack.T2GBN: drop the interlayer bonds between layers 1 and 2.
          call MIO_InputParameter('Interlayer.DeactivateInterlayert2GBN2to3',deactivateInterlayert2GBN2to3,.false.)
+           !! - `Interlayer.DeactivateInterlayert2GBN2to3`: Stack.T2GBN: drop the interlayer bonds between layers 2 and 3.
          call MIO_InputParameter('Interlayer.DeactivateInterlayert2BG2to3',deactivateInterlayert2BG2to3,.false.)
+           !! - `Interlayer.DeactivateInterlayert2BG2to3`: Stack.T2BG: drop the interlayer bonds between layers 2 and 3.
          call MIO_InputParameter('Interlayer.DeactivateInterlayert3BG1to2',deactivateInterlayert3BG1to2,.false.)
+           !! - `Interlayer.DeactivateInterlayert3BG1to2`: Stack.T3BG: drop the interlayer bonds between layers 1 and 2.
          call MIO_InputParameter('Interlayer.DeactivateInterlayert3BG2to3',deactivateInterlayert3BG2to3,.false.)
+           !! - `Interlayer.DeactivateInterlayert3BG2to3`: Stack.T3BG: drop the interlayer bonds between layers 2 and 3.
          call MIO_InputParameter('Interlayer.DeactivateInterlayert3BG3to4',deactivateInterlayert3BG3to4,.false.)
+           !! - `Interlayer.DeactivateInterlayert3BG3to4`: Stack.T3BG: drop the interlayer bonds between layers 3 and 4.
          call MIO_InputParameter('Interlayer.DeactivateInterlayert3BG4to5',deactivateInterlayert3BG4to5,.false.)
+           !! - `Interlayer.DeactivateInterlayert3BG4to5`: Stack.T3BG: drop the interlayer bonds between layers 4 and 5.
          call MIO_InputParameter('Interlayer.DeactivateInterlayert3BG5to6',deactivateInterlayert3BG5to6,.false.)
+           !! - `Interlayer.DeactivateInterlayert3BG5to6`: Stack.T3BG: drop the interlayer bonds between layers 5 and 6.
          call MIO_InputParameter('Interlayer.DeactivateInterlayerBG',deactivateInterlayerBG,.false.)
+           !! - `Interlayer.DeactivateInterlayerBG`: Drop the interlayer bonds between layers 2 and 3 (bilayer-graphene branch).
          call MIO_InputParameter('Interlayer.DeactivateInterlayerTwisted',deactivateInterlayerTwisted,.false.)
+           !! - `Interlayer.DeactivateInterlayerTwisted`: Drop the bonds between adjacent layers in the twisted-stack branch.
 
          call MIO_InputParameter('Strain.PeriodicStrainPeriod',nPeriod,1)
+           !! - `Strain.PeriodicStrainPeriod`: Number of periods of the periodic strain / strained moire in the moire cell.
          call MIO_InputParameter('Strain.StrainedMoireMaxDisplacement',umax,0.5_dp)
+           !! - `Strain.StrainedMoireMaxDisplacement`: Strain.StrainedMoire: amplitude u_max of the sinusoidal displacement
+           !!   [Angstrom].
          call MIO_InputParameter('Strain.StrainedMoire',strainedMoire,.false.)
+           !! - `Strain.StrainedMoire`: Interlayer distances computed with a sinusoidal in-plane displacement u_max sin(2 pi n x /
+           !!   L_moire).
          call MIO_InputParameter('Structure.SuperCell',sCell,1)
+           !! - `Structure.SuperCell`: Here: the moire length is |a1| / SuperCell.
          LMoire = norm(ucell(:,1))/sCell
 
          call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
+           !! - `Structure.TwistedBLAddShift`: Here: read for the interlayer branch of shifted bilayers.
          call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
          call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
          if (addShift) then
@@ -5584,17 +6017,36 @@ subroutine HamHopping
          t5KB = t2KA
          call HamHopF2G2sParameters()
          call MIO_InputParameter('Intralayer.ForceBilayerF2G2Intralayer',forceBilayerF2G2Intralayer,.false.)
+           !! - `Intralayer.ForceBilayerF2G2Intralayer`: Here: the intralayer hoppings take the Bernal-bilayer F2G2 set below.
          if (forceBilayerF2G2Intralayer .or. hamModelFromTwist) then
              t1K = g0/g0
              call MIO_InputParameter('Intralayer.Bilayert2KA',t2KA,-0.2235_dp)
+               !! - `Intralayer.Bilayert2KA`: F2G2 intralayer hopping t2 on sublattice A (second shell) [eV]; the default depends
+               !!   on the parameter set read here (graphene, hBN, G/hBN fits).
              call MIO_InputParameter('Intralayer.Bilayert2KB',t2KB,-0.2260_dp)
+               !! - `Intralayer.Bilayert2KB`: F2G2 intralayer hopping t2 on sublattice B (second shell) [eV]; the default depends
+               !!   on the parameter set read here (graphene, hBN, G/hBN fits).
              call MIO_InputParameter('Intralayer.Bilayert3K',t3K,0.1984_dp)
+               !! - `Intralayer.Bilayert3K`: F2G2 intralayer hopping t3 (third shell) [eV]; the default depends on the parameter
+               !!   set read here (graphene, hBN, G/hBN fits).
              call MIO_InputParameter('Intralayer.Bilayert4K',t4K,0.0_dp)
+               !! - `Intralayer.Bilayert4K`: F2G2 intralayer hopping t4 (fourth shell) [eV]; the default depends on the parameter
+               !!   set read here (graphene, hBN, G/hBN fits).
              call MIO_InputParameter('Intralayer.Bilayert5KA',t5KA,-0.04016_dp)
+               !! - `Intralayer.Bilayert5KA`: F2G2 intralayer hopping t5 on sublattice A (fifth shell) [eV]; the default depends on
+               !!   the parameter set read here (graphene, hBN, G/hBN fits).
              call MIO_InputParameter('Intralayer.Bilayert5KB',t5KB,-0.0404_dp)
+               !! - `Intralayer.Bilayert5KB`: F2G2 intralayer hopping t5 on sublattice B (fifth shell) [eV]; the default depends on
+               !!   the parameter set read here (graphene, hBN, G/hBN fits).
              call MIO_InputParameter('Intralayer.BilayertK6A',t6K,0.0_dp)
+               !! - `Intralayer.BilayertK6A`: F2G2 intralayer hopping t6 (sixth shell) [eV]; the default depends on the parameter
+               !!   set read here (graphene, hBN, G/hBN fits).
              call MIO_InputParameter('Intralayer.BilayertK7A',t7K,0.0_dp)
+               !! - `Intralayer.BilayertK7A`: F2G2 intralayer hopping t7 (seventh shell) [eV]; the default depends on the parameter
+               !!   set read here (graphene, hBN, G/hBN fits).
              call MIO_InputParameter('Intralayer.BilayertK8A',t8K,0.0_dp)
+               !! - `Intralayer.BilayertK8A`: F2G2 intralayer hopping t8 (eighth shell) [eV]; the default depends on the parameter
+               !!   set read here (graphene, hBN, G/hBN fits).
              t2KA = t2KA/g0
              t2KB = t2KB/g0
              t3K = t3K/g0
@@ -5607,6 +6059,7 @@ subroutine HamHopping
          end if
          if (hamModelFromTwist) call HamHopReportModelEnergies()
          call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
+           !! - `Stack.T3BG`: Here: selects the T3BG intralayer parameter set.
          if (t3BG) then
              t1K = g0/g0
              call MIO_InputParameter('Intralayer.Bilayert2KA',t2KA,-0.2235_dp)
@@ -5630,12 +6083,18 @@ subroutine HamHopping
          end if
          call HamHopInterlayerParameters()
          call MIO_InputParameter('Neigh.LayerDistFactor',distFact,1.0_dp)
+           !! - `Neigh.LayerDistFactor`: Here: read by the hopping set-up.
          call MIO_InputParameter('Interlayer.KaxirasCutoff',KaxirasCutoff,1.0_dp)
+           !! - `Interlayer.KaxirasCutoff`: BLKaxiras / BLSrivani: cut-off of the interlayer hopping (compared as a squared
+           !!   length).
          KaxirasCutoff2 = (KaxirasCutoff)**2.0_dp
 
          call MIO_InputParameter('Moire.OffDiag',l,.false.)
+           !! - `Moire.OffDiag`: Here: the off-diagonal moire bond term is added in HamHopping.
          call MIO_InputParameter('GBN.OffDiag',GBNOffDiag,.false.)
+           !! - `GBN.OffDiag`: Here: the G/hBN off-diagonal bond term is added in HamHopping.
          call MIO_InputParameter('Structure.AddDisplacements',addDisplacements,.false.)
+           !! - `Structure.AddDisplacements`: Here: read for the bond terms.
          if (addDisplacements) then
             if (.not. associated(displacements)) then
                call MIO_Kill('addDisplacements needs the table of displacements, which is read only with '// &
@@ -5644,6 +6103,7 @@ subroutine HamHopping
          end if
          ! Opt-in: evaluate the MoireOffDiag bond term at the bond midpoint (Hermitian H) instead of at atom i
          call MIO_InputParameter('Moire.OffDiagMidpoint',moireMid,.false.)
+           !! - `Moire.OffDiagMidpoint`: Here: the bond term is evaluated at the bond midpoint.
          moireMid = moireMid .and. l
          if (moireMid) then
             if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') &
@@ -5659,18 +6119,27 @@ subroutine HamHopping
 
          call MIO_InputParameter('Structure.SingleLayerXYZ',singleLayerXYZ,.false.)
          call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
+           !! - `Interlayer.AddPressureDependence`: BLKaxiras / BLSrivani: pressure (interlayer-distance) dependent parameters of
+           !!   Carr et al. (default .true.).
          call MIO_InputParameter('Interlayer.SwitchV3Sign',switchV3Sign,.false.)
+           !! - `Interlayer.SwitchV3Sign`: BLKaxiras / BLSrivani: change the sign of the V3 term.
          call MIO_InputParameter('Interlayer.OldParameterSet',oldParameterSet,.false.)
+           !! - `Interlayer.OldParameterSet`: BLKaxiras / BLSrivani: older parameter set of the fitting functions.
          call MIO_InputParameter('Interlayer.DeactivateV6',deactivateV6,.false.)
+           !! - `Interlayer.DeactivateV6`: BLKaxiras / BLSrivani: drop the V6 term.
          call MIO_InputParameter('Interlayer.DeactivateV3',deactivateV3,.false.)
+           !! - `Interlayer.DeactivateV3`: BLKaxiras / BLSrivani: drop the V3 term.
          call MIO_InputParameter('Intralayer.KoshinoIntralayer',KoshinoIntralayer,.false.)
          call MIO_InputParameter('Intralayer.MayouIntralayer',MayouIntralayer,.false.)
+           !! - `Intralayer.MayouIntralayer`: Intralayer hoppings of the Mayou model.
          call MIO_InputParameter('Interlayer.UseBNGKaxiras',useBNGKaxiras,.false.)
          fangGhBN = useBNGKaxiras .and. MIO_StringComp(BilayerModel,'BLKaxiras')
          if (useBNGKaxiras .and. .not. fangGhBN) call MIO_Kill('Interlayer.UseBNGKaxiras is the graphene/hBN model of '// &
               'Fang et al. (PRB 93, 235153) and needs TypeOfBL BLKaxiras: with another interlayer model the hBN layers '// &
               'would get its intralayer set and the graphene-hBN bonds another model','ham','ham')
          call MIO_InputParameter('Interlayer.LegacyAngleSearch',legacyAngleSearch,.false.)
+           !! - `Interlayer.LegacyAngleSearch`: BLKaxiras / BLSrivani: bond angles from the index-based search with a 1.43 Angstrom
+           !!   cut-off used before November 2026 (non-Hermitian on relaxed cells).
          if (useBNGKaxiras .or. MIO_StringComp(BilayerModel,'BLKaxiras') .or. MIO_StringComp(BilayerModel,'BLSrivani')) then
             call HamFirstNeighbourBonds()
             if (legacyAngleSearch) then
@@ -5694,15 +6163,20 @@ subroutine HamHopping
          call MIO_InputParameter('Stack.BNt2GBN',BNt2GBN,.false.)
          call MIO_InputParameter('Stack.T2GBN',t2GBN,.false.)
          call MIO_InputParameter('Stack.EncapsulatedFourLayersF2G2',encapsulatedFourLayersF2G2,.false.)
+           !! - `Stack.EncapsulatedFourLayersF2G2`: Stack.EncapsulatedFourLayers: Bernal F2G2 coupling between the two graphene
+           !!   layers (2-3).
          call MIO_InputParameter('GBN.UseDisplacementFile',GBNuseDisplacementFile,.false.)
          call MIO_InputParameter('TBG.UseDisplacementFile',tBGuseDisplacementFile,.false.)
          call MIO_InputParameter('Stack.BNBNtwoLayers',BNBNtwoLayers,.false.)
          call MIO_InputParameter('Interlayer.OnlyV0',onlyV0,.false.)
+           !! - `Interlayer.OnlyV0`: BLKaxiras / BLSrivani: keep only the V0 term (V3, V6 set to zero).
          call MIO_InputParameter('GBN.Angle',GBNAngle,0.0_dp)
          GBNAngle = GBNAngle*pi/180.0_dp
          call MIO_InputParameter('TBG.Angle',tBGAngle,0.0_dp)
+           !! - `TBG.Angle`: Here: twist angle of the analytic tBG bond terms [degrees].
          tBGAngle = tBGAngle*pi/180.0_dp
          call MIO_InputParameter('Structure.RotationAngle',rotationAngle,0.0_dp)
+           !! - `Structure.RotationAngle`: Rotation angle [degrees] of the interlayer model branches that use it.
          rotationAngle = rotationAngle*pi/180.0_dp
          call MIO_InputParameter('Stack.GlobalTwist',Globalang,0.0_dp)
          call MIO_InputParameter('Stack.GlobalTwist2',Globalang2,0.0_dp)
@@ -5751,78 +6225,148 @@ subroutine HamHopping
          end if
          call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
          call MIO_InputParameter('Interlayer.FindThetasGeometrically',findThetasGeometrically,.false.)
+           !! - `Interlayer.FindThetasGeometrically`: BLKaxiras / BLSrivani: bond angles theta12, theta21 from the geometry of the
+           !!   bond.
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorAAp',renormalizeHoppingFactorAAp,1.0_dp)
+           !! - `Interlayer.RenormalizeHoppingFactorAAp`: Factor on AA' interlayer hoppings; overwritten per bond by the distance
+           !!   law in GBNtwoLayers.
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorBBp',renormalizeHoppingFactorBBp,1.0_dp)
+           !! - `Interlayer.RenormalizeHoppingFactorBBp`: Factor on BB' interlayer hoppings; overwritten per bond by the distance
+           !!   law in GBNtwoLayers.
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorABp',renormalizeHoppingFactorABp,1.0_dp)
+           !! - `Interlayer.RenormalizeHoppingFactorABp`: Factor on AB' interlayer hoppings; overwritten per bond by the distance
+           !!   law in GBNtwoLayers.
          call MIO_InputParameter('Interlayer.RenormalizeHoppingFactorBAp',renormalizeHoppingFactorBAp,1.0_dp)
+           !! - `Interlayer.RenormalizeHoppingFactorBAp`: Factor on BA' interlayer hoppings; overwritten per bond by the distance
+           !!   law in GBNtwoLayers.
          rhfInput = [renormalizeHoppingFactorAAp, renormalizeHoppingFactorBBp, renormalizeHoppingFactorABp, &
                      renormalizeHoppingFactorBAp]
          call MIO_InputParameter('Interlayer.NewFittingFunctions',newFittingFunctions,.false.)
+           !! - `Interlayer.NewFittingFunctions`: BLKaxiras / BLSrivani: sublattice-resolved fitting functions a exp(-((r-b)/c)^4)
+           !!   cos(d r - h).
          call MIO_InputParameter('Interlayer.RenormalizeCoupling',renormalizeCoupling,.false.)
+           !! - `Interlayer.RenormalizeCoupling`: Multiply the interlayer hoppings by Interlayer.CouplingFactor.
          call MIO_InputParameter('Interlayer.CouplingFactor',couplingFactor,1.0_dp)
+           !! - `Interlayer.CouplingFactor`: Interlayer.RenormalizeCoupling: factor on every interlayer hopping. 0.895 puts the
+           !!   magic angle of relaxed tBG at 1.08 deg; a rigid lattice needs about 1.008.
          call MIO_InputParameter('Interlayer.CouplingFactor2',couplingFactor2,1.0_dp)
+           !! - `Interlayer.CouplingFactor2`: Interlayer.DifferentCouplings: factor on the 2-3 interface (CouplingFactor on 1-2 and
+           !!   3-4).
          call MIO_InputParameter('Interlayer.DifferentCouplings',differentCouplings,.false.)
+           !! - `Interlayer.DifferentCouplings`: Use Interlayer.CouplingFactor2 for the 2-3 interface of a four-layer stack.
          call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
 
          call MIO_InputParameter('Interlayer.KoshinoSR',KoshinoSR,.false.)
+           !! - `Interlayer.KoshinoSR`: Koshino two-centre interlayer hopping scaled per bond by exp((|dz| - 3.25)/1.34).
          call MIO_InputParameter('Interlayer.Onlyvppsigma',onlyvppsigma,.false.)
+           !! - `Interlayer.Onlyvppsigma`: Two-centre interlayer hopping without the pi term (V_pp_pi = 0).
 
          call MIO_InputParameter('Stack.Bulk',bulk,.false.)
          call MIO_InputParameter('Structure.BernalReadXYZ',BernalReadXYZ,.false.)
+           !! - `Structure.BernalReadXYZ`: ReadXYZ Bernal bilayer: use the Bernal interlayer branch (dimer sites get the F2G2 AB
+           !!   set).
          call MIO_InputParameter('Moire.SecondMoireMassFactor',sign2,1.0_dp)
          call MIO_InputParameter('Intralayer.DeactivateIntrasublattice',deactivateIntrasublattice,.false.)
+           !! - `Intralayer.DeactivateIntrasublattice`: Drop the hoppings between sites of the same sublattice.
          call MIO_InputParameter('Intralayer.DeactivateIntersublattice',deactivateIntersublattice,.false.)
+           !! - `Intralayer.DeactivateIntersublattice`: Drop the hoppings between sites of different sublattices.
          call MIO_InputParameter('Intralayer.DeactivateIntraSublatticeForC',deactivateIntraSublatticeForC,.false.)
+           !! - `Intralayer.DeactivateIntraSublatticeForC`: Drop same-sublattice hoppings between carbon atoms.
          call MIO_InputParameter('Output.WriteDataFiles',writeData,.false.)
          call MIO_InputParameter('Intralayer.T2Value',t2Value,0.0083_dp)
+           !! - `Intralayer.T2Value`: Read but not used at present.
          ! f1
          call MIO_InputParameter('Hopping.tA1B2',tA1B2,-0.1418_dp)
+           !! - `Hopping.tA1B2`: Multilayer interlayer hopping t_A1B2 [eV] (sublattice and layer index; _1/_2: further neighbour
+           !!   shells) of the stack models in HamHopping.
          tA1B2 = tA1B2/g0
          call MIO_InputParameter('Hopping.tA1A2',tA1A2,-0.0883_dp)
+           !! - `Hopping.tA1A2`: Multilayer interlayer hopping t_A1A2 [eV] (sublattice and layer index; _1/_2: further neighbour
+           !!   shells) of the stack models in HamHopping.
          tA1A2 = tA1A2/g0
          call MIO_InputParameter('Hopping.tB1B2',tB1B2,-0.08965_dp)
+           !! - `Hopping.tB1B2`: Multilayer interlayer hopping t_B1B2 [eV] (sublattice and layer index; _1/_2: further neighbour
+           !!   shells) of the stack models in HamHopping.
          tB1B2 = tB1B2/g0
          call MIO_InputParameter('Hopping.tA1A3',tA1A3,-0.00541_dp)
+           !! - `Hopping.tA1A3`: Multilayer interlayer hopping t_A1A3 [eV] (sublattice and layer index; _1/_2: further neighbour
+           !!   shells) of the stack models in HamHopping.
          tA1A3 = tA1A3/g0
          call MIO_InputParameter('Hopping.tB1A3',tB1A3,-0.00853_dp)
+           !! - `Hopping.tB1A3`: Multilayer interlayer hopping t_B1A3 [eV] (sublattice and layer index; _1/_2: further neighbour
+           !!   shells) of the stack models in HamHopping.
          tB1A3 = tB1A3/g0
          ! f2
          call MIO_InputParameter('Hopping.tA1B2_2',tA1B2_2,0.0755_dp)
+           !! - `Hopping.tA1B2_2`: Multilayer interlayer hopping t_A1B2_2 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tA1B2_2 = tA1B2_2/g0
          call MIO_InputParameter('Hopping.tA1A2_2',tA1A2_2,0.0277_dp)
+           !! - `Hopping.tA1A2_2`: Multilayer interlayer hopping t_A1A2_2 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tA1A2_2 = tA1A2_2/g0
          call MIO_InputParameter('Hopping.tB1B2_2',tB1B2_2,0.0275_dp)
+           !! - `Hopping.tB1B2_2`: Multilayer interlayer hopping t_B1B2_2 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tB1B2_2 = tB1B2_2/g0
          call MIO_InputParameter('Hopping.tA1A3_2',tA1A3_2,0.0009_dp)
+           !! - `Hopping.tA1A3_2`: Multilayer interlayer hopping t_A1A3_2 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tA1A3_2 = tA1A3_2/g0
          call MIO_InputParameter('Hopping.tB1A3_2',tB1A3_2,0.0028_dp)
+           !! - `Hopping.tB1A3_2`: Multilayer interlayer hopping t_B1A3_2 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tB1A3_2 = tB1A3_2/g0
          ! g0 ! other terms are onsite energy terms or the t2value term
          call MIO_InputParameter('Hopping.tA1B3',tA1B3,-0.007551_dp)
+           !! - `Hopping.tA1B3`: Multilayer interlayer hopping t_A1B3 [eV] (sublattice and layer index; _1/_2: further neighbour
+           !!   shells) of the stack models in HamHopping.
          tA1B3 = tA1B3/g0
          call MIO_InputParameter('Hopping.tB1A2',tB1A2,-0.3372_dp)
+           !! - `Hopping.tB1A2`: Multilayer interlayer hopping t_B1A2 [eV] (sublattice and layer index; _1/_2: further neighbour
+           !!   shells) of the stack models in HamHopping.
          tB1A2 = tB1A2/g0
          ! g1
          call MIO_InputParameter('Hopping.tA1A1_1',tA1A1_1,-0.2238_dp)
+           !! - `Hopping.tA1A1_1`: Multilayer interlayer hopping t_A1A1_1 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tA1A1_1 = tA1A1_1/g0
          call MIO_InputParameter('Hopping.tB1B1_1',tB1B1_1,-0.2269_dp)
+           !! - `Hopping.tB1B1_1`: Multilayer interlayer hopping t_B1B1_1 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tB1B1_1 = tB1B1_1/g0
          call MIO_InputParameter('Hopping.tA2A2_1',tA2A2_1,-0.2264_dp)
+           !! - `Hopping.tA2A2_1`: Multilayer interlayer hopping t_A2A2_1 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tA2A2_1 = tA2A2_1/g0
          call MIO_InputParameter('Hopping.tA1B3_1',tA1B3_1,-0.001738_dp)
+           !! - `Hopping.tA1B3_1`: Multilayer interlayer hopping t_A1B3_1 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tA1B3_1 = tA1B3_1/g0
          call MIO_InputParameter('Hopping.tB1A2_1',tB1A2_1,0.00786_dp)
+           !! - `Hopping.tB1A2_1`: Multilayer interlayer hopping t_B1A2_1 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tB1A2_1 = tB1A2_1/g0
          ! g2
          call MIO_InputParameter('Hopping.tA1A1_2',tA1A1_2,-0.0446_dp)
+           !! - `Hopping.tA1A1_2`: Multilayer interlayer hopping t_A1A1_2 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tA1A1_2 = tA1A1_2/g0
          call MIO_InputParameter('Hopping.tB1B1_2',tB1B1_2,-0.04606_dp)
+           !! - `Hopping.tB1B1_2`: Multilayer interlayer hopping t_B1B1_2 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tB1B1_2 = tB1B1_2/g0
          call MIO_InputParameter('Hopping.tA2A2_2',tA2A2_2,-0.044_dp)
+           !! - `Hopping.tA2A2_2`: Multilayer interlayer hopping t_A2A2_2 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tA2A2_2 = tA2A2_2/g0
          call MIO_InputParameter('Hopping.tA1B3_2',tA1B3_2,0.001772_dp)
+           !! - `Hopping.tA1B3_2`: Multilayer interlayer hopping t_A1B3_2 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tA1B3_2 = tA1B3_2/g0
          call MIO_InputParameter('Hopping.tB1A2_2',tB1A2_2,0.00078_dp)
+           !! - `Hopping.tB1A2_2`: Multilayer interlayer hopping t_B1A2_2 [eV] (sublattice and layer index; _1/_2: further
+           !!   neighbour shells) of the stack models in HamHopping.
          tB1A2_2 = tB1A2_2/g0
 
          if (bulk) then
@@ -5852,6 +6396,7 @@ subroutine HamHopping
             nLayers = 0
          end if
          call MIO_InputParameter('Interlayer.SetnLayersToZero',setnLayersToZero,.false.)
+           !! - `Interlayer.SetnLayersToZero`: Set the number of layers to 0 (small-bulk neighbour search on a non-bulk system).
          if (setnLayersToZero) then ! useful when using the small bulk neighbor but system is not bulk
             nLayers = 0
          end if
@@ -5874,6 +6419,7 @@ subroutine HamHopping
          countBN8 = 0
 
          call MIO_InputParameter('Moire.PotCabG',CabG_global,0.002235_dp)
+           !! - `Moire.PotCabG`: Amplitude of the off-diagonal moire term on graphene bonds in the stack models [eV].
          call MIO_InputParameter('TBG.SwitchDxDy',tBGSwitchDxDy,.false.)
 
          call MIO_Allocate(HABreal,[inode1],[inode2],'H0','ham')
@@ -5915,6 +6461,8 @@ subroutine HamHopping
          if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell') &
                .or. BernalReadXYZ) then
             call MIO_InputParameter('Interlayer.LegacyBernalTAB1',legacyBernalTAB1,.false.)
+              !! - `Interlayer.LegacyBernalTAB1`: Bernal interlayer branch: the coupling used before November 2026 (gamma1 = F2G2
+              !!   tAB1 = 0.1391 eV and nothing else) instead of the full Bernal F2G2 interlayer set.
             bernalF2G2 = F2G2Model .and. .not. (BilayerOneParameter .or. BilayerThreeParameters)
             if (bernalF2G2 .and. legacyBernalTAB1) then
                bernalF2G2 = .false.
@@ -6342,16 +6890,22 @@ subroutine HamHopping
 
    ! Based on PHYSICAL REVIEW B 80, 045401 2009
    call MIO_InputParameter('Strain.RealStrain',realStrain,.false.)
+     !! - `Strain.RealStrain`: Intralayer hoppings t exp(-beta (d/d_ref - 1)), d = 3-D bond length (Pereira et al., PRB 80 045401);
+     !!   d_ref per shell from Strain.RealStrainReferenceLatticeConstant(BN). Off: constant hoppings.
    call MIO_InputParameter('Strain.OnlyFirstNeighborRealStrain',onlyFirstNeighborRealStrain,.false.)
+     !! - `Strain.OnlyFirstNeighborRealStrain`: Strain.RealStrain on the first-neighbour bonds only.
    ! Decay exponent of t = t0 exp(-beta (d/d0 - 1)). Default 3.37 reproduces every existing input exactly;
    ! other values are for counterfactual scans of the strain gauge-field strength.
    call MIO_InputParameter('Strain.RealStrainBeta',realStrainBeta,3.37_dp)
+     !! - `Strain.RealStrainBeta`: Strain.RealStrain: decay exponent beta (default 3.37).
    if (realStrain) call HamHopRealStrain()
 
    call MIO_InputParameter('Strain.PeriodicStrain',periodicStrain,.false.)
+     !! - `Strain.PeriodicStrain`: Sinusoidal periodic strain of the hoppings (Strain.PeriodicStrainU0, PeriodicStrainPeriod).
    if (periodicStrain) call HamHopPeriodicStrain()
 
    call MIO_InputParameter('Strain.RealisticBubbles',realisticBubbles,.false.)
+     !! - `Strain.RealisticBubbles`: Strain bubbles with in-plane strain and an on-site shift (Strain.Bubble* keys).
    if (realisticBubbles) call HamHopRealisticBubbles()
 
    if (realisticBubbles) then
@@ -6366,6 +6920,7 @@ subroutine HamHopping
 
    ! Moire.Fourier (opt-in): bond part of the general moire term, before the Peierls phase multiplies every hopping
    call MIO_InputParameter('Moire.Fourier',l,.false.)
+     !! - `Moire.Fourier`: Here: bond part of the Moire.Fourier term, added before the Peierls phase.
    if (l) call HamHopMoireFourier()
 
    ! Valley.Zeeman (opt-in): valley operator term, also before the Peierls phase
@@ -6398,6 +6953,7 @@ subroutine HamHopping
       call file%Close()
    end if
    call MIO_InputParameter('Output.WriteDataFiles',l,.false.)
+     !! - `Output.WriteDataFiles`: Here: write the hopping and on-site tables (generate.e, <prefix>.s.mag, ...).
    if (l) call HamHopWriteTables()
 
    ! Zeeman effect is now applied in diag.F90 via ApplySOCtoHamiltonian routine
@@ -6497,19 +7053,29 @@ subroutine HamHopHaldane()
       call MIO_InputParameter('Haldane.SpecifyPhase',ll,.false.)
       call MIO_InputParameter('Haldane.SpecifyRange',lll,.false.)
       call MIO_InputParameter('Haldane.PaperOrientation',paperOrientation,.false.)
+        !! - `Haldane.PaperOrientation`: Haldane: multiply the model's own second-neighbour hoppings by exp(+-i phi) (otherwise add
+        !!   T2 exp(+-i phi)).
       call MIO_InputParameter('Haldane.T2Complex',t2Complex,0.0_dp)
+        !! - `Haldane.T2Complex`: Haldane: imaginary second-neighbour amplitude (see HamHopHaldane).
       call HamInputEnergyEV('Haldane.T2',t2,0.0_dp)
+        !! - `Haldane.T2`: Haldane second-neighbour amplitude T2 [eV] (units of g0 before 2026-10-14); not used with
+        !!   Haldane.PaperOrientation.
       call MIO_InputParameter('Haldane.OppositePhase',HaldaneOppositePhase,.false.)
+        !! - `Haldane.OppositePhase`: Haldane: opposite sign of the phase phi.
       ! Note: HaldaneBothLayers is deprecated. Use HaldaneLayerControl and HaldaneLayers instead.
       ! For backward compatibility, we still check if it's set, but it's ignored if HaldaneLayerControl is enabled.
       call MIO_InputParameter('Haldane.BothLayers',HaldaneBothLayers_deprecated,.false.)
+        !! - `Haldane.BothLayers`: Deprecated (use Haldane.LayerControl / HaldaneLayers): the Haldane term on every layer.
       if (HaldaneBothLayers_deprecated .and. .not. HaldaneLayerControl) then
          call MIO_Warning('Haldane.BothLayers is deprecated: use Haldane.LayerControl and Haldane.Layers. '// &
            'The Haldane term is applied to every layer.','ham')
       end if
       if (l) then
           call MIO_InputParameter('Haldane.Flux',flux,0.0_dp)
+            !! - `Haldane.Flux`: Haldane.SpecifyFlux: flux giving the phase 2 pi Flux / Phi_0 (2 pi Flux / (pi/3) with
+            !!   Haldane.SetFluxQ).
           call MIO_InputParameter('Haldane.SetFluxQ',l,.false.)
+            !! - `Haldane.SetFluxQ`: Haldane.SpecifyFlux: the phase is 2 pi Haldane.Flux / (pi/3).
           if (l) then
              HaldanePhase = 2.0_dp*pi*flux/1.0471975512_dp
           else
@@ -6517,6 +7083,7 @@ subroutine HamHopHaldane()
           end if
       else if (ll) then
           call MIO_InputParameter('Haldane.Phase',HaldanePhase,0.0_dp)
+            !! - `Haldane.Phase`: Haldane.SpecifyPhase: Haldane phase phi [rad].
       else if (lll) then
           HaldanePhase = HaldanePhase
       end if
@@ -6666,8 +7233,11 @@ subroutine HamHopRealisticBubbles()
 #endif /* DEBUG */
 
       call MIO_InputParameter('Strain.BigBubble',bigBubble,.false.)
+        !! - `Strain.BigBubble`: Strain.RealisticBubbles: one big bubble.
       call MIO_InputParameter('Strain.ManyBubbles',manyBubbles,.false.)
+        !! - `Strain.ManyBubbles`: Strain.RealisticBubbles: many bubbles at random positions (Strain.BubblePercentage).
       call MIO_InputParameter('Strain.BubbleInPlaneStrain',bubbleInPlaneStrain,.false.)
+        !! - `Strain.BubbleInPlaneStrain`: Strain.RealisticBubbles: include the in-plane strain of each bubble.
       if (.not. (bigBubble .or. manyBubbles)) call MIO_Kill('Strain.RealisticBubbles needs Strain.BigBubble or '// &
            'Strain.ManyBubbles (where the bubbles are); without either the number of bubbles was never set.', &
            'ham','ham')
@@ -6698,6 +7268,7 @@ subroutine HamHopRealisticBubbles()
       else if (manyBubbles) then
          call MIO_Print('Strain bubbles: many bubbles','ham')
          call MIO_InputParameter('Strain.BubblePercentage',per,10.0_dp)
+           !! - `Strain.BubblePercentage`: Strain.ManyBubbles: percentage of the atoms that are bubble centres.
          per = per/100.0_dp
          call MIO_Allocate(def,[inode1],[inode2],'def','gauss')
          def = .false.
@@ -6741,6 +7312,7 @@ subroutine HamHopRealisticBubbles()
             end if
          end do
          call MIO_InputParameter('Strain.BubbleGaussian',bubbleGauss,.false.)
+           !! - `Strain.BubbleGaussian`: Strain.RealisticBubbles: add a Gaussian potential at each bubble (Strain.BubbleGaussPot*).
          if (bubbleGauss) then
             call GaussPotDefinedPositions(H0)
          end if
@@ -6750,12 +7322,16 @@ subroutine HamHopRealisticBubbles()
       call MIO_Allocate(epsxx,[1,inode1],[maxNeigh,inode2],'epsxx','ham')
       call MIO_Allocate(epsyy,[1,inode1],[maxNeigh,inode2],'epsyy','ham')
       call MIO_InputParameter('Strain.BubbleSigmaR',bubbleSigmaR,1.42_dp)
+        !! - `Strain.BubbleSigmaR`: Strain.RealisticBubbles: width of the bubble profile [Angstrom].
       bubbleSigmaR2 = bubbleSigmaR**2.0d0
       call MIO_InputParameter('Strain.BubbleC',bubbleC,1.42_dp)
+        !! - `Strain.BubbleC`: Strain.RealisticBubbles: amplitude C of the in-plane strain.
 
       ! on-site shift inside a bubble [eV] (in units of g0 before; absent = the former 0.07 g0)
       call HamInputEnergyEV('Strain.BubbleShift',bubbleShift,0.07_dp,since='2026-11-07')
+        !! - `Strain.BubbleShift`: Strain.RealisticBubbles: on-site shift inside a bubble [eV] (units of g0 before 2026-11-07).
       call MIO_InputParameter('Strain.BubbleRadius',bubbleRadius,100.0_dp)
+        !! - `Strain.BubbleRadius`: Strain.RealisticBubbles: radius of a bubble [Angstrom].
       call MIO_Allocate(onsiteShift,nAt,'onsiteShift','ham')
 
       if (totImp > 0) then
@@ -6872,6 +7448,7 @@ subroutine HamHopPeriodicStrain()
 #endif /* DEBUG */
 
       call MIO_InputParameter('Strain.PeriodicStrainU0',u0,0.1_dp)
+        !! - `Strain.PeriodicStrainU0`: Strain.PeriodicStrain: amplitude u0 of the displacement [Angstrom].
       call MIO_InputParameter('Strain.PeriodicStrainPeriod',nPeriod,1)
       call MIO_InputParameter('Structure.SuperCell',sCell,1)
       LMoire = norm(ucell(:,1))/sCell
@@ -6928,10 +7505,16 @@ subroutine HamHopRealStrain()
 
       call MIO_Print('realStrain: t = t0 exp(-beta (d/d0 - 1)), beta = '//trim(num2str(realStrainBeta,4)),'ham')
       call MIO_InputParameter('Strain.RealStrainReferenceLatticeConstant',aGR,aG) !
+        !! - `Strain.RealStrainReferenceLatticeConstant`: Strain.RealStrain: graphene lattice constant of the reference bond
+        !!   lengths [Angstrom]; the lattice of the hopping fit, 2.4389777651302801 for the F2G2 sets.
       accR = aGR/sqrt(3.0_dp)
       call MIO_InputParameter('Strain.RealStrainReferenceLatticeConstantBN',aBNR,aBN) !
+        !! - `Strain.RealStrainReferenceLatticeConstantBN`: Strain.RealStrain: hBN lattice constant of the reference bond lengths
+        !!   [Angstrom].
       aBN1R = aBNR/sqrt(3.0_dp)
       call MIO_InputParameter('Strain.RealStrainLegacyFourthShell',strainLegacyShell4,.false.)
+        !! - `Strain.RealStrainLegacyFourthShell`: Strain.RealStrain: fixed 3.75696 Angstrom reference for the fourth shell, as
+        !!   before November 2026.
       if (strainLegacyShell4) then
          call MIO_Print('realStrain: 4th-shell reference distance 3.75696 Ang for every layer (RealStrainLegacyFourthShell)','ham')
       else
@@ -7114,6 +7697,7 @@ subroutine HamHopShellsFromRigid()
 #endif /* DEBUG */
 
       call MIO_InputParameter('Strain.ShellsRigidFile',shellRigidFile,'generateInit.xyz')
+        !! - `Strain.ShellsRigidFile`: Strain.ShellsFromRigidPositions: rigid reference structure (xyz, same atom order).
       call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
       if (.not. GBNtwoLayers) call MIO_Kill('shellsFromRigidPositions is implemented for GBNtwoLayers only','ham','ham')
       if (sCell /= 1) call MIO_Kill('shellsFromRigidPositions needs SuperCell 1','ham','ham')
@@ -7334,11 +7918,17 @@ subroutine HamHopInterlayerParameters()
          ! models share a branch), so they are read for both: read for BLSrivani only, they were undefined in a
          ! BLKaxiras run and the leftover memory decided which parameters were used.
          call MIO_InputParameter('Interlayer.UseBNGSrivani',useBNGSrivani,.false.)
+           !! - `Interlayer.UseBNGSrivani`: BLSrivani: the G/hBN parameter set.
          call MIO_InputParameter('Interlayer.Oppositedxdy',oppositedxdy,.false.)
+           !! - `Interlayer.Oppositedxdy`: BLKaxiras / BLSrivani: opposite sign of the bond vector in the angle calculation.
          call MIO_InputParameter('Interlayer.SublatticeDependent',sublatticeDependent,.false.)
+           !! - `Interlayer.SublatticeDependent`: BLKaxiras / BLSrivani: sublattice-dependent parameters.
          call MIO_InputParameter('Interlayer.UseThetaIJ',useThetaIJ,.false.)
+           !! - `Interlayer.UseThetaIJ`: BLKaxiras / BLSrivani: angle variant theta_ij (see HamHopInterlayerParameters).
          call MIO_InputParameter('Interlayer.UseTheta',useTheta,.false.)
+           !! - `Interlayer.UseTheta`: BLKaxiras / BLSrivani: angle variant theta (see HamHopInterlayerParameters).
          call MIO_InputParameter('Interlayer.SublatticeIndependent',sublatticeIndependent,.false.)
+           !! - `Interlayer.SublatticeIndependent`: BLKaxiras / BLSrivani: sublattice-independent parameters.
          if (MIO_StringComp(BilayerModel,'BLKaxiras')) then
             call MIO_InputParameter('Interlayer.UseBNGKaxiras',useBNGKaxiras,.false.)
             tAB = 0.29_dp
@@ -7462,6 +8052,7 @@ subroutine HamHopInterlayerParameters()
                 call MIO_InputParameter('Interlayer.AddPressureDependence',addPressureDependence,.true.)
                 call MIO_InputParameter('Interlayer.OldParameterSet',oldParameterSet,.false.)
                 call MIO_InputParameter('Interlayer.UseOnlyVAB',useOnlyVAB,.false.)
+                  !! - `Interlayer.UseOnlyVAB`: BLKaxiras / BLSrivani: use the V_AB parameters for every sublattice pair.
                 if (addPressureDependence) then
                     call MIO_Print('Interlayer: pressure (distance) dependent Srivani parameters','ham')
                     if (oldParameterSet) then
@@ -7669,10 +8260,18 @@ subroutine HamHopF2G2sParameters()
             call MIO_Print('Intralayer: GBNtwoLayersF2G2 parameters','ham')
             t1K = g0/g0
             call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLGfromGBNA,-0.24498_dp)
+              !! - `Intralayer.SingleLayert2KSL`: F2G2 intralayer hopping t2, second shell [eV]; the default depends on the
+              !!   parameter set read here (graphene, hBN, G/hBN fits).
             call MIO_InputParameter('Intralayer.SingleLayert2KSL',t2KSLGfromGBNB,-0.24523_dp)
             call MIO_InputParameter('Intralayer.SingleLayert3K',t3KSLGfromGBN,0.19334_dp)
+              !! - `Intralayer.SingleLayert3K`: F2G2 intralayer hopping t3, third shell [eV]; the default depends on the parameter
+              !!   set read here (graphene, hBN, G/hBN fits).
             call MIO_InputParameter('Intralayer.SingleLayert4K',t4KSLGfromGBN,-0.0_dp)
+              !! - `Intralayer.SingleLayert4K`: F2G2 intralayer hopping t4, fourth shell [eV]; the default depends on the parameter
+              !!   set read here (graphene, hBN, G/hBN fits).
             call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLGfromGBNA,-0.06618_dp)
+              !! - `Intralayer.SingleLayert5KSL`: F2G2 intralayer hopping t5, fifth shell [eV]; the default depends on the
+              !!   parameter set read here (graphene, hBN, G/hBN fits).
             call MIO_InputParameter('Intralayer.SingleLayert5KSL',t5KSLGfromGBNB,-0.06624_dp)
             call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLGfromGBNA,0.0_dp)
             call MIO_InputParameter('Intralayer.BilayertK6A',t6KSLGfromGBNB,0.0_dp)
@@ -7689,15 +8288,33 @@ subroutine HamHopF2G2sParameters()
             t7KSLGfromGBN = t7KSLGfromGBN/g0
             t8KSLGfromGBN = t8KSLGfromGBN/g0
             call HamInputHBN('Intralayer.hBNt2B','Intralayer.SingleLayert2KSL',t2KSLBNfromGBNA,-0.081055_dp)
+              !! - `Intralayer.hBNt2B`: F2G2 intralayer hopping t2 of hBN on boron [eV]; the default depends on the parameter set
+              !!   read here (graphene, hBN, G/hBN fits).
             call HamInputHBN('Intralayer.hBNt2N','Intralayer.SingleLayert2KSL',t2KSLBNfromGBNB,-0.24562_dp)
+              !! - `Intralayer.hBNt2N`: F2G2 intralayer hopping t2 of hBN on nitrogen [eV]; the default depends on the parameter
+              !!   set read here (graphene, hBN, G/hBN fits).
             call HamInputHBN('Intralayer.hBNt3','Intralayer.SingleLayert3K',t3KSLBNfromGBN,0.15399_dp)
+              !! - `Intralayer.hBNt3`: F2G2 intralayer hopping t3 of hBN [eV]; the default depends on the parameter set read here
+              !!   (graphene, hBN, G/hBN fits).
             call HamInputHBN('Intralayer.hBNt4','Intralayer.SingleLayert4K',t4KSLBNfromGBN,-0.0_dp)
+              !! - `Intralayer.hBNt4`: F2G2 intralayer hopping t4 of hBN [eV]; the default depends on the parameter set read here
+              !!   (graphene, hBN, G/hBN fits).
             call HamInputHBN('Intralayer.hBNt5B','Intralayer.SingleLayert5KSL',t5KSLBNfromGBNA,-0.065654_dp)
+              !! - `Intralayer.hBNt5B`: F2G2 intralayer hopping t5 of hBN on boron [eV]; the default depends on the parameter set
+              !!   read here (graphene, hBN, G/hBN fits).
             call HamInputHBN('Intralayer.hBNt5N','Intralayer.SingleLayert5KSL',t5KSLBNfromGBNB,-0.04892_dp)
+              !! - `Intralayer.hBNt5N`: F2G2 intralayer hopping t5 of hBN on nitrogen [eV]; the default depends on the parameter
+              !!   set read here (graphene, hBN, G/hBN fits).
             call HamInputHBN('Intralayer.hBNt6','Intralayer.BilayertK6A',t6KSLBNfromGBNA,0.0_dp)
+              !! - `Intralayer.hBNt6`: F2G2 intralayer hopping t6 of hBN [eV]; the default depends on the parameter set read here
+              !!   (graphene, hBN, G/hBN fits).
             call HamInputHBN('Intralayer.hBNt6','Intralayer.BilayertK6A',t6KSLBNfromGBNB,0.0_dp)
             call HamInputHBN('Intralayer.hBNt7','Intralayer.BilayertK7A',t7KSLBNfromGBN,0.0_dp)
+              !! - `Intralayer.hBNt7`: F2G2 intralayer hopping t7 of hBN [eV]; the default depends on the parameter set read here
+              !!   (graphene, hBN, G/hBN fits).
             call HamInputHBN('Intralayer.hBNt8','Intralayer.BilayertK8A',t8KSLBNfromGBN,0.0_dp)
+              !! - `Intralayer.hBNt8`: F2G2 intralayer hopping t8 of hBN [eV]; the default depends on the parameter set read here
+              !!   (graphene, hBN, G/hBN fits).
             t2KSLBNfromGBNA = t2KSLBNfromGBNA/g0
             t2KSLBNfromGBNB = t2KSLBNfromGBNB/g0
             t3KSLBNfromGBN = t3KSLBNfromGBN/g0
@@ -11849,6 +12466,7 @@ subroutine HamHopBondTermsTBG(CabG, i, dx, dy, dxTemp, dyTemp, Habjj, realH, ima
                   end if
               else
                   call MIO_InputParameter('Moire.PotCabG',CabG,0.001987_dp)
+                    !! - `Moire.PotCabG`: Here (tBG bond terms): amplitude of the off-diagonal term on graphene bonds [eV].
               end if
               CabG = CabG/g0
               !if (i.eq. 1) print*, "adding the offdiagonal intralyer terms for tBG"
@@ -12228,6 +12846,8 @@ subroutine HamPeierlsPeriodicGauge(flux)
    integer :: i, j, nCorner
 
    call MIO_InputParameter('MagField.LegacyCornerPhase',legacyCorner,.false.)
+     !! - `MagField.LegacyCornerPhase`: Peierls phases without the exp(i pi m n1 n2) term of bonds across a cell corner, as before
+     !!   2026-10-22 (wrong for odd m). The run otherwise refuses a non-integer number of flux quanta.
    cellArea = abs(ucell(1,1)*ucell(2,2) - ucell(2,1)*ucell(1,2))
    fluxQuanta = flux*cellArea/(pi*1.0d20)
    if (.not. legacyCorner .and. abs(fluxQuanta - nint(fluxQuanta)) > 1.0d-6) then
@@ -12352,6 +12972,7 @@ subroutine HamSOCBondTables()
    allocate(phi(nL), coh(nL), nBond(nL), alignedPair(nL))
    call HamLayerOrientation(nL, phi, coh, nBond)
    call MIO_InputParameter('Stack.TwistTolerance',tol,0.05_dp)
+     !! - `Stack.TwistTolerance`: Here: interfaces twisted by less than this count as aligned for the SOC bond tables [degrees].
    alignedPair = .false.
    do L = 1, nL - 1
       c3 = phi(L+1) - phi(L)
@@ -12522,6 +13143,8 @@ subroutine HamDisplacementsFromPositions()
    logical, allocatable :: present(:)
 
    call MIO_InputParameter('Structure.DisplacementsFromPositions',l,.false.)
+     !! - `Structure.DisplacementsFromPositions`: Here: the stacking displacements are computed from generateInit.xyz and the
+     !!   structure.
    if (.not. l) return
    call MIO_InputParameter('GBN.UseDisplacementFile',gbnFile,.false.)
    call MIO_InputParameter('TBG.UseDisplacementFile',tbgFile,.false.)
@@ -12530,6 +13153,8 @@ subroutine HamDisplacementsFromPositions()
    if (.not. associated(RatInit)) call MIO_Kill('Structure.DisplacementsFromPositions needs the rigid structure: '// &
         'Structure.ReadRigidXYZ .true. (file Structure.RigidPositions, default generateInit.xyz)','ham','HamInit')
    call MIO_InputParameter('Stack.GlobalTwist',ga(1),0.0_dp)
+     !! - `Stack.GlobalTwist`: Here: refused with Structure.DisplacementsFromPositions (those displacements are already in the lab
+     !!   frame).
    call MIO_InputParameter('Stack.GlobalTwist2',ga(2),0.0_dp)
    call MIO_InputParameter('Stack.GlobalPhiL1',ga(3),0.0_dp)
    call MIO_InputParameter('Stack.GlobalPhiL2a',ga(4),0.0_dp)
@@ -12538,6 +13163,7 @@ subroutine HamDisplacementsFromPositions()
    if (any(ga /= 0.0_dp)) call MIO_Kill('Structure.DisplacementsFromPositions gives the displacements in the frame of '// &
         'the structure: Stack.GlobalTwist, GlobalTwist2, GlobalPhiL1, L2a, L2b, L3 must be 0','ham','HamInit')
    call MIO_InputParameter('Stack.EncapsulatedThreeLayers',enc3,.false.)
+     !! - `Stack.EncapsulatedThreeLayers`: Here: graphene atoms get a bottom and a top displacement.
    det = ucell(1,1)*ucell(2,2) - ucell(1,2)*ucell(2,1)
    allocate(present(0:maxval(layerIndex)+1))
    present = .false.
