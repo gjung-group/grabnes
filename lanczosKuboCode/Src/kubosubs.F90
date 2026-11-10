@@ -476,6 +476,7 @@ subroutine KuboEvol(Psi,ZUPsi,Psin,Psinm1,XpnPsi,XpnPsim1,c,H0,hopp,NList,NeighD
       l = (dir == 2)
    else
       call MIO_InputParameter('Kubo.TimeEvolutionInYDirection',l,.false.)
+        !! - `Kubo.TimeEvolutionInYDirection`: Kubo time evolution: position operator along y instead of x.
    end if
    !$OMP PARALLEL DO PRIVATE(cnum,cnum2)
    do i=1,nAt

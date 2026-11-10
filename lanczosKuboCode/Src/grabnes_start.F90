@@ -25,8 +25,10 @@ subroutine GrabnesStart(success)
    if (success) then
       call StartHeader()
       call MIO_InputParameter('Run.Description',desc,'')
+        !! - `Run.Description`: Free text printed at the top of the output.
       if (desc/='') call MIO_Print('Description: '//trim(desc),'start')
       call MIO_InputParameter('Run.Prefix',sysname,'grabnes')
+        !! - `Run.Prefix`: Prefix of the output files (<prefix>.DOS, ...); default grabnes.
       prefix = sysname
       call MIO_Print('Output prefix: '//trim(prefix),'start')
    end if

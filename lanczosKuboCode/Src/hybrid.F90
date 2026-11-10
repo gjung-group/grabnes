@@ -43,16 +43,20 @@ subroutine HybridGen(nAt,Rat,Species,in1,in2)
    call random_seed(PUT = seed)
    deallocate(seed)
    call MIO_InputParameter('Hybrid.Radius',r,10.0_dp)
+     !! - `Hybrid.Radius`: TypeOfSystem Hybrid (refused at present): radius of the hBN islands in graphene [Angstrom].
    n = nint(2.0_dp*r/(sqrt(3.0_dp)*aG))
    r = sqrt(3.0_dp)*aG*n/2.0_dp
    call MIO_Print('Radius: '//trim(num2str(r,4))//' Ang','hybrid')
    call MIO_InputParameter('Hybrid.Percentage',per,1.0_dp)
+     !! - `Hybrid.Percentage`: TypeOfSystem Hybrid (refused at present): percentage of the area covered by hBN islands.
    per = per/100.0_dp
    n = nint(area*per/(pi*r**2))
    call MIO_Print('Number of hexagonal islands: '//trim(num2str(n)),'hybrid')
    call MIO_Allocate(c,[2,n],'c','hybrid')
    call MIO_InputParameter('Structure.SuperCell',sCell,1)
+     !! - `Structure.SuperCell`: Here (TypeOfSystem Hybrid): sets the size of the region where islands are placed.
    call MIO_InputParameter('Structure.CellSize',sz,50)
+     !! - `Structure.CellSize`: Here (TypeOfSystem Hybrid): sets the size of the region where islands are placed.
    sz = sCell*sz
    Gcell(:,1) = [0.0_dp, aG]
    Gcell(:,2) = [aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp]
@@ -72,6 +76,7 @@ loop: do
       end do loop
    end do
    call MIO_InputParameter('Hybrid.RandomSites',l,.false.)
+     !! - `Hybrid.RandomSites`: TypeOfSystem Hybrid (refused at present): place the islands at random sites.
    if (l) then
       call MIO_Allocate(site,n,'site','hybrid')
       do i=1,n

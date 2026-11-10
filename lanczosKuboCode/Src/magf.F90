@@ -35,6 +35,8 @@ subroutine MagfInit()
 
    if (MIO_InputSearchLabel('MagField.Value',line,id)) then
       call MIO_InputParameter('MagField.Value',Bmag,0.0_dp)
+        !! - `MagField.Value`: Perpendicular magnetic field [T], rounded to an integer number of flux quanta through the cell (a
+        !!   warning is printed when it rounds to zero). Peierls phases on every hopping.
       mBi = nint(area*1.0d-20*Bmag/(fluxq))
       mBf = mBi
       call MIO_Print('MagField.Value '//trim(num2str(Bmag,5))//' T: '//trim(num2str(mBf))//' flux quanta through the cell','magf')
@@ -44,18 +46,25 @@ subroutine MagfInit()
         ' T per flux quantum): the run has no magnetic field','magf')
    else if (MIO_InputSearchLabel('MagField.Integer',line,id)) then
       call MIO_InputParameter('MagField.Integer',mBi,0)
+        !! - `MagField.Integer`: Perpendicular magnetic field as m flux quanta through the whole cell: B = m Phi_0 / A. Use
+        !!   MagField.Integer 0 for no field.
       mBf = mBi
    else
       if (MIO_InputSearchLabel('MagField.InitialB',line,id)) then
          call MIO_InputParameter('MagField.InitialB',Bmag,0.0_dp)
+           !! - `MagField.InitialB`: Field sweep from MagField.InitialB to MagField.FinalB [T], each rounded to whole flux quanta.
          mBi = nint(area*1.0d-20*Bmag/(fluxq))
          call MIO_InputParameter('MagField.FinalB',Bmag,0.0_dp)
+           !! - `MagField.FinalB`: Last field of the sweep started by MagField.InitialB [T].
          mBf = nint(area*1.0d-20*Bmag/(fluxq))
          if (mBi>mBf) call MIO_Kill('MagField.InitialB is above MagField.FinalB: the sweep would run without any '// &
            'field. Give the range in increasing order.','magf','MagfInit')
       else if (MIO_InputSearchLabel('MagField.InitialInteger',line,id)) then
          call MIO_InputParameter('MagField.InitialInteger',mBi,0)
+           !! - `MagField.InitialInteger`: Field sweep in flux quanta through the cell, from InitialInteger to FinalInteger: one
+           !!   calculation per value, in folders m<m>_B<B>. Both 0 = no field.
          call MIO_InputParameter('MagField.FinalInteger',mBf,0)
+           !! - `MagField.FinalInteger`: Last value of the MagField.InitialInteger sweep (flux quanta through the cell).
          if (mBi>mBf) call MIO_Kill('MagField.InitialInteger is above MagField.FinalInteger: the sweep would '// &
            'run without any field. Give the range in increasing order.','magf','MagfInit')
       else
@@ -70,9 +79,11 @@ subroutine MagfInit()
       magfield = .true.
       if (MIO_InputSearchLabel('MagField.Step',line,id)) then
          call MIO_InputParameter('MagField.Step',BStep,1.0_dp)
+           !! - `MagField.Step`: Step of a field sweep [T], rounded to whole flux quanta (otherwise MagField.IntegerStep).
          mStep = nint(area*1.0d-20*BStep/(fluxq))
       else
          call MIO_InputParameter('MagField.IntegerStep',mStep,1)
+           !! - `MagField.IntegerStep`: Step of a field sweep, in flux quanta through the cell.
       end if
       if (mStep<=0) mStep = 1
    end if
@@ -104,8 +115,11 @@ subroutine MagfValue(mB)
 
    ! Read Zeeman magnetic field parameter (separate from Landau level Bmag)
    call MIO_InputParameter('Zeeman.Bmag',BmagZeeman,0.0_dp)
+     !! - `Zeeman.Bmag`: Field of the Zeeman term [T], separate from the orbital field; the Zeeman energy is ZeemanFactor x
+     !!   Zeeman.Bmag.
 
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+     !! - `Run.TypeOfSystem`: Here: used to name the output folders of a field sweep.
    if (magfield) then
           Bmag = mB*fluxq/(area*1.0d-20)
       if (mBi /= mBf) then
@@ -150,8 +164,12 @@ subroutine HaldPhaseInit()
 #endif /* TIMER */
 
    call MIO_InputParameter('Haldane.SpecifyFlux',l,.false.)
+     !! - `Haldane.SpecifyFlux`: Haldane model: one phase, 2 pi Haldane.Flux / Phi_0 (no sweep over HaldPhase.*).
    call MIO_InputParameter('Haldane.SpecifyPhase',ll,.false.)
+     !! - `Haldane.SpecifyPhase`: Haldane model: one phase, Haldane.Phase [rad] (no sweep over HaldPhase.*).
    call MIO_InputParameter('Haldane.SpecifyRange',lll,.false.)
+     !! - `Haldane.SpecifyRange`: Haldane model: sweep the phase over HaldPhase.InitialInteger..FinalInteger; step m has phase
+     !!   m*2*pi/(FinalInteger - InitialInteger).
    if (l) then
       mPhii = 0
       mPhif = mPhii
@@ -161,7 +179,9 @@ subroutine HaldPhaseInit()
    else
       if (lll) then
          call MIO_InputParameter('HaldPhase.InitialInteger',mPhii,0)
+           !! - `HaldPhase.InitialInteger`: Haldane.SpecifyRange: first step of the phase sweep.
          call MIO_InputParameter('HaldPhase.FinalInteger',mPhif,0)
+           !! - `HaldPhase.FinalInteger`: Haldane.SpecifyRange: last step of the phase sweep.
          ! the phase of step m is m*2*pi/(FinalInteger - InitialInteger)
          if (mPhii == mPhif .and. mPhii /= 0) call MIO_Kill('Haldane.SpecifyRange: HaldPhase.InitialInteger = '// &
            'HaldPhase.FinalInteger divides the phase step by zero. For one phase use Haldane.SpecifyPhase and '// &
@@ -177,6 +197,7 @@ subroutine HaldPhaseInit()
    else
       HaldPhase = .true.
       call MIO_InputParameter('HaldPhase.Step',mPhiStep,1)
+        !! - `HaldPhase.Step`: Haldane.SpecifyRange: increment of the step index.
       if (mPhiStep<=0) mPhiStep = 1
    end if
 

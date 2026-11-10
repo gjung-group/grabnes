@@ -40,13 +40,24 @@ subroutine SCFGetCharge
 
    call MIO_Section('Self-consistent Hubbard charges','scf')
    call MIO_InputParameter('Diag.KGrid',nk,[1,1,1])
+     !! - `Diag.KGrid`: Number of k-points along each reciprocal lattice vector (three integers) of the k-grid; here of the Hubbard
+     !!   SCF.
    call MIO_InputParameter('Hubbard.SCFMaxIterations',nIt,100)
+     !! - `Hubbard.SCFMaxIterations`: Hubbard SCF: maximum number of iterations.
    call MIO_InputParameter('Hubbard.SCFTolerance',tol,0.0001_dp)
+     !! - `Hubbard.SCFTolerance`: Hubbard SCF: convergence threshold on the change of the charges.
    call MIO_InputParameter('Hubbard.SCFMix',alpha,0.5_dp)
+     !! - `Hubbard.SCFMix`: Hubbard SCF: linear mixing, charge = (1 - mix) new + mix old.
    call MIO_InputParameter('Hubbard.MOCharge',dq,0.0_dp)
+     !! - `Hubbard.MOCharge`: Hubbard SCF: spin imbalance dq added to (and subtracted from) the starting charges of the ordered
+     !!   pattern.
    call MIO_InputParameter('Hubbard.AFOrdering',af,.true.)
+     !! - `Hubbard.AFOrdering`: Hubbard SCF: start from an antiferromagnetic (sublattice) spin pattern.
    call MIO_InputParameter('Hubbard.AFOrderingLayer',aflayer,.true.)
+     !! - `Hubbard.AFOrderingLayer`: Hubbard SCF: start from a pattern antiferromagnetic between layers (if Hubbard.AFOrdering is
+     !!   off).
    call MIO_InputParameter('Hubbard.FOrderingLayer',flayer,.true.)
+     !! - `Hubbard.FOrderingLayer`: Hubbard SCF: start from a layer-ferromagnetic pattern (if the two orderings above are off).
    ptot = nk(1)*nk(2)*nk(3)
    call SCFInit(nAt)
    call MIO_Allocate(charge,[2,nAt],'charge','scf')

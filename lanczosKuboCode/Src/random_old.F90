@@ -60,8 +60,10 @@ subroutine RandInit()
    end if
 #endif /* MPI */
    call MIO_InputParameter('Random.Test',test,.false.)
+     !! - `Random.Test`: Old random-number module (random_old.F90, not compiled): run a test of the generator.
    if (test) then
       call MIO_InputParameter('Random.TestNumber',ntest,100)
+        !! - `Random.TestNumber`: Random.Test: number of random numbers drawn.
       call file%Open(name=trim(prefix)//'.RNDM',serial=.true.)
       u = file%GetUnit()
       s = 0.0_dp

@@ -38,6 +38,8 @@ subroutine CalcSelect()
 #endif /* DEBUG */
 
    call MIO_InputParameter('moireBLShift.Calc',u,.false.)
+     !! - `moireBLShift.Calc`: Sweep over rigid layer shifts (Moire.BLShiftDefinedValues or Moire.BLShiftRange): the on-site terms
+     !!   and the Kubo / Diag calculations are repeated for every shift.
    if (u) then
        call TBInit()
        call HamInit()
@@ -62,10 +64,20 @@ subroutine CalcSelect()
        call MagfInit()
        call HaldPhaseInit()
        call MIO_InputParameter('Kubo.Calc',calcK,.true.)
+         !! - `Kubo.Calc`: Run the recursion calculation (CalcKubo): DOS or local DOS, then the time evolution unless
+         !!   Calculate.OnlyDOS.
        call MIO_InputParameter('Diag.Calc',calcD,.false.)
+         !! - `Diag.Calc`: Run the diagonalisation calculations (CalcDiag): bands, DOS, spectral function, selected by the
+         !!   Calculate.* keys.
        call MIO_InputParameter('Output.ReadDataFiles',readDataFiles,.false.)
+         !! - `Output.ReadDataFiles`: Take the hoppings from the file generate.s (one 're im' pair per line, units of g0) instead
+         !!   of computing them; the Peierls phases of a magnetic field are added after reading.
        call MIO_InputParameter('Tunn.Calc',calcT,.false.)
+         !! - `Tunn.Calc`: Write the interlayer sums T_AA, T_AB = -sum_j t_ij exp(i k.d_ij) from each Species-1 atom of layer 1 to
+         !!   layer 2, at k = Tunn.BigKVecX/Y/Z (CalcTunn; files <prefix>.TunnAAR, TunnAAI, TunnABR, TunnABI).
        call MIO_InputParameter('MagField.FrankMagneticField',Frank,.false.)
+         !! - `MagField.FrankMagneticField`: Alternative Peierls gauge of HamHopMagneticField (ham.F90); read here but not used in
+         !!   this routine.
 
        do mB=mBi,mBf, mStep
           call MagfValue(mB)
@@ -147,14 +159,26 @@ subroutine CalcKubo()
 #endif /* DEBUG */
 
    call MIO_InputParameter('Kubo.RecursionNumber',nRecurs,700)
+     !! - `Kubo.RecursionNumber`: Number of Lanczos steps (length of the continued fraction); sets the energy resolution. No
+     !!   reorthogonalisation: the useful length is bounded by the number of distinct levels the start vector sees.
    call MIO_InputParameter('Kubo.NumberofTimeSteps',nT,500)
+     !! - `Kubo.NumberofTimeSteps`: Number of time steps of the Kubo time evolution (KuboTEvol, only without Calculate.OnlyDOS).
    call MIO_InputParameter('Kubo.TimeStep',dT,5.0_dp)
+     !! - `Kubo.TimeStep`: Time step of the Kubo time evolution, in units of hbar/g0 (g0 = TB.Hopping).
    call MIO_InputParameter('Kubo.NumberofPolynomials',nPol,100)
+     !! - `Kubo.NumberofPolynomials`: Number of Chebyshev polynomials in the expansion of U(Kubo.TimeStep) (KuboCn;
+     !!   <prefix>.cn.dat).
    call MIO_InputParameter('Kubo.NumberofEnergyPoints',nEn,1000)
+     !! - `Kubo.NumberofEnergyPoints`: Number of points of the energy grid from Kubo.EnergyMin to Kubo.EnergyMax at which the DOS
+     !!   is written.
    call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+     !! - `Kubo.Epsilon`: Recursion DOS: broadening eta of the continued fraction, the Green function is taken at E + i eta [eV].
    call MIO_InputParameter('Kubo.WriteNumberofSteps',nWr,10)
+     !! - `Kubo.WriteNumberofSteps`: The time evolution writes its output (<prefix>.Z2_<step>.dat) every this many time steps.
    call MIO_InputParameter('Kubo.EnergyMin',Emin,-4.0_dp)
+     !! - `Kubo.EnergyMin`: Lower end of the energy grid of the recursion DOS [eV].
    call MIO_InputParameter('Kubo.EnergyMax',Emax,4.0_dp)
+     !! - `Kubo.EnergyMax`: Upper end of the energy grid of the recursion DOS [eV].
    call MIO_Section('Recursion (Kubo) calculation','calc')
    call MIO_Print('Kubo.RecursionNumber: '//trim(num2str(nRecurs)),'calc')
    call MIO_Print('Energy window: '//trim(num2str(Emin,4))//' to '//trim(num2str(Emax,4))//' eV, '// &
@@ -188,37 +212,79 @@ subroutine CalcKubo()
    end if
 #endif /* MPI */
    call MIO_InputParameter('Kubo.PDOS',PDOS,.false.)
+     !! - `Kubo.PDOS`: Local DOS of selected atoms, layers or species instead of the DOS of the whole cell. The selection is the
+     !!   FIRST of PDOSLayer, PDOSLayerAndSpecies, PDOSDist, PDOSMoireSC1, PDOSMoireSuperMoire, ...2, ...3, PDOSAtomList,
+     !!   PDOSByNumber, PDOSPNP that is set; PDOSMoireSuperMoire(2,3) default to .true. Output in folders PDOS_*.
    if (PDOS) then
         call MIO_InputParameter('Kubo.PDOSxmin',PDOSxmin,0.0_dp)
+          !! - `Kubo.PDOSxmin`: Kubo.PDOSDist: lower x bound of the selected atoms [Angstrom].
         call MIO_InputParameter('Kubo.PDOSxmax',PDOSxmax,5.0_dp)
+          !! - `Kubo.PDOSxmax`: Kubo.PDOSDist: upper x bound of the selected atoms [Angstrom].
         call MIO_InputParameter('Kubo.PDOSymin',PDOSymin,0.0_dp)
+          !! - `Kubo.PDOSymin`: Kubo.PDOSDist: lower y bound of the selected atoms [Angstrom].
         call MIO_InputParameter('Kubo.PDOSymax',PDOSymax,5.0_dp)
+          !! - `Kubo.PDOSymax`: Kubo.PDOSDist: upper y bound of the selected atoms [Angstrom].
         call MIO_InputParameter('Kubo.PDOSDist',PDOSDist,.false.)
+          !! - `Kubo.PDOSDist`: Local DOS of every atom with PDOSxmin < x < PDOSxmax, PDOSymin < y < PDOSymax and index >=
+          !!   PDOSMinValue, one folder PDOS_atom<index> each.
         call MIO_InputParameter('Kubo.PDOSLayer',PDOSLayer,.false.)
+          !! - `Kubo.PDOSLayer`: DOS of each layer 1..Kubo.NumberOfLayers, from a random-phase vector on the atoms of that layer
+          !!   (folders PDOS_layer<NN>).
         call MIO_InputParameter('Kubo.PDOSLayerAndSpecies',PDOSLayerAndSpecies,.false.)
+          !! - `Kubo.PDOSLayerAndSpecies`: DOS of each layer and Species, from a random-phase vector on those atoms (folders
+          !!   PDOS_layer<NN>_sub<NN>; combinations without atoms are skipped).
         call MIO_InputParameter('Kubo.PDOSMoireSC1',PDOSMoireSC1,.false.)
+          !! - `Kubo.PDOSMoireSC1`: Local DOS of every atom of the first SuperCell copy (both fractional coordinates below
+          !!   1/SuperCell) with index >= PDOSMinValue, one folder PDOS_atom<index> each.
         call MIO_InputParameter('Kubo.PDOSMoireSuperMoire',PDOSMoireSuperMoire,.true.)
+          !! - `Kubo.PDOSMoireSuperMoire`: Local DOS of the Species-1 atoms whose distance along both lattice vectors (fractional
+          !!   coordinate times CellSize*SuperCell*aG) is below Kubo.PDOSMoireSuperMoireLength. Default .true.
         call MIO_InputParameter('Kubo.PDOSMoireSuperMoire2',PDOSMoireSuperMoire2,.true.)
+          !! - `Kubo.PDOSMoireSuperMoire2`: As Kubo.PDOSMoireSuperMoire, for distances from 1 to 2 times
+          !!   Kubo.PDOSMoireSuperMoireLength.
         call MIO_InputParameter('Kubo.PDOSMoireSuperMoire3',PDOSMoireSuperMoire3,.true.)
+          !! - `Kubo.PDOSMoireSuperMoire3`: As Kubo.PDOSMoireSuperMoire, for distances from 2 to 3 times
+          !!   Kubo.PDOSMoireSuperMoireLength.
         call MIO_InputParameter('Kubo.PDOSMoireSuperMoireLength',PDOSMoireSuperMoireLength,135d0)
+          !! - `Kubo.PDOSMoireSuperMoireLength`: Side of the regions selected by Kubo.PDOSMoireSuperMoire(2,3) [Angstrom].
         call MIO_InputParameter('Kubo.PDOSMinValue',PDOSMinValue,0)
+          !! - `Kubo.PDOSMinValue`: Atoms with a smaller index are skipped by Kubo.PDOSDist, PDOSMoireSC1 and
+          !!   PDOSMoireSuperMoire(2,3).
         PDOSMoireSuperMoireLength = PDOSMoireSuperMoireLength/aG
         call MIO_InputParameter('Structure.CellSize',cellSize,50)
+          !! - `Structure.CellSize`: Here: sets the cell length CellSize*SuperCell*aG used by the Kubo.PDOSMoireSuperMoire
+          !!   selections.
         call MIO_InputParameter('Kubo.PDOSAtomList',PDOSAtomList,.false.)
+          !! - `Kubo.PDOSAtomList`: Local DOS of the six atoms listed in Kubo.PDOSList.
         call MIO_InputParameter('Kubo.PDOSByNumber',PDOSByNumber,.false.)
+          !! - `Kubo.PDOSByNumber`: Local DOS of the single atom Kubo.PDOSNumber.
         call MIO_InputParameter('Kubo.PDOSIgnoreLayer1and4',PDOSIgnoreLayer1and4,.false.)
+          !! - `Kubo.PDOSIgnoreLayer1and4`: With Kubo.PDOSMoireSC1: skip the atoms of layers 1 and 4.
         call MIO_InputParameter('Kubo.NumberOfLayers',numberOfLayers,2)
+          !! - `Kubo.NumberOfLayers`: Number of layers of Kubo.PDOSLayer / PDOSLayerAndSpecies (layers 1..N; a warning is printed
+          !!   when the structure has more).
         if ((PDOSLayer .or. PDOSLayerAndSpecies) .and. numberOfLayers < maxval(layerIndex(1:nAt))) &
           call MIO_Warning('Kubo.NumberOfLayers is '//trim(num2str(numberOfLayers))//' but the structure has '// &
             trim(num2str(maxval(layerIndex(1:nAt))))//' layers: the layer DOS of layers above '// &
             trim(num2str(numberOfLayers))//' is not written','calc')
         call MIO_InputParameter('Kubo.NumberOfBNAtoms1',numberOfBNAtoms1,5832)
+          !! - `Kubo.NumberOfBNAtoms1`: Kubo.PDOSLayer with Stack.EncapsulatedFourLayers: assumed atoms of layer 1 per input cell
+          !!   (times SuperCell^2). The start vector is normalised afterwards, so the value does not change the result.
         call MIO_InputParameter('Kubo.NumberOfBNAtoms2',numberOfBNAtoms2,5832)
+          !! - `Kubo.NumberOfBNAtoms2`: As Kubo.NumberOfBNAtoms1, for layer 4.
         call MIO_InputParameter('Kubo.NumberOfCAtoms',numberOfCAtoms,6050)
+          !! - `Kubo.NumberOfCAtoms`: As Kubo.NumberOfBNAtoms1, for layers 2 and 3 (Stack.EncapsulatedFourLayers) or layers 1-6
+          !!   (Stack.T3BG).
         call MIO_InputParameter('Stack.EncapsulatedFourLayers',encapsulatedFourLayers,.false.)
+          !! - `Stack.EncapsulatedFourLayers`: Stack model flag (ham.F90). Here: Kubo.PDOSLayer takes the layer sizes from
+          !!   Kubo.NumberOf*Atoms.
         call MIO_InputParameter('Stack.EncapsulatedSixLayers',encapsulatedSixLayers,.false.)
+          !! - `Stack.EncapsulatedSixLayers`: Stack model flag (ham.F90); read here but not used in this routine.
         call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
+          !! - `Stack.T3BG`: Stack model flag (ham.F90). Here: Kubo.PDOSLayer takes the layer sizes from Kubo.NumberOfCAtoms.
         call MIO_InputParameter('Kubo.PDOSPNP',PDOSPNP,.false.)
+          !! - `Kubo.PDOSPNP`: Local DOS of two atoms of a p-n-p potential (Potential.PNPKink): the first with x just above L/4 and
+          !!   the first with x just above L/4 + 2*Potential.PNPDelta, L = CellSize*SuperCell*aG.
         !  !call PDOSByInterpolation()
         !  ! Calculate each of the 6 high symmetry sites
         !  ! PDOS_A, corresponds to AA site
@@ -404,6 +470,7 @@ subroutine CalcKubo()
           end do
         else if (PDOSAtomList) then
           call MIO_InputParameter('Kubo.PDOSList',PDOSList,[1,2,3,4,5,6])
+            !! - `Kubo.PDOSList`: Kubo.PDOSAtomList: exactly six atom indices (1-based, the order of generate.pos).
           do j=1,size(PDOSList)
             i = PDOSList(j)
             write(prefix,'(a4,a5,I8.8)') 'PDOS','_atom', i
@@ -421,6 +488,7 @@ subroutine CalcKubo()
           end do
         else if (PDOSByNumber) then
           call MIO_InputParameter('Kubo.PDOSNumber',PDOSNumber,1)
+            !! - `Kubo.PDOSNumber`: Kubo.PDOSByNumber: index of the atom (1-based, the order of generate.pos).
           call KuboInitWFPDOS(Psi,PDOSNumber)
           call KuboDOS(Psi,Psin,Psinm1,a,b,H,H0,hopp,NList2,nRecurs,eps,nEn,Emin,Emax)
         else if (PDOSPNP) then
@@ -429,6 +497,8 @@ subroutine CalcKubo()
           aCC = aG/sqrt(3.0_dp)
           limit1 = (n*sCell*aG)*1.0_dp/4.0_dp
           call MIO_InputParameter('Potential.PNPDelta',delta,10.0_dp)
+            !! - `Potential.PNPDelta`: Width of the tanh steps of the p-n-p potential [Angstrom]. Here: offset of the second atom
+            !!   of Kubo.PDOSPNP (L/4 + 2*PNPDelta).
           flag1 = 0
           flag2 = 0
           do i=inode1,inode2
@@ -474,7 +544,11 @@ subroutine CalcKubo()
         call KuboDOS(Psi,Psin,Psinm1,a,b,H,H0,hopp,NList2,nRecurs,eps,nEn,Emin,Emax)
    end if
    call MIO_InputParameter('Calculate.Polynomials',pol,.false.)
+     !! - `Calculate.Polynomials`: Compute the Chebyshev coefficients of U(Kubo.TimeStep) (<prefix>.cn.dat) also with
+     !!   Calculate.OnlyDOS.
    call MIO_InputParameter('Calculate.OnlyDOS',onlydos,.false.)
+     !! - `Calculate.OnlyDOS`: Stop after the recursion DOS. Without it the Kubo time evolution (KuboTEvol) follows, which costs
+     !!   far more.
    if (pol .or. .not. onlydos) then
       call KuboInterval(nRecurs,a,b,ac,bc)
       call MIO_Allocate(c,nPol,'c','calc')
@@ -547,13 +621,17 @@ subroutine CalcTunn()
 
    if (frac) call AtomsSetCart()
    call MIO_InputParameter('Tunn.BigKVecX',bigKVecX,0.0_dp) ! give the coordinates of K like for the k-path, one by one
+     !! - `Tunn.BigKVecX`: First component of the k of Tunn.Calc, in units of the reciprocal lattice vectors (as in Bands.Path).
    call MIO_InputParameter('Tunn.BigKVecY',bigKVecY,0.0_dp)
+     !! - `Tunn.BigKVecY`: Second component of the k of Tunn.Calc, in units of the reciprocal lattice vectors.
    call MIO_InputParameter('Tunn.BigKVecZ',bigKVecZ,0.0_dp)
+     !! - `Tunn.BigKVecZ`: Third component of the k of Tunn.Calc, in units of the reciprocal lattice vectors.
    bigKVec = [bigKVecX,bigKVecY,bigKVecZ]
    bigKVec = bigKVec(1)*rcell(:,1) + bigKVec(2)*rcell(:,2) + bigKVec(3)*rcell(:,3)
    call MIO_PrintDebug('Tunn.BigKVec (Cartesian, 1/Ang): '//trim(num2str(bigKVec(1),6))//' '// &
      trim(num2str(bigKVec(2),6))//' '//trim(num2str(bigKVec(3),6)),'calc')
    call MIO_InputParameter('Tunn.NumberOfMoires',numberOfMoires,1)
+     !! - `Tunn.NumberOfMoires`: Tunn.Calc: the written sums are divided by this number.
    call file1%Open(name=trim(prefix)//'.'//'TunnAAR',serial=.true.)
    u1 = file1%GetUnit()
    call file2%Open(name=trim(prefix)//'.'//'TunnAAI',serial=.true.)
@@ -636,9 +714,14 @@ subroutine CalcDiag()
 
    call MIO_Section('Diagonalisation','calc')
    call MIO_InputParameter('Calculate.DOS',dos,.false.)
+     !! - `Calculate.DOS`: DOS by exact diagonalisation on a k-grid (DiagDOS; DiagPDOS with Calculate.PDOS).
    call MIO_InputParameter('Calculate.PDOS',PDOS,.false.)
+     !! - `Calculate.PDOS`: With Calculate.DOS: projected DOS (DiagPDOS) instead of the total DOS.
    call MIO_InputParameter('Calculate.Bands',bands,.false.)
+     !! - `Calculate.Bands`: Band structure along Bands.Path (DiagBands, writes generate.bands). Bands.GrapheneUnitCell,
+     !!   Bands.AroundGrapheneK and Diag.RashbaCalculation select other band routines.
    call MIO_InputParameter('Calculate.Chern',chern,.false.)
+     !! - `Calculate.Chern`: Refused: this dense finite-difference route never computed a Chern number. Use Diag.ChernCalculation.
    ! DiagChern / DiagHamChern (dense finite differences) never computed a Chern number: dH/dkx is taken from an
    ! array that is never filled, the "velocity" is an element-wise product i*H*dH, the projection uses the
    ! transpose instead of the adjoint, and every band gets the same double sum
@@ -646,30 +729,61 @@ subroutine CalcDiag()
      'number and is refused. Use Diag.ChernCalculation (TAPW Kubo route, CalculateChernTAPW) instead.', &
      'calc','CalcDiag')
    call MIO_InputParameter('Diag.RashbaCalculation',RashbaCalculation,.false.)
+     !! - `Diag.RashbaCalculation`: With Calculate.Bands: DiagBandsRashba instead of DiagBands (refused at present, the routine
+     !!   needs updating).
    call MIO_InputParameter('Diag.MoireAngle',moireAngle,-33.004491598883078_dp)
+     !! - `Diag.MoireAngle`: TAPW: orientation of the graphene lattice in the frame of the cell [degrees] (the canonical lattice,
+     !!   a1 along x, is rotated by it). 0 for a cell aligned with graphene; GenMoire prints it as 'Angle of commensurate cell'. A
+     !!   wrong value gives a smooth but empty low-energy spectrum.
    call MIO_InputParameter('Diag.GGridRotationAngle',gGridRotationAngle,0.0_dp)
+     !! - `Diag.GGridRotationAngle`: TAPW: rotate the plane-wave (G) list by this angle after it is built [degrees]; 0 = no
+     !!   rotation.
    call MIO_InputParameter('Diag.N_G',tapwNG,180)
+     !! - `Diag.N_G`: TAPW: number of distinct G lengths (shells of the cell's reciprocal lattice, around the valley) in the basis;
+     !!   M = (number of G) x (layer, sublattice labels). N_G 8 gives 55 G on a hexagonal cell; the default 180 is very large.
    call MIO_InputParameter('Diag.ChernCalculation',calculateChern,.false.)
+     !! - `Diag.ChernCalculation`: Chern numbers of the TAPW bands from the Kubo formula on a Diag.ChernGridX x ChernGridY k-grid.
    call MIO_InputParameter('Diag.ChernGridX',nk_chern_x,10)
+     !! - `Diag.ChernGridX`: Diag.ChernCalculation: number of k-points along the first reciprocal lattice vector.
    call MIO_InputParameter('Diag.ChernGridY',nk_chern_y,10)
+     !! - `Diag.ChernGridY`: Diag.ChernCalculation: number of k-points along the second reciprocal lattice vector.
    call MIO_InputParameter('Diag.Chern_EF',fermi_energy,0.0_dp)
+     !! - `Diag.Chern_EF`: Diag.ChernCalculation: Fermi energy [eV].
    call MIO_InputParameter('Diag.TriangularTruncation',useTriangularTruncation,.false.)
+     !! - `Diag.TriangularTruncation`: TAPW: G list from a triangular truncation (generate_triangular_G_list) instead of shells of
+     !!   equal G length.
    call MIO_InputParameter('Diag.CheckTAPWUnitary',checkTAPWUnitary,.false.)
+     !! - `Diag.CheckTAPWUnitary`: TAPW diagnostic: G list covering the whole first Brillouin zone (sized from
+     !!   Diag.PhysicalTwistAngle), and a check that the transformation is unitary (run with Diag.TAPWDebug).
    call MIO_InputParameter('Diag.PhysicalTwistAngle',physicalTwistAngle,1.08_dp)
+     !! - `Diag.PhysicalTwistAngle`: Twist angle [degrees] used only to size the G list of Diag.CheckTAPWUnitary.
    call MIO_InputParameter('Diag.UseKprimeValley',useKprimeValley,.false.)
+     !! - `Diag.UseKprimeValley`: TAPW basis around K' = (1/3,2/3) of the graphene reciprocal lattice instead of K = (2/3,1/3).
    call MIO_InputParameter('Diag.TAPWDebug',tapwDebug,.false.)
+     !! - `Diag.TAPWDebug`: Extra TAPW diagnostics in the output (Hermiticity, G list, ...); the bands are unchanged.
    call MIO_InputParameter('Diag.socDebug',socDebug,.false.)
+     !! - `Diag.socDebug`: Verbose output of the spinful (SOC) block TAPW path.
    call MIO_InputParameter('Diag.forceBlockTAPW',forceBlockTAPW,.false.)
+     !! - `Diag.forceBlockTAPW`: Test switch: use the spinful block TAPW path even without Rashba SOC.
    call MIO_InputParameter('Diag.UseRigidPositions',useRigidPositions,.false.)
+     !! - `Diag.UseRigidPositions`: TAPW: build the plane waves on the rigid positions of generateInit.xyz (fixed name, same atom
+     !!   order); the Hamiltonian keeps the relaxed positions. For relaxed cells Diag.TAPWLowdin is the usual choice.
    call MIO_InputParameter('Diag.TAPWLowdin',tapwLowdin,.false.)
+     !! - `Diag.TAPWLowdin`: TAPW: orthonormalise the basis, X <- X (X^H X)^(-1/2). Plane waves on displaced (relaxed) atoms are
+     !!   not orthonormal, and the plain projection then shifts the levels; prints the range of eig(X^H X).
    ! Both graphene valleys in one TAPW basis: G-shells around K AND K' (valley
    ! mixing enters through the exact projection).  Default .false. = one valley.
    call MIO_InputParameter('Diag.TAPWBothValleys',tapwBothValleys,.false.)
+     !! - `Diag.TAPWBothValleys`: TAPW: G shells around both K and K' in one basis (M doubles), so that intervalley coupling
+     !!   enters. Not with Diag.TriangularTruncation, CheckTAPWUnitary or the sparse TAPW path.
    ! Diagnostic: drop the K-K' block again (must reproduce the two one-valley runs).
    call MIO_InputParameter('Diag.TAPWValleyDecouple',tapwValleyDecouple,.false.)
+     !! - `Diag.TAPWValleyDecouple`: Diagnostic for Diag.TAPWBothValleys: set the K-K' block to zero.
    if (tapwValleyDecouple .and. .not. tapwBothValleys) &
         call MIO_Warning('Diag.TAPWValleyDecouple is ignored: it needs Diag.TAPWBothValleys','calc')
    call MIO_InputParameter('Diag.Calculate3DTAPWBands',calculate3DTAPWBands,.false.)
+     !! - `Diag.Calculate3DTAPWBands`: Bands on a Diag.3DBandsGridX x 3DBandsGridY k-grid instead of Bands.Path (DiagBands); rows
+     !!   kx ky kz E_1 ... E_M in generate.bands.
    ! Default .true.: Monkhorst-Pack sits half a grid step off every high-
    ! symmetry point (measured: 0.492 steps from moire K'), which turns a band
    ! extremum there into a sampling artefact -- the G/hBN CellSize 55 CNP gap
@@ -677,8 +791,12 @@ subroutine CalcDiag()
    ! Contour AREAS are unaffected (median 1.3e-5 of A_BZ between the two).
    ! Set .false. to recover the old Monkhorst-Pack k-set.
    call MIO_InputParameter('Diag.GammaCentred3DGrid',gammaCentred3D,.true.)
+     !! - `Diag.GammaCentred3DGrid`: Diag.Calculate3DTAPWBands: grid through Gamma, so that high-symmetry points on it are sampled.
+     !!   .false. = the Monkhorst-Pack grid used before, offset by half a step.
    call MIO_InputParameter('Diag.3DBandsGridX',nk_3D_x,10)
+     !! - `Diag.3DBandsGridX`: Diag.Calculate3DTAPWBands: number of k-points along the first reciprocal lattice vector.
    call MIO_InputParameter('Diag.3DBandsGridY',nk_3D_y,10)
+     !! - `Diag.3DBandsGridY`: Diag.Calculate3DTAPWBands: number of k-points along the second reciprocal lattice vector.
 #ifdef SEMICL
 #define SEMICL_SECTION 3
 #include "calc_semicl.inc"
@@ -688,27 +806,51 @@ subroutine CalcDiag()
    ! harmonic couples two sheets at an avoided crossing).  Default .false.: a run that does not ask for it
    ! behaves exactly as before.
    call MIO_InputParameter('Diag.GWeights',gWeightsTAPW,.false.)
+     !! - `Diag.GWeights`: TAPW: write the plane-wave (G) composition of the eigenstates to <prefix>.GWeights: per k and band, the
+     !!   energy and the Diag.GWeightsTop largest weights.
    call MIO_InputParameter('Diag.GWeightsBandMin',gw_b1,1)
+     !! - `Diag.GWeightsBandMin`: Diag.GWeights: first band written (1-based).
    call MIO_InputParameter('Diag.GWeightsBandMax',gw_b2,1)
+     !! - `Diag.GWeightsBandMax`: Diag.GWeights: last band written (1-based).
    call MIO_InputParameter('Diag.GWeightsTop',gw_ntop,8)
+     !! - `Diag.GWeightsTop`: Diag.GWeights: number of largest plane-wave weights written per state.
    call MIO_InputParameter('Diag.GWeightsHam',gWeightsHam,.false.)
+     !! - `Diag.GWeightsHam`: With Diag.GWeights: also write the projected TAPW Hamiltonian H(k) [eV], before diagonalisation, to
+     !!   <prefix>.TAPWHam (M x M per k: large).
    ! Layer / sublattice composition of TAPW eigenstates -> <prefix>.LayerWeights (opt-in; BandMin/Max 0 0 = all
    ! bands, as needed for layer charges).  Default .false.: a run that does not ask for it behaves exactly as before.
    call MIO_InputParameter('Diag.LayerWeights',layerWeightsTAPW,.false.)
+     !! - `Diag.LayerWeights`: TAPW: write the weight of each eigenstate on each TAPW label (layer and Species), summed over the
+     !!   atoms, to <prefix>.LayerWeights.
    call MIO_InputParameter('Diag.LayerWeightsBandMin',lw_b1,0)
+     !! - `Diag.LayerWeightsBandMin`: Diag.LayerWeights: first band written (1-based; 0 with LayerWeightsBandMax 0 = all bands).
    call MIO_InputParameter('Diag.LayerWeightsBandMax',lw_b2,0)
+     !! - `Diag.LayerWeightsBandMax`: Diag.LayerWeights: last band written (1-based; 0 with LayerWeightsBandMin 0 = all bands).
    if (gWeightsTAPW .and. gWeightsHam) call MIO_Print('Diag.GWeightsHam: writing the projected TAPW Hamiltonian '// &
         'to <prefix>.TAPWHam','calc')
    if (gWeightsTAPW) call MIO_Print('Diag.GWeights: writing the plane-wave composition of bands '// &
         trim(num2str(gw_b1))//'..'//trim(num2str(gw_b2))//' (top '//trim(num2str(gw_ntop))//' G) to <prefix>.GWeights','calc')
    call MIO_InputParameter('Calculate.3DBands',bands3D,.false.)
+     !! - `Calculate.3DBands`: Bands on the k-grid Diag.KGrid by exact diagonalisation (Diag3DBands).
    call MIO_InputParameter('Calculate.Spectral',spectral,.false.)
+     !! - `Calculate.Spectral`: Unfolded spectral function along Bands.Path (Spectral.* keys).
    call MIO_InputParameter('Calculate.SpectralEnergyCut',spectralEnergyCut,.false.)
+     !! - `Calculate.SpectralEnergyCut`: Unfolded spectral function on a k-grid at fixed energies (constant-energy cuts).
    call MIO_InputParameter('Spectral.DirectBandVal',DirectBandVal,.false.)
+     !! - `Spectral.DirectBandVal`: Use the _v2 routines for Calculate.Spectral / SpectralEnergyCut, which also write the band
+     !!   energy next to the unfolded weights.
    call MIO_InputParameter('Calculate.SpectralEnergyCutNickDale',spectralEnergyCutNickDale,.false.)
+     !! - `Calculate.SpectralEnergyCutNickDale`: Constant-energy cuts of the unfolded spectral function, NickDale variant of
+     !!   Calculate.SpectralEnergyCut.
    call MIO_InputParameter('Bands.GrapheneUnitCell',grapheneUnitCell,.false.)
+     !! - `Bands.GrapheneUnitCell`: Bands with Bloch phases from the graphene primitive cell (DiagBandsG); refused unless the
+     !!   simulation cell is that cell.
    call MIO_InputParameter('Bands.AroundGrapheneK',aroundGrapheneK,.false.)
+     !! - `Bands.AroundGrapheneK`: Bands.Path points are taken relative to graphene K = (2/3,1/3) of the graphene reciprocal
+     !!   lattice.
    call MIO_InputParameter('Hubbard.EnableSCF',enableSCF,.true.)
+     !! - `Hubbard.EnableSCF`: Self-consistent Hubbard term in two-spin runs. The module is unfinished: a two-spin diagonalisation
+     !!   is refused unless this is .false. (the default is .true.).
    if (spectralEnergyCut .or. spectralEnergyCutNickDale .or. spectral .or. bands .or. dos .or. bands3D) then
       call DiagInit(nAt)
       if (nspin==2 .and. enableSCF) then

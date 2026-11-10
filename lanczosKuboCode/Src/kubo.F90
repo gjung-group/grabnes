@@ -47,7 +47,9 @@ subroutine KuboInitWF(Psi)
    allocate(seed(n))
    call system_clock(COUNT=clock)
    call MIO_InputParameter('Kubo.SetSeed',setSeed,.false.)
+     !! - `Kubo.SetSeed`: Seed the random-phase start vector with Kubo.SeedValue; otherwise from the clock (runs not reproducible).
    call MIO_InputParameter('Kubo.SeedValue',seedValue,123456)
+     !! - `Kubo.SeedValue`: Kubo.SetSeed: seed of the random-phase start vector; use different values to average over vectors.
    if (setSeed) then
        seed = seedValue
        call MIO_Print('Random seed taken from the input (Kubo.SeedValue)','kubo')
@@ -162,6 +164,7 @@ subroutine KuboInitWFLayerDOS(Psi,layerNumber,numberOfLayers,numberOfAtomsInLaye
    allocate(seed(n))
    call system_clock(COUNT=clock)
    call MIO_InputParameter('Kubo.SeedSet',SetSeed,1235)
+     !! - `Kubo.SeedSet`: Seed of the random-phase start vector of a layer DOS (Kubo.PDOSLayer); always used, not the clock.
    call MIO_Print('Seed of the random-phase state: '//trim(num2str(SetSeed)),'kubo')
    seed = SetSeed
    call random_seed(PUT = seed)
@@ -235,6 +238,7 @@ subroutine KuboInitWFLayerAndSpeciesDOS(Psi,layerNumber,speciesNumber,numberOfLa
    allocate(seed(n))
    call system_clock(COUNT=clock)
    call MIO_InputParameter('Kubo.SeedSet',SetSeed,1235)
+     !! - `Kubo.SeedSet`: Seed of the random-phase start vector of a layer-and-species DOS (Kubo.PDOSLayerAndSpecies).
    call MIO_Print('Seed of the random-phase state: '//trim(num2str(SetSeed)),'kubo')
    seed = SetSeed
    call random_seed(PUT = seed)

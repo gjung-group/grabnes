@@ -37,7 +37,9 @@ subroutine RandSeedFromInput()
    call random_seed(size = n)
    allocate(seed(n))
    call MIO_InputParameter('Kubo.SetSeed',setSeed,.false.)
+     !! - `Kubo.SetSeed`: Here: also seeds the random numbers of the disorder models (RandSeedFromInput) with Kubo.SeedValue.
    call MIO_InputParameter('Kubo.SeedValue',seedValue,123456)
+     !! - `Kubo.SeedValue`: Here: seed of the random numbers of the disorder models when Kubo.SetSeed is set.
    if (setSeed) then
       seed = seedValue
    else

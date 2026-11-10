@@ -8,809 +8,811 @@ more than once, the first value is used and the solver prints a warning. A key t
 not read; the keys of the input file that the run did not read are listed at the end of the output.
 
 The default shown is the expression in the source; where it is not a literal, it is computed from other
-input. "Read in" names the source file and routine, which is where to look for what the key does: most
-keys have no other documentation yet.
+input. "Read in" names the source file and routine, which is where to look for what the key does.
 
 A default marked (g0) belongs to a key that is given in eV: the default itself is in units of `TB.Hopping`.
 
 "Former name" is the name of the key before October 2026. It keeps working: an input file may use either
 name (if both are given, the present name is used and the solver prints a warning).
 
-| Key | Former name | Type | Default | Read in |
-| --- | --- | --- | --- | --- |
-| `Bands.AroundGrapheneK` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Bands.GrapheneUnitCell` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Bands.NumPoints` |  | integer | `100` | diag.F90: DiagBands; diag.F90: DiagBandsAroundK; diag.F90: DiagBandsG; ... (5 places) |
-| `Bands.SparseNeig` |  | integer | `100` | diag.F90: DiagBands |
-| `Bands.UseDifferentLatticeVectors` |  | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagBandsRashba; diag.F90: DiagChern |
-| `Bands.UseSameNumberOfPoints` |  | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagChern |
-| `BNBN.Diag` | `BNBNDiag` | logical | `.false.` | ham.F90: HamOnSite |
-| `BNBN.UseDisplacementFile` | `BNBNuseDisplacementFile` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Calculate.3DBands` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Calculate.Bands` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Calculate.Chern` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Calculate.DOS` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Calculate.OnlyDOS` |  | logical | `.false.` | calc.F90: CalcKubo |
-| `Calculate.PDOS` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Calculate.Polynomials` |  | logical | `.false.` | calc.F90: CalcKubo |
-| `Calculate.Spectral` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Calculate.SpectralEnergyCut` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Calculate.SpectralEnergyCutNickDale` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.3DBandsGridX` |  | integer | `10` | calc.F90: CalcDiag |
-| `Diag.3DBandsGridY` |  | integer | `10` | calc.F90: CalcDiag |
-| `Diag.Calc` |  | logical | `.false.` | calc.F90: CalcSelect |
-| `Diag.Calculate3DTAPWBands` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.CheckTAPWUnitary` |  | logical | `.false.` | calc.F90: CalcDiag; diag.F90: DiagH0TAPW |
-| `Diag.Chern_EF` |  | real | `0.0` | calc.F90: CalcDiag |
-| `Diag.ChernAllOccupiedBands` |  | logical | `.false.` | diag.F90: CalculateChernTAPW |
-| `Diag.ChernBandsAboveFermi` |  | integer | `30` | diag.F90: CalculateChernTAPW |
-| `Diag.ChernBandsBelowFermi` |  | integer | `30` | diag.F90: CalculateChernTAPW |
-| `Diag.ChernCalculation` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.ChernEnergyThreshold` |  | real | `1.0e-4` | diag.F90: CalculateBerryAtKpointFromStored; diag.F90: CalculateBerryAtKpointFromStored_OptionA; diag.F90: CalculateBerryAtKpointFromStored_OptionA_withSOC |
-| `Diag.ChernEnergyWindow` |  | real | `0.2` | diag.F90: CalculateChernTAPW |
-| `Diag.ChernEps` |  | real | `1.0e-10` | diag.F90: CalculateBerryAtKpointFromStored; diag.F90: CalculateBerryAtKpointFromStored_OptionA; diag.F90: CalculateBerryAtKpointFromStored_OptionA_withSOC |
-| `Diag.ChernEtaEV` |  | real | `1.0e-6` | diag.F90: CalculateBerryAtKpointFromStored; diag.F90: CalculateBerryAtKpointFromStored_OptionA; diag.F90: CalculateBerryAtKpointFromStored_OptionA_withSOC |
-| `Diag.ChernGridX` |  | integer | `10` | calc.F90: CalcDiag |
-| `Diag.ChernGridY` |  | integer | `10` | calc.F90: CalcDiag |
-| `Diag.ChernNBands` |  | integer | `30` | diag.F90: CalculateChernTAPW |
-| `Diag.ChernTargetBands` |  | integer | `2` | diag.F90: CalculateChernTAPW |
-| `Diag.ChernUseOptionA` |  | logical | `.false.` | diag.F90: CalculateChernTAPW |
-| `Diag.forceBlockTAPW` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.GammaCentred3DGrid` |  | logical | `.true.` | calc.F90: CalcDiag |
-| `Diag.GGridRotationAngle` |  | real | `0.0` | calc.F90: CalcDiag |
-| `Diag.GWeights` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.GWeightsBandMax` |  | integer | `1` | calc.F90: CalcDiag |
-| `Diag.GWeightsBandMin` |  | integer | `1` | calc.F90: CalcDiag |
-| `Diag.GWeightsHam` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.GWeightsTop` |  | integer | `8` | calc.F90: CalcDiag |
-| `Diag.KGrid` | `KGrid` |  | `[1,1,1]` | diag.F90: Diag3DBands; diag.F90: DiagChern; diag.F90: DiagDOS; ... (8 places) |
-| `Diag.LayerWeights` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.LayerWeightsBandMax` |  | integer | `0` | calc.F90: CalcDiag |
-| `Diag.LayerWeightsBandMin` |  | integer | `0` | calc.F90: CalcDiag |
-| `Diag.MoireAngle` |  | real | `-33.004491598883078` | calc.F90: CalcDiag |
-| `Diag.N_G` |  | integer | `180` | calc.F90: CalcDiag |
-| `Diag.PhysicalTwistAngle` |  | real | `1.08` | calc.F90: CalcDiag |
-| `Diag.RashbaCalculation` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.socDebug` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.SparseCount` |  | logical | `.false.` | diag.F90: DiagHamSparse |
-| `Diag.SparseSaveRitz` |  | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagHamSparse |
-| `Diag.SparseSetShift` |  | real | `0.0` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagHamSparse |
-| `Diag.SparseSetTol` |  | real | `0.1` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagHamSparse |
-| `Diag.SparseSetTol` |  | real | `1.0e-9` | diag.F90: DiagHamSparse |
-| `Diag.SparseSolver` | `sparseDiagSolver` | logical | `.false.` | diag.F90: DiagBands |
-| `Diag.SparseUseShift` |  | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagHamSparse; ... (4 places) |
-| `Diag.TAPWBothValleys` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.TAPWDebug` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.TAPWLowdin` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.TAPWValleyDecouple` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.TriangularTruncation` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.UseKprimeValley` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Diag.UseRigidPositions` |  | logical | `.false.` | calc.F90: CalcDiag |
-| `Disorder.Anderson` | `Anderson` | logical | `.false.` | ham.F90: HamOnSite |
-| `Disorder.AndersonAmp` | `AndersonAmp` | real | `1.0 (g0)` | ham.F90: HamOnSite |
-| `Disorder.CheckerDensity` | `checkerDensity` | real | `0.1` | ham.F90: HamOnSite |
-| `Disorder.CheckerDivider` | `checkerDivider` | integer | `10` | ham.F90: HamOnSite |
-| `Disorder.DeltaAmp` | `deltaAmp` | real | `1.0 (g0)` | ham.F90: HamOnSiteDeltaDisorder |
-| `Disorder.DeltaDisorder` | `deltaDisorder` | logical | `.false.` | ham.F90: HamOnSite |
-| `Disorder.DeltaSkewFactor` | `deltaSkewFactor` | real | `1.0` | ham.F90: HamOnSiteDeltaDisorder |
-| `Disorder.GaussDisorder` | `GaussDisorder` | logical | `.false.` | ham.F90: HamOnSite |
-| `Disorder.GaussPotPercentage` | `GaussPotPercentage` | real | `1.0` | gauss.F90: GaussPot |
-| `Disorder.GaussPotRange` | `GaussPotRange` | real | `1.0` | gauss.F90: GaussPot |
-| `Disorder.GaussPotStrength` | `GaussPotStrength` | real | `1.0 (g0)` | ham.F90: HamOnSite |
-| `Disorder.OnsiteShift` | `onsiteShift` | real | `0.1 (g0)` | ham.F90: HamOnSite |
-| `Disorder.SublattAmp` | `SublattAmp` | real | `2.0 (g0)` | ham.F90: HamOnSite |
-| `Disorder.SublatticeDisorder` | `SublatticeDisorder` | logical | `.false.` | ham.F90: HamOnSite |
-| `Disorder.SublattPct` | `SublattPct` | real | `0.1` | ham.F90: HamOnSite |
-| `DOS.Emax` |  | real | `10.0` | diag.F90: Diag3DBands; diag.F90: DiagDOS; diag.F90: DiagPDOS |
-| `DOS.Emin` |  | real | `-10.0` | diag.F90: Diag3DBands; diag.F90: DiagDOS; diag.F90: DiagPDOS |
-| `GBN.Angle` | `GBNAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `GBN.OffDiag` | `GBNOffDiag` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping |
-| `GBN.UseDisplacementFile` | `GBNuseDisplacementFile` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ... (4 places) |
-| `GBN.UseHarmonicApprox` | `GBNuseHarmonicApprox` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Haldane.BothLayers` | `HaldaneBothLayers` | logical | `.false.` | ham.F90: HamHopHaldane |
-| `Haldane.Flux` | `HaldaneFlux` | real | `0.0` | ham.F90: HamHopHaldane |
-| `Haldane.LayerControl` | `HaldaneLayerControl` | logical | `.false.` | ham.F90: HamInit |
-| `Haldane.NNN` | `HaldaneNNN` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping; ham.F90: HamInit |
-| `Haldane.OppositePhase` | `HaldaneOppositePhase` | logical | `.false.` | ham.F90: HamHopHaldane |
-| `Haldane.PaperOrientation` | `paperOrientation` | logical | `.false.` | ham.F90: HamHopHaldane |
-| `Haldane.Phase` | `HaldanePhase` | real | `0.0` | ham.F90: HamHopHaldane |
-| `Haldane.SetFluxQ` | `HaldaneSetFluxQ` | logical | `.false.` | ham.F90: HamHopHaldane |
-| `Haldane.SpecifyFlux` | `HaldaneSpecifyFlux` | logical | `.false.` | ham.F90: HamHopHaldane; magf.F90: HaldPhaseInit |
-| `Haldane.SpecifyPhase` | `HaldaneSpecifyPhase` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopHaldane; magf.F90: HaldPhaseInit |
-| `Haldane.SpecifyRange` | `HaldaneSpecifyRange` | logical | `.false.` | ham.F90: HamHopHaldane; magf.F90: HaldPhaseInit |
-| `Haldane.T2` | `HaldaneT2` | real | `0.0` | tbpar.f90: TBInit |
-| `Haldane.T2` | `HaldaneT2` | real | `0.0 (g0)` | ham.F90: HamHopHaldane |
-| `Haldane.T2Complex` | `HaldaneT2Complex` | real | `0.0` | ham.F90: HamHopHaldane |
-| `HaldPhase.FinalInteger` |  | integer | `0` | magf.F90: HaldPhaseInit |
-| `HaldPhase.InitialInteger` |  | integer | `0` | magf.F90: HaldPhaseInit |
-| `HaldPhase.Step` |  | integer | `1` | magf.F90: HaldPhaseInit |
-| `Hopping.tA1A1_1` | `tA1A1_1` | real | `-0.2238` | ham.F90: HamHopping |
-| `Hopping.tA1A1_2` | `tA1A1_2` | real | `-0.0446` | ham.F90: HamHopping |
-| `Hopping.tA1A2` | `tA1A2` | real | `-0.0883` | ham.F90: HamHopping |
-| `Hopping.tA1A2_2` | `tA1A2_2` | real | `0.0277` | ham.F90: HamHopping |
-| `Hopping.tA1A3` | `tA1A3` | real | `-0.00541` | ham.F90: HamHopping |
-| `Hopping.tA1A3_2` | `tA1A3_2` | real | `0.0009` | ham.F90: HamHopping |
-| `Hopping.tA1B2` | `tA1B2` | real | `-0.1418` | ham.F90: HamHopping |
-| `Hopping.tA1B2_2` | `tA1B2_2` | real | `0.0755` | ham.F90: HamHopping |
-| `Hopping.tA1B3` | `tA1B3` | real | `-0.007551` | ham.F90: HamHopping |
-| `Hopping.tA1B3_1` | `tA1B3_1` | real | `-0.001738` | ham.F90: HamHopping |
-| `Hopping.tA1B3_2` | `tA1B3_2` | real | `0.001772` | ham.F90: HamHopping |
-| `Hopping.tA2A2_1` | `tA2A2_1` | real | `-0.2264` | ham.F90: HamHopping |
-| `Hopping.tA2A2_2` | `tA2A2_2` | real | `-0.044` | ham.F90: HamHopping |
-| `Hopping.tB1A2` | `tB1A2` | real | `-0.3372` | ham.F90: HamHopping |
-| `Hopping.tB1A2_1` | `tB1A2_1` | real | `0.00786` | ham.F90: HamHopping |
-| `Hopping.tB1A2_2` | `tB1A2_2` | real | `0.00078` | ham.F90: HamHopping |
-| `Hopping.tB1A3` | `tB1A3` | real | `-0.00853` | ham.F90: HamHopping |
-| `Hopping.tB1A3_2` | `tB1A3_2` | real | `0.0028` | ham.F90: HamHopping |
-| `Hopping.tB1B1_1` | `tB1B1_1` | real | `-0.2269` | ham.F90: HamHopping |
-| `Hopping.tB1B1_2` | `tB1B1_2` | real | `-0.04606` | ham.F90: HamHopping |
-| `Hopping.tB1B2` | `tB1B2` | real | `-0.08965` | ham.F90: HamHopping |
-| `Hopping.tB1B2_2` | `tB1B2_2` | real | `0.0275` | ham.F90: HamHopping |
-| `Hubbard.AFOrdering` | `AFOrdering` | logical | `.true.` | scf.F90: SCFGetCharge |
-| `Hubbard.AFOrderingLayer` | `AFOrderingLayer` | logical | `.true.` | scf.F90: SCFGetCharge |
-| `Hubbard.EnableSCF` | `EnableSCF` | logical | `.true.` | calc.F90: CalcDiag |
-| `Hubbard.FOrderingLayer` | `FOrderingLayer` | logical | `.true.` | scf.F90: SCFGetCharge |
-| `Hubbard.MOCharge` | `MOCharge` | real | `0.0` | scf.F90: SCFGetCharge |
-| `Hubbard.SCFMaxIterations` | `SCFMaxIterations` | integer | `100` | scf.F90: SCFGetCharge |
-| `Hubbard.SCFMix` | `SCFMix` | real | `0.5` | scf.F90: SCFGetCharge |
-| `Hubbard.SCFTolerance` | `SCFTolerance` | real | `0.0001` | scf.F90: SCFGetCharge |
-| `Hubbard.U_B` | `HubbardU_B` | real | `3.0` | tbpar.f90: TBInit |
-| `Hubbard.U_C` | `HubbardU_C` | real | `3.0` | tbpar.f90: TBInit |
-| `Hubbard.U_N` | `HubbardU_N` | real | `3.0` | tbpar.f90: TBInit |
-| `Hybrid.Percentage` | `HybridPercentage` | real | `1.0` | hybrid.F90: HybridGen |
-| `Hybrid.Radius` | `HybridRadius` | real | `10.0` | hybrid.F90: HybridGen |
-| `Hybrid.RandomSites` | `HybridRandomSites` | logical | `.false.` | hybrid.F90: HybridGen |
-| `Interface.EdgeHopping` | `EdgeHopping` | logical | `.false.` | interface.F90: InterfacePot1 |
-| `Interface.EdgeHoppingAmp` | `EdgeHoppingAmp` | real | `0.2` | interface.F90: InterfacePot1 |
-| `Interface.EdgeHoppingDamp` | `EdgeHoppingDamp` | real | `0.65` | interface.F90: InterfacePot1 |
-| `Interlayer.AddExponentialDecayForDihedral` | `addExponentialDecayForDihedral` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.AddPressureDependence` | `addPressureDependence` | logical | `.true.` | ham.F90: HamHopInterlayerParameters; ham.F90: HamHopping |
-| `Interlayer.AddSecondLayerInteractions` | `addSecondLayerInteractions` | logical | `.false.` | neigh.F90: fastNNnotsquare; neigh.F90: fastNNnotsquareBulkSmall |
-| `Interlayer.BilayerOneParameter` | `BilayerOneParameter` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.BLdelta` | `BLdelta` |  | `0.184*aG` | ham.F90: HamHopping |
-| `Interlayer.CAA` | `CAA` | real | `0.00110` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CAA` | `CAA` | real | `0.005733` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CAA0` | `CAA0` | real | `0.0` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CAA0` | `CAA0` | real | `3.332` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CApAp` | `CApAp` | real | `-0.005703` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CApAp` | `CApAp` | real | `0.00110` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CApAp0` | `CApAp0` | real | `0.0` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CBB` | `CBB` | real | `0.00110` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CBB` | `CBB` | real | `0.004826` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CBB0` | `CBB0` | real | `-1.493` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CBB0` | `CBB0` | real | `0.0` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CBpBp` | `CBpBp` | real | `-0.003596` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CBpBp` | `CBpBp` | real | `0.00110` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.CBpBp0` | `CBpBp0` | real | `0.0` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.ChangeLatticeParameterForSrivaniModel` | `changeLatticeParameterForSrivaniModel` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.CorrugatedInterlayerTwoCenter` | `corrugatedInterlayerTwoCenter` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.CouplingFactor` | `couplingFactor` | real | `1.0` | ham.F90: HamHopping |
-| `Interlayer.CouplingFactor2` | `couplingFactor2` | real | `1.0` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayer` | `deactivateInterlayer` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayer12` | `deactivateInterlayer12` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayer23` | `deactivateInterlayer23` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayer34` | `deactivateInterlayer34` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayerBG` | `deactivateInterlayerBG` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayert2BG2to3` | `deactivateInterlayert2BG2to3` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayert2GBN1to2` | `deactivateInterlayert2GBN1to2` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayert2GBN2to3` | `deactivateInterlayert2GBN2to3` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayert3BG1to2` | `deactivateInterlayert3BG1to2` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayert3BG2to3` | `deactivateInterlayert3BG2to3` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayert3BG3to4` | `deactivateInterlayert3BG3to4` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayert3BG4to5` | `deactivateInterlayert3BG4to5` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayert3BG5to6` | `deactivateInterlayert3BG5to6` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateInterlayerTwisted` | `deactivateInterlayerTwisted` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateV3` | `deactivateV3` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DeactivateV6` | `deactivateV6` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.DifferentCouplings` | `differentCouplings` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.FindThetasGeometrically` | `findThetasGeometrically` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.InterfaceAmpB` | `InterfaceAmpB` | real | `0.56` | interface.F90: InterfacePot1 |
-| `Interlayer.InterfaceAmpCB` | `InterfaceAmpCB` |  | `AmpB(3)` | interface.F90: InterfacePot1 |
-| `Interlayer.InterfaceAmpCN` | `InterfaceAmpCN` |  | `AmpN(3)` | interface.F90: InterfacePot1 |
-| `Interlayer.InterfaceAmpN` | `InterfaceAmpN` | real | `0.56` | interface.F90: InterfacePot1 |
-| `Interlayer.InterfaceBNlambda` | `InterfaceBNlambda` | integer | `3` | interface.F90: InterfacePot1 |
-| `Interlayer.InterfaceBNlambda_B` | `InterfaceBNlambda_B` | integer | `3` | interface.F90: InterfacePot1 |
-| `Interlayer.InterfaceBNlambda_N` | `InterfaceBNlambda_N` | integer | `3` | interface.F90: InterfacePot1 |
-| `Interlayer.InterfaceClambda` | `InterfaceClambda` | integer | `1` | interface.F90: InterfacePot1 |
-| `Interlayer.InterfaceClambda_B` | `InterfaceClambda_B` | integer | `1` | interface.F90: InterfacePot1 |
-| `Interlayer.InterfaceClambda_N` | `InterfaceClambda_N` | integer | `1` | interface.F90: InterfacePot1 |
-| `Interlayer.KaxirasCutoff` | `KaxirasCutoff` | real | `1.0` | ham.F90: HamHopping |
-| `Interlayer.KoshinoSR` | `KoshinoSR` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.LegacyAngleSearch` |  | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.LegacyBernalTAB1` |  | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.MinDelta` | `minDelta` | real | `1.0` | ham.F90: HamHopping |
-| `Interlayer.NewFittingFunctions` | `newFittingFunctions` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.OldParameterSet` | `oldParameterSet` | logical | `.false.` | ham.F90: HamHopInterlayerParameters; ham.F90: HamHopping |
-| `Interlayer.OnlyV0` | `onlyV0` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.Onlyvppsigma` | `onlyvppsigma` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.Oppositedxdy` | `oppositedxdy` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
-| `Interlayer.PhiAA` | `PhiAA` | real | `82.54` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.PhiAA` | `PhiAA` | real | `90.0` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.PhiApAp` | `PhiApAp` | real | `-82.54` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.PhiApAp` | `PhiApAp` | real | `87.51` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.PhiBB` | `PhiBB` | real | `-82.54` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.PhiBB` | `PhiBB` | real | `65.49` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.PhiBpBp` | `PhiBpBp` | real | `65.06` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.PhiBpBp` | `PhiBpBp` | real | `82.54` | ham.F90: HamOnSiteMoirePotential |
-| `Interlayer.RenormalizeCoupling` | `renormalizeCoupling` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.RenormalizeHoppingFactorAAp` | `renormalizeHoppingFactorAAp` | real | `1.0` | ham.F90: HamHopping |
-| `Interlayer.RenormalizeHoppingFactorABp` | `renormalizeHoppingFactorABp` | real | `1.0` | ham.F90: HamHopping |
-| `Interlayer.RenormalizeHoppingFactorBAp` | `renormalizeHoppingFactorBAp` | real | `1.0` | ham.F90: HamHopping |
-| `Interlayer.RenormalizeHoppingFactorBBp` | `renormalizeHoppingFactorBBp` | real | `1.0` | ham.F90: HamHopping |
-| `Interlayer.SetnLayersToZero` | `setnLayersToZero` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.SublatticeDependent` | `sublatticeDependent` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
-| `Interlayer.SublatticeIndependent` | `sublatticeIndependent` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
-| `Interlayer.SwitchV3Sign` | `switchV3Sign` | logical | `.false.` | ham.F90: HamHopping |
-| `Interlayer.TwistedBLtbt` | `twistedBLtbt` | real | `0.113` | ham.F90: HamHopping |
-| `Interlayer.TypeOfBL` | `TypeOfBL` | string | `'None'` | ham.F90: HamHopping; ham.F90: HamOnSiteSpeciesEnergies |
-| `Interlayer.TypeOfSL` | `TypeOfSL` | string | `'None'` | ham.F90: HamHopping |
-| `Interlayer.UseBNGKaxiras` | `useBNGKaxiras` | logical | `.false.` | ham.F90: HamHopInterlayerParameters; ham.F90: HamHopping; ham.F90: HamOnSiteSpeciesEnergies |
-| `Interlayer.UseBNGSrivani` | `useBNGSrivani` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
-| `Interlayer.UseOnlyVAB` | `useOnlyVAB` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
-| `Interlayer.UseTheta` | `useTheta` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
-| `Interlayer.UseThetaIJ` | `useThetaIJ` | logical | `.false.` | ham.F90: HamHopInterlayerParameters |
-| `Interlayer.Vpppi0` | `vpppi0` | real | `2.7` | ham.F90: HamHopping |
-| `Interlayer.Vpppi0` | `vpppi0` | real | `3.5` | ham.F90: HamHopping |
-| `Interlayer.Vppsigma0` | `vppsigma0` | real | `0.48` | ham.F90: HamHopping |
-| `Intralayer.Bilayert2KA` | `Bilayert2KA` | real | `-0.2235` | ham.F90: HamHopping |
-| `Intralayer.Bilayert2KB` | `Bilayert2KB` | real | `-0.2260` | ham.F90: HamHopping |
-| `Intralayer.Bilayert3K` | `Bilayert3K` | real | `0.1984` | ham.F90: HamHopping |
-| `Intralayer.Bilayert4K` | `Bilayert4K` | real | `0.0` | ham.F90: HamHopping |
-| `Intralayer.Bilayert5KA` | `Bilayert5KA` | real | `-0.04016` | ham.F90: HamHopping |
-| `Intralayer.Bilayert5KB` | `Bilayert5KB` | real | `-0.0404` | ham.F90: HamHopping |
-| `Intralayer.BilayertAA1` | `BilayertAA1` | real | `0.09244` | ham.F90: HamHopping |
-| `Intralayer.BilayertAA3` | `BilayertAA3` | real | `-0.02299` | ham.F90: HamHopping |
-| `Intralayer.BilayertAB1` | `BilayertAB1` | real | `0.1391` | ham.F90: HamHopping |
-| `Intralayer.BilayertAB1` | `BilayertAB1` | real | `0.361` | ham.F90: HamHopping |
-| `Intralayer.BilayertAB3` | `BilayertAB3` | real | `-0.07211` | ham.F90: HamHopping |
-| `Intralayer.BilayertAB3` | `BilayertAB3` | real | `0.283` | ham.F90: HamHopping |
-| `Intralayer.BilayertAB4` | `BilayertAB4` | real | `0.138` | ham.F90: HamHopping |
-| `Intralayer.BilayertBA0` | `BilayertBA0` | real | `0.331` | ham.F90: HamHopping |
-| `Intralayer.BilayertBA2` |  | real | `-0.01016` | ham.F90: HamHopping |
-| `Intralayer.BilayertBA5` |  | real | `0.0001` | ham.F90: HamHopping |
-| `Intralayer.BilayerThreeParameters` | `BilayerThreeParameters` | logical | `.false.` | ham.F90: HamHopping |
-| `Intralayer.BilayertK6A` | `BilayertK6A` | real | `0.0` | ham.F90: HamHopF2G2sParameters; ham.F90: HamHopping |
-| `Intralayer.BilayertK7A` | `BilayertK7A` | real | `0.0` | ham.F90: HamHopF2G2sParameters; ham.F90: HamHopping |
-| `Intralayer.BilayertK8A` | `BilayertK8A` | real | `0.0` | ham.F90: HamHopF2G2sParameters; ham.F90: HamHopping |
-| `Intralayer.DeactivateASubLattice` | `deactivateASubLattice` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Intralayer.DeactivateBSubLattice` | `deactivateBSubLattice` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Intralayer.DeactivateIntersublattice` | `deactivateIntersublattice` | logical | `.false.` | ham.F90: HamHopping |
-| `Intralayer.DeactivateIntrasublattice` | `deactivateIntrasublattice` | logical | `.false.` | ham.F90: HamHopping |
-| `Intralayer.DeactivateIntraSublatticeForC` | `deactivateIntraSublatticeForC` | logical | `.false.` | ham.F90: HamHopping |
-| `Intralayer.F2G2Model` | `F2G2Model` | logical | `.true.` | ham.F90: HamHopping; ham.F90: HamInit |
-| `Intralayer.ForceBilayerF2G2Intralayer` | `forceBilayerF2G2Intralayer` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Intralayer.hBNt2B` |  | real | `-0.0542` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt2B` |  | real | `-0.081055` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt2N` |  | real | `-0.2228` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt2N` |  | real | `-0.24562` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt3` |  | real | `0.1329` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt3` |  | real | `0.15399` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt4` |  | real | `-0.0` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt4` |  | real | `0.0` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt5B` |  | real | `-0.0566` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt5B` |  | real | `-0.065654` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt5N` |  | real | `-0.0429` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt5N` |  | real | `-0.04892` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt6` |  | real | `0.0` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt7` |  | real | `0.0` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.hBNt8` |  | real | `0.0` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.KoshinoIntralayer` | `KoshinoIntralayer` | logical | `.false.` | ham.F90: HamHopping |
-| `Intralayer.MayouIntralayer` | `MayouIntralayer` | logical | `.false.` | ham.F90: HamHopping |
-| `Intralayer.RemoveF2G2Flag` | `removeF2G2Flag` | logical | `.false.` | ham.F90: HamHopping |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.21264` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.2354` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.24498` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.24523` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.1877` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.19334` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.23442` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `-0.0` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `-0.05350` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `0.0` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.0633` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.06618` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.06624` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.07326` | ham.F90: HamHopF2G2sParameters |
-| `Intralayer.T2Value` | `t2Value` | real | `0.0083` | ham.F90: HamHopping |
-| `Intralayer.UseOldGrapheneF2G2` | `useOldGrapheneF2G2` | logical | `.false.` | ham.F90: HamHopping |
-| `Kubo.Calc` |  | logical | `.true.` | calc.F90: CalcSelect |
-| `Kubo.EnergyMax` | `EnergyMax` | real | `4.0` | calc.F90: CalcKubo |
-| `Kubo.EnergyMin` | `EnergyMin` | real | `-4.0` | calc.F90: CalcKubo |
-| `Kubo.Epsilon` | `Epsilon` | real | `0.001` | diag.F90: DiagHamChern |
-| `Kubo.Epsilon` | `Epsilon` | real | `0.01` | calc.F90: CalcKubo; diag.F90: Diag3DBands; diag.F90: DiagDOS; ... (4 places) |
-| `Kubo.Epsilon` | `Epsilon` | real | `0.01 (g0)` | diag.F90: DiagSpectralEpsilon |
-| `Kubo.NumberOfBNAtoms1` | `numberOfBNAtoms1` | integer | `5832` | calc.F90: CalcKubo |
-| `Kubo.NumberOfBNAtoms2` | `numberOfBNAtoms2` | integer | `5832` | calc.F90: CalcKubo |
-| `Kubo.NumberOfCAtoms` | `numberOfCAtoms` | integer | `6050` | calc.F90: CalcKubo |
-| `Kubo.NumberofEnergyPoints` | `NumberofEnergyPoints` | integer | `1000` | calc.F90: CalcKubo; diag.F90: Diag3DBands; diag.F90: DiagDOS; ... (11 places) |
-| `Kubo.NumberOfLayers` | `numberOfLayers` | integer | `2` | calc.F90: CalcKubo; diag.F90: DiagPDOS |
-| `Kubo.NumberofPolynomials` | `NumberofPolynomials` | integer | `100` | calc.F90: CalcKubo |
-| `Kubo.NumberofTimeSteps` | `NumberofTimeSteps` | integer | `500` | calc.F90: CalcKubo |
-| `Kubo.PDOS` | `PDOS` | logical | `.false.` | calc.F90: CalcKubo |
-| `Kubo.PDOSAtomList` | `PDOSAtomList` | logical | `.false.` | calc.F90: CalcKubo |
-| `Kubo.PDOSByNumber` | `PDOSByNumber` | logical | `.false.` | calc.F90: CalcKubo |
-| `Kubo.PDOSDist` | `PDOSDist` | logical | `.false.` | calc.F90: CalcKubo |
-| `Kubo.PDOSIgnoreLayer1and4` | `PDOSIgnoreLayer1and4` | logical | `.false.` | calc.F90: CalcKubo |
-| `Kubo.PDOSLayer` | `PDOSLayer` | logical | `.false.` | calc.F90: CalcKubo |
-| `Kubo.PDOSLayerAndSpecies` | `PDOSLayerAndSpecies` | logical | `.false.` | calc.F90: CalcKubo |
-| `Kubo.PDOSList` | `PDOSList` |  | `[1,2,3,4,5,6]` | calc.F90: CalcKubo |
-| `Kubo.PDOSMinValue` | `PDOSMinValue` | integer | `0` | calc.F90: CalcKubo |
-| `Kubo.PDOSMoireSC1` | `PDOSMoireSC1` | logical | `.false.` | calc.F90: CalcKubo |
-| `Kubo.PDOSMoireSuperMoire` | `PDOSMoireSuperMoire` | logical | `.true.` | calc.F90: CalcKubo |
-| `Kubo.PDOSMoireSuperMoire2` | `PDOSMoireSuperMoire2` | logical | `.true.` | calc.F90: CalcKubo |
-| `Kubo.PDOSMoireSuperMoire3` | `PDOSMoireSuperMoire3` | logical | `.true.` | calc.F90: CalcKubo |
-| `Kubo.PDOSMoireSuperMoireLength` | `PDOSMoireSuperMoireLength` | real | `135d0` | calc.F90: CalcKubo |
-| `Kubo.PDOSNumber` | `PDOSNumber` | integer | `1` | calc.F90: CalcKubo |
-| `Kubo.PDOSPNP` | `PDOSPNP` | logical | `.false.` | calc.F90: CalcKubo |
-| `Kubo.PDOSxmax` | `PDOSxmax` | real | `5.0` | calc.F90: CalcKubo |
-| `Kubo.PDOSxmin` | `PDOSxmin` | real | `0.0` | calc.F90: CalcKubo |
-| `Kubo.PDOSymax` | `PDOSymax` | real | `5.0` | calc.F90: CalcKubo |
-| `Kubo.PDOSymin` | `PDOSymin` | real | `0.0` | calc.F90: CalcKubo |
-| `Kubo.RecursionNumber` | `RecursionNumber` | integer | `700` | calc.F90: CalcKubo |
-| `Kubo.SeedSet` | `SeedSet` | integer | `1235` | kubo.F90: KuboInitWFLayerAndSpeciesDOS; kubo.F90: KuboInitWFLayerDOS |
-| `Kubo.SeedValue` | `seedValue` | integer | `123456` | kubo.F90: KuboInitWF; random.F90: RandSeedFromInput |
-| `Kubo.SetSeed` | `setSeed` | logical | `.false.` | kubo.F90: KuboInitWF; random.F90: RandSeedFromInput |
-| `Kubo.TimeEvolutionInYDirection` | `timeEvolutionInYDirection` | logical | `.false.` | kubosubs.F90: KuboEvol |
-| `Kubo.TimeStep` | `TimeStep` | real | `5.0` | calc.F90: CalcKubo |
-| `Kubo.WriteNumberofSteps` | `WriteNumberofSteps` | integer | `10` | calc.F90: CalcKubo |
-| `MagField.FinalB` |  | real | `0.0` | magf.F90: MagfInit |
-| `MagField.FinalInteger` |  | integer | `0` | magf.F90: MagfInit |
-| `MagField.FrankMagneticField` | `FrankMagneticField` | logical | `.false.` | calc.F90: CalcSelect; ham.F90: HamHopping |
-| `MagField.InitialB` |  | real | `0.0` | magf.F90: MagfInit |
-| `MagField.InitialInteger` |  | integer | `0` | magf.F90: MagfInit |
-| `MagField.Integer` |  | integer | `0` | magf.F90: MagfInit |
-| `MagField.Integer` |  | integer | `1` | ham.F90: HamHopping |
-| `MagField.IntegerStep` |  | integer | `1` | magf.F90: MagfInit |
-| `MagField.LegacyCornerPhase` |  | logical | `.false.` | ham.F90: HamPeierlsPeriodicGauge |
-| `MagField.Step` |  | real | `1.0` | magf.F90: MagfInit |
-| `MagField.Value` | `MagField` | real | `0.0` | magf.F90: MagfInit |
-| `Moire.AddSecondMoire` | `MoireAddSecondMoire` | logical | `.false.` | ham.F90: HamHopWriteTables; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.BfactorC0` | `BfactorC0` | real | `3.1` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.BfactorCab` | `BfactorCab` | real | `3.3` | ham.F90: HamHopping |
-| `Moire.BfactorCz` | `BfactorCz` | real | `3.1` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.BilayerBottomAngle` | `MoireBilayerBottomAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.BilayerBottomXMax` | `MoireBilayerBottomXMax` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerBottomXMin` | `MoireBilayerBottomXMin` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerBottomXShift` | `MoireBilayerBottomXShift` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerBottomYMax` | `MoireBilayerBottomYMax` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerBottomYMin` | `MoireBilayerBottomYMin` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerBottomYShift` | `MoireBilayerBottomYShift` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerElectricField` | `MoireBilayerElectricField` | logical | `.false.` | ham.F90: HamOnSite |
-| `Moire.BilayerElectricFieldInvert` | `MoireBilayerElectricFieldInvert` | logical | `.false.` | ham.F90: HamOnSite |
-| `Moire.BilayerElectricShift` | `MoireBilayerElectricShift` | real | `0.150` | ham.F90: HamOnSite |
-| `Moire.BilayerTopAngle` | `MoireBilayerTopAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.BilayerTopXMax` | `MoireBilayerTopXMax` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerTopXMin` | `MoireBilayerTopXMin` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerTopXShift` | `MoireBilayerTopXShift` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerTopYMax` | `MoireBilayerTopYMax` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerTopYMin` | `MoireBilayerTopYMin` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BilayerTopYShift` | `MoireBilayerTopYShift` | real | `0.0` | moireBLShift.F90: moireBLShiftValue |
-| `Moire.BLDeactivateUpperLayer` | `MoireBLDeactivateUpperLayer` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.BLShiftDefinedValues` | `moireBLShiftDefinedValues` | logical | `.false.` | moireBLShift.F90: moireBLShiftInit; moireBLShift.F90: moireBLShiftValue |
-| `Moire.BLShiftRange` | `moireBLShiftRange` | logical | `.false.` | moireBLShift.F90: moireBLShiftInit; moireBLShift.F90: moireBLShiftValue |
-| `Moire.BLShiftRangeSteps` | `moireBLShiftRangeSteps` | integer | `10` | moireBLShift.F90: moireBLShiftInit |
-| `Moire.CDW` | `moireCDW` | logical | `.false.` | ham.F90: HamOnSite |
-| `Moire.DistanceDependentEffectiveModel` | `distanceDependentEffectiveModel` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.DontUseInplaneMoire` | `dontUseInplaneMoire` | logical | `.false.` | ham.F90: HamOnSite |
-| `Moire.FirstMoireMassFactor` | `MoireFirstMoireMassFactor` | real | `1.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.Fourier` |  | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Moire.FourierGrapheneAngle` |  | real | `0.0` | ham.F90: HamMoireFourierSetup |
-| `Moire.FourierKprime` |  | logical | `.false.` | ham.F90: HamMoireFourierSetup |
-| `Moire.FourierLatticeConstant` |  |  | `aG` | ham.F90: HamMoireFourierSetup |
-| `Moire.H0AndHZ` | `MoireH0AndHZ` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.HeightAmp` | `MoireHeightAmp` | real | `0.1` | ham.F90: HamInit |
-| `Moire.Jeil` | `MoireJeil` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.Kekule` | `MoireKekule` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.KekuleAngle` | `MoireKekuleAngle` | real | `30.0` | ham.F90: HamOnSiteMoireKekule |
-| `Moire.KekuleEpsFactor` | `MoireKekuleEpsFactor` |  | `sqrt(3.0)` | ham.F90: HamOnSiteMoireKekule |
-| `Moire.LatticePercent` | `Latticepercent` | real | `-0.018181818181818` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Moire.LatticePercentFactor` | `LatticepercentFactor` | real | `1.0` | ham.F90: HamHopSecondMoire; ham.F90: HamOnSiteMoirePotential |
-| `Moire.LayerShift1` | `MoireLayerShift1` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.LayerShift2` | `MoireLayerShift2` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.NoH0AndHZ` | `MoireNoH0AndHZ` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.OffDiag` | `MoireOffDiag` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping |
-| `Moire.OffDiagMidpoint` | `MoireOffDiagMidpoint` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping |
-| `Moire.OnlyH0` | `MoireOnlyH0` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.OnlyHZ` | `MoireOnlyHZ` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotA` | `MoirePotA` | real | `0.0186` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotA1` | `MoirePotA1` |  | `A` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotA2` | `MoirePotA2` |  | `A` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotB` | `MoirePotB` | real | `0.042` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotB1` | `MoirePotB1` |  | `B` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotB2` | `MoirePotB2` |  | `B` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotC` | `MoirePotC` | real | `0.0` | ham.F90: HamOnSiteMoireKekule; ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotC0` | `MoirePotC0` | real | `-0.01013` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotCab` | `MoirePotCab` | real | `0.01134` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotCabBN` | `MoirePotCabBN` | real | `0.004418` | ham.F90: HamHopping |
-| `Moire.PotCabG` | `MoirePotCabG` | real | `0.001987` | ham.F90: HamHopBondTermsTBG |
-| `Moire.PotCabG` | `MoirePotCabG` | real | `0.002235` | ham.F90: HamHopping |
-| `Moire.PotCz` | `MoirePotCz` | real | `-0.00901` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.Potential` | `MoirePotential` | logical | `.false.` | ham.F90: HamOnSite |
-| `Moire.PotPhi0` | `MoirePotPhi0` | real | `1.510233401750693` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotPhiab` | `MoirePotPhiab` | real | `0.342084533390889` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.PotPhiabBN` | `MoirePotPhiabBN` | real | `26.1` | ham.F90: HamHopping |
-| `Moire.PotPhiabG` | `MoirePotPhiabG` | real | `3.5` | ham.F90: HamHopping |
-| `Moire.PotPhiz` | `MoirePotPhiz` | real | `0.147131255943122` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.PreFactor` | `MoirePreFactor` | real | `1.0` | ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential |
-| `Moire.RemoveTopMoireInL2` | `removeTopMoireInL2` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.Sachs` | `MoireSachs` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.SecondMoireMassFactor` | `MoireSecondMoireMassFactor` | real | `1.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.SecondMoireRotateFirst` | `MoireSecondMoireRotateFirst` | logical | `.true.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.Strain` | `MoireStrain` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamInit |
-| `Moire.StrainFactor` | `MoireStrainFactor` | real | `3.37` | ham.F90: HamInit |
-| `Moire.SwitchHzjj` | `switchHzjj` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.SymmA` | `MoireSymmA` | real | `0.01` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.SymmB` | `MoireSymmB` | real | `0.01` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.SymmetricPot` | `MoireSymmetricPot` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.TDBLDeactivateUpperLayers` | `MoiretDBLDeactivateUpperLayers` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.Trilayer` | `MoireTrilayer` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.Trim1` | `MoireTrim1` | integer | `0` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.Trim2` | `MoireTrim2` | integer | `0` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.Trin1` | `MoireTrin1` | integer | `0` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.Trin2` | `MoireTrin2` | integer | `0` | ham.F90: HamOnSiteMoirePotential |
-| `Moire.TwistAngle` | `MoireTwistAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.TwistAngle2` | `MoireTwistAngle2` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.Twisted` | `MoireTwisted` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Moire.Twisted2` | `MoireTwisted2` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `moireBLShift.Calc` |  | logical | `.false.` | calc.F90: CalcSelect |
-| `moireCDW.Amplitude` |  | real | `0.0` | ham.F90: HamOnSiteMoireCDW |
-| `moireCDW.Denominator` |  | integer | `1` | ham.F90: HamOnSiteMoireCDW |
-| `moireCDW.MassAmplitude` |  | real | `0.0` | ham.F90: HamOnSiteMoireCDW |
-| `moireCDW.Phase` |  | real | `0.0` | ham.F90: HamOnSiteMoireCDW |
-| `Neigh.BLInPlaneInteractionRadius` |  | logical | `.false.` | neigh.F90: NeighList |
-| `Neigh.CompareAll` |  | logical | `.false.` | neigh.F90: NeighList; neigh.F90: NeighListOld |
-| `Neigh.CompareAll.UltraSmall` |  | logical | `.false.` | neigh.F90: NeighList |
-| `Neigh.CutAtNN3` |  | logical | `.false.` | ham.F90: HamInit |
-| `Neigh.Distance` |  |  | `alatt/sqrt(3.0)` | neigh.F90: NeighListOld |
-| `Neigh.ExpectedNumber` | `neighborExpectedNumber` | integer | `3` | neigh.F90: NeighList |
-| `Neigh.fastNN` |  | logical | `.false.` | ham.F90: HamInit |
-| `Neigh.fastNNnotsquare` |  | logical | `.true.` | ham.F90: HamInit |
-| `Neigh.fastNNnotsquareNotRectangle` |  | logical | `.false.` | ham.F90: HamInit |
-| `Neigh.IntralayerRadius` |  | real | `0.0` | ham.F90: HamInit |
-| `Neigh.LayerDistFactor` |  | real | `1.0` | ham.F90: HamHopping; ham.F90: HamInit; neigh.F90: NeighList; ... (5 places) |
-| `Neigh.LayerNeighbors` |  | integer | `0` | ham.F90: HamInit |
-| `Neigh.LayerNeighbors` |  | integer | `1` | neigh.F90: NeighList |
-| `Neigh.LayerNeighbors` |  | integer | `2` | neigh.F90: NeighList |
-| `Neigh.Only000Cell` | `only000Cell` | logical | `.false.` | neigh.F90: fastNNnotsquareSmall |
-| `Neigh.Print` |  | logical | `.false.` | neigh.F90: NeighList; neigh.F90: NeighListOld |
-| `Neigh.ReadDetails` | `readNeighborDetails` | logical | `.false.` | neigh.F90: NeighReadDataFiles |
-| `Neigh.SafetyCheck` | `neighborSafetyCheck` | logical | `.false.` | neigh.F90: NeighList |
-| `Output.KeepWaveFunction` | `keepWaveFunction` | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagChern |
-| `Output.PrintBubble` | `printBubble` | logical | `.false.` | ham.F90: HamInit |
-| `Output.ReadDataFiles` | `ReadDataFiles` | logical | `.false.` | calc.F90: CalcSelect; ham.F90: HamInit; neigh.F90: fastNNnotsquare; ... (6 places) |
-| `Output.WriteDataFiles` | `WriteDataFiles` | logical | `.false.` | ham.F90: HamHopRealisticBubbles; ham.F90: HamHopping; ham.F90: HamInit; ... (9 places) |
-| `Potential.AddOnsiteEnergyShift` | `addOnsiteEnergyShift` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.AddSublatticeMassterm` | `addSublatticeMassterm` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.AddZTerm` | `AddZTerm` | logical | `.false.` | ham.F90: HamOnSiteSquareFunction; ham.F90: HamOnSiteSquareFunction2 |
-| `Potential.AmplitudeOfSquare` | `AmplitudeOfSquare` | real | `1.0 (g0)` | ham.F90: HamOnSiteSquareChecker; ham.F90: HamOnSiteSquareFunction |
-| `Potential.AmplitudeOfSquare2` | `AmplitudeOfSquare2` | real | `0.01 (g0)` | ham.F90: HamOnSiteSquareFunction2 |
-| `Potential.AmplitudeOfSquare3` | `AmplitudeOfSquare3` | real | `0.01 (g0)` | ham.F90: HamOnSiteZterm1D |
-| `Potential.ArmChairShape` | `ArmChairShape` | logical | `.false.` | ham.F90: HamOnSiteSquareFunction2 |
-| `Potential.CDWAmplitude` | `CDWAmplitude` | real | `0.01` | ham.F90: HamOnSiteTrigonalCDW |
-| `Potential.CDWPeriod` | `CDWPeriod` | real | `1.0` | ham.F90: HamOnSiteTrigonalCDW |
-| `Potential.CDWUseMassTerm` | `CDWUseMassTerm` | logical | `.false.` | ham.F90: HamOnSiteTrigonalCDW |
-| `Potential.CosinusFactor` | `cosinusFactor` | real | `0.01 (g0)` | ham.F90: HamOnSite |
-| `Potential.CosinusMassTermFactor` | `cosinusMassTermFactor` | real | `0.01 (g0)` | ham.F90: HamOnSite |
-| `Potential.CosinusModulationAddMassTerm` | `cosinusModulationAddMassTerm` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.CosinusModulationPeriod` | `cosinusModulationPeriod` | real | `135.0` | ham.F90: HamOnSite |
-| `Potential.CosinusModulationUsingPeriod` | `cosinusModulationUsingPeriod` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.CosinusModulationUsingPeriodYDirection` | `cosinusModulationUsingPeriodYDirection` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.FourLayerOnsiteShifts` | `fourLayerOnsiteShifts` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.HelicalTwistedMBM_CDW` | `helicalTwistedMBM_CDW` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.MinZ` | `minZ` | real | `1.0` | ham.F90: HamOnSiteMoirePotential |
-| `Potential.NumberOfWidthHoneycomb` | `NumberOfWidthHoneycomb` | integer | `1` | ham.F90: HamOnSiteSquareFunction2 |
-| `Potential.OnlyBottomLayerMassTerm` | `onlyBottomLayerMassTerm` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.OnsiteEnergyShift` | `onsiteEnergyShift` | real | `0.150` | ham.F90: HamOnSite |
-| `Potential.PhaseOfSquareX` | `PhaseOfSquareX` | real | `0.0` | ham.F90: HamOnSiteSquareFunction2 |
-| `Potential.PhaseOfSquareY` | `PhaseOfSquareY` | real | `0.0` | ham.F90: HamOnSiteSquareFunction2 |
-| `Potential.PNP` | `PNP` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.PNPAmp` | `PNPAmp` | real | `0.01 (g0)` | ham.F90: HamOnSitePNP; ham.F90: HamOnSitePNPKink |
-| `Potential.PNPDelta` | `PNPDelta` | real | `10.0` | calc.F90: CalcKubo; ham.F90: HamOnSitePNPKink |
-| `Potential.PNPKink` | `PNPKink` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.SinusFactor` | `sinusFactor` | real | `0.01 (g0)` | ham.F90: HamOnSite |
-| `Potential.SinusMassTermFactor` | `sinusMassTermFactor` | real | `0.01 (g0)` | ham.F90: HamOnSite |
-| `Potential.SinusModulation` | `sinusModulation` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.SinusModulationAddMassTerm` | `sinusModulationAddMassTerm` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.SinusModulationPeriod` | `sinusModulationPeriod` | real | `135.0` | ham.F90: HamOnSite |
-| `Potential.SinusModulationUsingPeriod` | `sinusModulationUsingPeriod` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.SinusModulationUsingPeriodYDirection` | `sinusModulationUsingPeriodYDirection` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.SinusNumberOfPeriod` | `sinusNumberOfPeriod` | integer | `1` | ham.F90: HamOnSite; ham.F90: HamOnSiteSquareFunction; ham.F90: HamOnSiteZterm1D |
-| `Potential.SquareChecker2219` | `SquareChecker2219` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.SquareFunction` | `SquareFunction` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.SquareFunction2` | `SquareFunction2` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.SublatticeBasis` | `sublatticeBasis` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `Potential.SublatticeMassterm` | `sublatticeMassterm` | real | `0.150` | ham.F90: HamOnSite |
-| `Potential.TwoDimension` | `TwoDimension` | logical | `.false.` | ham.F90: HamOnSiteSquareFunction2 |
-| `Potential.TwoDimensional` | `TwoDimensional` | logical | `.false.` | ham.F90: HamOnSiteSquareFunction |
-| `Potential.UseLayerSpecificOnsiteEnergyTerms` | `useLayerSpecificOnsiteEnergyTerms` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.Zterm1D` | `Zterm1D` | logical | `.false.` | ham.F90: HamOnSite |
-| `Potential.Zterm1DAmp` | `Zterm1DAmp` | real | `0.01 (g0)` | ham.F90: HamOnSiteZterm1DKink |
-| `Potential.Zterm1DDelta` | `Zterm1DDelta` | real | `10.0` | ham.F90: HamOnSiteZterm1DKink |
-| `Potential.Zterm1DKink` | `Zterm1DKink` | logical | `.false.` | ham.F90: HamOnSite |
-| `Random.Test` | `RandomTest` | logical | `.false.` | random_old.F90: RandInit |
-| `Random.TestNumber` | `RandomTestNumber` | integer | `100` | random_old.F90: RandInit |
-| `Run.Description` | `Description` | string | `''` | grabnes_start.F90: GrabnesStart |
-| `Run.Prefix` | `Prefix` | string | `'grabnes'` | grabnes_start.F90: GrabnesStart |
-| `Run.TypeOfSystem` | `TypeOfSystem` | string | `'Graphene'` | atoms.F90: AtomsOrder; atoms.F90: AtomsPos; cell.F90: CellGet; ... (14 places) |
-| `SOC.Interlayer` |  | logical | `.false.` | ham.F90: HamInit |
-| `SOC.Intrinsic` | `IntrinsicSOCterm` | logical | `.false.` | ham.F90: HamInit |
-| `SOC.Ising` | `IsingSOCterm` | logical | `.false.` | ham.F90: HamInit |
-| `SOC.KaneMele` |  | logical | `.false.` | ham.F90: HamInit |
-| `SOC.LambdaI` | `LambdaI` | real | `0.0` | ham.F90: HamInit |
-| `SOC.LambdaInterlayer` |  | real | `0.0` | ham.F90: HamInit |
-| `SOC.LambdaIsing` | `LambdaIsing` | real | `0.0` | ham.F90: HamInit |
-| `SOC.LambdaKM` |  | real | `0.0` | ham.F90: HamInit |
-| `SOC.LambdaPIA` | `LambdaPIA` | real | `0.0` | ham.F90: HamInit |
-| `SOC.LambdaPIAA` |  |  | `lambdaPIA` | ham.F90: HamInit |
-| `SOC.LambdaPIAB` |  |  | `lambdaPIA` | ham.F90: HamInit |
-| `SOC.LambdaR` | `LambdaR` | real | `0.0` | ham.F90: HamInit |
-| `SOC.LayerControl` | `SOCLayerControl` | logical | `.false.` | ham.F90: HamInit |
-| `SOC.PIA` | `PIASOCterm` | logical | `.false.` | ham.F90: HamInit |
-| `SOC.Rashba` | `RashbaSOCterm` | logical | `.false.` | ham.F90: HamInit |
-| `SOC.RashbaAngle` |  | real | `0.0` | ham.F90: HamInit |
-| `SOC.RashbaConsistentPhase` |  | logical | `.true.` | ham.F90: HamInit |
-| `Spectral.AlignmentAngle` |  | real | `0.0d0` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.AlignReferenceSystem` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.DirectBandVal` |  | logical | `.false.` | calc.F90: CalcDiag; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut_v2; diag.F90: DiagSpectralFunctionKGridInequivalent_v2 |
-| `Spectral.Emax` |  | real | `1.0 (g0)` | diag.F90: DiagSpectralWindow |
-| `Spectral.Emin` |  | real | `-1.0 (g0)` | diag.F90: DiagSpectralWindow |
-| `Spectral.energyGridResolution` |  | real | `0.005` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.FoldByOne` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.FoldByZero` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.GaussianConvolution` |  | logical | `.false.` | diag.F90: DiagSpectralFunction; diag.F90: DiagSpectralFunctionKGrid; diag.F90: DiagSpectralFunctionKGridInequivalent; ... (7 places) |
-| `Spectral.KGridCut` | `KGridCut` | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut_v2 |
-| `Spectral.KGridCutX` | `KGridCutX` | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
-| `Spectral.KGridCutY` | `KGridCutY` | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
-| `Spectral.KGridLowerGridHalf` | `KGridLowerGridHalf` | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale |
-| `Spectral.Lee` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalent_v2 |
-| `Spectral.Nishi` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.numberOfTS` |  | integer | `1` | diag.F90: DiagSpectralWeightNishi |
-| `Spectral.NumPoints` |  | integer | `100` | diag.F90: DiagSpectralFunction; diag.F90: DiagSpectralFunctionKGrid; diag.F90: DiagSpectralFunctionKGridInequivalent; ... (7 places) |
-| `Spectral.RotateOpposite` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut_v2 |
-| `Spectral.RotateReferenceSystem` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.topBottomRatio` |  | real | `1.0` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.UseCoordinates` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.UseGaussianBroadening` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.WeiKu` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Spectral.WeiKuOld` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) |
-| `Stack.AlignModelEnergies` |  | logical | `.false.` | ham.F90: HamMeasureLayerTwist |
-| `Stack.BNBNtwoLayers` | `BNBNtwoLayers` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential |
-| `Stack.BNt2GBN` | `BNt2GBN` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential |
-| `Stack.Bulk` | `Bulk` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamInit |
-| `Stack.BulkSmall` | `BulkSmall` | logical | `.false.` | ham.F90: HamInit |
-| `Stack.EightLayersSandwiched` | `eightLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.EightLayersZ1` | `eightLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos |
-| `Stack.EightLayersZ2` | `eightLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos |
-| `Stack.EightLayersZ3` | `eightLayersZ3` | real | `3.3` | atoms.F90: AtomsPos |
-| `Stack.EightLayersZ4` | `eightLayersZ4` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.EightLayersZ5` | `eightLayersZ5` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.EightLayersZ6` | `eightLayersZ6` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.EightLayersZ7` | `eightLayersZ7` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.EightLayersZ8` | `eightLayersZ8` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.EncapsulatedFiveLayers` | `encapsulatedFiveLayers` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential |
-| `Stack.EncapsulatedFourLayers` | `encapsulatedFourLayers` | logical | `.false.` | atoms.F90: AtomsPos; calc.F90: CalcKubo; ham.F90: HamHopping; ... (5 places) |
-| `Stack.EncapsulatedFourLayersF2G2` | `encapsulatedFourLayersF2G2` | logical | `.false.` | ham.F90: HamHopping |
-| `Stack.EncapsulatedSevenLayers` | `encapsulatedSevenLayers` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential |
-| `Stack.EncapsulatedSixLayers` | `encapsulatedSixLayers` | logical | `.false.` | calc.F90: CalcKubo; ham.F90: HamHopping; ham.F90: HamOnSite; ... (4 places) |
-| `Stack.EncapsulatedThreeLayers` | `encapsulatedThreeLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ... (5 places) |
-| `Stack.FiveLayersSandwiched` | `fiveLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.FiveLayersZ1` | `fiveLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos |
-| `Stack.FiveLayersZ2` | `fiveLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos |
-| `Stack.FiveLayersZ3` | `fiveLayersZ3` | real | `3.3` | atoms.F90: AtomsPos |
-| `Stack.FiveLayersZ4` | `fiveLayersZ4` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.FiveLayersZ5` | `fiveLayersZ5` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.FourLayers` | `fourLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.FourLayerShift1` | `fourLayerShift1` | real | `0.0` | ham.F90: HamOnSite |
-| `Stack.FourLayerShift2` | `fourLayerShift2` | real | `0.0` | ham.F90: HamOnSite |
-| `Stack.FourLayerShift3` | `fourLayerShift3` | real | `0.0` | ham.F90: HamOnSite |
-| `Stack.FourLayerShift4` | `fourLayerShift4` | real | `0.0` | ham.F90: HamOnSite |
-| `Stack.FourLayersSandwiched` | `fourLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.FourLayersZ1` | `fourLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos |
-| `Stack.FourLayersZ2` | `fourLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos |
-| `Stack.FourLayersZ3` | `fourLayersZ3` | real | `3.3` | atoms.F90: AtomsPos |
-| `Stack.FourLayersZ4` | `fourLayersZ4` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.GBNtwoLayers` | `GBNtwoLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopShellsFromRigid; ham.F90: HamHopping; ... (5 places) |
-| `Stack.GBNtwoLayersF2G2s` | `GBNtwoLayersF2G2s` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential |
-| `Stack.GlobalPhiL1` | `GlobalPhiL1` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Stack.GlobalPhiL2` | `GlobalPhiL2` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Stack.GlobalPhiL2a` | `GlobalPhiL2a` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Stack.GlobalPhiL2b` | `GlobalPhiL2b` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Stack.GlobalPhiL3` | `GlobalPhiL3` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Stack.GlobalTwist` | `GlobalTwist` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Stack.GlobalTwist2` | `GlobalTwist2` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Stack.HelicalTwistedMBM` | `helicalTwistedMBM` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.MeasureTwist` |  | logical | `.false.` | ham.F90: HamMeasureLayerTwist |
-| `Stack.MiddleTwist` | `middleTwist` |  | `.not. forceBilayerF2G2Intralayer` | ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.ModelFromTwist` |  | logical | `.false.` | ham.F90: HamMeasureLayerTwist |
-| `Stack.NonBulkSmall` | `nonBulkSmall` | logical | `.false.` | ham.F90: HamInit |
-| `Stack.OneLayer` | `oneLayer` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping |
-| `Stack.SevenLayersSandwiched` | `sevenLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.SevenLayersZ1` | `sevenLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos |
-| `Stack.SevenLayersZ2` | `sevenLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos |
-| `Stack.SevenLayersZ3` | `sevenLayersZ3` | real | `3.3` | atoms.F90: AtomsPos |
-| `Stack.SevenLayersZ4` | `sevenLayersZ4` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.SevenLayersZ5` | `sevenLayersZ5` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.SevenLayersZ6` | `sevenLayersZ6` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.SevenLayersZ7` | `sevenLayersZ7` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.SixLayersSandwiched` | `sixLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.SixLayersZ1` | `sixLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos |
-| `Stack.SixLayersZ2` | `sixLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos |
-| `Stack.SixLayersZ3` | `sixLayersZ3` | real | `3.3` | atoms.F90: AtomsPos |
-| `Stack.SixLayersZ4` | `sixLayersZ4` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.SixLayersZ5` | `sixLayersZ5` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.SixLayersZ6` | `sixLayersZ6` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.T2BG` | `t2BG` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential |
-| `Stack.T2GBN` | `t2GBN` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite; ... (4 places) |
-| `Stack.T3BG` | `t3BG` | logical | `.false.` | atoms.F90: AtomsPos; calc.F90: CalcKubo; ham.F90: HamHopping; ... (5 places) |
-| `Stack.T3GwithBN` | `t3GwithBN` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential |
-| `Stack.TenLayersSandwiched` | `tenLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.TenLayersZ1` | `tenLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos |
-| `Stack.TenLayersZ10` | `tenLayersZ10` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TenLayersZ2` | `tenLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos |
-| `Stack.TenLayersZ3` | `tenLayersZ3` | real | `3.3` | atoms.F90: AtomsPos |
-| `Stack.TenLayersZ4` | `tenLayersZ4` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TenLayersZ5` | `tenLayersZ5` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TenLayersZ6` | `tenLayersZ6` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TenLayersZ7` | `tenLayersZ7` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TenLayersZ8` | `tenLayersZ8` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TenLayersZ9` | `tenLayersZ9` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.ThreeLayers` | `threeLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.ThreeLayerShort` | `threeLayerShort` | logical | `.false.` | ham.F90: HamHopping |
-| `Stack.ThreeLayersZ1` | `threeLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos |
-| `Stack.ThreeLayersZ2` | `threeLayersZ2` | real | `0.0` | atoms.F90: AtomsPos |
-| `Stack.ThreeLayersZ3` | `threeLayersZ3` | real | `3.3` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersSandwiched` | `twentyLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.TwentyLayersZ1` | `twentyLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ10` | `twentyLayersZ10` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ11` | `twentyLayersZ11` | real | `-3.3` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ12` | `twentyLayersZ12` | real | `-0.0` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ13` | `twentyLayersZ13` | real | `3.3` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ14` | `twentyLayersZ14` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ15` | `twentyLayersZ15` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ16` | `twentyLayersZ16` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ17` | `twentyLayersZ17` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ18` | `twentyLayersZ18` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ19` | `twentyLayersZ19` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ2` | `twentyLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ20` | `twentyLayersZ20` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ3` | `twentyLayersZ3` | real | `3.3` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ4` | `twentyLayersZ4` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ5` | `twentyLayersZ5` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ6` | `twentyLayersZ6` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ7` | `twentyLayersZ7` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ8` | `twentyLayersZ8` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwentyLayersZ9` | `twentyLayersZ9` | real | `6.6` | atoms.F90: AtomsPos |
-| `Stack.TwistTolerance` |  | real | `0.05` | ham.F90: HamMeasureLayerTwist; ham.F90: HamSOCBondTables |
-| `Stack.TwoLayers` | `twoLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Stack.TwoLayersZ1` | `twoLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos |
-| `Stack.TwoLayersZ2` | `twoLayersZ2` | real | `3.3` | atoms.F90: AtomsPos |
-| `Strain.BigBubble` | `BigBubble` | logical | `.false.` | ham.F90: HamHopRealisticBubbles |
-| `Strain.BubbleC` | `bubbleC` | real | `1.42` | ham.F90: HamHopRealisticBubbles |
-| `Strain.BubbleGaussian` | `bubbleGaussian` | logical | `.false.` | ham.F90: HamHopRealisticBubbles |
-| `Strain.BubbleGaussPotRange` | `bubbleGaussPotRange` | real | `1.0` | gauss.F90: GaussPotDefinedPositions |
-| `Strain.BubbleGaussPotStrength` | `bubbleGaussPotStrength` | real | `1.0` | gauss.F90: GaussPotDefinedPositions |
-| `Strain.BubbleHeight` | `bubbleHeight` | real | `1.0` | ham.F90: HamInit |
-| `Strain.BubbleInPlaneStrain` | `bubbleInPlaneStrain` | logical | `.false.` | ham.F90: HamHopRealisticBubbles |
-| `Strain.BubblePercentage` | `bubblePercentage` | real | `10.0` | ham.F90: HamHopRealisticBubbles |
-| `Strain.BubbleRadius` | `bubbleRadius` | real | `100.0` | ham.F90: HamHopRealisticBubbles |
-| `Strain.Bubbles` | `Bubbles` | logical | `.false.` | ham.F90: HamOnSite |
-| `Strain.BubbleShift` | `bubbleShift` | real | `0.07 (g0)` | ham.F90: HamHopRealisticBubbles |
-| `Strain.BubbleSigmaR` | `bubbleSigmaR` | real | `1.0` | ham.F90: HamInit |
-| `Strain.BubbleSigmaR` | `bubbleSigmaR` | real | `1.42` | ham.F90: HamHopRealisticBubbles |
-| `Strain.GaussHeightPercentage` | `GaussHeightPercentage` | real | `1.0` | gauss.F90: GaussHeight |
-| `Strain.GaussHeightRange` | `GaussHeightRange` | real | `1.0` | gauss.F90: GaussHeight |
-| `Strain.GaussHeightStrength` | `GaussHeightStrength` | real | `1.0` | gauss.F90: GaussHeight |
-| `Strain.ManyBubbles` | `manyBubbles` | logical | `.false.` | ham.F90: HamHopRealisticBubbles |
-| `Strain.OnlyFirstNeighborRealStrain` | `onlyFirstNeighborRealStrain` | logical | `.false.` | ham.F90: HamHopping |
-| `Strain.PeriodicStrain` | `periodicStrain` | logical | `.false.` | ham.F90: HamHopping |
-| `Strain.PeriodicStrainPeriod` | `periodicStrainPeriod` | integer | `1` | ham.F90: HamHopPeriodicStrain; ham.F90: HamHopping |
-| `Strain.PeriodicStrainU0` | `periodicStrainu0` | real | `0.1` | ham.F90: HamHopPeriodicStrain |
-| `Strain.RandomStrain` | `RandomStrain` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamInit |
-| `Strain.RealisticBubbles` | `realisticBubbles` | logical | `.false.` | ham.F90: HamHopping |
-| `Strain.RealStrain` | `realStrain` | logical | `.false.` | ham.F90: HamHopping |
-| `Strain.RealStrainBeta` | `realStrainBeta` | real | `3.37` | ham.F90: HamHopping |
-| `Strain.RealStrainLegacyFourthShell` |  | logical | `.false.` | ham.F90: HamHopRealStrain |
-| `Strain.RealStrainReferenceLatticeConstant` | `realStrainReferenceLatticeConstant` |  | `aG` | ham.F90: HamHopRealStrain |
-| `Strain.RealStrainReferenceLatticeConstantBN` | `realStrainReferenceLatticeConstantBN` |  | `aBN` | ham.F90: HamHopRealStrain |
-| `Strain.ShellsFromRigidPositions` | `shellsFromRigidPositions` | logical | `.false.` | ham.F90: HamHopping |
-| `Strain.ShellsRigidFile` | `shellsRigidFile` | string | `'generateInit.xyz'` | ham.F90: HamHopShellsFromRigid |
-| `Strain.StrainedMoire` | `strainedMoire` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping |
-| `Strain.StrainedMoireMaxDisplacement` | `strainedMoireMaxDisplacement` | real | `0.5` | ham.F90: HamHopping |
-| `Structure.AddDisplacements` | `addDisplacements` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Structure.AtomsOrderDeactivated` | `AtomsOrderDeactivated` | logical | `.true.` | atoms.F90: AtomsOrder |
-| `Structure.BasedOnMoireCellParameters` | `basedOnMoireCellParameters`, `basedOnMoireCellParamters` | logical | `.false.` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamHopping; ... (4 places) |
-| `Structure.BernalReadXYZ` | `BernalReadXYZ` | logical | `.false.` | ham.F90: HamHopping |
-| `Structure.BernalShift` | `BernalShift` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping |
-| `Structure.BilayerShiftFactor` | `BilayerShiftFactor` | real | `0.0` | atoms.F90: AtomsPos |
-| `Structure.BLDomainBoundaryNRShifts` | `BLDomainBoundaryNRShifts` | integer | `1` | atoms.F90: AtomsPos |
-| `Structure.BLDomainBoundaryTypeArmAA` | `BLDomainBoundaryTypeArmAA` | logical | `.false.` | atoms.F90: AtomsPos |
-| `Structure.BLDomainBoundaryTypeArmSP` | `BLDomainBoundaryTypeArmSP` | logical | `.false.` | atoms.F90: AtomsPos |
-| `Structure.BLDomainBoundaryWidth` | `BLDomainBoundaryWidth` | real | `60.0` | atoms.F90: AtomsPos |
-| `Structure.BNWidth` | `BNWidth` | integer | `9` | atoms.F90: AtomsPos; cell.F90: CellGet |
-| `Structure.BridgeShift` | `bridgeShift` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping |
-| `Structure.CellHeight` | `CellHeight` | real | `40.0` | atoms.F90: AtomsPos; cell.F90: CellGet |
-| `Structure.CellSize` | `CellSize` | integer | `1` | diag.F90: DiagSpectralFunctionKGrid; diag.F90: DiagSpectralWeightWeiKu |
-| `Structure.CellSize` | `CellSize` | integer | `50` | atoms.F90: AtomsPos; calc.F90: CalcKubo; cell.F90: CellGet; ... (12 places) |
-| `Structure.CellSize` | `CellSize` | integer | `55` | ham.F90: HamOnSite |
-| `Structure.CreateBLDomainBoundary` | `createBLDomainBoundary` | logical | `.false.` | atoms.F90: AtomsPos |
-| `Structure.DisplacementsFile` | `displacementsFile` | string | `'displacements.txt'` | atoms.F90: AtomsPos |
-| `Structure.DisplacementsFromPositions` |  | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamDisplacementsFromPositions |
-| `Structure.GrapheneWidth` | `GrapheneWidth` | integer | `9` | atoms.F90: AtomsPos; cell.F90: CellGet |
-| `Structure.InterlayerDistance` | `InterlayerDistance` | real | `3.35` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamInit; ... (5 places) |
-| `Structure.InterlayerDistanceFile` | `interlayerDistanceFile` | string | `'interlayerDistances.dat'` | atoms.F90: AtomsPos |
-| `Structure.InvertDisplacements` | `invertDisplacements` | logical | `.false.` | atoms.F90: AtomsPos |
-| `Structure.LatticeParameter` | `LatticeParameter` | real | `2.46` | atoms.F90: AtomsOrder; cell.F90: CellGet; diag.F90: DiagSpectralFunctionKGrid; ... (11 places) |
-| `Structure.LatticeParameterBN` | `LatticeParameterBN` | real | `2.505` | cell.F90: CellGet |
-| `Structure.MoireCellParameters` | `MoireCellParameters` |  | `[0,0,0,0]` | atoms.F90: AtomsPos; cell.F90: CellGet; diag.F90: DiagSpectralFunctionKGridInequivalent; ... (9 places) |
-| `Structure.ReadInterlayerDistances` | `readInterlayerDistances` | logical | `.false.` | atoms.F90: AtomsPos |
-| `Structure.ReadLayerIndex` | `readLayerIndex` | logical | `.false.` | atoms.F90: AtomsPos |
-| `Structure.ReadRigidXYZ` | `readRigidXYZ` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite |
-| `Structure.RibbonType` | `RibbonType` | string | `'Zigzag'` | atoms.F90: AtomsPos; cell.F90: CellGet |
-| `Structure.RigidPositions` | `rigidPositions` | string | `'generateInit.xyz'` | atoms.F90: AtomsPos |
-| `Structure.RotationAngle` | `rotationAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Structure.SingleLayerXYZ` | `singleLayerXYZ` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `Structure.SublatticeFile` | `SublatticeFile` | string | `'sublatticesSorted.dat'` | atoms.F90: AtomsPos |
-| `Structure.SuperCell` | `SuperCell` | integer | `1` | cell.F90: CellGet; ham.F90: HamHopPeriodicStrain; ham.F90: HamHopping; ... (5 places) |
-| `Structure.SuperCellAsymmetric` | `SuperCellAsymmetric` | logical | `.false.` | atoms.F90: AtomsPos; cell.F90: CellGet |
-| `Structure.SuperCellX` | `SuperCellX` | integer | `1` | atoms.F90: AtomsPos; ham.F90: HamMoireFourierSetup; ham.F90: HamOnSiteMoireCDW |
-| `Structure.SuperCellY` | `SuperCellY` | integer | `1` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamMoireFourierSetup; ... (4 places) |
-| `Structure.TrilayerAddShift` | `TrilayerAddShift` | logical | `.false.` | atoms.F90: AtomsPos |
-| `Structure.TrilayerShiftFactor` | `TrilayerShiftFactor` | real | `0.0` | atoms.F90: AtomsPos |
-| `Structure.TwistedBilayerAngle` | `twistedBilayerAngle` | real | `0.0` | atoms.F90: AtomsPos |
-| `Structure.TwistedBLAddShift` | `twistedBLAddShift` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping |
-| `Structure.UseSublatticeFile` | `useSublatticeFile` | logical | `.true.` | atoms.F90: AtomsPos |
-| `Structure.XYZFile` | `XYZFile` |  | `trim(prefix)//'.xyz'` | atoms.F90: AtomsPos; cell.F90: CellGet |
-| `TAPW.aG` |  | real | `2.46019` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagH0TAPW_withBlockH |
-| `TAPW.BlockMatrixFree` |  | logical | `.false.` | diag.F90: DiagBands |
-| `TAPW.Use` | `useTAPW` | logical | `.false.` | diag.F90: DiagBands |
-| `TAPW.UseDenseMatrix` | `useDenseMatrixTAPW` | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagH0TAPW |
-| `TAPW.UseTriangularDistanceOrder` |  | logical | `.true.` | diag.F90: DiagH0TAPW; diag.F90: DiagH0TAPW_withBlockH |
-| `TB.BNHopping` |  |  | `gdef` | tbpar.f90: TBInit |
-| `TB.CBHopping` |  | real | `2.68` | tbpar.f90: TBInit |
-| `TB.CNHopping` |  | real | `2.79` | tbpar.f90: TBInit |
-| `TB.Hopping` |  |  | `gdef` | tbpar.f90: TBInit |
-| `TB.InterLayerHopping` |  | real | `0.39` | tbpar.f90: TBInit |
-| `TB.NeighLevels` |  | integer | `1` | tbpar.f90: TBInit |
-| `TB.OnSiteB` |  | real | `3.09` | tbpar.f90: TBInit |
-| `TB.OnSiteC` |  | real | `0.0` | tbpar.f90: TBInit |
-| `TB.OnSiteC1` |  | real | `0.0` | tbpar.f90: TBInit |
-| `TB.OnSiteC1_LB` |  | real | `0.0` | tbpar.f90: TBInit |
-| `TB.OnSiteC1_LT` |  | real | `0.0` | tbpar.f90: TBInit |
-| `TB.OnSiteC2` |  | real | `0.0` | tbpar.f90: TBInit |
-| `TB.OnSiteC2_LB` |  | real | `0.0` | tbpar.f90: TBInit |
-| `TB.OnSiteC2_LT` |  | real | `0.0` | tbpar.f90: TBInit |
-| `TB.OnSiteN` |  | real | `-1.89` | tbpar.f90: TBInit |
-| `TBG.Angle` | `tBGAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `TBG.Diag` | `tBGDiag` | logical | `.false.` | ham.F90: HamOnSite |
-| `TBG.DiagPRB` | `tBGDiagPRB` | logical | `.false.` | ham.F90: HamOnSite |
-| `TBG.LegacyAnalyticOnSite` |  | logical | `.false.` | ham.F90: HamOnSiteMoirePotential |
-| `TBG.OffDiag` | `tBGOffDiag` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping |
-| `TBG.OffDiagPRB` | `tBGOffDiagPRB` | logical | `.false.` | ham.F90: HamHopping |
-| `TBG.SwitchDxDy` | `tBGSwitchDxDy` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential |
-| `TBG.UseDisplacementFile` | `tBGuseDisplacementFile` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ... (4 places) |
-| `Trilayer.Delta` | `TrilayerDelta` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteTrilayerFanZhang |
-| `Trilayer.FanZhang` | `TrilayerFanZhang` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential |
-| `Trilayer.Gamma1` |  |  | `hamUnset` | ham.F90: HamHopping |
-| `Trilayer.Gamma2` | `TrilayerGamma2` | real | `0.0` | ham.F90: HamHopping |
-| `Trilayer.Gamma3` | `TrilayerGamma3` | real | `0.0` | ham.F90: HamHopping |
-| `Trilayer.Gamma4` | `TrilayerGamma4` | real | `0.0` | ham.F90: HamHopping |
-| `Trilayer.U1` | `Trilayeru1` | real | `0.0` | ham.F90: HamOnSiteTrilayerFanZhang |
-| `Trilayer.U2` | `Trilayeru2` | real | `0.0` | ham.F90: HamOnSiteTrilayerFanZhang |
-| `Trilayer.U3` | `Trilayeru3` | real | `0.0` | ham.F90: HamOnSiteTrilayerFanZhang |
-| `Tunn.BigKVecX` | `bigKVecX` | real | `0.0` | calc.F90: CalcTunn |
-| `Tunn.BigKVecY` | `bigKVecY` | real | `0.0` | calc.F90: CalcTunn |
-| `Tunn.BigKVecZ` | `bigKVecZ` | real | `0.0` | calc.F90: CalcTunn |
-| `Tunn.Calc` |  | logical | `.false.` | calc.F90: CalcSelect |
-| `Tunn.NumberOfMoires` | `numberOfMoires` | integer | `1` | calc.F90: CalcTunn |
-| `Valley.Zeeman` |  | real | `0.0` | ham.F90: HamHopValleyZeeman |
-| `Zeeman.Bmag` | `BmagZeeman` | real | `0.0` | magf.F90: MagfValue |
-| `Zeeman.Factor` | `ZeemanFactor` | real | `0.00033` | ham.F90: HamInit |
-| `Zeeman.FollowSOCLayers` |  | logical | `.true.` | ham.F90: HamInit |
-| `Zeeman.PseudoFactor` | `PseudoZeemanFactor` | real | `0.00016` | ham.F90: HamInit |
-| `Zeeman.PseudoTerm` | `PseudoZeemanTerm` | logical | `.false.` | diag.F90: DiagBands; ham.F90: HamInit |
-| `Zeeman.Spin` | `Spin` | integer | `1` | ham.F90: HamInit |
-| `Zeeman.SpinPolarized` | `SpinPolarized` | logical | `.false.` | ham.F90: HamInit |
-| `Zeeman.Term` | `ZeemanTerm` | logical | `.false.` | diag.F90: DiagBands; ham.F90: HamInit |
+The description comes from the documentation comment (`!!`) after the lines of the source that read
+the key in the routines of its row; an empty description means that none has been written yet.
+
+| Key | Former name | Type | Default | Read in | Description |
+| --- | --- | --- | --- | --- | --- |
+| `Bands.AroundGrapheneK` |  | logical | `.false.` | calc.F90: CalcDiag | Bands.Path points are taken relative to graphene K = (2/3,1/3) of the graphene reciprocal lattice. |
+| `Bands.GrapheneUnitCell` |  | logical | `.false.` | calc.F90: CalcDiag | Bands with Bloch phases from the graphene primitive cell (DiagBandsG); refused unless the simulation cell is that cell. |
+| `Bands.NumPoints` |  | integer | `100` | diag.F90: DiagBands; diag.F90: DiagBandsAroundK; diag.F90: DiagBandsG; ... (5 places) | k-points on the first leg of Bands.Path; the other legs get points in proportion to their length (all the same with Bands.UseSameNumberOfPoints). |
+| `Bands.SparseNeig` |  | integer | `100` | diag.F90: DiagBands | Diag.SparseSolver: number of eigenvalues computed per k-point. |
+| `Bands.UseDifferentLatticeVectors` |  | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagBandsRashba; diag.F90: DiagChern | Set ucell(1,2) and rcell(2,1) to zero before the path is built (rectangular-cell variant; see DiagBands). |
+| `Bands.UseSameNumberOfPoints` |  | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagChern | Every leg of Bands.Path gets Bands.NumPoints points, whatever its length. |
+| `BNBN.Diag` | `BNBNDiag` | logical | `.false.` | ham.F90: HamOnSite | Stacking-dependent on-site term of an hBN bilayer. |
+| `BNBN.UseDisplacementFile` | `BNBNuseDisplacementFile` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | BNBN.Diag with per-atom stacking displacements from Structure.DisplacementsFile. |
+| `Calculate.3DBands` |  | logical | `.false.` | calc.F90: CalcDiag | Bands on the k-grid Diag.KGrid by exact diagonalisation (Diag3DBands). |
+| `Calculate.Bands` |  | logical | `.false.` | calc.F90: CalcDiag | Band structure along Bands.Path (DiagBands, writes generate.bands). Bands.GrapheneUnitCell, Bands.AroundGrapheneK and Diag.RashbaCalculation select other band routines. |
+| `Calculate.Chern` |  | logical | `.false.` | calc.F90: CalcDiag | Refused: this dense finite-difference route never computed a Chern number. Use Diag.ChernCalculation. |
+| `Calculate.DOS` |  | logical | `.false.` | calc.F90: CalcDiag | DOS by exact diagonalisation on a k-grid (DiagDOS; DiagPDOS with Calculate.PDOS). |
+| `Calculate.OnlyDOS` |  | logical | `.false.` | calc.F90: CalcKubo | Stop after the recursion DOS. Without it the Kubo time evolution (KuboTEvol) follows, which costs far more. |
+| `Calculate.PDOS` |  | logical | `.false.` | calc.F90: CalcDiag | With Calculate.DOS: projected DOS (DiagPDOS) instead of the total DOS. |
+| `Calculate.Polynomials` |  | logical | `.false.` | calc.F90: CalcKubo | Compute the Chebyshev coefficients of U(Kubo.TimeStep) (<prefix>.cn.dat) also with Calculate.OnlyDOS. |
+| `Calculate.Spectral` |  | logical | `.false.` | calc.F90: CalcDiag | Unfolded spectral function along Bands.Path (Spectral.* keys). |
+| `Calculate.SpectralEnergyCut` |  | logical | `.false.` | calc.F90: CalcDiag | Unfolded spectral function on a k-grid at fixed energies (constant-energy cuts). |
+| `Calculate.SpectralEnergyCutNickDale` |  | logical | `.false.` | calc.F90: CalcDiag | Constant-energy cuts of the unfolded spectral function, NickDale variant of Calculate.SpectralEnergyCut. |
+| `Diag.3DBandsGridX` |  | integer | `10` | calc.F90: CalcDiag | Diag.Calculate3DTAPWBands: number of k-points along the first reciprocal lattice vector. |
+| `Diag.3DBandsGridY` |  | integer | `10` | calc.F90: CalcDiag | Diag.Calculate3DTAPWBands: number of k-points along the second reciprocal lattice vector. |
+| `Diag.Calc` |  | logical | `.false.` | calc.F90: CalcSelect | Run the diagonalisation calculations (CalcDiag): bands, DOS, spectral function, selected by the Calculate.* keys. |
+| `Diag.Calculate3DTAPWBands` |  | logical | `.false.` | calc.F90: CalcDiag | Bands on a Diag.3DBandsGridX x 3DBandsGridY k-grid instead of Bands.Path (DiagBands); rows kx ky kz E_1 ... E_M in generate.bands. |
+| `Diag.CheckTAPWUnitary` |  | logical | `.false.` | calc.F90: CalcDiag; diag.F90: DiagH0TAPW | TAPW diagnostic: G list covering the whole first Brillouin zone (sized from Diag.PhysicalTwistAngle), and a check that the transformation is unitary (run with Diag.TAPWDebug). |
+| `Diag.Chern_EF` |  | real | `0.0` | calc.F90: CalcDiag | Diag.ChernCalculation: Fermi energy [eV]. |
+| `Diag.ChernAllOccupiedBands` |  | logical | `.false.` | diag.F90: CalculateChernTAPW | Diag.ChernCalculation: sum over all bands below the Fermi energy. |
+| `Diag.ChernBandsAboveFermi` |  | integer | `30` | diag.F90: CalculateChernTAPW | Diag.ChernCalculation: bands above the Fermi energy included. |
+| `Diag.ChernBandsBelowFermi` |  | integer | `30` | diag.F90: CalculateChernTAPW | Diag.ChernCalculation: bands below the Fermi energy included. |
+| `Diag.ChernCalculation` |  | logical | `.false.` | calc.F90: CalcDiag | Chern numbers of the TAPW bands from the Kubo formula on a Diag.ChernGridX x ChernGridY k-grid. |
+| `Diag.ChernEnergyThreshold` |  | real | `1.0e-4` | diag.F90: CalculateBerryAtKpointFromStored; diag.F90: CalculateBerryAtKpointFromStored_OptionA; diag.F90: CalculateBerryAtKpointFromStored_OptionA_withSOC | Diag.ChernCalculation: pairs of levels closer than this [units of g0] are left out of the Kubo sum. |
+| `Diag.ChernEnergyWindow` |  | real | `0.2` | diag.F90: CalculateChernTAPW | Diag.ChernCalculation: energy window around Diag.Chern_EF for the band selection [eV]. |
+| `Diag.ChernEps` |  | real | `1.0e-10` | diag.F90: CalculateBerryAtKpointFromStored; diag.F90: CalculateBerryAtKpointFromStored_OptionA; diag.F90: CalculateBerryAtKpointFromStored_OptionA_withSOC | Diag.ChernCalculation: eps in the denominator (E_n - E_m)^2 + eps of the Kubo sum [units of g0^2]. |
+| `Diag.ChernEtaEV` |  | real | `1.0e-6` | diag.F90: CalculateBerryAtKpointFromStored; diag.F90: CalculateBerryAtKpointFromStored_OptionA; diag.F90: CalculateBerryAtKpointFromStored_OptionA_withSOC | Diag.ChernCalculation: read but not used at present. |
+| `Diag.ChernGridX` |  | integer | `10` | calc.F90: CalcDiag | Diag.ChernCalculation: number of k-points along the first reciprocal lattice vector. |
+| `Diag.ChernGridY` |  | integer | `10` | calc.F90: CalcDiag | Diag.ChernCalculation: number of k-points along the second reciprocal lattice vector. |
+| `Diag.ChernNBands` |  | integer | `30` | diag.F90: CalculateChernTAPW | Diag.ChernCalculation: number of bands included. |
+| `Diag.ChernTargetBands` |  | integer | `2` | diag.F90: CalculateChernTAPW | Diag.ChernCalculation: number of bands closest to the Fermi energy whose Chern numbers are reported. |
+| `Diag.ChernUseOptionA` |  | logical | `.false.` | diag.F90: CalculateChernTAPW | Diag.ChernCalculation: Berry curvature from the velocities in the TB basis instead of the TAPW basis. |
+| `Diag.forceBlockTAPW` |  | logical | `.false.` | calc.F90: CalcDiag | Test switch: use the spinful block TAPW path even without Rashba SOC. |
+| `Diag.GammaCentred3DGrid` |  | logical | `.true.` | calc.F90: CalcDiag | Diag.Calculate3DTAPWBands: grid through Gamma, so that high-symmetry points on it are sampled. .false. = the Monkhorst-Pack grid used before, offset by half a step. |
+| `Diag.GGridRotationAngle` |  | real | `0.0` | calc.F90: CalcDiag | TAPW: rotate the plane-wave (G) list by this angle after it is built [degrees]; 0 = no rotation. |
+| `Diag.GWeights` |  | logical | `.false.` | calc.F90: CalcDiag | TAPW: write the plane-wave (G) composition of the eigenstates to <prefix>.GWeights: per k and band, the energy and the Diag.GWeightsTop largest weights. |
+| `Diag.GWeightsBandMax` |  | integer | `1` | calc.F90: CalcDiag | Diag.GWeights: last band written (1-based). |
+| `Diag.GWeightsBandMin` |  | integer | `1` | calc.F90: CalcDiag | Diag.GWeights: first band written (1-based). |
+| `Diag.GWeightsHam` |  | logical | `.false.` | calc.F90: CalcDiag | With Diag.GWeights: also write the projected TAPW Hamiltonian H(k) [eV], before diagonalisation, to <prefix>.TAPWHam (M x M per k: large). |
+| `Diag.GWeightsTop` |  | integer | `8` | calc.F90: CalcDiag | Diag.GWeights: number of largest plane-wave weights written per state. |
+| `Diag.KGrid` | `KGrid` |  | `[1,1,1]` | diag.F90: Diag3DBands; diag.F90: DiagChern; diag.F90: DiagDOS; ... (8 places) | Number of k-points along each reciprocal lattice vector (three integers) of the k-grid of the DOS, projected DOS, 3-D bands and spectral cuts; Monkhorst-Pack points for the DOS. Number of k-points along each reciprocal lattice vector (three integers) of the k-grid; here of the Hubbard SCF. |
+| `Diag.LayerWeights` |  | logical | `.false.` | calc.F90: CalcDiag | TAPW: write the weight of each eigenstate on each TAPW label (layer and Species), summed over the atoms, to <prefix>.LayerWeights. |
+| `Diag.LayerWeightsBandMax` |  | integer | `0` | calc.F90: CalcDiag | Diag.LayerWeights: last band written (1-based; 0 with LayerWeightsBandMin 0 = all bands). |
+| `Diag.LayerWeightsBandMin` |  | integer | `0` | calc.F90: CalcDiag | Diag.LayerWeights: first band written (1-based; 0 with LayerWeightsBandMax 0 = all bands). |
+| `Diag.MoireAngle` |  | real | `-33.004491598883078` | calc.F90: CalcDiag | TAPW: orientation of the graphene lattice in the frame of the cell [degrees] (the canonical lattice, a1 along x, is rotated by it). 0 for a cell aligned with graphene; GenMoire prints it as 'Angle of commensurate cell'. A wrong value gives a smooth but empty low-energy spectrum. |
+| `Diag.N_G` |  | integer | `180` | calc.F90: CalcDiag | TAPW: number of distinct G lengths (shells of the cell's reciprocal lattice, around the valley) in the basis; M = (number of G) x (layer, sublattice labels). N_G 8 gives 55 G on a hexagonal cell; the default 180 is very large. |
+| `Diag.PhysicalTwistAngle` |  | real | `1.08` | calc.F90: CalcDiag | Twist angle [degrees] used only to size the G list of Diag.CheckTAPWUnitary. |
+| `Diag.RashbaCalculation` |  | logical | `.false.` | calc.F90: CalcDiag | With Calculate.Bands: DiagBandsRashba instead of DiagBands (refused at present, the routine needs updating). |
+| `Diag.socDebug` |  | logical | `.false.` | calc.F90: CalcDiag | Verbose output of the spinful (SOC) block TAPW path. |
+| `Diag.SparseCount` |  | logical | `.false.` | diag.F90: DiagHamSparse | Diag.SparseUseShift: count exactly the states below the shift (so level indices are absolute) and check completeness ('complete T/F' per k in <prefix>.SparseEig). |
+| `Diag.SparseSaveRitz` |  | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagHamSparse | Diag.SparseSolver: also compute the eigenvectors (Ritz vectors) in ARPACK. |
+| `Diag.SparseSetShift` |  | real | `0.0` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagHamSparse | Diag.SparseUseShift: energy around which the levels are computed [eV]. Here: copied for the TAPW path, which does not use it at present. |
+| `Diag.SparseSetTol` |  | real | `0.1` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagHamSparse | Diag.SparseSolver: ARPACK tolerance (default 1e-9 in shift-invert mode, 0.1 otherwise). |
+| `Diag.SparseSetTol` |  | real | `1.0e-9` | diag.F90: DiagHamSparse | Diag.SparseSolver: ARPACK tolerance (default 1e-9 in shift-invert mode, 0.1 otherwise). |
+| `Diag.SparseSolver` | `sparseDiagSolver` | logical | `.false.` | diag.F90: DiagBands | Bands by sparse ARPACK diagonalisation (DiagHamSparse): Bands.SparseNeig levels nearest E = 0, or nearest Diag.SparseSetShift with Diag.SparseUseShift. Cannot be combined with TAPW.Use. |
+| `Diag.SparseUseShift` |  | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagHamSparse; ... (4 places) | Diag.SparseSolver: shift-invert mode (MKL PARDISO), the Bands.SparseNeig levels nearest Diag.SparseSetShift; output <prefix>.SparseEig. |
+| `Diag.TAPWBothValleys` |  | logical | `.false.` | calc.F90: CalcDiag | TAPW: G shells around both K and K' in one basis (M doubles), so that intervalley coupling enters. Not with Diag.TriangularTruncation, CheckTAPWUnitary or the sparse TAPW path. |
+| `Diag.TAPWDebug` |  | logical | `.false.` | calc.F90: CalcDiag | Extra TAPW diagnostics in the output (Hermiticity, G list, ...); the bands are unchanged. |
+| `Diag.TAPWLowdin` |  | logical | `.false.` | calc.F90: CalcDiag | TAPW: orthonormalise the basis, X <- X (X^H X)^(-1/2). Plane waves on displaced (relaxed) atoms are not orthonormal, and the plain projection then shifts the levels; prints the range of eig(X^H X). |
+| `Diag.TAPWValleyDecouple` |  | logical | `.false.` | calc.F90: CalcDiag | Diagnostic for Diag.TAPWBothValleys: set the K-K' block to zero. |
+| `Diag.TriangularTruncation` |  | logical | `.false.` | calc.F90: CalcDiag | TAPW: G list from a triangular truncation (generate_triangular_G_list) instead of shells of equal G length. |
+| `Diag.UseKprimeValley` |  | logical | `.false.` | calc.F90: CalcDiag | TAPW basis around K' = (1/3,2/3) of the graphene reciprocal lattice instead of K = (2/3,1/3). |
+| `Diag.UseRigidPositions` |  | logical | `.false.` | calc.F90: CalcDiag | TAPW: build the plane waves on the rigid positions of generateInit.xyz (fixed name, same atom order); the Hamiltonian keeps the relaxed positions. For relaxed cells Diag.TAPWLowdin is the usual choice. |
+| `Disorder.Anderson` | `Anderson` | logical | `.false.` | ham.F90: HamOnSite | Anderson disorder: random on-site energies of width Disorder.AndersonAmp on every atom. |
+| `Disorder.AndersonAmp` | `AndersonAmp` | real | `1.0 (g0)` | ham.F90: HamOnSite | Disorder.Anderson: width w of the uniform distribution [eV] (units of g0 before 2026-11-07). |
+| `Disorder.CheckerDensity` | `checkerDensity` | real | `0.1` | ham.F90: HamOnSite | Strain.Bubbles: fraction of checkerboard cells that are shifted. |
+| `Disorder.CheckerDivider` | `checkerDivider` | integer | `10` | ham.F90: HamOnSite | Strain.Bubbles: the cell is divided into D x D checkerboard cells. |
+| `Disorder.DeltaAmp` | `deltaAmp` | real | `1.0 (g0)` | ham.F90: HamOnSiteDeltaDisorder | Disorder.DeltaDisorder: amplitude w [eV] (units of g0 before 2026-10-14). |
+| `Disorder.DeltaDisorder` | `deltaDisorder` | logical | `.false.` | ham.F90: HamOnSite | Delta-like impurity disorder (HamOnSiteDeltaDisorder; Disorder.DeltaAmp, DeltaSkewFactor). |
+| `Disorder.DeltaSkewFactor` | `deltaSkewFactor` | real | `1.0` | ham.F90: HamOnSiteDeltaDisorder | Disorder.DeltaDisorder: skew factor of the distribution. |
+| `Disorder.GaussDisorder` | `GaussDisorder` | logical | `.false.` | ham.F90: HamOnSite | Gaussian impurities of strength Disorder.GaussPotStrength (Disorder.GaussPot* keys). |
+| `Disorder.GaussPotPercentage` | `GaussPotPercentage` | real | `1.0` | gauss.F90: GaussPot | Gaussian disorder: percentage of the atoms that carry a Gaussian impurity potential. |
+| `Disorder.GaussPotRange` | `GaussPotRange` | real | `1.0` | gauss.F90: GaussPot | Gaussian disorder: width sigma of each impurity, exp(-r^2/(2 sigma^2)) [Angstrom]; random amplitudes in [-w/2, w/2]. |
+| `Disorder.GaussPotStrength` | `GaussPotStrength` | real | `1.0 (g0)` | ham.F90: HamOnSite | Disorder.GaussDisorder: amplitude w of the Gaussian impurities [eV] (units of g0 before 2026-11-07). |
+| `Disorder.OnsiteShift` | `onsiteShift` | real | `0.1 (g0)` | ham.F90: HamOnSite | Strain.Bubbles: on-site shift of the chosen cells [eV] (units of g0 before 2026-10-14). |
+| `Disorder.SublattAmp` | `SublattAmp` | real | `2.0 (g0)` | ham.F90: HamOnSite | Disorder.SublatticeDisorder: width w of the random energies [eV] (units of g0 before 2026-11-07). |
+| `Disorder.SublatticeDisorder` | `SublatticeDisorder` | logical | `.false.` | ham.F90: HamOnSite | Random on-site disorder on a fraction Disorder.SublattPct of the Species-2 atoms. |
+| `Disorder.SublattPct` | `SublattPct` | real | `0.1` | ham.F90: HamOnSite | Disorder.SublatticeDisorder: fraction of the atoms affected. |
+| `DOS.Emax` |  | real | `10.0` | diag.F90: Diag3DBands; diag.F90: DiagDOS; diag.F90: DiagPDOS | Upper end of the energy grid of the diagonalisation DOS [eV]. |
+| `DOS.Emin` |  | real | `-10.0` | diag.F90: Diag3DBands; diag.F90: DiagDOS; diag.F90: DiagPDOS | Lower end of the energy grid of the diagonalisation DOS [eV]. |
+| `GBN.Angle` | `GBNAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Twist angle of the analytic G/hBN stacking displacements [degrees]. |
+| `GBN.OffDiag` | `GBNOffDiag` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping | Off-diagonal (bond) stacking-dependent term of G/hBN, from atom i's displacement. Here: the G/hBN off-diagonal bond term is added in HamHopping. |
+| `GBN.UseDisplacementFile` | `GBNuseDisplacementFile` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ... (4 places) | G/hBN stacking-dependent on-site model from per-atom stacking displacements, read from Structure.DisplacementsFile (or computed, Structure.DisplacementsFromPositions). |
+| `GBN.UseHarmonicApprox` | `GBNuseHarmonicApprox` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Stack.GBNtwoLayers: harmonic (first-shell) G/hBN on-site moire term; TBG.Diag and BNBN.Diag are then switched off. |
+| `Haldane.BothLayers` | `HaldaneBothLayers` | logical | `.false.` | ham.F90: HamHopHaldane | Deprecated (use Haldane.LayerControl / HaldaneLayers): the Haldane term on every layer. |
+| `Haldane.Flux` | `HaldaneFlux` | real | `0.0` | ham.F90: HamHopHaldane | Haldane.SpecifyFlux: flux giving the phase 2 pi Flux / Phi_0 (2 pi Flux / (pi/3) with Haldane.SetFluxQ). |
+| `Haldane.LayerControl` | `HaldaneLayerControl` | logical | `.false.` | ham.F90: HamInit | Apply the Haldane term only to the layers listed in HaldaneLayers; otherwise see Haldane.NNN. |
+| `Haldane.NNN` | `HaldaneNNN` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping; ham.F90: HamInit | Haldane second-neighbour term (Haldane.* keys) on every layer. |
+| `Haldane.OppositePhase` | `HaldaneOppositePhase` | logical | `.false.` | ham.F90: HamHopHaldane | Haldane: opposite sign of the phase phi. |
+| `Haldane.PaperOrientation` | `paperOrientation` | logical | `.false.` | ham.F90: HamHopHaldane | Haldane: multiply the model's own second-neighbour hoppings by exp(+-i phi) (otherwise add T2 exp(+-i phi)). |
+| `Haldane.Phase` | `HaldanePhase` | real | `0.0` | ham.F90: HamHopHaldane | Haldane.SpecifyPhase: Haldane phase phi [rad]. |
+| `Haldane.SetFluxQ` | `HaldaneSetFluxQ` | logical | `.false.` | ham.F90: HamHopHaldane | Haldane.SpecifyFlux: the phase is 2 pi Haldane.Flux / (pi/3). |
+| `Haldane.SpecifyFlux` | `HaldaneSpecifyFlux` | logical | `.false.` | ham.F90: HamHopHaldane; magf.F90: HaldPhaseInit | Haldane model: one phase, 2 pi Haldane.Flux / Phi_0 (no sweep over HaldPhase.*). |
+| `Haldane.SpecifyPhase` | `HaldaneSpecifyPhase` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopHaldane; magf.F90: HaldPhaseInit | Haldane model: one phase, Haldane.Phase [rad] (no sweep over HaldPhase.*). |
+| `Haldane.SpecifyRange` | `HaldaneSpecifyRange` | logical | `.false.` | ham.F90: HamHopHaldane; magf.F90: HaldPhaseInit | Haldane model: sweep the phase over HaldPhase.InitialInteger..FinalInteger; step m has phase m*2*pi/(FinalInteger - InitialInteger). |
+| `Haldane.T2` | `HaldaneT2` | real | `0.0` | tbpar.f90: TBInit | Here: read to leave the second-neighbour table entries at zero; the Haldane term itself is added in ham.F90. |
+| `Haldane.T2` | `HaldaneT2` | real | `0.0 (g0)` | ham.F90: HamHopHaldane | Haldane second-neighbour amplitude T2 [eV] (units of g0 before 2026-10-14); not used with Haldane.PaperOrientation. |
+| `Haldane.T2Complex` | `HaldaneT2Complex` | real | `0.0` | ham.F90: HamHopHaldane | Haldane: imaginary second-neighbour amplitude (see HamHopHaldane). |
+| `HaldPhase.FinalInteger` |  | integer | `0` | magf.F90: HaldPhaseInit | Haldane.SpecifyRange: last step of the phase sweep. |
+| `HaldPhase.InitialInteger` |  | integer | `0` | magf.F90: HaldPhaseInit | Haldane.SpecifyRange: first step of the phase sweep. |
+| `HaldPhase.Step` |  | integer | `1` | magf.F90: HaldPhaseInit | Haldane.SpecifyRange: increment of the step index. |
+| `Hopping.tA1A1_1` | `tA1A1_1` | real | `-0.2238` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1A1_1 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA1A1_2` | `tA1A1_2` | real | `-0.0446` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1A1_2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA1A2` | `tA1A2` | real | `-0.0883` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1A2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA1A2_2` | `tA1A2_2` | real | `0.0277` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1A2_2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA1A3` | `tA1A3` | real | `-0.00541` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1A3 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA1A3_2` | `tA1A3_2` | real | `0.0009` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1A3_2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA1B2` | `tA1B2` | real | `-0.1418` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1B2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA1B2_2` | `tA1B2_2` | real | `0.0755` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1B2_2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA1B3` | `tA1B3` | real | `-0.007551` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1B3 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA1B3_1` | `tA1B3_1` | real | `-0.001738` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1B3_1 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA1B3_2` | `tA1B3_2` | real | `0.001772` | ham.F90: HamHopping | Multilayer interlayer hopping t_A1B3_2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA2A2_1` | `tA2A2_1` | real | `-0.2264` | ham.F90: HamHopping | Multilayer interlayer hopping t_A2A2_1 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tA2A2_2` | `tA2A2_2` | real | `-0.044` | ham.F90: HamHopping | Multilayer interlayer hopping t_A2A2_2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tB1A2` | `tB1A2` | real | `-0.3372` | ham.F90: HamHopping | Multilayer interlayer hopping t_B1A2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tB1A2_1` | `tB1A2_1` | real | `0.00786` | ham.F90: HamHopping | Multilayer interlayer hopping t_B1A2_1 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tB1A2_2` | `tB1A2_2` | real | `0.00078` | ham.F90: HamHopping | Multilayer interlayer hopping t_B1A2_2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tB1A3` | `tB1A3` | real | `-0.00853` | ham.F90: HamHopping | Multilayer interlayer hopping t_B1A3 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tB1A3_2` | `tB1A3_2` | real | `0.0028` | ham.F90: HamHopping | Multilayer interlayer hopping t_B1A3_2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tB1B1_1` | `tB1B1_1` | real | `-0.2269` | ham.F90: HamHopping | Multilayer interlayer hopping t_B1B1_1 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tB1B1_2` | `tB1B1_2` | real | `-0.04606` | ham.F90: HamHopping | Multilayer interlayer hopping t_B1B1_2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tB1B2` | `tB1B2` | real | `-0.08965` | ham.F90: HamHopping | Multilayer interlayer hopping t_B1B2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hopping.tB1B2_2` | `tB1B2_2` | real | `0.0275` | ham.F90: HamHopping | Multilayer interlayer hopping t_B1B2_2 [eV] (sublattice and layer index; _1/_2: further neighbour shells) of the stack models in HamHopping. |
+| `Hubbard.AFOrdering` | `AFOrdering` | logical | `.true.` | scf.F90: SCFGetCharge | Hubbard SCF: start from an antiferromagnetic (sublattice) spin pattern. |
+| `Hubbard.AFOrderingLayer` | `AFOrderingLayer` | logical | `.true.` | scf.F90: SCFGetCharge | Hubbard SCF: start from a pattern antiferromagnetic between layers (if Hubbard.AFOrdering is off). |
+| `Hubbard.EnableSCF` | `EnableSCF` | logical | `.true.` | calc.F90: CalcDiag | Self-consistent Hubbard term in two-spin runs. The module is unfinished: a two-spin diagonalisation is refused unless this is .false. (the default is .true.). |
+| `Hubbard.FOrderingLayer` | `FOrderingLayer` | logical | `.true.` | scf.F90: SCFGetCharge | Hubbard SCF: start from a layer-ferromagnetic pattern (if the two orderings above are off). |
+| `Hubbard.MOCharge` | `MOCharge` | real | `0.0` | scf.F90: SCFGetCharge | Hubbard SCF: spin imbalance dq added to (and subtracted from) the starting charges of the ordered pattern. |
+| `Hubbard.SCFMaxIterations` | `SCFMaxIterations` | integer | `100` | scf.F90: SCFGetCharge | Hubbard SCF: maximum number of iterations. |
+| `Hubbard.SCFMix` | `SCFMix` | real | `0.5` | scf.F90: SCFGetCharge | Hubbard SCF: linear mixing, charge = (1 - mix) new + mix old. |
+| `Hubbard.SCFTolerance` | `SCFTolerance` | real | `0.0001` | scf.F90: SCFGetCharge | Hubbard SCF: convergence threshold on the change of the charges. |
+| `Hubbard.U_B` | `HubbardU_B` | real | `3.0` | tbpar.f90: TBInit | Hubbard U of boron [eV] (two-spin runs with Hubbard.EnableSCF). |
+| `Hubbard.U_C` | `HubbardU_C` | real | `3.0` | tbpar.f90: TBInit | Hubbard U of carbon [eV] (two-spin runs with Hubbard.EnableSCF). |
+| `Hubbard.U_N` | `HubbardU_N` | real | `3.0` | tbpar.f90: TBInit | Hubbard U of nitrogen [eV] (two-spin runs with Hubbard.EnableSCF). |
+| `Hybrid.Percentage` | `HybridPercentage` | real | `1.0` | hybrid.F90: HybridGen | TypeOfSystem Hybrid (refused at present): percentage of the area covered by hBN islands. |
+| `Hybrid.Radius` | `HybridRadius` | real | `10.0` | hybrid.F90: HybridGen | TypeOfSystem Hybrid (refused at present): radius of the hBN islands in graphene [Angstrom]. |
+| `Hybrid.RandomSites` | `HybridRandomSites` | logical | `.false.` | hybrid.F90: HybridGen | TypeOfSystem Hybrid (refused at present): place the islands at random sites. |
+| `Interface.EdgeHopping` | `EdgeHopping` | logical | `.false.` | interface.F90: InterfacePot1 | Edge hopping correction at a graphene/hBN interface (InterfacePot1, not called at present). |
+| `Interface.EdgeHoppingAmp` | `EdgeHoppingAmp` | real | `0.2` | interface.F90: InterfacePot1 | Interface.EdgeHopping: amplitude (InterfacePot1, not called at present). |
+| `Interface.EdgeHoppingDamp` | `EdgeHoppingDamp` | real | `0.65` | interface.F90: InterfacePot1 | Interface.EdgeHopping: damping (InterfacePot1, not called at present). |
+| `Interlayer.AddExponentialDecayForDihedral` | `addExponentialDecayForDihedral` | logical | `.false.` | ham.F90: HamHopping | Multiply the interlayer hopping of that branch by exp(-(d - Structure.InterlayerDistance) / Interlayer.BLdelta), d = 3-D bond length. |
+| `Interlayer.AddPressureDependence` | `addPressureDependence` | logical | `.true.` | ham.F90: HamHopInterlayerParameters; ham.F90: HamHopping | BLKaxiras / BLSrivani: pressure (interlayer-distance) dependent parameters of Carr et al. (default .true.). |
+| `Interlayer.AddSecondLayerInteractions` | `addSecondLayerInteractions` | logical | `.false.` | neigh.F90: fastNNnotsquare; neigh.F90: fastNNnotsquareBulkSmall | Also pair atoms two layers apart (4.5 < /dz/ < 7.5 Angstrom) in the neighbour search, for the models with next-layer hoppings. |
+| `Interlayer.BilayerOneParameter` | `BilayerOneParameter` | logical | `.false.` | ham.F90: HamHopping | Bernal bilayer with one interlayer hopping, Intralayer.BilayertAB1 (default 0.361 eV). |
+| `Interlayer.BLdelta` | `BLdelta` |  | `0.184*aG` | ham.F90: HamHopping | Two-centre decay length delta of the interlayer hopping [Angstrom] (default 0.184 aG). |
+| `Interlayer.CAA` | `CAA` | real | `0.00110` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude C_AA on sublattice A of layer 1 [eV]; the defaults depend on the model. |
+| `Interlayer.CAA` | `CAA` | real | `0.005733` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude C_AA on sublattice A of layer 1 [eV]; the defaults depend on the model. |
+| `Interlayer.CAA0` | `CAA0` | real | `0.0` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): constant part C_AA0 on sublattice A of layer 1 [eV]; the defaults depend on the model. |
+| `Interlayer.CAA0` | `CAA0` | real | `3.332` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): constant part C_AA0 on sublattice A of layer 1 [eV]; the defaults depend on the model. |
+| `Interlayer.CApAp` | `CApAp` | real | `-0.005703` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude C_A'A' on sublattice A of layer 2 [eV]; the defaults depend on the model. |
+| `Interlayer.CApAp` | `CApAp` | real | `0.00110` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude C_A'A' on sublattice A of layer 2 [eV]; the defaults depend on the model. |
+| `Interlayer.CApAp0` | `CApAp0` | real | `0.0` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): constant part on sublattice A of layer 2 [eV]; the defaults depend on the model. |
+| `Interlayer.CBB` | `CBB` | real | `0.00110` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude C_BB on sublattice B of layer 1 [eV]; the defaults depend on the model. |
+| `Interlayer.CBB` | `CBB` | real | `0.004826` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude C_BB on sublattice B of layer 1 [eV]; the defaults depend on the model. |
+| `Interlayer.CBB0` | `CBB0` | real | `-1.493` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): constant part C_BB0 on sublattice B of layer 1 [eV]; the defaults depend on the model. |
+| `Interlayer.CBB0` | `CBB0` | real | `0.0` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): constant part C_BB0 on sublattice B of layer 1 [eV]; the defaults depend on the model. |
+| `Interlayer.CBpBp` | `CBpBp` | real | `-0.003596` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude C_B'B' on sublattice B of layer 2 [eV]; the defaults depend on the model. |
+| `Interlayer.CBpBp` | `CBpBp` | real | `0.00110` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): amplitude C_B'B' on sublattice B of layer 2 [eV]; the defaults depend on the model. |
+| `Interlayer.CBpBp0` | `CBpBp0` | real | `0.0` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term (TBG.Diag, BNBN.Diag, or the G/hBN default set): constant part on sublattice B of layer 2 [eV]; the defaults depend on the model. |
+| `Interlayer.ChangeLatticeParameterForSrivaniModel` | `changeLatticeParameterForSrivaniModel` | logical | `.false.` | ham.F90: HamHopping | BLSrivani: compute rbar with aG = 2.43898 Angstrom, the lattice constant of the fit. |
+| `Interlayer.CorrugatedInterlayerTwoCenter` | `corrugatedInterlayerTwoCenter` | logical | `.false.` | ham.F90: HamHopping | Two-centre interlayer hopping with local p_z axes (corrugated sheets) instead of the global z. |
+| `Interlayer.CouplingFactor` | `couplingFactor` | real | `1.0` | ham.F90: HamHopping | Interlayer.RenormalizeCoupling: factor on every interlayer hopping. 0.895 puts the magic angle of relaxed tBG at 1.08 deg; a rigid lattice needs about 1.008. |
+| `Interlayer.CouplingFactor2` | `couplingFactor2` | real | `1.0` | ham.F90: HamHopping | Interlayer.DifferentCouplings: factor on the 2-3 interface (CouplingFactor on 1-2 and 3-4). |
+| `Interlayer.DeactivateInterlayer` | `deactivateInterlayer` | logical | `.false.` | ham.F90: HamHopping | Drop the interlayer bonds of the model branches that test it. |
+| `Interlayer.DeactivateInterlayer12` | `deactivateInterlayer12` | logical | `.false.` | ham.F90: HamHopping | Drop the interlayer bonds between layers 1 and 2. |
+| `Interlayer.DeactivateInterlayer23` | `deactivateInterlayer23` | logical | `.false.` | ham.F90: HamHopping | Drop the interlayer bonds between layers 2 and 3. |
+| `Interlayer.DeactivateInterlayer34` | `deactivateInterlayer34` | logical | `.false.` | ham.F90: HamHopping | Drop the interlayer bonds between layers 3 and 4. |
+| `Interlayer.DeactivateInterlayerBG` | `deactivateInterlayerBG` | logical | `.false.` | ham.F90: HamHopping | Drop the interlayer bonds between layers 2 and 3 (bilayer-graphene branch). |
+| `Interlayer.DeactivateInterlayert2BG2to3` | `deactivateInterlayert2BG2to3` | logical | `.false.` | ham.F90: HamHopping | Stack.T2BG: drop the interlayer bonds between layers 2 and 3. |
+| `Interlayer.DeactivateInterlayert2GBN1to2` | `deactivateInterlayert2GBN1to2` | logical | `.false.` | ham.F90: HamHopping | Stack.T2GBN: drop the interlayer bonds between layers 1 and 2. |
+| `Interlayer.DeactivateInterlayert2GBN2to3` | `deactivateInterlayert2GBN2to3` | logical | `.false.` | ham.F90: HamHopping | Stack.T2GBN: drop the interlayer bonds between layers 2 and 3. |
+| `Interlayer.DeactivateInterlayert3BG1to2` | `deactivateInterlayert3BG1to2` | logical | `.false.` | ham.F90: HamHopping | Stack.T3BG: drop the interlayer bonds between layers 1 and 2. |
+| `Interlayer.DeactivateInterlayert3BG2to3` | `deactivateInterlayert3BG2to3` | logical | `.false.` | ham.F90: HamHopping | Stack.T3BG: drop the interlayer bonds between layers 2 and 3. |
+| `Interlayer.DeactivateInterlayert3BG3to4` | `deactivateInterlayert3BG3to4` | logical | `.false.` | ham.F90: HamHopping | Stack.T3BG: drop the interlayer bonds between layers 3 and 4. |
+| `Interlayer.DeactivateInterlayert3BG4to5` | `deactivateInterlayert3BG4to5` | logical | `.false.` | ham.F90: HamHopping | Stack.T3BG: drop the interlayer bonds between layers 4 and 5. |
+| `Interlayer.DeactivateInterlayert3BG5to6` | `deactivateInterlayert3BG5to6` | logical | `.false.` | ham.F90: HamHopping | Stack.T3BG: drop the interlayer bonds between layers 5 and 6. |
+| `Interlayer.DeactivateInterlayerTwisted` | `deactivateInterlayerTwisted` | logical | `.false.` | ham.F90: HamHopping | Drop the bonds between adjacent layers in the twisted-stack branch. |
+| `Interlayer.DeactivateV3` | `deactivateV3` | logical | `.false.` | ham.F90: HamHopping | BLKaxiras / BLSrivani: drop the V3 term. |
+| `Interlayer.DeactivateV6` | `deactivateV6` | logical | `.false.` | ham.F90: HamHopping | BLKaxiras / BLSrivani: drop the V6 term. |
+| `Interlayer.DifferentCouplings` | `differentCouplings` | logical | `.false.` | ham.F90: HamHopping | Use Interlayer.CouplingFactor2 for the 2-3 interface of a four-layer stack. |
+| `Interlayer.FindThetasGeometrically` | `findThetasGeometrically` | logical | `.false.` | ham.F90: HamHopping | BLKaxiras / BLSrivani: bond angles theta12, theta21 from the geometry of the bond. |
+| `Interlayer.InterfaceAmpB` | `InterfaceAmpB` | real | `0.56` | interface.F90: InterfacePot1 | Edge potential: amplitude A of B edges [eV Angstrom] (InterfacePot1, not called). |
+| `Interlayer.InterfaceAmpCB` | `InterfaceAmpCB` |  | `AmpB(3)` | interface.F90: InterfacePot1 | Edge potential: amplitude of B edges on carbon [eV Angstrom] (InterfacePot1, not called). |
+| `Interlayer.InterfaceAmpCN` | `InterfaceAmpCN` |  | `AmpN(3)` | interface.F90: InterfacePot1 | Edge potential: amplitude of N edges on carbon [eV Angstrom] (InterfacePot1, not called). |
+| `Interlayer.InterfaceAmpN` | `InterfaceAmpN` | real | `0.56` | interface.F90: InterfacePot1 | Edge potential: amplitude A of N edges [eV Angstrom] (InterfacePot1, not called). |
+| `Interlayer.InterfaceBNlambda` | `InterfaceBNlambda` | integer | `3` | interface.F90: InterfacePot1 | Edge potential: decay length lambda on B and N [Angstrom] (InterfacePot1, not called). |
+| `Interlayer.InterfaceBNlambda_B` | `InterfaceBNlambda_B` | integer | `3` | interface.F90: InterfacePot1 | Edge potential: lambda on BN from a B edge [Angstrom] (InterfacePot1, not called). |
+| `Interlayer.InterfaceBNlambda_N` | `InterfaceBNlambda_N` | integer | `3` | interface.F90: InterfacePot1 | Edge potential: lambda on BN from an N edge [Angstrom] (InterfacePot1, not called). |
+| `Interlayer.InterfaceClambda` | `InterfaceClambda` | integer | `1` | interface.F90: InterfacePot1 | Edge potential A exp(-r/lambda)/r of a graphene/hBN interface: decay length lambda on carbon [Angstrom]. InterfacePot1, which reads it, is not called at present. |
+| `Interlayer.InterfaceClambda_B` | `InterfaceClambda_B` | integer | `1` | interface.F90: InterfacePot1 | Edge potential: lambda on carbon from a B edge [Angstrom] (InterfacePot1, not called). |
+| `Interlayer.InterfaceClambda_N` | `InterfaceClambda_N` | integer | `1` | interface.F90: InterfacePot1 | Edge potential: lambda on carbon from an N edge [Angstrom] (InterfacePot1, not called). |
+| `Interlayer.KaxirasCutoff` | `KaxirasCutoff` | real | `1.0` | ham.F90: HamHopping | BLKaxiras / BLSrivani: cut-off of the interlayer hopping (compared as a squared length). |
+| `Interlayer.KoshinoSR` | `KoshinoSR` | logical | `.false.` | ham.F90: HamHopping | Koshino two-centre interlayer hopping scaled per bond by exp((/dz/ - 3.25)/1.34). |
+| `Interlayer.LegacyAngleSearch` |  | logical | `.false.` | ham.F90: HamHopping | BLKaxiras / BLSrivani: bond angles from the index-based search with a 1.43 Angstrom cut-off used before November 2026 (non-Hermitian on relaxed cells). |
+| `Interlayer.LegacyBernalTAB1` |  | logical | `.false.` | ham.F90: HamHopping | Bernal interlayer branch: the coupling used before November 2026 (gamma1 = F2G2 tAB1 = 0.1391 eV and nothing else) instead of the full Bernal F2G2 interlayer set. |
+| `Interlayer.MinDelta` | `minDelta` | real | `1.0` | ham.F90: HamHopping | Read but not used at present. |
+| `Interlayer.NewFittingFunctions` | `newFittingFunctions` | logical | `.false.` | ham.F90: HamHopping | BLKaxiras / BLSrivani: sublattice-resolved fitting functions a exp(-((r-b)/c)^4) cos(d r - h). |
+| `Interlayer.OldParameterSet` | `oldParameterSet` | logical | `.false.` | ham.F90: HamHopInterlayerParameters; ham.F90: HamHopping | BLKaxiras / BLSrivani: older parameter set of the fitting functions. |
+| `Interlayer.OnlyV0` | `onlyV0` | logical | `.false.` | ham.F90: HamHopping | BLKaxiras / BLSrivani: keep only the V0 term (V3, V6 set to zero). |
+| `Interlayer.Onlyvppsigma` | `onlyvppsigma` | logical | `.false.` | ham.F90: HamHopping | Two-centre interlayer hopping without the pi term (V_pp_pi = 0). |
+| `Interlayer.Oppositedxdy` | `oppositedxdy` | logical | `.false.` | ham.F90: HamHopInterlayerParameters | BLKaxiras / BLSrivani: opposite sign of the bond vector in the angle calculation. |
+| `Interlayer.PhiAA` | `PhiAA` | real | `82.54` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term: phase of the AA harmonic [degrees]; the defaults depend on the model. |
+| `Interlayer.PhiAA` | `PhiAA` | real | `90.0` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term: phase of the AA harmonic [degrees]; the defaults depend on the model. |
+| `Interlayer.PhiApAp` | `PhiApAp` | real | `-82.54` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term: phase of the A'A' harmonic [degrees]; the defaults depend on the model. |
+| `Interlayer.PhiApAp` | `PhiApAp` | real | `87.51` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term: phase of the A'A' harmonic [degrees]; the defaults depend on the model. |
+| `Interlayer.PhiBB` | `PhiBB` | real | `-82.54` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term: phase of the BB harmonic [degrees]; the defaults depend on the model. |
+| `Interlayer.PhiBB` | `PhiBB` | real | `65.49` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term: phase of the BB harmonic [degrees]; the defaults depend on the model. |
+| `Interlayer.PhiBpBp` | `PhiBpBp` | real | `65.06` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term: phase of the B'B' harmonic [degrees]; the defaults depend on the model. |
+| `Interlayer.PhiBpBp` | `PhiBpBp` | real | `82.54` | ham.F90: HamOnSiteMoirePotential | Stacking-dependent on-site term: phase of the B'B' harmonic [degrees]; the defaults depend on the model. |
+| `Interlayer.RenormalizeCoupling` | `renormalizeCoupling` | logical | `.false.` | ham.F90: HamHopping | Multiply the interlayer hoppings by Interlayer.CouplingFactor. |
+| `Interlayer.RenormalizeHoppingFactorAAp` | `renormalizeHoppingFactorAAp` | real | `1.0` | ham.F90: HamHopping | Factor on AA' interlayer hoppings; overwritten per bond by the distance law in GBNtwoLayers. |
+| `Interlayer.RenormalizeHoppingFactorABp` | `renormalizeHoppingFactorABp` | real | `1.0` | ham.F90: HamHopping | Factor on AB' interlayer hoppings; overwritten per bond by the distance law in GBNtwoLayers. |
+| `Interlayer.RenormalizeHoppingFactorBAp` | `renormalizeHoppingFactorBAp` | real | `1.0` | ham.F90: HamHopping | Factor on BA' interlayer hoppings; overwritten per bond by the distance law in GBNtwoLayers. |
+| `Interlayer.RenormalizeHoppingFactorBBp` | `renormalizeHoppingFactorBBp` | real | `1.0` | ham.F90: HamHopping | Factor on BB' interlayer hoppings; overwritten per bond by the distance law in GBNtwoLayers. |
+| `Interlayer.SetnLayersToZero` | `setnLayersToZero` | logical | `.false.` | ham.F90: HamHopping | Set the number of layers to 0 (small-bulk neighbour search on a non-bulk system). |
+| `Interlayer.SublatticeDependent` | `sublatticeDependent` | logical | `.false.` | ham.F90: HamHopInterlayerParameters | BLKaxiras / BLSrivani: sublattice-dependent parameters. |
+| `Interlayer.SublatticeIndependent` | `sublatticeIndependent` | logical | `.false.` | ham.F90: HamHopInterlayerParameters | BLKaxiras / BLSrivani: sublattice-independent parameters. |
+| `Interlayer.SwitchV3Sign` | `switchV3Sign` | logical | `.false.` | ham.F90: HamHopping | BLKaxiras / BLSrivani: change the sign of the V3 term. |
+| `Interlayer.TwistedBLtbt` | `twistedBLtbt` | real | `0.113` | ham.F90: HamHopping | Interlayer AA amplitude t_bt of the analytic twisted-bilayer interlayer model [eV]. |
+| `Interlayer.TypeOfBL` | `TypeOfBL` | string | `'None'` | ham.F90: HamHopping; ham.F90: HamOnSiteSpeciesEnergies | Interlayer hopping model: None, Koshino, Jeil, Mayou, BLKaxiras, BLSrivani, ... (see HamHopping); also selects matching on-site energies (e.g. BLKaxiras with Interlayer.UseBNGKaxiras). Here: selects the interlayer hopping branch of HamHopping. |
+| `Interlayer.TypeOfSL` | `TypeOfSL` | string | `'None'` | ham.F90: HamHopping | Intralayer model name for single-layer systems (same names as Interlayer.TypeOfBL, e.g. HTC). |
+| `Interlayer.UseBNGKaxiras` | `useBNGKaxiras` | logical | `.false.` | ham.F90: HamHopInterlayerParameters; ham.F90: HamHopping; ham.F90: HamOnSiteSpeciesEnergies | With TypeOfBL BLKaxiras: the G/hBN interlayer model (Eq. 4) with the hBN 8-shell intralayer set and its B / N on-site energies; needs a stack flag (e.g. Stack.TwoLayers). |
+| `Interlayer.UseBNGSrivani` | `useBNGSrivani` | logical | `.false.` | ham.F90: HamHopInterlayerParameters | BLSrivani: the G/hBN parameter set. |
+| `Interlayer.UseOnlyVAB` | `useOnlyVAB` | logical | `.false.` | ham.F90: HamHopInterlayerParameters | BLKaxiras / BLSrivani: use the V_AB parameters for every sublattice pair. |
+| `Interlayer.UseTheta` | `useTheta` | logical | `.false.` | ham.F90: HamHopInterlayerParameters | BLKaxiras / BLSrivani: angle variant theta (see HamHopInterlayerParameters). |
+| `Interlayer.UseThetaIJ` | `useThetaIJ` | logical | `.false.` | ham.F90: HamHopInterlayerParameters | BLKaxiras / BLSrivani: angle variant theta_ij (see HamHopInterlayerParameters). |
+| `Interlayer.Vpppi0` | `vpppi0` | real | `2.7` | ham.F90: HamHopping | Two-centre V_pp_pi^0 [eV]: pi part of the interlayer hopping in every two-centre model, and the intralayer first-neighbour hopping with KoshinoIntralayer. Default 2.7 with KoshinoIntralayer, 3.5 otherwise. |
+| `Interlayer.Vpppi0` | `vpppi0` | real | `3.5` | ham.F90: HamHopping | Two-centre V_pp_pi^0 [eV]: pi part of the interlayer hopping in every two-centre model, and the intralayer first-neighbour hopping with KoshinoIntralayer. Default 2.7 with KoshinoIntralayer, 3.5 otherwise. |
+| `Interlayer.Vppsigma0` | `vppsigma0` | real | `0.48` | ham.F90: HamHopping | Two-centre V_pp_sigma^0 of the interlayer hopping [eV]. |
+| `Intralayer.Bilayert2KA` | `Bilayert2KA` | real | `-0.2235` | ham.F90: HamHopping | F2G2 intralayer hopping t2 on sublattice A (second shell) [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.Bilayert2KB` | `Bilayert2KB` | real | `-0.2260` | ham.F90: HamHopping | F2G2 intralayer hopping t2 on sublattice B (second shell) [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.Bilayert3K` | `Bilayert3K` | real | `0.1984` | ham.F90: HamHopping | F2G2 intralayer hopping t3 (third shell) [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.Bilayert4K` | `Bilayert4K` | real | `0.0` | ham.F90: HamHopping | F2G2 intralayer hopping t4 (fourth shell) [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.Bilayert5KA` | `Bilayert5KA` | real | `-0.04016` | ham.F90: HamHopping | F2G2 intralayer hopping t5 on sublattice A (fifth shell) [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.Bilayert5KB` | `Bilayert5KB` | real | `-0.0404` | ham.F90: HamHopping | F2G2 intralayer hopping t5 on sublattice B (fifth shell) [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.BilayertAA1` | `BilayertAA1` | real | `0.09244` | ham.F90: HamHopping | Bernal-bilayer hopping t_AA1 [eV] of the bilayer F2G2 / few-parameter models; the default depends on the parameter set read here. |
+| `Intralayer.BilayertAA3` | `BilayertAA3` | real | `-0.02299` | ham.F90: HamHopping | Bernal-bilayer hopping t_AA3 [eV] of the bilayer F2G2 model (stored as tAA2). |
+| `Intralayer.BilayertAB1` | `BilayertAB1` | real | `0.1391` | ham.F90: HamHopping | Bernal-bilayer hopping t_AB1 (first set: one-parameter model) [eV] of the bilayer F2G2 / few-parameter models; the default depends on the parameter set read here. |
+| `Intralayer.BilayertAB1` | `BilayertAB1` | real | `0.361` | ham.F90: HamHopping | Bernal-bilayer hopping t_AB1 (first set: one-parameter model) [eV] of the bilayer F2G2 / few-parameter models; the default depends on the parameter set read here. |
+| `Intralayer.BilayertAB3` | `BilayertAB3` | real | `-0.07211` | ham.F90: HamHopping | Bernal-bilayer hopping t_AB3 [eV] of the bilayer F2G2 / few-parameter models; the default depends on the parameter set read here. |
+| `Intralayer.BilayertAB3` | `BilayertAB3` | real | `0.283` | ham.F90: HamHopping | Bernal-bilayer hopping t_AB3 [eV] of the bilayer F2G2 / few-parameter models; the default depends on the parameter set read here. |
+| `Intralayer.BilayertAB4` | `BilayertAB4` | real | `0.138` | ham.F90: HamHopping | Bernal-bilayer hopping t_AB4 [eV] of the bilayer F2G2 / few-parameter models; the default depends on the parameter set read here. |
+| `Intralayer.BilayertBA0` | `BilayertBA0` | real | `0.331` | ham.F90: HamHopping | Bernal-bilayer hopping t_BA0 (dimer) [eV] of the bilayer F2G2 / few-parameter models; the default depends on the parameter set read here. |
+| `Intralayer.BilayertBA2` |  | real | `-0.01016` | ham.F90: HamHopping | Bernal-bilayer hopping t_BA2 [eV] of the bilayer F2G2 / few-parameter models; the default depends on the parameter set read here. |
+| `Intralayer.BilayertBA5` |  | real | `0.0001` | ham.F90: HamHopping | Bernal-bilayer hopping t_BA5 [eV] of the bilayer F2G2 / few-parameter models; the default depends on the parameter set read here. |
+| `Intralayer.BilayerThreeParameters` | `BilayerThreeParameters` | logical | `.false.` | ham.F90: HamHopping | Bernal bilayer with three interlayer hoppings tAB1, tAB3, tAB4. |
+| `Intralayer.BilayertK6A` | `BilayertK6A` | real | `0.0` | ham.F90: HamHopF2G2sParameters; ham.F90: HamHopping | F2G2 intralayer hopping t6 (sixth shell) [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.BilayertK7A` | `BilayertK7A` | real | `0.0` | ham.F90: HamHopF2G2sParameters; ham.F90: HamHopping | F2G2 intralayer hopping t7 (seventh shell) [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.BilayertK8A` | `BilayertK8A` | real | `0.0` | ham.F90: HamHopF2G2sParameters; ham.F90: HamHopping | F2G2 intralayer hopping t8 (eighth shell) [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.DeactivateASubLattice` | `deactivateASubLattice` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Moire potential: skip the moire term on the Species-2 atoms. |
+| `Intralayer.DeactivateBSubLattice` | `deactivateBSubLattice` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Moire potential: skip the moire term on the Species-1 atoms. |
+| `Intralayer.DeactivateIntersublattice` | `deactivateIntersublattice` | logical | `.false.` | ham.F90: HamHopping | Drop the hoppings between sites of different sublattices. |
+| `Intralayer.DeactivateIntrasublattice` | `deactivateIntrasublattice` | logical | `.false.` | ham.F90: HamHopping | Drop the hoppings between sites of the same sublattice. |
+| `Intralayer.DeactivateIntraSublatticeForC` | `deactivateIntraSublatticeForC` | logical | `.false.` | ham.F90: HamHopping | Drop same-sublattice hoppings between carbon atoms. |
+| `Intralayer.F2G2Model` | `F2G2Model` | logical | `.true.` | ham.F90: HamHopping; ham.F90: HamInit | F2G2 intralayer model (5 shells); .false.: the 8-shell parameter set. A warning lists shells not searched. Here: F2G2 intralayer hoppings (otherwise the 8-shell parameter set). |
+| `Intralayer.ForceBilayerF2G2Intralayer` | `forceBilayerF2G2Intralayer` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite | Multilayer stacks: Bernal-bilayer F2G2 intralayer parameters instead of the single-layer ones. Here: the intralayer hoppings take the Bernal-bilayer F2G2 set below. |
+| `Intralayer.hBNt2B` |  | real | `-0.0542` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t2 of hBN on boron [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt2B` |  | real | `-0.081055` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t2 of hBN on boron [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt2N` |  | real | `-0.2228` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t2 of hBN on nitrogen [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt2N` |  | real | `-0.24562` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t2 of hBN on nitrogen [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt3` |  | real | `0.1329` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t3 of hBN [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt3` |  | real | `0.15399` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t3 of hBN [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt4` |  | real | `-0.0` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t4 of hBN [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt4` |  | real | `0.0` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t4 of hBN [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt5B` |  | real | `-0.0566` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t5 of hBN on boron [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt5B` |  | real | `-0.065654` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t5 of hBN on boron [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt5N` |  | real | `-0.0429` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t5 of hBN on nitrogen [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt5N` |  | real | `-0.04892` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t5 of hBN on nitrogen [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt6` |  | real | `0.0` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t6 of hBN [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt7` |  | real | `0.0` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t7 of hBN [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.hBNt8` |  | real | `0.0` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t8 of hBN [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.KoshinoIntralayer` | `KoshinoIntralayer` | logical | `.false.` | ham.F90: HamHopping | Moon-Koshino intralayer hopping (Vpppi0 also used in-plane; its default becomes 2.7 eV). |
+| `Intralayer.MayouIntralayer` | `MayouIntralayer` | logical | `.false.` | ham.F90: HamHopping | Intralayer hoppings of the Mayou model. |
+| `Intralayer.RemoveF2G2Flag` | `removeF2G2Flag` | logical | `.false.` | ham.F90: HamHopping | Switch Intralayer.F2G2Model off (use the 8-shell parameter set). |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.21264` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t2, second shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.2354` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t2, second shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.24498` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t2, second shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert2KSL` | `SingleLayert2KSL` | real | `-0.24523` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t2, second shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.1877` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t3, third shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.19334` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t3, third shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert3K` | `SingleLayert3K` | real | `0.23442` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t3, third shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `-0.0` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t4, fourth shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `-0.05350` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t4, fourth shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert4K` | `SingleLayert4K` | real | `0.0` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t4, fourth shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.0633` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t5, fifth shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.06618` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t5, fifth shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.06624` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t5, fifth shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.SingleLayert5KSL` | `SingleLayert5KSL` | real | `-0.07326` | ham.F90: HamHopF2G2sParameters | F2G2 intralayer hopping t5, fifth shell [eV]; the default depends on the parameter set read here (graphene, hBN, G/hBN fits). |
+| `Intralayer.T2Value` | `t2Value` | real | `0.0083` | ham.F90: HamHopping | Read but not used at present. |
+| `Intralayer.UseOldGrapheneF2G2` | `useOldGrapheneF2G2` | logical | `.false.` | ham.F90: HamHopping | Older graphene F2G2 parameter set (nonzero t4). |
+| `Kubo.Calc` |  | logical | `.true.` | calc.F90: CalcSelect | Run the recursion calculation (CalcKubo): DOS or local DOS, then the time evolution unless Calculate.OnlyDOS. |
+| `Kubo.EnergyMax` | `EnergyMax` | real | `4.0` | calc.F90: CalcKubo | Upper end of the energy grid of the recursion DOS [eV]. |
+| `Kubo.EnergyMin` | `EnergyMin` | real | `-4.0` | calc.F90: CalcKubo | Lower end of the energy grid of the recursion DOS [eV]. |
+| `Kubo.Epsilon` | `Epsilon` | real | `0.001` | diag.F90: DiagHamChern | Here (DiagHamChern, refused): regularisation of the energy denominators. |
+| `Kubo.Epsilon` | `Epsilon` | real | `0.01` | calc.F90: CalcKubo; diag.F90: Diag3DBands; diag.F90: DiagDOS; ... (4 places) | Recursion DOS: broadening eta of the continued fraction, the Green function is taken at E + i eta [eV]. Diagonalisation DOS: width of the Gaussian broadening of every level [eV]. |
+| `Kubo.Epsilon` | `Epsilon` | real | `0.01 (g0)` | diag.F90: DiagSpectralEpsilon | Spectral function: Gaussian width of Spectral.UseGaussianBroadening / GaussianConvolution [eV] (units of g0 before November 2026). |
+| `Kubo.NumberOfBNAtoms1` | `numberOfBNAtoms1` | integer | `5832` | calc.F90: CalcKubo | Kubo.PDOSLayer with Stack.EncapsulatedFourLayers: assumed atoms of layer 1 per input cell (times SuperCell^2). The start vector is normalised afterwards, so the value does not change the result. |
+| `Kubo.NumberOfBNAtoms2` | `numberOfBNAtoms2` | integer | `5832` | calc.F90: CalcKubo | As Kubo.NumberOfBNAtoms1, for layer 4. |
+| `Kubo.NumberOfCAtoms` | `numberOfCAtoms` | integer | `6050` | calc.F90: CalcKubo | As Kubo.NumberOfBNAtoms1, for layers 2 and 3 (Stack.EncapsulatedFourLayers) or layers 1-6 (Stack.T3BG). |
+| `Kubo.NumberofEnergyPoints` | `NumberofEnergyPoints` | integer | `1000` | calc.F90: CalcKubo; diag.F90: Diag3DBands; diag.F90: DiagDOS; ... (11 places) | Number of points of the energy grid from Kubo.EnergyMin to Kubo.EnergyMax at which the DOS is written. Diagonalisation DOS: number of points of the energy grid from DOS.Emin to DOS.Emax. Spectral function: number of points of the energy grid from Spectral.Emin to Spectral.Emax. |
+| `Kubo.NumberOfLayers` | `numberOfLayers` | integer | `2` | calc.F90: CalcKubo; diag.F90: DiagPDOS | Number of layers of Kubo.PDOSLayer / PDOSLayerAndSpecies (layers 1..N; a warning is printed when the structure has more). Here (DiagPDOS): number of layers onto which the DOS is projected. |
+| `Kubo.NumberofPolynomials` | `NumberofPolynomials` | integer | `100` | calc.F90: CalcKubo | Number of Chebyshev polynomials in the expansion of U(Kubo.TimeStep) (KuboCn; <prefix>.cn.dat). |
+| `Kubo.NumberofTimeSteps` | `NumberofTimeSteps` | integer | `500` | calc.F90: CalcKubo | Number of time steps of the Kubo time evolution (KuboTEvol, only without Calculate.OnlyDOS). |
+| `Kubo.PDOS` | `PDOS` | logical | `.false.` | calc.F90: CalcKubo | Local DOS of selected atoms, layers or species instead of the DOS of the whole cell. The selection is the FIRST of PDOSLayer, PDOSLayerAndSpecies, PDOSDist, PDOSMoireSC1, PDOSMoireSuperMoire, ...2, ...3, PDOSAtomList, PDOSByNumber, PDOSPNP that is set; PDOSMoireSuperMoire(2,3) default to .true. Output in folders PDOS_*. |
+| `Kubo.PDOSAtomList` | `PDOSAtomList` | logical | `.false.` | calc.F90: CalcKubo | Local DOS of the six atoms listed in Kubo.PDOSList. |
+| `Kubo.PDOSByNumber` | `PDOSByNumber` | logical | `.false.` | calc.F90: CalcKubo | Local DOS of the single atom Kubo.PDOSNumber. |
+| `Kubo.PDOSDist` | `PDOSDist` | logical | `.false.` | calc.F90: CalcKubo | Local DOS of every atom with PDOSxmin < x < PDOSxmax, PDOSymin < y < PDOSymax and index >= PDOSMinValue, one folder PDOS_atom<index> each. |
+| `Kubo.PDOSIgnoreLayer1and4` | `PDOSIgnoreLayer1and4` | logical | `.false.` | calc.F90: CalcKubo | With Kubo.PDOSMoireSC1: skip the atoms of layers 1 and 4. |
+| `Kubo.PDOSLayer` | `PDOSLayer` | logical | `.false.` | calc.F90: CalcKubo | DOS of each layer 1..Kubo.NumberOfLayers, from a random-phase vector on the atoms of that layer (folders PDOS_layer<NN>). |
+| `Kubo.PDOSLayerAndSpecies` | `PDOSLayerAndSpecies` | logical | `.false.` | calc.F90: CalcKubo | DOS of each layer and Species, from a random-phase vector on those atoms (folders PDOS_layer<NN>_sub<NN>; combinations without atoms are skipped). |
+| `Kubo.PDOSList` | `PDOSList` |  | `[1,2,3,4,5,6]` | calc.F90: CalcKubo | Kubo.PDOSAtomList: exactly six atom indices (1-based, the order of generate.pos). |
+| `Kubo.PDOSMinValue` | `PDOSMinValue` | integer | `0` | calc.F90: CalcKubo | Atoms with a smaller index are skipped by Kubo.PDOSDist, PDOSMoireSC1 and PDOSMoireSuperMoire(2,3). |
+| `Kubo.PDOSMoireSC1` | `PDOSMoireSC1` | logical | `.false.` | calc.F90: CalcKubo | Local DOS of every atom of the first SuperCell copy (both fractional coordinates below 1/SuperCell) with index >= PDOSMinValue, one folder PDOS_atom<index> each. |
+| `Kubo.PDOSMoireSuperMoire` | `PDOSMoireSuperMoire` | logical | `.true.` | calc.F90: CalcKubo | Local DOS of the Species-1 atoms whose distance along both lattice vectors (fractional coordinate times CellSize*SuperCell*aG) is below Kubo.PDOSMoireSuperMoireLength. Default .true. |
+| `Kubo.PDOSMoireSuperMoire2` | `PDOSMoireSuperMoire2` | logical | `.true.` | calc.F90: CalcKubo | As Kubo.PDOSMoireSuperMoire, for distances from 1 to 2 times Kubo.PDOSMoireSuperMoireLength. |
+| `Kubo.PDOSMoireSuperMoire3` | `PDOSMoireSuperMoire3` | logical | `.true.` | calc.F90: CalcKubo | As Kubo.PDOSMoireSuperMoire, for distances from 2 to 3 times Kubo.PDOSMoireSuperMoireLength. |
+| `Kubo.PDOSMoireSuperMoireLength` | `PDOSMoireSuperMoireLength` | real | `135d0` | calc.F90: CalcKubo | Side of the regions selected by Kubo.PDOSMoireSuperMoire(2,3) [Angstrom]. |
+| `Kubo.PDOSNumber` | `PDOSNumber` | integer | `1` | calc.F90: CalcKubo | Kubo.PDOSByNumber: index of the atom (1-based, the order of generate.pos). |
+| `Kubo.PDOSPNP` | `PDOSPNP` | logical | `.false.` | calc.F90: CalcKubo | Local DOS of two atoms of a p-n-p potential (Potential.PNPKink): the first with x just above L/4 and the first with x just above L/4 + 2*Potential.PNPDelta, L = CellSize*SuperCell*aG. |
+| `Kubo.PDOSxmax` | `PDOSxmax` | real | `5.0` | calc.F90: CalcKubo | Kubo.PDOSDist: upper x bound of the selected atoms [Angstrom]. |
+| `Kubo.PDOSxmin` | `PDOSxmin` | real | `0.0` | calc.F90: CalcKubo | Kubo.PDOSDist: lower x bound of the selected atoms [Angstrom]. |
+| `Kubo.PDOSymax` | `PDOSymax` | real | `5.0` | calc.F90: CalcKubo | Kubo.PDOSDist: upper y bound of the selected atoms [Angstrom]. |
+| `Kubo.PDOSymin` | `PDOSymin` | real | `0.0` | calc.F90: CalcKubo | Kubo.PDOSDist: lower y bound of the selected atoms [Angstrom]. |
+| `Kubo.RecursionNumber` | `RecursionNumber` | integer | `700` | calc.F90: CalcKubo | Number of Lanczos steps (length of the continued fraction); sets the energy resolution. No reorthogonalisation: the useful length is bounded by the number of distinct levels the start vector sees. |
+| `Kubo.SeedSet` | `SeedSet` | integer | `1235` | kubo.F90: KuboInitWFLayerAndSpeciesDOS; kubo.F90: KuboInitWFLayerDOS | Seed of the random-phase start vector of a layer-and-species DOS (Kubo.PDOSLayerAndSpecies). Seed of the random-phase start vector of a layer DOS (Kubo.PDOSLayer); always used, not the clock. |
+| `Kubo.SeedValue` | `seedValue` | integer | `123456` | kubo.F90: KuboInitWF; random.F90: RandSeedFromInput | Kubo.SetSeed: seed of the random-phase start vector; use different values to average over vectors. Here: seed of the random numbers of the disorder models when Kubo.SetSeed is set. |
+| `Kubo.SetSeed` | `setSeed` | logical | `.false.` | kubo.F90: KuboInitWF; random.F90: RandSeedFromInput | Seed the random-phase start vector with Kubo.SeedValue; otherwise from the clock (runs not reproducible). Here: also seeds the random numbers of the disorder models (RandSeedFromInput) with Kubo.SeedValue. |
+| `Kubo.TimeEvolutionInYDirection` | `timeEvolutionInYDirection` | logical | `.false.` | kubosubs.F90: KuboEvol | Kubo time evolution: position operator along y instead of x. |
+| `Kubo.TimeStep` | `TimeStep` | real | `5.0` | calc.F90: CalcKubo | Time step of the Kubo time evolution, in units of hbar/g0 (g0 = TB.Hopping). |
+| `Kubo.WriteNumberofSteps` | `WriteNumberofSteps` | integer | `10` | calc.F90: CalcKubo | The time evolution writes its output (<prefix>.Z2_<step>.dat) every this many time steps. |
+| `MagField.FinalB` |  | real | `0.0` | magf.F90: MagfInit | Last field of the sweep started by MagField.InitialB [T]. |
+| `MagField.FinalInteger` |  | integer | `0` | magf.F90: MagfInit | Last value of the MagField.InitialInteger sweep (flux quanta through the cell). |
+| `MagField.FrankMagneticField` | `FrankMagneticField` | logical | `.false.` | calc.F90: CalcSelect; ham.F90: HamHopping | Alternative Peierls gauge of HamHopMagneticField (ham.F90); read here but not used in this routine. Peierls phases from a bond-direction gauge for a rectangular graphene cell (HamHopMagneticField), with MagField.Integer flux quanta. |
+| `MagField.InitialB` |  | real | `0.0` | magf.F90: MagfInit | Field sweep from MagField.InitialB to MagField.FinalB [T], each rounded to whole flux quanta. |
+| `MagField.InitialInteger` |  | integer | `0` | magf.F90: MagfInit | Field sweep in flux quanta through the cell, from InitialInteger to FinalInteger: one calculation per value, in folders m<m>_B<B>. Both 0 = no field. |
+| `MagField.Integer` |  | integer | `0` | magf.F90: MagfInit | Perpendicular magnetic field as m flux quanta through the whole cell: B = m Phi_0 / A. Use MagField.Integer 0 for no field. |
+| `MagField.Integer` |  | integer | `1` | ham.F90: HamHopping | Here: number of flux quanta of MagField.FrankMagneticField. |
+| `MagField.IntegerStep` |  | integer | `1` | magf.F90: MagfInit | Step of a field sweep, in flux quanta through the cell. |
+| `MagField.LegacyCornerPhase` |  | logical | `.false.` | ham.F90: HamPeierlsPeriodicGauge | Peierls phases without the exp(i pi m n1 n2) term of bonds across a cell corner, as before 2026-10-22 (wrong for odd m). The run otherwise refuses a non-integer number of flux quanta. |
+| `MagField.Step` |  | real | `1.0` | magf.F90: MagfInit | Step of a field sweep [T], rounded to whole flux quanta (otherwise MagField.IntegerStep). |
+| `MagField.Value` | `MagField` | real | `0.0` | magf.F90: MagfInit | Perpendicular magnetic field [T], rounded to an integer number of flux quanta through the cell (a warning is printed when it rounds to zero). Peierls phases on every hopping. |
+| `Moire.AddSecondMoire` | `MoireAddSecondMoire` | logical | `.false.` | ham.F90: HamHopWriteTables; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Second moire on the same graphene (effective model): same amplitudes and phases, slot 2 = Moire.Twisted2, TwistAngle2, LatticePercent x LatticePercentFactor, SecondMoireMassFactor. |
+| `Moire.BfactorC0` | `BfactorC0` | real | `3.1` | ham.F90: HamOnSiteMoirePotential | Moire.DistanceDependentEffectiveModel: decay B of C0 [1/Angstrom]. |
+| `Moire.BfactorCab` | `BfactorCab` | real | `3.3` | ham.F90: HamHopping | Moire.DistanceDependentEffectiveModel: decay B of Cab [1/Angstrom]. |
+| `Moire.BfactorCz` | `BfactorCz` | real | `3.1` | ham.F90: HamOnSiteMoirePotential | Moire.DistanceDependentEffectiveModel: decay B of Cz [1/Angstrom]. |
+| `Moire.BilayerBottomAngle` | `MoireBilayerBottomAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Encapsulated bilayer: twist angle of the bottom hBN relative to the graphene [degrees]. |
+| `Moire.BilayerBottomXMax` | `MoireBilayerBottomXMax` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftRange: last x shift of the bottom layer. |
+| `Moire.BilayerBottomXMin` | `MoireBilayerBottomXMin` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftRange: first x shift of the bottom layer. |
+| `Moire.BilayerBottomXShift` | `MoireBilayerBottomXShift` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftDefinedValues: x shift of the bottom layer (written into the output prefix). |
+| `Moire.BilayerBottomYMax` | `MoireBilayerBottomYMax` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftRange: last y shift of the bottom layer. |
+| `Moire.BilayerBottomYMin` | `MoireBilayerBottomYMin` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftRange: first y shift of the bottom layer. |
+| `Moire.BilayerBottomYShift` | `MoireBilayerBottomYShift` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftDefinedValues: y shift of the bottom layer. |
+| `Moire.BilayerElectricField` | `MoireBilayerElectricField` | logical | `.false.` | ham.F90: HamOnSite | Layer potential (displacement field) of Moire.BilayerElectricShift; the profile follows the stack flag (e.g. Stack.FiveLayersSandwiched). Without this flag the shift does nothing. |
+| `Moire.BilayerElectricFieldInvert` | `MoireBilayerElectricFieldInvert` | logical | `.false.` | ham.F90: HamOnSite | Moire.BilayerElectricField: invert the field for atoms beyond half the cell in x. |
+| `Moire.BilayerElectricShift` | `MoireBilayerElectricShift` | real | `0.150` | ham.F90: HamOnSite | Moire.BilayerElectricField: potential difference between the outer layers [eV]. |
+| `Moire.BilayerTopAngle` | `MoireBilayerTopAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Encapsulated bilayer: twist angle of the top hBN relative to the graphene [degrees]. |
+| `Moire.BilayerTopXMax` | `MoireBilayerTopXMax` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftRange: last x shift of the top layer. |
+| `Moire.BilayerTopXMin` | `MoireBilayerTopXMin` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftRange: first x shift of the top layer. |
+| `Moire.BilayerTopXShift` | `MoireBilayerTopXShift` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftDefinedValues: x shift of the top layer. |
+| `Moire.BilayerTopYMax` | `MoireBilayerTopYMax` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftRange: last y shift of the top layer. |
+| `Moire.BilayerTopYMin` | `MoireBilayerTopYMin` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftRange: first y shift of the top layer. |
+| `Moire.BilayerTopYShift` | `MoireBilayerTopYShift` | real | `0.0` | moireBLShift.F90: moireBLShiftValue | Moire.BLShiftDefinedValues: y shift of the top layer. |
+| `Moire.BLDeactivateUpperLayer` | `MoireBLDeactivateUpperLayer` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Encapsulated bilayer: no moire term on layer 2. |
+| `Moire.BLShiftDefinedValues` | `moireBLShiftDefinedValues` | logical | `.false.` | moireBLShift.F90: moireBLShiftInit; moireBLShift.F90: moireBLShiftValue | moireBLShift.Calc: one calculation with the shifts Moire.Bilayer{Bottom,Top}{X,Y}Shift. |
+| `Moire.BLShiftRange` | `moireBLShiftRange` | logical | `.false.` | moireBLShift.F90: moireBLShiftInit; moireBLShift.F90: moireBLShiftValue | moireBLShift.Calc: sweep each shift from its Moire.Bilayer*Min to *Max in Moire.BLShiftRangeSteps steps. |
+| `Moire.BLShiftRangeSteps` | `moireBLShiftRangeSteps` | integer | `10` | moireBLShift.F90: moireBLShiftInit | Moire.BLShiftRange: number of steps of the shift sweep. |
+| `Moire.CDW` | `moireCDW` | logical | `.false.` | ham.F90: HamOnSite | On-site CDW [A + A_m (-1)^Species] (1/nQ) sum_q cos(2 pi (h f1 + k f2)/D + phase) on every atom, q from the block moireCDW.Qvectors in units of the cell's reciprocal lattice (moireCDW.* keys). |
+| `Moire.DistanceDependentEffectiveModel` | `distanceDependentEffectiveModel` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Moire.Jeil amplitudes scaled with the local interlayer distance z: C(z) = C exp(-B (z - z0)). Here: allocates the per-atom interlayer distances (all 3.35 Angstrom) for Graphene cells. |
+| `Moire.DontUseInplaneMoire` | `dontUseInplaneMoire` | logical | `.false.` | ham.F90: HamOnSite | Skip the harmonic in-plane moire on-site term for GBNtwoLayers and the encapsulated stacks. |
+| `Moire.FirstMoireMassFactor` | `MoireFirstMoireMassFactor` | real | `1.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Factor (sign) of the mass term of the first moire; < 0 flips BN to NB. |
+| `Moire.Fourier` |  | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite | General moire term given by Fourier components: on-site part here, bond part in HamHopping. Here: bond part of the Moire.Fourier term, added before the Peierls phase. |
+| `Moire.FourierGrapheneAngle` |  | real | `0.0` | ham.F90: HamMoireFourierSetup | Moire.Fourier: orientation of the graphene lattice [degrees]. |
+| `Moire.FourierKprime` |  | logical | `.false.` | ham.F90: HamMoireFourierSetup | Moire.Fourier: the term U is given for the K' valley. |
+| `Moire.FourierLatticeConstant` |  |  | `aG` | ham.F90: HamMoireFourierSetup | Moire.Fourier: graphene lattice constant of the Fourier components [Angstrom] (default aG). |
+| `Moire.H0AndHZ` | `MoireH0AndHZ` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Moire potential: apply both the scalar H0 and the mass HZ terms. |
+| `Moire.HeightAmp` | `MoireHeightAmp` | real | `0.1` | ham.F90: HamInit | Moire.Strain: amplitude of the height modulation [Angstrom]. |
+| `Moire.Jeil` | `MoireJeil` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | G/hBN moire potential of Jung et al., PRB 89, 205414 (2014): amplitudes Moire.PotC0, PotCz, PotCab and phases Moire.PotPhi0, PotPhiz, PotPhiab (the effective model). |
+| `Moire.Kekule` | `MoireKekule` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Kekule-type moire on-site term (HamOnSiteMoireKekule; Moire.KekuleAngle, KekuleEpsFactor). |
+| `Moire.KekuleAngle` | `MoireKekuleAngle` | real | `30.0` | ham.F90: HamOnSiteMoireKekule | Moire.Kekule: angle of the Kekule pattern [degrees]. |
+| `Moire.KekuleEpsFactor` | `MoireKekuleEpsFactor` |  | `sqrt(3.0)` | ham.F90: HamOnSiteMoireKekule | Moire.Kekule: the lattice mismatch enters as Moire.LatticePercent / this factor. |
+| `Moire.LatticePercent` | `Latticepercent` | real | `-0.018181818181818` | ham.F90: HamHopping; ham.F90: HamOnSite | Lattice mismatch epsilon of the moire potential, d(r) = ((1+eps) R(theta) - 1) r; commensurate G/hBN in a CellSize cell wants -1/CellSize. Here: lattice mismatch of the moire bond terms. |
+| `Moire.LatticePercentFactor` | `LatticepercentFactor` | real | `1.0` | ham.F90: HamHopSecondMoire; ham.F90: HamOnSiteMoirePotential | Moire.AddSecondMoire: lattice mismatch of the second moire = Moire.LatticePercent x this factor. |
+| `Moire.LayerShift1` | `MoireLayerShift1` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Moire potential: added to the y component of the stacking displacement of the first (bottom) moire [Angstrom]. |
+| `Moire.LayerShift2` | `MoireLayerShift2` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Moire potential: shift of the second moire pattern [Angstrom]. |
+| `Moire.NoH0AndHZ` | `MoireNoH0AndHZ` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Moire potential: apply neither H0 nor HZ (bond terms only). |
+| `Moire.OffDiag` | `MoireOffDiag` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping | Off-diagonal (bond) moire term of the G/hBN effective model, Cab. Evaluated at atom i: H slightly non-Hermitian unless Moire.OffDiagMidpoint. Here: the off-diagonal moire bond term is added in HamHopping. |
+| `Moire.OffDiagMidpoint` | `MoireOffDiagMidpoint` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping | Moire.OffDiag: evaluate the bond term at the bond midpoint (one shared routine for both moire slots): Hermitian H, needed for recursion runs. Plain effective model only. Here: the bond term is evaluated at the bond midpoint. |
+| `Moire.OnlyH0` | `MoireOnlyH0` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Moire potential: apply only the scalar term H0 (one of OnlyH0, OnlyHZ, NoH0AndHZ, H0AndHZ is required). |
+| `Moire.OnlyHZ` | `MoireOnlyHZ` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Moire potential: apply only the mass term HZ. |
+| `Moire.PotA` | `MoirePotA` | real | `0.0186` | ham.F90: HamOnSiteMoirePotential | Moire.Sachs: amplitude A [eV]. |
+| `Moire.PotA1` | `MoirePotA1` |  | `A` | ham.F90: HamOnSiteMoirePotential | Moire.Trilayer: amplitude A of the first moire [eV] (default Moire.PotA). |
+| `Moire.PotA2` | `MoirePotA2` |  | `A` | ham.F90: HamOnSiteMoirePotential | Moire.Trilayer: amplitude A of the second moire [eV] (default Moire.PotA). |
+| `Moire.PotB` | `MoirePotB` | real | `0.042` | ham.F90: HamOnSiteMoirePotential | Moire.Sachs: amplitude B [eV]. |
+| `Moire.PotB1` | `MoirePotB1` |  | `B` | ham.F90: HamOnSiteMoirePotential | Moire.Trilayer: amplitude B of the first moire [eV] (default Moire.PotB). |
+| `Moire.PotB2` | `MoirePotB2` |  | `B` | ham.F90: HamOnSiteMoirePotential | Moire.Trilayer: amplitude B of the second moire [eV] (default Moire.PotB). |
+| `Moire.PotC` | `MoirePotC` | real | `0.0` | ham.F90: HamOnSiteMoireKekule; ham.F90: HamOnSiteMoirePotential | Moire.Sachs: constant term C [eV]. |
+| `Moire.PotC0` | `MoirePotC0` | real | `-0.01013` | ham.F90: HamOnSiteMoirePotential | Moire.Jeil: amplitude C0 of the scalar moire term [eV]. |
+| `Moire.PotCab` | `MoirePotCab` | real | `0.01134` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Moire.Jeil: amplitude Cab of the off-diagonal (bond) term [eV]. Here: amplitude of the off-diagonal moire term on graphene bonds [eV]. |
+| `Moire.PotCabBN` | `MoirePotCabBN` | real | `0.004418` | ham.F90: HamHopping | Amplitude of the off-diagonal moire term on hBN bonds [eV]. |
+| `Moire.PotCabG` | `MoirePotCabG` | real | `0.001987` | ham.F90: HamHopBondTermsTBG | Here (tBG bond terms): amplitude of the off-diagonal term on graphene bonds [eV]. |
+| `Moire.PotCabG` | `MoirePotCabG` | real | `0.002235` | ham.F90: HamHopping | Amplitude of the off-diagonal moire term on graphene bonds in the stack models [eV]. |
+| `Moire.PotCz` | `MoirePotCz` | real | `-0.00901` | ham.F90: HamOnSiteMoirePotential | Moire.Jeil: amplitude Cz of the mass (sublattice-odd) term [eV]. |
+| `Moire.Potential` | `MoirePotential` | logical | `.false.` | ham.F90: HamOnSite | Moire on-site potential (HamOnSiteMoirePotential): the G/hBN effective model needs one of MoireH0AndHZ, MoireOnlyH0, MoireOnlyHZ, MoireNoH0AndHZ. No effect for ReadXYZ + GBNtwoLayers. |
+| `Moire.PotPhi0` | `MoirePotPhi0` | real | `1.510233401750693` | ham.F90: HamOnSiteMoirePotential | Moire.Jeil: phase of the C0 term [rad]. |
+| `Moire.PotPhiab` | `MoirePotPhiab` | real | `0.342084533390889` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Moire.Jeil: phase of the Cab term [rad]. Here: phase of the off-diagonal moire bond term [rad]. |
+| `Moire.PotPhiabBN` | `MoirePotPhiabBN` | real | `26.1` | ham.F90: HamHopping | Phase of the off-diagonal moire term on hBN bonds [degrees]. |
+| `Moire.PotPhiabG` | `MoirePotPhiabG` | real | `3.5` | ham.F90: HamHopping | Phase of the off-diagonal moire term on graphene bonds [degrees] (0 with TBG.OffDiag). |
+| `Moire.PotPhiz` | `MoirePotPhiz` | real | `0.147131255943122` | ham.F90: HamOnSiteMoirePotential | Moire.Jeil: phase of the Cz term [rad]. |
+| `Moire.PreFactor` | `MoirePreFactor` | real | `1.0` | ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential | Moire.Potential: factor on the amplitudes of the moire potential. Here: factor on Moire.PotC0, PotCz, PotCab. |
+| `Moire.RemoveTopMoireInL2` | `removeTopMoireInL2` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Leave out the moire term from the top interface in layer 2 (see HamOnSiteMoirePotential). |
+| `Moire.Sachs` | `MoireSachs` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Moire potential of Sachs et al., PRB 84, 195414 (2011), amplitudes Moire.PotA, PotB, PotC. |
+| `Moire.SecondMoireMassFactor` | `MoireSecondMoireMassFactor` | real | `1.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Moire.AddSecondMoire: factor (sign) of the mass term of the second moire; < 0 flips BN to NB. |
+| `Moire.SecondMoireRotateFirst` | `MoireSecondMoireRotateFirst` | logical | `.true.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Moire.AddSecondMoire: build the displacement with the rotation applied first (default). |
+| `Moire.Strain` | `MoireStrain` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamInit | Modify the hoppings by a model moire strain (Moire.StrainFactor, Moire.HeightAmp). Here: the moire-strain hopping law is applied in HamHopping. |
+| `Moire.StrainFactor` | `MoireStrainFactor` | real | `3.37` | ham.F90: HamInit | Moire.Strain: beta of the hopping law t = exp(-beta (d/d_CC - 1)). |
+| `Moire.SwitchHzjj` | `switchHzjj` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Read but not used at present. |
+| `Moire.SymmA` | `MoireSymmA` | real | `0.01` | ham.F90: HamOnSiteMoirePotential | Moire.SymmetricPot: amplitude A [eV]. |
+| `Moire.SymmB` | `MoireSymmB` | real | `0.01` | ham.F90: HamOnSiteMoirePotential | Moire.SymmetricPot: amplitude B [eV]. |
+| `Moire.SymmetricPot` | `MoireSymmetricPot` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Symmetric moire potential with amplitudes Moire.SymmA, Moire.SymmB. |
+| `Moire.TDBLDeactivateUpperLayers` | `MoiretDBLDeactivateUpperLayers` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Multilayer: no moire term on any layer above layer 1. |
+| `Moire.Trilayer` | `MoireTrilayer` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Two moire potentials of a trilayer (needs Moire.Sachs; Moire.PotA1..B2, Moire.Trin1/m1/n2/m2). |
+| `Moire.Trim1` | `MoireTrim1` | integer | `0` | ham.F90: HamOnSiteMoirePotential | Moire.Trilayer: m1 of the first period n1 aG/m1 (non-zero). |
+| `Moire.Trim2` | `MoireTrim2` | integer | `0` | ham.F90: HamOnSiteMoirePotential | Moire.Trilayer: m2 of the second period n1 n2 aG/m2 (non-zero). |
+| `Moire.Trin1` | `MoireTrin1` | integer | `0` | ham.F90: HamOnSiteMoirePotential | Moire.Trilayer: n1 of the moire periods n1 aG/m1 and n1 n2 aG/m2. |
+| `Moire.Trin2` | `MoireTrin2` | integer | `0` | ham.F90: HamOnSiteMoirePotential | Moire.Trilayer: n2 of the second period n1 n2 aG/m2. |
+| `Moire.TwistAngle` | `MoireTwistAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Moire.Twisted: twist angle theta of the first moire, d(r) = ((1+eps) R(theta) - 1) r [degrees]. |
+| `Moire.TwistAngle2` | `MoireTwistAngle2` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Moire.Twisted2: twist angle of the second moire (Moire.AddSecondMoire) [degrees]. |
+| `Moire.Twisted` | `MoireTwisted` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | The first moire includes the twist Moire.TwistAngle (otherwise lattice mismatch only). |
+| `Moire.Twisted2` | `MoireTwisted2` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | The second moire includes the twist Moire.TwistAngle2. |
+| `moireBLShift.Calc` |  | logical | `.false.` | calc.F90: CalcSelect | Sweep over rigid layer shifts (Moire.BLShiftDefinedValues or Moire.BLShiftRange): the on-site terms and the Kubo / Diag calculations are repeated for every shift. |
+| `moireCDW.Amplitude` |  | real | `0.0` | ham.F90: HamOnSiteMoireCDW | Moire.CDW: scalar amplitude A [eV]. |
+| `moireCDW.Denominator` |  | integer | `1` | ham.F90: HamOnSiteMoireCDW | Moire.CDW: denominator D of the wave vectors q = (h, k)/D; the cell must be periodic for them. |
+| `moireCDW.MassAmplitude` |  | real | `0.0` | ham.F90: HamOnSiteMoireCDW | Moire.CDW: staggered amplitude A_m, multiplied by (-1)^Species [eV]. |
+| `moireCDW.Phase` |  | real | `0.0` | ham.F90: HamOnSiteMoireCDW | Moire.CDW: phase of every cosine [rad]. |
+| `Neigh.BLInPlaneInteractionRadius` |  | logical | `.false.` | neigh.F90: NeighList | NeighList: select neighbours by their in-plane distance (z ignored) within the in-plane cutoff. |
+| `Neigh.CompareAll` |  | logical | `.false.` | neigh.F90: NeighList; neigh.F90: NeighListOld | NeighList: compare every pair of atoms (with the 3 x 3 neighbouring cells). Without it NeighList is known to give wrong bands; a warning is printed. |
+| `Neigh.CompareAll.UltraSmall` |  | logical | `.false.` | neigh.F90: NeighList | NeighList: as Neigh.CompareAll with the 7 x 7 neighbouring cells, for cells of fewer than ~36 atoms. |
+| `Neigh.CutAtNN3` |  | logical | `.false.` | ham.F90: HamInit | Deprecated: limits the search to three intralayer shells; use TB.NeighLevels 3. |
+| `Neigh.Distance` |  |  | `alatt/sqrt(3.0)` | neigh.F90: NeighListOld | NeighListOld: first-neighbour distance [Angstrom]; pairs within 1.1 times it are neighbours. |
+| `Neigh.ExpectedNumber` | `neighborExpectedNumber` | integer | `3` | neigh.F90: NeighList | Neigh.SafetyCheck: minimum expected number of neighbours per atom. |
+| `Neigh.fastNN` |  | logical | `.false.` | ham.F90: HamInit | Neighbour search fastNN: refused (it reads past the end of its bins). |
+| `Neigh.fastNNnotsquare` |  | logical | `.true.` | ham.F90: HamInit | Binned neighbour search, the default and best tested one; .false. selects NeighList (see Neigh.CompareAll). |
+| `Neigh.fastNNnotsquareNotRectangle` |  | logical | `.false.` | ham.F90: HamInit | Neighbour search fastNNnotsquareNotRectangle: refused (it reads past the end of its bins). |
+| `Neigh.IntralayerRadius` |  | real | `0.0` | ham.F90: HamInit | In-plane radius of the intralayer neighbour search [Angstrom], replacing the shell table's: for strained or corrugated cells (strained cells need 5.1134 to reproduce the search before October 2026). |
+| `Neigh.LayerDistFactor` |  | real | `1.0` | ham.F90: HamHopping; ham.F90: HamInit; neigh.F90: NeighList; ... (5 places) | In-plane radius of the interlayer neighbour search: 1.1 aG/sqrt(3) times this factor. NeighList with Neigh.BLInPlaneInteractionRadius: in-plane cutoff 1.1 aG/sqrt(3) times this factor. Here: read by the hopping set-up. |
+| `Neigh.LayerNeighbors` |  | integer | `0` | ham.F90: HamInit | Search interlayer neighbours (any value but 0); 0: no interlayer pairs. |
+| `Neigh.LayerNeighbors` |  | integer | `1` | neigh.F90: NeighList | NeighList (Neigh.fastNNnotsquare .false.): interlayer neighbours per atom reserved in the list. |
+| `Neigh.LayerNeighbors` |  | integer | `2` | neigh.F90: NeighList | NeighList (Neigh.fastNNnotsquare .false.): interlayer neighbours per atom reserved in the list. |
+| `Neigh.Only000Cell` | `only000Cell` | logical | `.false.` | neigh.F90: fastNNnotsquareSmall | fastNNnotsquareSmall: keep only the first-neighbour image in the home cell when assigning image cells. |
+| `Neigh.Print` |  | logical | `.false.` | neigh.F90: NeighList; neigh.F90: NeighListOld | Print the neighbour list (atom, neighbour, slot, image cell) in the output; atoms without 3 entries are marked. |
+| `Neigh.ReadDetails` | `readNeighborDetails` | logical | `.false.` | neigh.F90: NeighReadDataFiles | With Output.ReadDataFiles: also read neighCell.dat and neighD.dat (image cell and bond vector of each pair). |
+| `Neigh.SafetyCheck` | `neighborSafetyCheck` | logical | `.false.` | neigh.F90: NeighList | NeighList: list the atoms with fewer than Neigh.ExpectedNumber neighbours. |
+| `Output.KeepWaveFunction` | `keepWaveFunction` | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagChern | Dense diagonalisation that also writes the eigenvectors. Refused together with TAPW.Use or Diag.SparseSolver (it replaced those paths silently before). |
+| `Output.PrintBubble` | `printBubble` | logical | `.false.` | ham.F90: HamInit | Strain bubble diagnostic around a hard-coded atom: refused at present. |
+| `Output.ReadDataFiles` | `ReadDataFiles` | logical | `.false.` | calc.F90: CalcSelect; ham.F90: HamInit; neigh.F90: fastNNnotsquare; ... (6 places) | Take the hoppings from the file generate.s (one 're im' pair per line, units of g0) instead of computing them; the Peierls phases of a magnetic field are added after reading. Here: the on-site energies are read from generate.e (units of g0) instead of computed. Here: the neighbour lists are read from the files v, dx, dy, dz instead of searched. |
+| `Output.WriteDataFiles` | `WriteDataFiles` | logical | `.false.` | ham.F90: HamHopRealisticBubbles; ham.F90: HamHopping; ham.F90: HamInit; ... (9 places) | Write the neighbour lists and the Hamiltonian to files (v, dx, dy, dz, pos, neighCell.dat, neighD.dat, <prefix>.e, <prefix>.s.mag, ...): a complete export of H, large for big cells. Here: write the hopping and on-site tables (generate.e, <prefix>.s.mag, ...). Here: also writes the moire on-site terms to Hjj1, Hjj2. |
+| `Potential.AddOnsiteEnergyShift` | `addOnsiteEnergyShift` | logical | `.false.` | ham.F90: HamOnSite | Add Potential.OnsiteEnergyShift to every on-site energy. |
+| `Potential.AddSublatticeMassterm` | `addSublatticeMassterm` | logical | `.false.` | ham.F90: HamOnSite | Sublattice mass: Species 1 gets -m/2, Species 2 +m/2, m = Potential.SublatticeMassterm. |
+| `Potential.AddZTerm` | `AddZTerm` | logical | `.false.` | ham.F90: HamOnSiteSquareFunction; ham.F90: HamOnSiteSquareFunction2 | Potential.SquareFunction(2): add the staggered z term. |
+| `Potential.AmplitudeOfSquare` | `AmplitudeOfSquare` | real | `1.0 (g0)` | ham.F90: HamOnSiteSquareChecker; ham.F90: HamOnSiteSquareFunction | Amplitude A of the staggered square / checker potentials [eV] (units of g0 before 2026-10-14). |
+| `Potential.AmplitudeOfSquare2` | `AmplitudeOfSquare2` | real | `0.01 (g0)` | ham.F90: HamOnSiteSquareFunction2 | Potential.SquareFunction2: amplitude [eV] (units of g0 before 2026-10-14). |
+| `Potential.AmplitudeOfSquare3` | `AmplitudeOfSquare3` | real | `0.01 (g0)` | ham.F90: HamOnSiteZterm1D | Potential.Zterm1D: amplitude [eV] (units of g0 before 2026-10-14). |
+| `Potential.ArmChairShape` | `ArmChairShape` | logical | `.false.` | ham.F90: HamOnSiteSquareFunction2 | Potential.SquareFunction2: regions of armchair shape. |
+| `Potential.CDWAmplitude` | `CDWAmplitude` | real | `0.01` | ham.F90: HamOnSiteTrigonalCDW | Potential.HelicalTwistedMBM_CDW: amplitude A [eV]. |
+| `Potential.CDWPeriod` | `CDWPeriod` | real | `1.0` | ham.F90: HamOnSiteTrigonalCDW | Read but not used: the trigonal CDW period is set by Structure.SuperCell. |
+| `Potential.CDWUseMassTerm` | `CDWUseMassTerm` | logical | `.false.` | ham.F90: HamOnSiteTrigonalCDW | Potential.HelicalTwistedMBM_CDW: multiply the CDW by (-1)^Species. |
+| `Potential.CosinusFactor` | `cosinusFactor` | real | `0.01 (g0)` | ham.F90: HamOnSite | Amplitude of the cosine modulation [eV] (units of g0 before 2026-10-14). |
+| `Potential.CosinusMassTermFactor` | `cosinusMassTermFactor` | real | `0.01 (g0)` | ham.F90: HamOnSite | Amplitude of the staggered cosine modulation [eV] (units of g0 before 2026-10-14). |
+| `Potential.CosinusModulationAddMassTerm` | `cosinusModulationAddMassTerm` | logical | `.false.` | ham.F90: HamOnSite | Replace the cosine modulation by CosinusMassTermFactor x cos(...) x (-1)^Species. |
+| `Potential.CosinusModulationPeriod` | `cosinusModulationPeriod` | real | `135.0` | ham.F90: HamOnSite | Period of the cosine modulation [Angstrom]. |
+| `Potential.CosinusModulationUsingPeriod` | `cosinusModulationUsingPeriod` | logical | `.false.` | ham.F90: HamOnSite | Add Potential.CosinusFactor x cos(2 pi x / Potential.CosinusModulationPeriod). |
+| `Potential.CosinusModulationUsingPeriodYDirection` | `cosinusModulationUsingPeriodYDirection` | logical | `.false.` | ham.F90: HamOnSite | As Potential.CosinusModulationUsingPeriod, along y. |
+| `Potential.FourLayerOnsiteShifts` | `fourLayerOnsiteShifts` | logical | `.false.` | ham.F90: HamOnSite | Add the on-site shifts Stack.FourLayerShift1..4 to the atoms of layers 1..4 (four-layer stacks only), e.g. for a screened displacement-field profile. |
+| `Potential.HelicalTwistedMBM_CDW` | `helicalTwistedMBM_CDW` | logical | `.false.` | ham.F90: HamOnSite | C3-symmetric trigonal CDW, (A/3) [cos 2 pi S f1 + cos 2 pi S f2 + cos 2 pi S (f1+f2)] in fractional coordinates, S = SuperCell; Potential.CDWAmplitude, CDWUseMassTerm. |
+| `Potential.MinZ` | `minZ` | real | `1.0` | ham.F90: HamOnSiteMoirePotential | Read but not used at present. |
+| `Potential.NumberOfWidthHoneycomb` | `NumberOfWidthHoneycomb` | integer | `1` | ham.F90: HamOnSiteSquareFunction2 | Potential.SquareFunction2: size of the regions in graphene cells. |
+| `Potential.OnlyBottomLayerMassTerm` | `onlyBottomLayerMassTerm` | logical | `.false.` | ham.F90: HamOnSite | Potential.AddSublatticeMassterm on the bottom layer only. |
+| `Potential.OnsiteEnergyShift` | `onsiteEnergyShift` | real | `0.150` | ham.F90: HamOnSite | Potential.AddOnsiteEnergyShift: shift [eV]. |
+| `Potential.PhaseOfSquareX` | `PhaseOfSquareX` | real | `0.0` | ham.F90: HamOnSiteSquareFunction2 | Potential.SquareFunction2: phase of the x factor [rad]. |
+| `Potential.PhaseOfSquareY` | `PhaseOfSquareY` | real | `0.0` | ham.F90: HamOnSiteSquareFunction2 | Potential.SquareFunction2: phase of the y factor [rad]. |
+| `Potential.PNP` | `PNP` | logical | `.false.` | ham.F90: HamOnSite | Step p-n-p potential along x: -PNPAmp outside, +PNPAmp inside the central region (HamOnSitePNP). |
+| `Potential.PNPAmp` | `PNPAmp` | real | `0.01 (g0)` | ham.F90: HamOnSitePNP; ham.F90: HamOnSitePNPKink | Amplitude of the p-n-p potential [eV] (units of g0 before 2026-10-14). |
+| `Potential.PNPDelta` | `PNPDelta` | real | `10.0` | calc.F90: CalcKubo; ham.F90: HamOnSitePNPKink | Width of the tanh steps of the p-n-p potential [Angstrom]. Here: offset of the second atom of Kubo.PDOSPNP (L/4 + 2*PNPDelta). |
+| `Potential.PNPKink` | `PNPKink` | logical | `.false.` | ham.F90: HamOnSite | Smooth p-n-p junction along x: Potential.PNPAmp x tanh steps of width Potential.PNPDelta at L/4 and 3L/4 (HamOnSitePNPKink). |
+| `Potential.SinusFactor` | `sinusFactor` | real | `0.01 (g0)` | ham.F90: HamOnSite | Amplitude of the sine modulation [eV] (units of g0 before 2026-10-14). |
+| `Potential.SinusMassTermFactor` | `sinusMassTermFactor` | real | `0.01 (g0)` | ham.F90: HamOnSite | Amplitude of the staggered sine modulation [eV] (units of g0 before 2026-10-14). |
+| `Potential.SinusModulation` | `sinusModulation` | logical | `.false.` | ham.F90: HamOnSite | Legacy: add sin(2 pi N x / L) with amplitude 1 g0 (no amplitude key); do not use. |
+| `Potential.SinusModulationAddMassTerm` | `sinusModulationAddMassTerm` | logical | `.false.` | ham.F90: HamOnSite | Replace the sine modulation by its staggered form SinusMassTermFactor x sin(...) x (-1)^Species. |
+| `Potential.SinusModulationPeriod` | `sinusModulationPeriod` | real | `135.0` | ham.F90: HamOnSite | Period of the sine modulation [Angstrom] (absolute length, not a fraction of the cell). |
+| `Potential.SinusModulationUsingPeriod` | `sinusModulationUsingPeriod` | logical | `.false.` | ham.F90: HamOnSite | Add Potential.SinusFactor x sin(2 pi x / Potential.SinusModulationPeriod); x is Cartesian, so it is lattice-periodic only for suitable periods. |
+| `Potential.SinusModulationUsingPeriodYDirection` | `sinusModulationUsingPeriodYDirection` | logical | `.false.` | ham.F90: HamOnSite | As Potential.SinusModulationUsingPeriod, along y. |
+| `Potential.SinusNumberOfPeriod` | `sinusNumberOfPeriod` | integer | `1` | ham.F90: HamOnSite; ham.F90: HamOnSiteSquareFunction; ham.F90: HamOnSiteZterm1D | Potential.SinusModulation: number N of periods in the cell. |
+| `Potential.SquareChecker2219` | `SquareChecker2219` | logical | `.false.` | ham.F90: HamOnSite | Staggered checkerboard potential with fixed periods 22 x 19 in the cell (HamOnSiteSquareChecker). |
+| `Potential.SquareFunction` | `SquareFunction` | logical | `.false.` | ham.F90: HamOnSite | Staggered potential -+(-1)^Species A following the sign of sin(2 pi N x/L) sin(2 pi N y/L) (HamOnSiteSquareFunction). |
+| `Potential.SquareFunction2` | `SquareFunction2` | logical | `.false.` | ham.F90: HamOnSite | Staggered square-wave potential on honeycomb-sized regions (HamOnSiteSquareFunction2). |
+| `Potential.SublatticeBasis` | `sublatticeBasis` | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Moire potential from the AA/BB sublattice form (diagoH0FromAABB) instead of the C0/phase form. |
+| `Potential.SublatticeMassterm` | `sublatticeMassterm` | real | `0.150` | ham.F90: HamOnSite | Potential.AddSublatticeMassterm: mass m [eV]. |
+| `Potential.TwoDimension` | `TwoDimension` | logical | `.false.` | ham.F90: HamOnSiteSquareFunction2 | Potential.SquareFunction2: modulation along x and y (otherwise x only). |
+| `Potential.TwoDimensional` | `TwoDimensional` | logical | `.false.` | ham.F90: HamOnSiteSquareFunction | Potential.SquareFunction: modulation along x and y (otherwise x only). |
+| `Potential.UseLayerSpecificOnsiteEnergyTerms` | `useLayerSpecificOnsiteEnergyTerms` | logical | `.false.` | ham.F90: HamOnSite | Use the per-layer carbon on-site energies TB.OnSiteC1_LB, C2_LB, C1_LT, C2_LT. |
+| `Potential.Zterm1D` | `Zterm1D` | logical | `.false.` | ham.F90: HamOnSite | Staggered potential that changes sign with sin(2 pi N x / L) (HamOnSiteZterm1D). |
+| `Potential.Zterm1DAmp` | `Zterm1DAmp` | real | `0.01 (g0)` | ham.F90: HamOnSiteZterm1DKink | Potential.Zterm1DKink: amplitude of the tanh profile [eV] (units of g0 before 2026-10-14). |
+| `Potential.Zterm1DDelta` | `Zterm1DDelta` | real | `10.0` | ham.F90: HamOnSiteZterm1DKink | Potential.Zterm1DKink: width of the tanh steps [Angstrom]. |
+| `Potential.Zterm1DKink` | `Zterm1DKink` | logical | `.false.` | ham.F90: HamOnSite | Staggered potential with smooth tanh kinks along x (HamOnSiteZterm1DKink); written for two periods. |
+| `Random.Test` | `RandomTest` | logical | `.false.` | random_old.F90: RandInit | Old random-number module (random_old.F90, not compiled): run a test of the generator. |
+| `Random.TestNumber` | `RandomTestNumber` | integer | `100` | random_old.F90: RandInit | Random.Test: number of random numbers drawn. |
+| `Run.Description` | `Description` | string | `''` | grabnes_start.F90: GrabnesStart | Free text printed at the top of the output. |
+| `Run.Prefix` | `Prefix` | string | `'grabnes'` | grabnes_start.F90: GrabnesStart | Prefix of the output files (<prefix>.DOS, ...); default grabnes. |
+| `Run.TypeOfSystem` | `TypeOfSystem` | string | `'Graphene'` | atoms.F90: AtomsOrder; atoms.F90: AtomsPos; cell.F90: CellGet; ... (14 places) | Kind of structure: built by the code (Graphene, BoronNitride, Ribbons, TwistedBilayerBasedOnMoireCell, ...) or read from a file (ReadXYZ). It selects the cell, the atoms and parts of the Hamiltonian. Here: selects how the atoms are built or read (AtomsPos). Here: used to name the output folders of a field sweep. Here: BoronNitride uses the hBN lattice constant for every neighbour radius. Here: Ribbons, Hybrid and ReadXYZ structures get the hopping table of mixed C/B/N systems. |
+| `SOC.Interlayer` |  | logical | `.false.` | ham.F90: HamInit | Interlayer spin-orbit term lambda_4 between same-sublattice sites of adjacent untwisted graphene layers, i (lambda/3) c_ij sgn(dz) (d x s)_z. |
+| `SOC.Intrinsic` | `IntrinsicSOCterm` | logical | `.false.` | ham.F90: HamInit | Spin-independent sublattice mass +-SOC.LambdaI (not Kane-Mele, see SOC.KaneMele). |
+| `SOC.Ising` | `IsingSOCterm` | logical | `.false.` | ham.F90: HamInit | Ising (valley-Zeeman) spin-orbit term +-SOC.LambdaIsing. |
+| `SOC.KaneMele` |  | logical | `.false.` | ham.F90: HamInit | Kane-Mele intrinsic spin-orbit term on second-neighbour bonds, SOC.LambdaKM. |
+| `SOC.LambdaI` | `LambdaI` | real | `0.0` | ham.F90: HamInit | SOC.Intrinsic: amplitude [eV]. |
+| `SOC.LambdaInterlayer` |  | real | `0.0` | ham.F90: HamInit | SOC.Interlayer: amplitude [eV]. |
+| `SOC.LambdaIsing` | `LambdaIsing` | real | `0.0` | ham.F90: HamInit | SOC.Ising: amplitude [eV]. |
+| `SOC.LambdaKM` |  | real | `0.0` | ham.F90: HamInit | SOC.KaneMele: amplitude lambda_KM [eV] (gap 2 lambda_KM in a single layer). |
+| `SOC.LambdaPIA` | `LambdaPIA` | real | `0.0` | ham.F90: HamInit | SOC.PIA: amplitude for both sublattices [eV]. |
+| `SOC.LambdaPIAA` |  |  | `lambdaPIA` | ham.F90: HamInit | SOC.PIA: amplitude on sublattice A [eV] (default SOC.LambdaPIA). |
+| `SOC.LambdaPIAB` |  |  | `lambdaPIA` | ham.F90: HamInit | SOC.PIA: amplitude on sublattice B [eV] (default SOC.LambdaPIA). |
+| `SOC.LambdaR` | `LambdaR` | real | `0.0` | ham.F90: HamInit | SOC.Rashba: amplitude [eV]; the K-point splitting is 3 LambdaR (2/3 of the Gmitra lambda_R). |
+| `SOC.LayerControl` | `SOCLayerControl` | logical | `.false.` | ham.F90: HamInit | Apply the SOC terms only to the layers listed in SOCLayers (e.g. 'SOCLayers 1 5'); otherwise every layer. |
+| `SOC.PIA` | `PIASOCterm` | logical | `.false.` | ham.F90: HamInit | Pseudospin-inversion-asymmetry SOC term (Gmitra), spinful TAPW only. |
+| `SOC.Rashba` | `RashbaSOCterm` | logical | `.false.` | ham.F90: HamInit | Rashba spin-orbit term on the first-neighbour bonds (spinful block TAPW path). |
+| `SOC.RashbaAngle` |  | real | `0.0` | ham.F90: HamInit | SOC.Rashba: rotation of the Rashba spin texture (radial component) [degrees]. |
+| `SOC.RashbaConsistentPhase` |  | logical | `.true.` | ham.F90: HamInit | .true. (default since 2026-10-16): spinful bond terms carry the same Bloch phase as the hopping. .false. restores the former Rashba phase, exact only at K and Gamma (warning printed). |
+| `Spectral.AlignmentAngle` |  | real | `0.0d0` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Spectral.AlignReferenceSystem: orientation of the reference lattice [degrees]. |
+| `Spectral.AlignReferenceSystem` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Rotate the graphene reference lattice by Spectral.AlignmentAngle (a layer unfolds under its own orientation). |
+| `Spectral.DirectBandVal` |  | logical | `.false.` | calc.F90: CalcDiag; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut_v2; diag.F90: DiagSpectralFunctionKGridInequivalent_v2 | Use the _v2 routines for Calculate.Spectral / SpectralEnergyCut, which also write the band energy next to the unfolded weights. |
+| `Spectral.Emax` |  | real | `1.0 (g0)` | diag.F90: DiagSpectralWindow | Upper end of the energy grid of the spectral function [eV] (units of g0 before November 2026). |
+| `Spectral.Emin` |  | real | `-1.0 (g0)` | diag.F90: DiagSpectralWindow | Lower end of the energy grid of the spectral function [eV] (units of g0 before November 2026). |
+| `Spectral.energyGridResolution` |  | real | `0.005` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | A level adds its weight to every energy point closer than this [eV]: points further apart than twice it lose levels (a warning is printed). |
+| `Spectral.FoldByOne` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Fold the graphene-lattice k into the cell's zone by subtracting G10 + G01. |
+| `Spectral.FoldByZero` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Do not fold the graphene-lattice k (use it as it is). |
+| `Spectral.GaussianConvolution` |  | logical | `.false.` | diag.F90: DiagSpectralFunction; diag.F90: DiagSpectralFunctionKGrid; diag.F90: DiagSpectralFunctionKGridInequivalent; ... (7 places) | Spectral function: write the weights convolved with a Gaussian of width Kubo.Epsilon. |
+| `Spectral.KGridCut` | `KGridCut` | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut_v2 | Constant-energy cuts: half side of the k box around graphene K = (2/3,1/3) [1/Angstrom], sampled by Diag.KGrid. |
+| `Spectral.KGridCutX` | `KGridCutX` | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale | NickDale cut: length of the kx line from graphene K [1/Angstrom]. |
+| `Spectral.KGridCutY` | `KGridCutY` | real | `0.1` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale | NickDale cut: the line is at ky = K_y + KGridCutY [1/Angstrom]. |
+| `Spectral.KGridLowerGridHalf` | `KGridLowerGridHalf` | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale | NickDale cut: the kx line runs from K_x - KGridCutX to K_x instead of K_x to K_x + KGridCutX. |
+| `Spectral.Lee` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalent_v2 | Unfolding weights of the Lee routine. |
+| `Spectral.Nishi` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Unfolding weights of the Nishi routine (sub-cell translations). |
+| `Spectral.numberOfTS` |  | integer | `1` | diag.F90: DiagSpectralWeightNishi | Spectral.Nishi: number of sub-cell translations (set to 6 by the routine). |
+| `Spectral.NumPoints` |  | integer | `100` | diag.F90: DiagSpectralFunction; diag.F90: DiagSpectralFunctionKGrid; diag.F90: DiagSpectralFunctionKGridInequivalent; ... (7 places) | k-points on the first leg of Spectral.Path; the other legs in proportion to their length. |
+| `Spectral.RotateOpposite` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut_v2 | Spectral.RotateReferenceSystem: rotate by the opposite angle. |
+| `Spectral.RotateReferenceSystem` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Rotate the graphene reference lattice by the angle of Structure.MoireCellParameters. |
+| `Spectral.topBottomRatio` |  | real | `1.0` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Passed to the unfolding weight routines, which do not use it at present. |
+| `Spectral.UseCoordinates` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Spectral.Path points in Cartesian coordinates [1/Angstrom] instead of reciprocal-lattice units. |
+| `Spectral.UseGaussianBroadening` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Spectral.WeiKu: spread each level over the energy grid with a Gaussian of width Kubo.Epsilon. |
+| `Spectral.WeiKu` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Unfolded spectral weight per layer and sublattice on a graphene reference lattice (Wei Ku method), files <prefix>.spectral<layer><A/B>. |
+| `Spectral.WeiKuOld` |  | logical | `.false.` | diag.F90: DiagSpectralFunctionKGridInequivalent; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCut; diag.F90: DiagSpectralFunctionKGridInequivalentEnergyCutNickDale; ... (5 places) | Spectral.WeiKu: use the older weight routine (A and B weights only). |
+| `Stack.AlignModelEnergies` |  | logical | `.false.` | ham.F90: HamMeasureLayerTwist | With Stack.ModelFromTwist: shift the AB-pair sites so their K-point energy matches the single-layer set. |
+| `Stack.BNBNtwoLayers` | `BNBNtwoLayers` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential | Two hBN layers: refused (no interlayer hopping is implemented). |
+| `Stack.BNt2GBN` | `BNt2GBN` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential | Stack model flag: selects the hBN / twisted bilayer graphene / hBN branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.Bulk` | `Bulk` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamInit | The cell is periodic along z too (graphite-like stack): interlayer pairs across the z boundary are kept. DiagHamSparse samples k_z = 0 only. |
+| `Stack.BulkSmall` | `BulkSmall` | logical | `.false.` | ham.F90: HamInit | Stack.Bulk: neighbour search for small cells (fastNNnotsquareBulkSmall). |
+| `Stack.EightLayersSandwiched` | `eightLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from Stack.EightLayersZ1..Z8. Stack model flag: selects the eight-layer graphene branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.EightLayersZ1` | `eightLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos | z centre of layer 1 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.EightLayersZ2` | `eightLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos | z centre of layer 2 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.EightLayersZ3` | `eightLayersZ3` | real | `3.3` | atoms.F90: AtomsPos | z centre of layer 3 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.EightLayersZ4` | `eightLayersZ4` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 4 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.EightLayersZ5` | `eightLayersZ5` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 5 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.EightLayersZ6` | `eightLayersZ6` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 6 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.EightLayersZ7` | `eightLayersZ7` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 7 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.EightLayersZ8` | `eightLayersZ8` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 8 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.EncapsulatedFiveLayers` | `encapsulatedFiveLayers` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential | Stack model flag: selects the five-layer encapsulated stack branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.EncapsulatedFourLayers` | `encapsulatedFourLayers` | logical | `.false.` | atoms.F90: AtomsPos; calc.F90: CalcKubo; ham.F90: HamHopping; ... (5 places) | Stack model flag (ham.F90). Here: layer index from Stack.FourLayersZ1..Z4. Stack model flag (ham.F90). Here: Kubo.PDOSLayer takes the layer sizes from Kubo.NumberOf*Atoms. Stack model flag: selects the hBN-encapsulated bilayer (four layers) branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.EncapsulatedFourLayersF2G2` | `encapsulatedFourLayersF2G2` | logical | `.false.` | ham.F90: HamHopping | Stack.EncapsulatedFourLayers: Bernal F2G2 coupling between the two graphene layers (2-3). |
+| `Stack.EncapsulatedSevenLayers` | `encapsulatedSevenLayers` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential | Stack model flag: selects the seven-layer encapsulated stack branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.EncapsulatedSixLayers` | `encapsulatedSixLayers` | logical | `.false.` | calc.F90: CalcKubo; ham.F90: HamHopping; ham.F90: HamOnSite; ... (4 places) | Stack model flag (ham.F90); read here but not used in this routine. Stack model flag: selects the six-layer encapsulated stack branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.EncapsulatedThreeLayers` | `encapsulatedThreeLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ... (5 places) | Stack model flag (ham.F90). Here: with a displacement file, each graphene atom reads two displacements (bottom and top interface, six columns). Stack model flag: selects the hBN-encapsulated graphene (three layers) branches of the on-site and hopping terms (HamOnSite, HamHopping). Here: graphene atoms get a bottom and a top displacement. |
+| `Stack.FiveLayersSandwiched` | `fiveLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from Stack.FiveLayersZ1..Z5. Stack model flag: selects the five-layer graphene branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.FiveLayersZ1` | `fiveLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos | z centre of layer 1 [Angstrom] for the stack flags that use the Stack.FiveLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.FiveLayersZ2` | `fiveLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos | z centre of layer 2 [Angstrom] for the stack flags that use the Stack.FiveLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.FiveLayersZ3` | `fiveLayersZ3` | real | `3.3` | atoms.F90: AtomsPos | z centre of layer 3 [Angstrom] for the stack flags that use the Stack.FiveLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.FiveLayersZ4` | `fiveLayersZ4` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 4 [Angstrom] for the stack flags that use the Stack.FiveLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.FiveLayersZ5` | `fiveLayersZ5` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 5 [Angstrom] for the stack flags that use the Stack.FiveLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.FourLayers` | `fourLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from the z windows Stack.FourLayersZ1..Z4. Stack model flag: selects the four-layer graphene branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.FourLayerShift1` | `fourLayerShift1` | real | `0.0` | ham.F90: HamOnSite | Potential.FourLayerOnsiteShifts: on-site shift of layer 1 [eV]. |
+| `Stack.FourLayerShift2` | `fourLayerShift2` | real | `0.0` | ham.F90: HamOnSite | Potential.FourLayerOnsiteShifts: on-site shift of layer 2 [eV]. |
+| `Stack.FourLayerShift3` | `fourLayerShift3` | real | `0.0` | ham.F90: HamOnSite | Potential.FourLayerOnsiteShifts: on-site shift of layer 3 [eV]. |
+| `Stack.FourLayerShift4` | `fourLayerShift4` | real | `0.0` | ham.F90: HamOnSite | Potential.FourLayerOnsiteShifts: on-site shift of layer 4 [eV]. |
+| `Stack.FourLayersSandwiched` | `fourLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from Stack.FourLayersZ1..Z4. Stack model flag: selects the four-layer sandwiched graphene branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.FourLayersZ1` | `fourLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos | z centre of layer 1 [Angstrom] for the stack flags that use the Stack.FourLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.FourLayersZ2` | `fourLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos | z centre of layer 2 [Angstrom] for the stack flags that use the Stack.FourLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.FourLayersZ3` | `fourLayersZ3` | real | `3.3` | atoms.F90: AtomsPos | z centre of layer 3 [Angstrom] for the stack flags that use the Stack.FourLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.FourLayersZ4` | `fourLayersZ4` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 4 [Angstrom] for the stack flags that use the Stack.FourLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.GBNtwoLayers` | `GBNtwoLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopShellsFromRigid; ham.F90: HamHopping; ... (5 places) | Stack model flag (ham.F90). Here: graphene (Species 1, 2) is layer 1, everything else layer 2. Graphene on one hBN layer (ReadXYZ cells): intralayer shells from the in-plane bond length, distance-dependent C-B and C-N interlayer hoppings. |
+| `Stack.GBNtwoLayersF2G2s` | `GBNtwoLayersF2G2s` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential | Stack.GBNtwoLayers with F2G2 intralayer parameters for both graphene and hBN. |
+| `Stack.GlobalPhiL1` | `GlobalPhiL1` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Rotation of the displacements of layer 1 [degrees] (layer-resolved stacks). |
+| `Stack.GlobalPhiL2` | `GlobalPhiL2` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Rotation of the displacements of layer 2 [degrees]. |
+| `Stack.GlobalPhiL2a` | `GlobalPhiL2a` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Rotation of the bottom-interface displacements of layer 2 [degrees] (encapsulated layers). |
+| `Stack.GlobalPhiL2b` | `GlobalPhiL2b` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Rotation of the top-interface displacements of layer 2 [degrees]. |
+| `Stack.GlobalPhiL3` | `GlobalPhiL3` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Rotation of the displacements of layer 3 [degrees]. |
+| `Stack.GlobalTwist` | `GlobalTwist` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Rotate the stacking displacements read from the file by this angle before use [degrees]. Here: refused with Structure.DisplacementsFromPositions (those displacements are already in the lab frame). |
+| `Stack.GlobalTwist2` | `GlobalTwist2` | real | `0.0` | ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | As Stack.GlobalTwist, for the second set of displacements [degrees]. |
+| `Stack.HelicalTwistedMBM` | `helicalTwistedMBM` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from Stack.FourLayersZ1..Z4. Stack model flag: selects the helical-twisted four-layer (mono-bi-mono) branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.MeasureTwist` |  | logical | `.false.` | ham.F90: HamMeasureLayerTwist | Report the twist of every interface measured from the structure. |
+| `Stack.MiddleTwist` | `middleTwist` |  | `.not. forceBilayerF2G2Intralayer` | ham.F90: HamHopping; ham.F90: HamOnSite | Single-layer F2G2 parameters in every layer of the multilayer stacks; default .true. unless Intralayer.ForceBilayerF2G2Intralayer. A threeLayers stack then gets the averaged on-site energy. |
+| `Stack.ModelFromTwist` |  | logical | `.false.` | ham.F90: HamMeasureLayerTwist | Untwisted AB pairs found in the structure get the bilayer F2G2 intra- and interlayer model (Jung-MacDonald PRB 89 035405); AA and twisted pairs keep the two-centre model. |
+| `Stack.NonBulkSmall` | `nonBulkSmall` | logical | `.false.` | ham.F90: HamInit | Slab (non-periodic z) with the neighbour search for small cells. |
+| `Stack.OneLayer` | `oneLayer` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping | Stack model flag (ham.F90). Here: every atom in layer 1. |
+| `Stack.SevenLayersSandwiched` | `sevenLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from Stack.SevenLayersZ1..Z7. Stack model flag: selects the seven-layer graphene branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.SevenLayersZ1` | `sevenLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos | z centre of layer 1 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SevenLayersZ2` | `sevenLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos | z centre of layer 2 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SevenLayersZ3` | `sevenLayersZ3` | real | `3.3` | atoms.F90: AtomsPos | z centre of layer 3 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SevenLayersZ4` | `sevenLayersZ4` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 4 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SevenLayersZ5` | `sevenLayersZ5` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 5 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SevenLayersZ6` | `sevenLayersZ6` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 6 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SevenLayersZ7` | `sevenLayersZ7` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 7 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SixLayersSandwiched` | `sixLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from Stack.SixLayersZ1..Z6. Stack model flag: selects the six-layer graphene branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.SixLayersZ1` | `sixLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos | z centre of layer 1 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SixLayersZ2` | `sixLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos | z centre of layer 2 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SixLayersZ3` | `sixLayersZ3` | real | `3.3` | atoms.F90: AtomsPos | z centre of layer 3 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SixLayersZ4` | `sixLayersZ4` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 4 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SixLayersZ5` | `sixLayersZ5` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 5 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.SixLayersZ6` | `sixLayersZ6` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 6 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.T2BG` | `t2BG` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential | Stack model flag (ham.F90); read here but not used for the layer index. Stack model flag; read here but not used in HamOnSite. |
+| `Stack.T2GBN` | `t2GBN` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite; ... (4 places) | Stack model flag (ham.F90). Here: layer index from Stack.ThreeLayersZ1..Z3. Stack model flag: selects the twisted bilayer graphene on hBN (three layers) branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.T3BG` | `t3BG` | logical | `.false.` | atoms.F90: AtomsPos; calc.F90: CalcKubo; ham.F90: HamHopping; ... (5 places) | Stack model flag (ham.F90). Here: layer index from Stack.SixLayersZ1..Z6. Stack model flag (ham.F90). Here: Kubo.PDOSLayer takes the layer sizes from Kubo.NumberOfCAtoms. Stack model flag: selects the six-layer T3BG branches of the on-site and hopping terms (HamOnSite, HamHopping). Here: selects the T3BG intralayer parameter set. |
+| `Stack.T3GwithBN` | `t3GwithBN` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential | Stack model flag: selects the twisted trilayer graphene with hBN branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.TenLayersSandwiched` | `tenLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from Stack.TenLayersZ1..Z10. Stack model flag: selects the ten-layer graphene branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.TenLayersZ1` | `tenLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos | z centre of layer 1 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TenLayersZ10` | `tenLayersZ10` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 10 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TenLayersZ2` | `tenLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos | z centre of layer 2 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TenLayersZ3` | `tenLayersZ3` | real | `3.3` | atoms.F90: AtomsPos | z centre of layer 3 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TenLayersZ4` | `tenLayersZ4` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 4 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TenLayersZ5` | `tenLayersZ5` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 5 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TenLayersZ6` | `tenLayersZ6` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 6 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TenLayersZ7` | `tenLayersZ7` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 7 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TenLayersZ8` | `tenLayersZ8` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 8 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TenLayersZ9` | `tenLayersZ9` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 9 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.ThreeLayers` | `threeLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from Stack.ThreeLayersZ1..Z3. Stack model flag: selects the three-layer graphene branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.ThreeLayerShort` | `threeLayerShort` | logical | `.false.` | ham.F90: HamHopping | Three-layer stacks: short-range interlayer model with hoppings tB1A2 (atoms on top of each other) and tA1A2 / tA1B2 (first ring). |
+| `Stack.ThreeLayersZ1` | `threeLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos | z centre of layer 1 [Angstrom] for the stack flags that use the Stack.ThreeLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.ThreeLayersZ2` | `threeLayersZ2` | real | `0.0` | atoms.F90: AtomsPos | z centre of layer 2 [Angstrom] for the stack flags that use the Stack.ThreeLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.ThreeLayersZ3` | `threeLayersZ3` | real | `3.3` | atoms.F90: AtomsPos | z centre of layer 3 [Angstrom] for the stack flags that use the Stack.ThreeLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersSandwiched` | `twentyLayersSandwiched` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from Stack.TwentyLayersZ1..Z20. Stack model flag: selects the twenty-layer graphene branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.TwentyLayersZ1` | `twentyLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos | z centre of layer 1 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ10` | `twentyLayersZ10` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 10 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ11` | `twentyLayersZ11` | real | `-3.3` | atoms.F90: AtomsPos | z centre of layer 11 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ12` | `twentyLayersZ12` | real | `-0.0` | atoms.F90: AtomsPos | z centre of layer 12 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ13` | `twentyLayersZ13` | real | `3.3` | atoms.F90: AtomsPos | z centre of layer 13 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ14` | `twentyLayersZ14` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 14 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ15` | `twentyLayersZ15` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 15 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ16` | `twentyLayersZ16` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 16 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ17` | `twentyLayersZ17` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 17 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ18` | `twentyLayersZ18` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 18 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ19` | `twentyLayersZ19` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 19 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ2` | `twentyLayersZ2` | real | `-0.0` | atoms.F90: AtomsPos | z centre of layer 2 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ20` | `twentyLayersZ20` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 20 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ3` | `twentyLayersZ3` | real | `3.3` | atoms.F90: AtomsPos | z centre of layer 3 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ4` | `twentyLayersZ4` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 4 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ5` | `twentyLayersZ5` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 5 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ6` | `twentyLayersZ6` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 6 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ7` | `twentyLayersZ7` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 7 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ8` | `twentyLayersZ8` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 8 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwentyLayersZ9` | `twentyLayersZ9` | real | `6.6` | atoms.F90: AtomsPos | z centre of layer 9 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwistTolerance` |  | real | `0.05` | ham.F90: HamMeasureLayerTwist; ham.F90: HamSOCBondTables | Stack.MeasureTwist / ModelFromTwist: twists below this count as untwisted [degrees]. Here: interfaces twisted by less than this count as aligned for the SOC bond tables [degrees]. |
+| `Stack.TwoLayers` | `twoLayers` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | Stack model flag (ham.F90). Here: layer index from Stack.TwoLayersZ1..Z2. Stack model flag: selects the two-layer graphene branches of the on-site and hopping terms (HamOnSite, HamHopping). |
+| `Stack.TwoLayersZ1` | `twoLayersZ1` | real | `-3.3` | atoms.F90: AtomsPos | z centre of layer 1 [Angstrom] for the stack flags that use the Stack.TwoLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Stack.TwoLayersZ2` | `twoLayersZ2` | real | `3.3` | atoms.F90: AtomsPos | z centre of layer 2 [Angstrom] for the stack flags that use the Stack.TwoLayersZ* windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter). |
+| `Strain.BigBubble` | `BigBubble` | logical | `.false.` | ham.F90: HamHopRealisticBubbles | Strain.RealisticBubbles: one big bubble. |
+| `Strain.BubbleC` | `bubbleC` | real | `1.42` | ham.F90: HamHopRealisticBubbles | Strain.RealisticBubbles: amplitude C of the in-plane strain. |
+| `Strain.BubbleGaussian` | `bubbleGaussian` | logical | `.false.` | ham.F90: HamHopRealisticBubbles | Strain.RealisticBubbles: add a Gaussian potential at each bubble (Strain.BubbleGaussPot*). |
+| `Strain.BubbleGaussPotRange` | `bubbleGaussPotRange` | real | `1.0` | gauss.F90: GaussPotDefinedPositions | Strain.BubbleGaussian: width sigma of the Gaussian potential at each bubble [Angstrom]. |
+| `Strain.BubbleGaussPotStrength` | `bubbleGaussPotStrength` | real | `1.0` | gauss.F90: GaussPotDefinedPositions | Strain.BubbleGaussian: amplitude of the Gaussian potential at each bubble [units of g0]. |
+| `Strain.BubbleHeight` | `bubbleHeight` | real | `1.0` | ham.F90: HamInit | Output.PrintBubble (refused): height of the Gaussian bump [Angstrom]. |
+| `Strain.BubbleInPlaneStrain` | `bubbleInPlaneStrain` | logical | `.false.` | ham.F90: HamHopRealisticBubbles | Strain.RealisticBubbles: include the in-plane strain of each bubble. |
+| `Strain.BubblePercentage` | `bubblePercentage` | real | `10.0` | ham.F90: HamHopRealisticBubbles | Strain.ManyBubbles: percentage of the atoms that are bubble centres. |
+| `Strain.BubbleRadius` | `bubbleRadius` | real | `100.0` | ham.F90: HamHopRealisticBubbles | Strain.RealisticBubbles: radius of a bubble [Angstrom]. |
+| `Strain.Bubbles` | `Bubbles` | logical | `.false.` | ham.F90: HamOnSite | Disorder: shift the on-site energy by Disorder.OnsiteShift on randomly chosen cells of a CheckerDivider x CheckerDivider checkerboard (fraction Disorder.CheckerDensity). |
+| `Strain.BubbleShift` | `bubbleShift` | real | `0.07 (g0)` | ham.F90: HamHopRealisticBubbles | Strain.RealisticBubbles: on-site shift inside a bubble [eV] (units of g0 before 2026-11-07). |
+| `Strain.BubbleSigmaR` | `bubbleSigmaR` | real | `1.0` | ham.F90: HamInit | Output.PrintBubble (refused): Gaussian width of the height bump [Angstrom]. |
+| `Strain.BubbleSigmaR` | `bubbleSigmaR` | real | `1.42` | ham.F90: HamHopRealisticBubbles | Strain.RealisticBubbles: width of the bubble profile [Angstrom]. |
+| `Strain.GaussHeightPercentage` | `GaussHeightPercentage` | real | `1.0` | gauss.F90: GaussHeight | RandomStrain (refused at present): percentage of atoms that carry a Gaussian bump. |
+| `Strain.GaussHeightRange` | `GaussHeightRange` | real | `1.0` | gauss.F90: GaussHeight | RandomStrain (refused at present): width sigma of each bump [Angstrom]. |
+| `Strain.GaussHeightStrength` | `GaussHeightStrength` | real | `1.0` | gauss.F90: GaussHeight | RandomStrain (refused at present): height amplitude of the bumps (added to z) [Angstrom]. |
+| `Strain.ManyBubbles` | `manyBubbles` | logical | `.false.` | ham.F90: HamHopRealisticBubbles | Strain.RealisticBubbles: many bubbles at random positions (Strain.BubblePercentage). |
+| `Strain.OnlyFirstNeighborRealStrain` | `onlyFirstNeighborRealStrain` | logical | `.false.` | ham.F90: HamHopping | Strain.RealStrain on the first-neighbour bonds only. |
+| `Strain.PeriodicStrain` | `periodicStrain` | logical | `.false.` | ham.F90: HamHopping | Sinusoidal periodic strain of the hoppings (Strain.PeriodicStrainU0, PeriodicStrainPeriod). |
+| `Strain.PeriodicStrainPeriod` | `periodicStrainPeriod` | integer | `1` | ham.F90: HamHopPeriodicStrain; ham.F90: HamHopping | Number of periods of the periodic strain / strained moire in the moire cell. |
+| `Strain.PeriodicStrainU0` | `periodicStrainu0` | real | `0.1` | ham.F90: HamHopPeriodicStrain | Strain.PeriodicStrain: amplitude u0 of the displacement [Angstrom]. |
+| `Strain.RandomStrain` | `RandomStrain` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamInit | Random Gaussian height bumps (Strain.GaussHeight*): refused at present. |
+| `Strain.RealisticBubbles` | `realisticBubbles` | logical | `.false.` | ham.F90: HamHopping | Strain bubbles with in-plane strain and an on-site shift (Strain.Bubble* keys). |
+| `Strain.RealStrain` | `realStrain` | logical | `.false.` | ham.F90: HamHopping | Intralayer hoppings t exp(-beta (d/d_ref - 1)), d = 3-D bond length (Pereira et al., PRB 80 045401); d_ref per shell from Strain.RealStrainReferenceLatticeConstant(BN). Off: constant hoppings. |
+| `Strain.RealStrainBeta` | `realStrainBeta` | real | `3.37` | ham.F90: HamHopping | Strain.RealStrain: decay exponent beta (default 3.37). |
+| `Strain.RealStrainLegacyFourthShell` |  | logical | `.false.` | ham.F90: HamHopRealStrain | Strain.RealStrain: fixed 3.75696 Angstrom reference for the fourth shell, as before November 2026. |
+| `Strain.RealStrainReferenceLatticeConstant` | `realStrainReferenceLatticeConstant` |  | `aG` | ham.F90: HamHopRealStrain | Strain.RealStrain: graphene lattice constant of the reference bond lengths [Angstrom]; the lattice of the hopping fit, 2.4389777651302801 for the F2G2 sets. |
+| `Strain.RealStrainReferenceLatticeConstantBN` | `realStrainReferenceLatticeConstantBN` |  | `aBN` | ham.F90: HamHopRealStrain | Strain.RealStrain: hBN lattice constant of the reference bond lengths [Angstrom]. |
+| `Strain.ShellsFromRigidPositions` | `shellsFromRigidPositions` | logical | `.false.` | ham.F90: HamHopping | GBNtwoLayers: take the shell of every intralayer bond from its in-plane length in a rigid reference structure (Strain.ShellsRigidFile, same atom order); the strain law keeps the 3-D length. |
+| `Strain.ShellsRigidFile` | `shellsRigidFile` | string | `'generateInit.xyz'` | ham.F90: HamHopShellsFromRigid | Strain.ShellsFromRigidPositions: rigid reference structure (xyz, same atom order). |
+| `Strain.StrainedMoire` | `strainedMoire` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping | Strained-moire hopping term (checked for Hermiticity here). Interlayer distances computed with a sinusoidal in-plane displacement u_max sin(2 pi n x / L_moire). |
+| `Strain.StrainedMoireMaxDisplacement` | `strainedMoireMaxDisplacement` | real | `0.5` | ham.F90: HamHopping | Strain.StrainedMoire: amplitude u_max of the sinusoidal displacement [Angstrom]. |
+| `Structure.AddDisplacements` | `addDisplacements` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Add the stacking displacements read from the file to the analytic ones (needs a displacement file). Here: read for the bond terms. |
+| `Structure.AtomsOrderDeactivated` | `AtomsOrderDeactivated` | logical | `.true.` | atoms.F90: AtomsOrder | Keep the atoms in input order (default). .false. reorders them in spatial bins for the parallel decomposition; refused for ReadXYZ, whose per-atom files are in file order. |
+| `Structure.BasedOnMoireCellParameters` | `basedOnMoireCellParameters`, `basedOnMoireCellParamters` | logical | `.false.` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamHopping; ... (4 places) | Graphene / BoronNitride / TwistedBilayer cells: build the commensurate cell from the four indices of Structure.MoireCellParameters instead of CellSize x CellSize graphene cells. Here: the atoms of a Graphene / BoronNitride cell are built in the cell of Structure.MoireCellParameters. |
+| `Structure.BernalReadXYZ` | `BernalReadXYZ` | logical | `.false.` | ham.F90: HamHopping | ReadXYZ Bernal bilayer: use the Bernal interlayer branch (dimer sites get the F2G2 AB set). |
+| `Structure.BernalShift` | `BernalShift` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping | Structure.TwistedBLAddShift / TrilayerAddShift: the added shift is the Bernal (AB) offset. |
+| `Structure.BilayerShiftFactor` | `BilayerShiftFactor` | real | `0.0` | atoms.F90: AtomsPos | Extra shift of the second layer along a1+a2 [Angstrom] (in Angstrom since November 2026). |
+| `Structure.BLDomainBoundaryNRShifts` | `BLDomainBoundaryNRShifts` | integer | `1` | atoms.F90: AtomsPos | Structure.CreateBLDomainBoundary: total shift in units of a/sqrt(3). |
+| `Structure.BLDomainBoundaryTypeArmAA` | `BLDomainBoundaryTypeArmAA` | logical | `.false.` | atoms.F90: AtomsPos | Structure.CreateBLDomainBoundary: armchair boundary of the AA type (PRB 88 115409). |
+| `Structure.BLDomainBoundaryTypeArmSP` | `BLDomainBoundaryTypeArmSP` | logical | `.false.` | atoms.F90: AtomsPos | Structure.CreateBLDomainBoundary: armchair boundary of the SP type (both layers moved). |
+| `Structure.BLDomainBoundaryWidth` | `BLDomainBoundaryWidth` | real | `60.0` | atoms.F90: AtomsPos | Structure.CreateBLDomainBoundary: width of the strip over which the shift grows [Angstrom]. |
+| `Structure.BNWidth` | `BNWidth` | integer | `9` | atoms.F90: AtomsPos; cell.F90: CellGet | TypeOfSystem Ribbons: width of the hBN ribbon, in rows of the ribbon cell. |
+| `Structure.BridgeShift` | `bridgeShift` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping | Structure.TwistedBLAddShift / TrilayerAddShift: the added shift is half the Bernal offset (bridge stacking). |
+| `Structure.CellHeight` | `CellHeight` | real | `40.0` | atoms.F90: AtomsPos; cell.F90: CellGet | Length of the third (out-of-plane) cell vector [Angstrom] for the cells built by the code. |
+| `Structure.CellSize` | `CellSize` | integer | `1` | diag.F90: DiagSpectralFunctionKGrid; diag.F90: DiagSpectralWeightWeiKu | Here: the graphene-lattice path is divided by CellSize to give the k of the cell. |
+| `Structure.CellSize` | `CellSize` | integer | `50` | atoms.F90: AtomsPos; calc.F90: CalcKubo; cell.F90: CellGet; ... (12 places) | Number of graphene cells along each lattice vector of a cell built by the code (TypeOfSystem Graphene, BoronNitride); the cell is CellSize*SuperCell graphene cells on a side. Here: number of graphene cells along each lattice vector of the atoms built for Graphene / BoronNitride. Here: sets the cell length CellSize*SuperCell*aG used by the Kubo.PDOSMoireSuperMoire selections. Here: half the cell length in x, CellSize*SuperCell*aG/2, for Moire.BilayerElectricFieldInvert. Here (TypeOfSystem Hybrid): sets the size of the region where islands are placed. |
+| `Structure.CellSize` | `CellSize` | integer | `55` | ham.F90: HamOnSite | Here: half the cell length in x, CellSize*SuperCell*aG/2, for Moire.BilayerElectricFieldInvert. |
+| `Structure.CreateBLDomainBoundary` | `createBLDomainBoundary` | logical | `.false.` | atoms.F90: AtomsPos | TwistedBilayerBasedOnMoireCell: build a domain boundary in the bilayer: the layers are displaced in opposite directions along y over a strip starting at x = L/2. |
+| `Structure.DisplacementsFile` | `displacementsFile` | string | `'displacements.txt'` | atoms.F90: AtomsPos | File of the stacking displacements, one line 'dx dy d' per atom in file order. |
+| `Structure.DisplacementsFromPositions` |  | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamDisplacementsFromPositions | Compute the stacking displacements of GBN/TBG.UseDisplacementFile from the rigid (generateInit.xyz) and actual structures instead of reading a file. Here: the stacking displacements are computed from generateInit.xyz and the structure. |
+| `Structure.GrapheneWidth` | `GrapheneWidth` | integer | `9` | atoms.F90: AtomsPos; cell.F90: CellGet | TypeOfSystem Ribbons: width of the graphene ribbon, in rows of the ribbon cell. |
+| `Structure.InterlayerDistance` | `InterlayerDistance` | real | `3.35` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamInit; ... (5 places) | Interlayer distance d of the stacks built by the code [Angstrom] (layers at +-d/2 about the cell centre); default 3.35 (3.22 before October 2026). Here: reference distance z0 of the distance-dependent Cab [Angstrom]. Here: interlayer distance of the Mayou model's q_sigma [Angstrom]. Here: read by the neighbour search set-up. Here: reference distance z0 of Moire.DistanceDependentEffectiveModel [Angstrom]. Here (NeighList): sets the interlayer neighbour radius sqrt((1.1 aBN)^2/3 + d^2). |
+| `Structure.InterlayerDistanceFile` | `interlayerDistanceFile` | string | `'interlayerDistances.dat'` | atoms.F90: AtomsPos | Structure.ReadInterlayerDistances: file of the distances, one per atom in file order. |
+| `Structure.InvertDisplacements` | `invertDisplacements` | logical | `.false.` | atoms.F90: AtomsPos | Change the sign of the in-plane stacking displacements read from the file. |
+| `Structure.LatticeParameter` | `LatticeParameter` | real | `2.46` | atoms.F90: AtomsOrder; cell.F90: CellGet; diag.F90: DiagSpectralFunctionKGrid; ... (11 places) | Graphene lattice constant aG [Angstrom]; the cells built by the code are multiples of it. |
+| `Structure.LatticeParameterBN` | `LatticeParameterBN` | real | `2.505` | cell.F90: CellGet | hBN lattice constant [Angstrom] (cells built from Structure.MoireCellParameters set it from the indices). |
+| `Structure.MoireCellParameters` | `MoireCellParameters` |  | `[0,0,0,0]` | atoms.F90: AtomsPos; cell.F90: CellGet; diag.F90: DiagSpectralFunctionKGridInequivalent; ... (9 places) | Four integers m1 m2 m3 m4 of the commensurate moire cell: a1 = m1 a + m2 b on the first lattice, (m3, m4) on the second; the twist angle and lattice ratio follow from them and are printed. Here: indices m1 m2 m3 m4 of the commensurate cell in which the layers are built. Here: sets the angle of Spectral.RotateReferenceSystem. |
+| `Structure.ReadInterlayerDistances` | `readInterlayerDistances` | logical | `.false.` | atoms.F90: AtomsPos | ReadXYZ: read one interlayer distance per atom from Structure.InterlayerDistanceFile [Angstrom]. |
+| `Structure.ReadLayerIndex` | `readLayerIndex` | logical | `.false.` | atoms.F90: AtomsPos | Take the layer index of every atom from layerIndex.dat (one value per line, file order) instead of the z windows of the stack flags. Recommended for relaxed cells. |
+| `Structure.ReadRigidXYZ` | `readRigidXYZ` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping; ham.F90: HamOnSite | ReadXYZ: also read the rigid (unrelaxed) positions from Structure.RigidPositions, same atom order. Here: the rigid positions enter the on-site terms of the displacement-based models. |
+| `Structure.RibbonType` | `RibbonType` | string | `'Zigzag'` | atoms.F90: AtomsPos; cell.F90: CellGet | TypeOfSystem Ribbons: edge of the ribbons, Zigzag or Armchair. Here: Zigzag or Armchair ribbon atoms (AtomsRibbons). |
+| `Structure.RigidPositions` | `rigidPositions` | string | `'generateInit.xyz'` | atoms.F90: AtomsPos | Structure.ReadRigidXYZ: file of the rigid positions (xyz format, same atom order). |
+| `Structure.RotationAngle` | `rotationAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Rotation angle [degrees] of the interlayer model branches that use it. Rotation angle [degrees] used by the hopping terms (HamHopping); read here but not used. |
+| `Structure.SingleLayerXYZ` | `singleLayerXYZ` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | ReadXYZ: the structure is a single layer (selects the single-layer branch of the moire potential). |
+| `Structure.SublatticeFile` | `SublatticeFile` | string | `'sublatticesSorted.dat'` | atoms.F90: AtomsPos | Structure.UseSublatticeFile: file of the Species; its first two tokens per line are read as (index, Species), same atom order as the structure file. |
+| `Structure.SuperCell` | `SuperCell` | integer | `1` | cell.F90: CellGet; ham.F90: HamHopPeriodicStrain; ham.F90: HamHopping; ... (5 places) | Repeat the cell N x N in the plane (the atoms are copied, no reordering: copy 0 holds the original atoms). Equivalent to an N x N k-sampling of the original cell for local quantities. Here: the moire length is /a1/ / SuperCell. Here (TypeOfSystem Hybrid): sets the size of the region where islands are placed. |
+| `Structure.SuperCellAsymmetric` | `SuperCellAsymmetric` | logical | `.false.` | atoms.F90: AtomsPos; cell.F90: CellGet | Repeat the cell Structure.SuperCell times along a1 and Structure.SuperCellY times along a2. Here: the atoms are built on CellSize*SuperCell x CellSize*SuperCellY graphene cells. |
+| `Structure.SuperCellX` | `SuperCellX` | integer | `1` | atoms.F90: AtomsPos; ham.F90: HamMoireFourierSetup; ham.F90: HamOnSiteMoireCDW | ReadXYZ: repetitions of the read cell along a1 (with Structure.SuperCellY; different values allowed). Here: input cell = simulation cell / SuperCell for the Moire.Fourier wave vectors. Here: checks that the moireCDW wave vectors are periodic in the supercell. |
+| `Structure.SuperCellY` | `SuperCellY` | integer | `1` | atoms.F90: AtomsPos; cell.F90: CellGet; ham.F90: HamMoireFourierSetup; ... (4 places) | ReadXYZ: repetitions of the read cell along a2 (with Structure.SuperCellX). Structure.SuperCellAsymmetric: number of copies along the second lattice vector. |
+| `Structure.TrilayerAddShift` | `TrilayerAddShift` | logical | `.false.` | atoms.F90: AtomsPos | TrilayerBasedOnMoireCell: shift a layer by the Bernal or bridge offset (Structure.BernalShift / BridgeShift), plus Structure.TrilayerShiftFactor. |
+| `Structure.TrilayerShiftFactor` | `TrilayerShiftFactor` | real | `0.0` | atoms.F90: AtomsPos | Structure.TrilayerAddShift: extra shift along a1+a2 [Angstrom]. |
+| `Structure.TwistedBilayerAngle` | `twistedBilayerAngle` | real | `0.0` | atoms.F90: AtomsPos | TypeOfSystem TwistedBilayer / MoireEncapsulatedBilayer: twist angle of the second layer [degrees]. |
+| `Structure.TwistedBLAddShift` | `twistedBLAddShift` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamHopping | BilayerGraphene_Over_BN, TwistedBilayerBasedOnMoireCell, MoireEncapsulatedBilayerBasedOnMoireCell: shift the second layer by the Bernal (Structure.BernalShift) or bridge (Structure.BridgeShift) offset, plus Structure.BilayerShiftFactor. Without it the two layers of the moire cell form a twisted pair. Here: read for the interlayer branch of shifted bilayers. |
+| `Structure.UseSublatticeFile` | `useSublatticeFile` | logical | `.true.` | atoms.F90: AtomsPos | ReadXYZ: take the Species of every atom from Structure.SublatticeFile instead of the element symbol (C = 1, B = 3, N = 4). |
+| `Structure.XYZFile` | `XYZFile` |  | `trim(prefix)//'.xyz'` | atoms.F90: AtomsPos; cell.F90: CellGet | TypeOfSystem ReadXYZ: structure file. Its first three lines are the lattice vectors [Angstrom], the atoms follow. Here: the atoms (symbol x y z [Angstrom]) are read from line 5 of the file on. |
+| `TAPW.aG` |  | real | `2.46019` | diag.F90: DiagBands; diag.F90: DiagH0TAPW; diag.F90: DiagH0TAPW_withBlockH | TAPW: graphene lattice constant of the plane-wave basis [Angstrom]; default 2.46019, the cells often use 2.46. |
+| `TAPW.BlockMatrixFree` |  | logical | `.false.` | diag.F90: DiagBands | Spinful block TAPW without the dense 2N x 2N block (matrix-free H*X): much faster, little memory. |
+| `TAPW.Use` | `useTAPW` | logical | `.false.` | diag.F90: DiagBands | Bands in the valley-projected plane-wave basis (TAPW): H is projected on plane waves around one graphene valley (Diag.N_G, Diag.MoireAngle, Diag.UseKprimeValley); far fewer states than atoms. |
+| `TAPW.UseDenseMatrix` | `useDenseMatrixTAPW` | logical | `.false.` | diag.F90: DiagBands; diag.F90: DiagH0TAPW | TAPW: project a dense N x N Hamiltonian (memory 16 N^2 bytes) instead of the sparse one; the sparse path is the one for large cells. |
+| `TAPW.UseTriangularDistanceOrder` |  | logical | `.true.` | diag.F90: DiagH0TAPW; diag.F90: DiagH0TAPW_withBlockH | Diag.TriangularTruncation: order the triangular G list by distance (default) instead of grid order. |
+| `TB.BNHopping` |  |  | `gdef` | tbpar.f90: TBInit | Nearest-neighbour B-N hopping of hBN [eV] (default: TB.Hopping). |
+| `TB.CBHopping` |  | real | `2.68` | tbpar.f90: TBInit | Nearest-neighbour C-B hopping [eV]. |
+| `TB.CNHopping` |  | real | `2.79` | tbpar.f90: TBInit | Nearest-neighbour C-N hopping [eV]. |
+| `TB.Hopping` |  |  | `gdef` | tbpar.f90: TBInit | Nearest-neighbour hopping g0 [eV], the internal energy unit: every energy is divided by it. Default -3.72 aG + 12.14 (2.9887 eV at aG 2.46). |
+| `TB.InterLayerHopping` |  | real | `0.39` | tbpar.f90: TBInit | Interlayer hopping t exp(-d/dIntLay) of the simplest interlayer branch of HamHopping, d = in-plane distance [eV]. |
+| `TB.NeighLevels` |  | integer | `1` | tbpar.f90: TBInit | Number of neighbour shells of the hopping table (at least 1). |
+| `TB.OnSiteB` |  | real | `3.09` | tbpar.f90: TBInit | On-site energy of boron [eV]. |
+| `TB.OnSiteC` |  | real | `0.0` | tbpar.f90: TBInit | On-site energy of carbon [eV]. |
+| `TB.OnSiteC1` |  | real | `0.0` | tbpar.f90: TBInit | On-site energy of carbon sublattice 1 (Species 1) [eV]. |
+| `TB.OnSiteC1_LB` |  | real | `0.0` | tbpar.f90: TBInit | On-site energy of carbon sublattice 1 of the bottom layer [eV], for the stack models that use it. |
+| `TB.OnSiteC1_LT` |  | real | `0.0` | tbpar.f90: TBInit | On-site energy of carbon sublattice 1 of the top layer [eV], for the stack models that use it. |
+| `TB.OnSiteC2` |  | real | `0.0` | tbpar.f90: TBInit | On-site energy of carbon sublattice 2 (Species 2) [eV]. |
+| `TB.OnSiteC2_LB` |  | real | `0.0` | tbpar.f90: TBInit | On-site energy of carbon sublattice 2 of the bottom layer [eV], for the stack models that use it. |
+| `TB.OnSiteC2_LT` |  | real | `0.0` | tbpar.f90: TBInit | On-site energy of carbon sublattice 2 of the top layer [eV], for the stack models that use it. |
+| `TB.OnSiteN` |  | real | `-1.89` | tbpar.f90: TBInit | On-site energy of nitrogen [eV]. |
+| `TBG.Angle` | `tBGAngle` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | Twist angle of the analytic tBG stacking displacements [degrees] (on-site and bond terms). Here: twist angle of the analytic tBG bond terms [degrees]. |
+| `TBG.Diag` | `tBGDiag` | logical | `.false.` | ham.F90: HamOnSite | Stacking-dependent on-site term of twisted bilayer graphene (from the local stacking displacements). |
+| `TBG.DiagPRB` | `tBGDiagPRB` | logical | `.false.` | ham.F90: HamOnSite | TBG.Diag: use the amplitudes Interlayer.CAA, CBB, ... instead of the default set. |
+| `TBG.LegacyAnalyticOnSite` |  | logical | `.false.` | ham.F90: HamOnSiteMoirePotential | Analytic tBG on-site term as before November 2026 (GBN.Angle, d in Angstrom); warning printed. |
+| `TBG.OffDiag` | `tBGOffDiag` | logical | `.false.` | ham.F90: HamCheckHermiticity; ham.F90: HamHopping | Off-diagonal (bond) stacking-dependent term of twisted bilayer graphene. Here: the tBG bond term is added in HamHopping. |
+| `TBG.OffDiagPRB` | `tBGOffDiagPRB` | logical | `.false.` | ham.F90: HamHopping | TBG.OffDiag: alternative parameter set (see HamHopping). |
+| `TBG.SwitchDxDy` | `tBGSwitchDxDy` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSiteMoirePotential | TBG.Diag: exchange the x and y components of the stacking displacement. |
+| `TBG.UseDisplacementFile` | `tBGuseDisplacementFile` | logical | `.false.` | atoms.F90: AtomsPos; ham.F90: HamDisplacementsFromPositions; ham.F90: HamHopping; ... (4 places) | Twisted-bilayer stacking-dependent on-site model from per-atom stacking displacements, read from Structure.DisplacementsFile (or computed, Structure.DisplacementsFromPositions). |
+| `Trilayer.Delta` | `TrilayerDelta` | real | `0.0` | ham.F90: HamHopping; ham.F90: HamOnSiteTrilayerFanZhang | Trilayer.FanZhang: Delta term of the model [eV]. |
+| `Trilayer.FanZhang` | `TrilayerFanZhang` | logical | `.false.` | ham.F90: HamHopping; ham.F90: HamOnSite; ham.F90: HamOnSiteMoirePotential | On-site terms of the Fan-Zhang trilayer model (HamOnSiteTrilayerFanZhang). Here: selects the trilayer branch of the moire potential. |
+| `Trilayer.Gamma1` |  |  | `hamUnset` | ham.F90: HamHopping | Trilayer.FanZhang: vertical dimer hopping gamma1 [eV]. |
+| `Trilayer.Gamma2` | `TrilayerGamma2` | real | `0.0` | ham.F90: HamHopping | Trilayer.FanZhang: gamma2 [eV]. |
+| `Trilayer.Gamma3` | `TrilayerGamma3` | real | `0.0` | ham.F90: HamHopping | Trilayer.FanZhang: gamma3 [eV]; also the former source of gamma1 when Trilayer.Gamma1 is absent (warning). |
+| `Trilayer.Gamma4` | `TrilayerGamma4` | real | `0.0` | ham.F90: HamHopping | Trilayer.FanZhang: gamma4 [eV]. |
+| `Trilayer.U1` | `Trilayeru1` | real | `0.0` | ham.F90: HamOnSiteTrilayerFanZhang | Trilayer.FanZhang: on-site potential of layer 1 [eV]. |
+| `Trilayer.U2` | `Trilayeru2` | real | `0.0` | ham.F90: HamOnSiteTrilayerFanZhang | Trilayer.FanZhang: on-site potential of layer 2 [eV]. |
+| `Trilayer.U3` | `Trilayeru3` | real | `0.0` | ham.F90: HamOnSiteTrilayerFanZhang | Trilayer.FanZhang: on-site potential of layer 3 [eV]. |
+| `Tunn.BigKVecX` | `bigKVecX` | real | `0.0` | calc.F90: CalcTunn | First component of the k of Tunn.Calc, in units of the reciprocal lattice vectors (as in Bands.Path). |
+| `Tunn.BigKVecY` | `bigKVecY` | real | `0.0` | calc.F90: CalcTunn | Second component of the k of Tunn.Calc, in units of the reciprocal lattice vectors. |
+| `Tunn.BigKVecZ` | `bigKVecZ` | real | `0.0` | calc.F90: CalcTunn | Third component of the k of Tunn.Calc, in units of the reciprocal lattice vectors. |
+| `Tunn.Calc` |  | logical | `.false.` | calc.F90: CalcSelect | Write the interlayer sums T_AA, T_AB = -sum_j t_ij exp(i k.d_ij) from each Species-1 atom of layer 1 to layer 2, at k = Tunn.BigKVecX/Y/Z (CalcTunn; files <prefix>.TunnAAR, TunnAAI, TunnABR, TunnABI). |
+| `Tunn.NumberOfMoires` | `numberOfMoires` | integer | `1` | calc.F90: CalcTunn | Tunn.Calc: the written sums are divided by this number. |
+| `Valley.Zeeman` |  | real | `0.0` | ham.F90: HamHopValleyZeeman | Valley Zeeman term lambda i nu_ij s_i /(3 sqrt 3) on the graphene second-neighbour bonds of each layer (= tau_z at the Dirac points) [eV]; 0 = off. Added before the Peierls phase. |
+| `Zeeman.Bmag` | `BmagZeeman` | real | `0.0` | magf.F90: MagfValue | Field of the Zeeman term [T], separate from the orbital field; the Zeeman energy is ZeemanFactor x Zeeman.Bmag. |
+| `Zeeman.Factor` | `ZeemanFactor` | real | `0.00033` | ham.F90: HamInit | Zeeman.Term: Zeeman energy per tesla [eV/T]; the shift is Factor x Zeeman.Bmag. |
+| `Zeeman.FollowSOCLayers` |  | logical | `.true.` | ham.F90: HamInit | With SOC.LayerControl: the Zeeman term acts on the same layers as SOC (.false.: every layer). |
+| `Zeeman.PseudoFactor` | `PseudoZeemanFactor` | real | `0.00016` | ham.F90: HamInit | Zeeman.PseudoTerm: factor [eV/T] (the term is not implemented). |
+| `Zeeman.PseudoTerm` | `PseudoZeemanTerm` | logical | `.false.` | diag.F90: DiagBands; ham.F90: HamInit | Pseudo-Zeeman term: not implemented, no effect (a warning is printed). Pseudo-Zeeman term (Zeeman.PseudoFactor): not implemented, no effect. |
+| `Zeeman.Spin` | `Spin` | integer | `1` | ham.F90: HamInit | Zeeman.Term in a one-spin run: spin sector computed, 1 (up) or -1 / 2 (down). |
+| `Zeeman.SpinPolarized` | `SpinPolarized` | logical | `.false.` | ham.F90: HamInit | Two spin sectors (nspin = 2), needed by the spinful terms (Zeeman, SOC). Refused unless Hubbard.EnableSCF .false. |
+| `Zeeman.Term` | `ZeemanTerm` | logical | `.false.` | diag.F90: DiagBands; ham.F90: HamInit | Zeeman shift of the two spin sectors (needs Zeeman.SpinPolarized .true.; no effect, with a warning, in a one-spin run). Spin Zeeman shift +-Zeeman.Factor x Zeeman.Bmag on the spin sector Zeeman.Spin; with Zeeman.SpinPolarized both sectors. Follows SOC.LayerControl unless Zeeman.FollowSOCLayers .false. |
 
 ## Blocks
 

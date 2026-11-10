@@ -116,15 +116,23 @@ subroutine AtomsPos()
 
    call MIO_Section('Atoms','atoms')
    call MIO_InputParameter('Stack.EncapsulatedThreeLayers',encapsulatedThreeLayers,.false.)
+     !! - `Stack.EncapsulatedThreeLayers`: Stack model flag (ham.F90). Here: with a displacement file, each graphene atom reads two
+     !!   displacements (bottom and top interface, six columns).
    call MIO_InputParameter('Run.TypeOfSystem',str,'Graphene')
+     !! - `Run.TypeOfSystem`: Here: selects how the atoms are built or read (AtomsPos).
    frac = .true.
    if (MIO_StringComp(str,'Graphene') .or. MIO_StringComp(str,'BoronNitride') .or. &
      MIO_StringComp(str,'Hybrid') .or. MIO_StringComp(str,'BLtoSLYoungju')) then
       call MIO_InputParameter('Structure.BasedOnMoireCellParameters',ll,.false.)
+        !! - `Structure.BasedOnMoireCellParameters`: Here: the atoms of a Graphene / BoronNitride cell are built in the cell of
+        !!   Structure.MoireCellParameters.
       if (ll) then
           call MIO_InputParameter('Structure.MoireCellParameters',n,[0,0,0,0])
+            !! - `Structure.MoireCellParameters`: Here: indices m1 m2 m3 m4 of the commensurate cell in which the layers are built.
           call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
           call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
+            !! - `Structure.InterlayerDistance`: Interlayer distance d of the stacks built by the code [Angstrom] (layers at +-d/2
+            !!   about the cell centre); default 3.35 (3.22 before October 2026).
           g = n(1)**2 + n(2)**2 + n(1)*n(2)
           delta = sqrt(real(n(3)**2 + n(4)**2 + n(3)*n(4))/g)
           phi = acos((2.0_dp*n(1)*n(3)+2.0_dp*n(2)*n(4) + n(1)*n(4) + n(2)*n(3))/(2.0_dp*delta*g))
@@ -159,7 +167,11 @@ subroutine AtomsPos()
 
       else
           call MIO_InputParameter('Structure.CellSize',m(1),50)
+            !! - `Structure.CellSize`: Here: number of graphene cells along each lattice vector of the atoms built for Graphene /
+            !!   BoronNitride.
           call MIO_InputParameter('Structure.SuperCellAsymmetric',l,.false.)
+            !! - `Structure.SuperCellAsymmetric`: Here: the atoms are built on CellSize*SuperCell x CellSize*SuperCellY graphene
+            !!   cells.
           if (l) then
              m2(1) = m(1)*sCell2
              m2(2) = 0
@@ -194,6 +206,8 @@ subroutine AtomsPos()
           end do
           !$OMP END PARALLEL DO
           call MIO_InputParameter('Moire.DistanceDependentEffectiveModel',distanceDependentEffectiveModel,.false.)
+            !! - `Moire.DistanceDependentEffectiveModel`: Here: allocates the per-atom interlayer distances (all 3.35 Angstrom) for
+            !!   Graphene cells.
           if (distanceDependentEffectiveModel) then
              ! nAt already counts the SuperCell copies here. A larger array was reallocated (and zeroed)
              ! to nAt in AtomsPos, which put every interlayer distance at 0 for SuperCell > 1.
@@ -271,9 +285,18 @@ subroutine AtomsPos()
       nAtBN = (n(3)**2 + n(3)*n(4) + n(4)**2)*2
       call MIO_Print('Boron and nitrogen atoms: '//trim(num2str(nAtBN)),'atoms')
       call MIO_InputParameter('Structure.TwistedBLAddShift',addShift,.false.)
+        !! - `Structure.TwistedBLAddShift`: BilayerGraphene_Over_BN, TwistedBilayerBasedOnMoireCell,
+        !!   MoireEncapsulatedBilayerBasedOnMoireCell: shift the second layer by the Bernal (Structure.BernalShift) or bridge
+        !!   (Structure.BridgeShift) offset, plus Structure.BilayerShiftFactor. Without it the two layers of the moire cell form a
+        !!   twisted pair.
       call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
+        !! - `Structure.BernalShift`: Structure.TwistedBLAddShift / TrilayerAddShift: the added shift is the Bernal (AB) offset.
       call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
+        !! - `Structure.BridgeShift`: Structure.TwistedBLAddShift / TrilayerAddShift: the added shift is half the Bernal offset
+        !!   (bridge stacking).
       call MIO_InputParameter('Structure.BilayerShiftFactor',shiftA,0.0_dp)
+        !! - `Structure.BilayerShiftFactor`: Extra shift of the second layer along a1+a2 [Angstrom] (in Angstrom since November
+        !!   2026).
       if (addShift) then
          if (Bernal) then
             yShift = (aG/3.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.BilayerShiftFactor',shiftA,n(1),n(2))
@@ -351,15 +374,24 @@ subroutine AtomsPos()
       Rat(:,1:nAtC) = RatC
       Rat(:,nAtC+1:nAt) = RatBN
       call MIO_InputParameter('Structure.CreateBLDomainBoundary',createBLDomainBoundary,.false.)
+        !! - `Structure.CreateBLDomainBoundary`: TwistedBilayerBasedOnMoireCell: build a domain boundary in the bilayer: the layers
+        !!   are displaced in opposite directions along y over a strip starting at x = L/2.
       m(1) = m(1)*sCell
       if (createBLDomainBoundary) then
           if (frac) then
               call AtomsSetCart()
           end if
           call MIO_InputParameter('Structure.BLDomainBoundaryWidth',boundaryWidth,60.0_dp)
+            !! - `Structure.BLDomainBoundaryWidth`: Structure.CreateBLDomainBoundary: width of the strip over which the shift grows
+            !!   [Angstrom].
           call MIO_InputParameter('Structure.BLDomainBoundaryTypeArmAA',boundaryTypeArmAA,.false.)
+            !! - `Structure.BLDomainBoundaryTypeArmAA`: Structure.CreateBLDomainBoundary: armchair boundary of the AA type (PRB 88
+            !!   115409).
           call MIO_InputParameter('Structure.BLDomainBoundaryTypeArmSP',boundaryTypeArmSP,.false.)
+            !! - `Structure.BLDomainBoundaryTypeArmSP`: Structure.CreateBLDomainBoundary: armchair boundary of the SP type (both
+            !!   layers moved).
           call MIO_InputParameter('Structure.BLDomainBoundaryNRShifts',numberOfShifts,1)
+            !! - `Structure.BLDomainBoundaryNRShifts`: Structure.CreateBLDomainBoundary: total shift in units of a/sqrt(3).
           limit0 = 0.0_dp
           limit1 = (m(1)*aG)*1.0_dp/2.0_dp
           limit2 = limit1 + boundaryWidth
@@ -483,6 +515,8 @@ subroutine AtomsPos()
       call MIO_InputParameter('Structure.CellHeight',h,40.0_dp)
       call MIO_InputParameter('Structure.InterlayerDistance',dIntLay,3.35_dp) ! Ref. PRB 76, 73103
       call MIO_InputParameter('Structure.TwistedBilayerAngle',BLAngle,0.0_dp) ! Ref. PRB 76, 73103
+        !! - `Structure.TwistedBilayerAngle`: TypeOfSystem TwistedBilayer / MoireEncapsulatedBilayer: twist angle of the second
+        !!   layer [degrees].
       call MIO_InputParameter('Structure.BilayerShiftFactor',shiftA,0.0_dp) ! [Angstrom]
       m(1) = m(1)*sCell
       m(2) = 0
@@ -543,9 +577,12 @@ subroutine AtomsPos()
       nAtC = (n(1)**2 + n(1)*n(2) + n(2)**2)*2
       call MIO_Print('Carbon atoms: '//trim(num2str(nAtC)),'atoms')
       call MIO_InputParameter('Structure.TrilayerAddShift',addShift,.false.)
+        !! - `Structure.TrilayerAddShift`: TrilayerBasedOnMoireCell: shift a layer by the Bernal or bridge offset
+        !!   (Structure.BernalShift / BridgeShift), plus Structure.TrilayerShiftFactor.
       call MIO_InputParameter('Structure.BernalShift',Bernal,.false.)
       call MIO_InputParameter('Structure.BridgeShift',bridge,.false.)
       call MIO_InputParameter('Structure.TrilayerShiftFactor',shiftA,0.0_dp)
+        !! - `Structure.TrilayerShiftFactor`: Structure.TrilayerAddShift: extra shift along a1+a2 [Angstrom].
       if (addShift) then
          if (Bernal) then
             yShift = (aG/3.0_dp)/(n(1)*aG)+AtomsShiftFrac('Structure.TrilayerShiftFactor',shiftA,n(1),n(2))
@@ -585,6 +622,7 @@ subroutine AtomsPos()
       !$OMP END PARALLEL DO
    else if (MIO_StringComp(str,'Ribbons')) then
       call MIO_InputParameter('Structure.RibbonType',str,'Zigzag')
+        !! - `Structure.RibbonType`: Here: Zigzag or Armchair ribbon atoms (AtomsRibbons).
       call MIO_InputParameter('Structure.GrapheneWidth',nC,9)
       call MIO_InputParameter('Structure.BNWidth',nBN,9)
       nAt = (nC+nBN)*2
@@ -600,26 +638,42 @@ subroutine AtomsPos()
       end if
    else if (MIO_StringComp(str,'ReadXYZ')) then
       call MIO_InputParameter('Structure.XYZFile',str,trim(prefix)//'.xyz')
+        !! - `Structure.XYZFile`: Here: the atoms (symbol x y z [Angstrom]) are read from line 5 of the file on.
       open(1,FILE=str,STATUS='old')
       call MIO_InputParameter('Structure.UseSublatticeFile',useSublatticeFile,.true.)
+        !! - `Structure.UseSublatticeFile`: ReadXYZ: take the Species of every atom from Structure.SublatticeFile instead of the
+        !!   element symbol (C = 1, B = 3, N = 4).
       if (useSublatticeFile) then
          call MIO_Print('Sublattices read from Structure.SublatticeFile (same atom order as the structure file)','atoms')
          call MIO_InputParameter('Structure.SublatticeFile',str2,'sublatticesSorted.dat')
+           !! - `Structure.SublatticeFile`: Structure.UseSublatticeFile: file of the Species; its first two tokens per line are
+           !!   read as (index, Species), same atom order as the structure file.
          open(2,FILE=str2,STATUS='old')
       end if
       call MIO_InputParameter('Structure.ReadInterlayerDistances',readInterlayerDistances,.false.)
+        !! - `Structure.ReadInterlayerDistances`: ReadXYZ: read one interlayer distance per atom from
+        !!   Structure.InterlayerDistanceFile [Angstrom].
       if (readInterlayerDistances) then
          call MIO_Print('Interlayer distances and displacements read from files (same atom order as the structure file)', &
            'atoms')
          call MIO_InputParameter('Structure.InterlayerDistanceFile',str3,'interlayerDistances.dat')
+           !! - `Structure.InterlayerDistanceFile`: Structure.ReadInterlayerDistances: file of the distances, one per atom in file
+           !!   order.
          open(3,FILE=str3,STATUS='old')
       end if
       call MIO_InputParameter('GBN.UseDisplacementFile',GBNuseDisplacementFile,.false.)
+        !! - `GBN.UseDisplacementFile`: G/hBN stacking-dependent on-site model from per-atom stacking displacements, read from
+        !!   Structure.DisplacementsFile (or computed, Structure.DisplacementsFromPositions).
       call MIO_InputParameter('TBG.UseDisplacementFile',tBGuseDisplacementFile,.false.)
+        !! - `TBG.UseDisplacementFile`: Twisted-bilayer stacking-dependent on-site model from per-atom stacking displacements, read
+        !!   from Structure.DisplacementsFile (or computed, Structure.DisplacementsFromPositions).
       ! Structure.DisplacementsFromPositions: computed from the rigid and actual structures (HamInit), no file
       call MIO_InputParameter('Structure.DisplacementsFromPositions',dispFromPos,.false.)
+        !! - `Structure.DisplacementsFromPositions`: Compute the stacking displacements of GBN/TBG.UseDisplacementFile from the
+        !!   rigid (generateInit.xyz) and actual structures instead of reading a file.
       if ((GBNuseDisplacementFile .or. tBGuseDisplacementFile) .and. .not. dispFromPos) then ! Carr format here
          call MIO_InputParameter('Structure.DisplacementsFile',str4,'displacements.txt')
+           !! - `Structure.DisplacementsFile`: File of the stacking displacements, one line 'dx dy d' per atom in file order.
          open(4,FILE=str4,STATUS='old')
       end if
       do i=1,3
@@ -628,9 +682,16 @@ subroutine AtomsPos()
       read(1,*) nAt
       call MIO_Allocate(RatTemp,[3,nAt],'RatTemp','atoms')
       call MIO_InputParameter('Structure.SuperCellX',SuperCellX,1)
+        !! - `Structure.SuperCellX`: ReadXYZ: repetitions of the read cell along a1 (with Structure.SuperCellY; different values
+        !!   allowed).
       call MIO_InputParameter('Structure.SuperCellY',SuperCellY,1)
+        !! - `Structure.SuperCellY`: ReadXYZ: repetitions of the read cell along a2 (with Structure.SuperCellX).
       call MIO_InputParameter('Structure.ReadLayerIndex',readLayerIndex,.false.)
+        !! - `Structure.ReadLayerIndex`: Take the layer index of every atom from layerIndex.dat (one value per line, file order)
+        !!   instead of the z windows of the stack flags. Recommended for relaxed cells.
       call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
+        !! - `Structure.ReadRigidXYZ`: ReadXYZ: also read the rigid (unrelaxed) positions from Structure.RigidPositions, same atom
+        !!   order.
       ! the per-atom data read from files are replicated only by the SuperCell branch below
       if (SuperCellX .ne. SuperCellY .and. (readInterlayerDistances .or. GBNuseDisplacementFile .or. &
             tBGuseDisplacementFile .or. readRigidXYZ)) call MIO_Kill('Structure.SuperCellX /= '// &
@@ -689,6 +750,7 @@ subroutine AtomsPos()
          end do
       end if
       call MIO_InputParameter('Structure.InvertDisplacements',invertDisplacements,.false.)
+        !! - `Structure.InvertDisplacements`: Change the sign of the in-plane stacking displacements read from the file.
       if (invertDisplacements) then
          do i=1,nAt
              displacements(1,i) = -displacements(1,i)
@@ -698,6 +760,7 @@ subroutine AtomsPos()
       call MIO_InputParameter('Structure.ReadRigidXYZ',readRigidXYZ,.false.)
       if (readRigidXYZ) then
          call MIO_InputParameter('Structure.RigidPositions',str5,'generateInit.xyz')
+           !! - `Structure.RigidPositions`: Structure.ReadRigidXYZ: file of the rigid positions (xyz format, same atom order).
          call MIO_Allocate(RatInit,[3,nAt*sCell*sCell],'RatInit','atoms')
          open(9,FILE=str5,STATUS='old')
          do i=1,4
@@ -856,87 +919,234 @@ subroutine AtomsPos()
         .or. MIO_StringComp(str,'MoireEncapsulatedBilayerBasedOnMoireCell')) then
       call AtomsSetCart()
       call MIO_InputParameter('Stack.FourLayers',fourLayers,.false.)
+        !! - `Stack.FourLayers`: Stack model flag (ham.F90). Here: layer index from the z windows Stack.FourLayersZ1..Z4.
       call MIO_InputParameter('Stack.FourLayersSandwiched',fourLayersSandwiched,.false.)
+        !! - `Stack.FourLayersSandwiched`: Stack model flag (ham.F90). Here: layer index from Stack.FourLayersZ1..Z4.
       call MIO_InputParameter('Stack.HelicalTwistedMBM',helicalTwistedMBM,.false.)
+        !! - `Stack.HelicalTwistedMBM`: Stack model flag (ham.F90). Here: layer index from Stack.FourLayersZ1..Z4.
       call MIO_InputParameter('Stack.FiveLayersSandwiched',fiveLayersSandwiched,.false.)
+        !! - `Stack.FiveLayersSandwiched`: Stack model flag (ham.F90). Here: layer index from Stack.FiveLayersZ1..Z5.
       call MIO_InputParameter('Stack.SixLayersSandwiched',sixLayersSandwiched,.false.)
+        !! - `Stack.SixLayersSandwiched`: Stack model flag (ham.F90). Here: layer index from Stack.SixLayersZ1..Z6.
       call MIO_InputParameter('Stack.SevenLayersSandwiched',sevenLayersSandwiched,.false.)
+        !! - `Stack.SevenLayersSandwiched`: Stack model flag (ham.F90). Here: layer index from Stack.SevenLayersZ1..Z7.
       call MIO_InputParameter('Stack.EightLayersSandwiched',eightLayersSandwiched,.false.)
+        !! - `Stack.EightLayersSandwiched`: Stack model flag (ham.F90). Here: layer index from Stack.EightLayersZ1..Z8.
       call MIO_InputParameter('Stack.TenLayersSandwiched',tenLayersSandwiched,.false.)
+        !! - `Stack.TenLayersSandwiched`: Stack model flag (ham.F90). Here: layer index from Stack.TenLayersZ1..Z10.
       call MIO_InputParameter('Stack.TwentyLayersSandwiched',twentyLayersSandwiched,.false.)
+        !! - `Stack.TwentyLayersSandwiched`: Stack model flag (ham.F90). Here: layer index from Stack.TwentyLayersZ1..Z20.
       call MIO_InputParameter('Stack.ThreeLayers',threeLayers,.false.)
+        !! - `Stack.ThreeLayers`: Stack model flag (ham.F90). Here: layer index from Stack.ThreeLayersZ1..Z3.
       call MIO_InputParameter('Stack.OneLayer',oneLayer,.false.)
+        !! - `Stack.OneLayer`: Stack model flag (ham.F90). Here: every atom in layer 1.
       call MIO_InputParameter('Stack.TwoLayers',twoLayers,.false.)
+        !! - `Stack.TwoLayers`: Stack model flag (ham.F90). Here: layer index from Stack.TwoLayersZ1..Z2.
       call MIO_InputParameter('Stack.TwoLayersZ1',twoLayersZ1,-3.3_dp)
+        !! - `Stack.TwoLayersZ1`: z centre of layer 1 [Angstrom] for the stack flags that use the Stack.TwoLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwoLayersZ2',twoLayersZ2,3.3_dp)
+        !! - `Stack.TwoLayersZ2`: z centre of layer 2 [Angstrom] for the stack flags that use the Stack.TwoLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.ThreeLayersZ1',threeLayersZ1,-3.3_dp)
+        !! - `Stack.ThreeLayersZ1`: z centre of layer 1 [Angstrom] for the stack flags that use the Stack.ThreeLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.ThreeLayersZ2',threeLayersZ2,0.0_dp)
+        !! - `Stack.ThreeLayersZ2`: z centre of layer 2 [Angstrom] for the stack flags that use the Stack.ThreeLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.ThreeLayersZ3',threeLayersZ3,3.3_dp)
+        !! - `Stack.ThreeLayersZ3`: z centre of layer 3 [Angstrom] for the stack flags that use the Stack.ThreeLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.FourLayersZ1',fourLayersZ1,-3.3_dp)
+        !! - `Stack.FourLayersZ1`: z centre of layer 1 [Angstrom] for the stack flags that use the Stack.FourLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.FourLayersZ2',fourLayersZ2,-0.0_dp)
+        !! - `Stack.FourLayersZ2`: z centre of layer 2 [Angstrom] for the stack flags that use the Stack.FourLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.FourLayersZ3',fourLayersZ3,3.3_dp)
+        !! - `Stack.FourLayersZ3`: z centre of layer 3 [Angstrom] for the stack flags that use the Stack.FourLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.FourLayersZ4',fourLayersZ4,6.6_dp)
+        !! - `Stack.FourLayersZ4`: z centre of layer 4 [Angstrom] for the stack flags that use the Stack.FourLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.FiveLayersZ1',fiveLayersZ1,-3.3_dp)
+        !! - `Stack.FiveLayersZ1`: z centre of layer 1 [Angstrom] for the stack flags that use the Stack.FiveLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.FiveLayersZ2',fiveLayersZ2,-0.0_dp)
+        !! - `Stack.FiveLayersZ2`: z centre of layer 2 [Angstrom] for the stack flags that use the Stack.FiveLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.FiveLayersZ3',fiveLayersZ3,3.3_dp)
+        !! - `Stack.FiveLayersZ3`: z centre of layer 3 [Angstrom] for the stack flags that use the Stack.FiveLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.FiveLayersZ4',fiveLayersZ4,6.6_dp)
+        !! - `Stack.FiveLayersZ4`: z centre of layer 4 [Angstrom] for the stack flags that use the Stack.FiveLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.FiveLayersZ5',fiveLayersZ5,6.6_dp)
+        !! - `Stack.FiveLayersZ5`: z centre of layer 5 [Angstrom] for the stack flags that use the Stack.FiveLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SixLayersZ1',sixLayersZ1,-3.3_dp)
+        !! - `Stack.SixLayersZ1`: z centre of layer 1 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SixLayersZ2',sixLayersZ2,-0.0_dp)
+        !! - `Stack.SixLayersZ2`: z centre of layer 2 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SixLayersZ3',sixLayersZ3,3.3_dp)
+        !! - `Stack.SixLayersZ3`: z centre of layer 3 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SixLayersZ4',sixLayersZ4,6.6_dp)
+        !! - `Stack.SixLayersZ4`: z centre of layer 4 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SixLayersZ5',sixLayersZ5,6.6_dp)
+        !! - `Stack.SixLayersZ5`: z centre of layer 5 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SixLayersZ6',sixLayersZ6,6.6_dp)
+        !! - `Stack.SixLayersZ6`: z centre of layer 6 [Angstrom] for the stack flags that use the Stack.SixLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SevenLayersZ1',sevenLayersZ1,-3.3_dp)
+        !! - `Stack.SevenLayersZ1`: z centre of layer 1 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SevenLayersZ2',sevenLayersZ2,-0.0_dp)
+        !! - `Stack.SevenLayersZ2`: z centre of layer 2 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SevenLayersZ3',sevenLayersZ3,3.3_dp)
+        !! - `Stack.SevenLayersZ3`: z centre of layer 3 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SevenLayersZ4',sevenLayersZ4,6.6_dp)
+        !! - `Stack.SevenLayersZ4`: z centre of layer 4 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SevenLayersZ5',sevenLayersZ5,6.6_dp)
+        !! - `Stack.SevenLayersZ5`: z centre of layer 5 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SevenLayersZ6',sevenLayersZ6,6.6_dp)
+        !! - `Stack.SevenLayersZ6`: z centre of layer 6 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.SevenLayersZ7',sevenLayersZ7,6.6_dp)
+        !! - `Stack.SevenLayersZ7`: z centre of layer 7 [Angstrom] for the stack flags that use the Stack.SevenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.EightLayersZ1',eightLayersZ1,-3.3_dp)
+        !! - `Stack.EightLayersZ1`: z centre of layer 1 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.EightLayersZ2',eightLayersZ2,-0.0_dp)
+        !! - `Stack.EightLayersZ2`: z centre of layer 2 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.EightLayersZ3',eightLayersZ3,3.3_dp)
+        !! - `Stack.EightLayersZ3`: z centre of layer 3 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.EightLayersZ4',eightLayersZ4,6.6_dp)
+        !! - `Stack.EightLayersZ4`: z centre of layer 4 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.EightLayersZ5',eightLayersZ5,6.6_dp)
+        !! - `Stack.EightLayersZ5`: z centre of layer 5 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.EightLayersZ6',eightLayersZ6,6.6_dp)
+        !! - `Stack.EightLayersZ6`: z centre of layer 6 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.EightLayersZ7',eightLayersZ7,6.6_dp)
+        !! - `Stack.EightLayersZ7`: z centre of layer 7 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.EightLayersZ8',eightLayersZ8,6.6_dp)
+        !! - `Stack.EightLayersZ8`: z centre of layer 8 [Angstrom] for the stack flags that use the Stack.EightLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TenLayersZ1',tenLayersZ1,-3.3_dp)
+        !! - `Stack.TenLayersZ1`: z centre of layer 1 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TenLayersZ2',tenLayersZ2,-0.0_dp)
+        !! - `Stack.TenLayersZ2`: z centre of layer 2 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TenLayersZ3',tenLayersZ3,3.3_dp)
+        !! - `Stack.TenLayersZ3`: z centre of layer 3 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TenLayersZ4',tenLayersZ4,6.6_dp)
+        !! - `Stack.TenLayersZ4`: z centre of layer 4 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TenLayersZ5',tenLayersZ5,6.6_dp)
+        !! - `Stack.TenLayersZ5`: z centre of layer 5 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TenLayersZ6',tenLayersZ6,6.6_dp)
+        !! - `Stack.TenLayersZ6`: z centre of layer 6 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TenLayersZ7',tenLayersZ7,6.6_dp)
+        !! - `Stack.TenLayersZ7`: z centre of layer 7 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TenLayersZ8',tenLayersZ8,6.6_dp)
+        !! - `Stack.TenLayersZ8`: z centre of layer 8 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TenLayersZ9',tenLayersZ9,6.6_dp)
+        !! - `Stack.TenLayersZ9`: z centre of layer 9 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TenLayersZ10',tenLayersZ10,6.6_dp)
+        !! - `Stack.TenLayersZ10`: z centre of layer 10 [Angstrom] for the stack flags that use the Stack.TenLayersZ* windows; an
+        !!   atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ1',twentyLayersZ1,-3.3_dp)
+        !! - `Stack.TwentyLayersZ1`: z centre of layer 1 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows;
+        !!   an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ2',twentyLayersZ2,-0.0_dp)
+        !! - `Stack.TwentyLayersZ2`: z centre of layer 2 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows;
+        !!   an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ3',twentyLayersZ3,3.3_dp)
+        !! - `Stack.TwentyLayersZ3`: z centre of layer 3 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows;
+        !!   an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ4',twentyLayersZ4,6.6_dp)
+        !! - `Stack.TwentyLayersZ4`: z centre of layer 4 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows;
+        !!   an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ5',twentyLayersZ5,6.6_dp)
+        !! - `Stack.TwentyLayersZ5`: z centre of layer 5 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows;
+        !!   an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ6',twentyLayersZ6,6.6_dp)
+        !! - `Stack.TwentyLayersZ6`: z centre of layer 6 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows;
+        !!   an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ7',twentyLayersZ7,6.6_dp)
+        !! - `Stack.TwentyLayersZ7`: z centre of layer 7 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows;
+        !!   an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ8',twentyLayersZ8,6.6_dp)
+        !! - `Stack.TwentyLayersZ8`: z centre of layer 8 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows;
+        !!   an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ9',twentyLayersZ9,6.6_dp)
+        !! - `Stack.TwentyLayersZ9`: z centre of layer 9 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ* windows;
+        !!   an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ10',twentyLayersZ10,6.6_dp)
+        !! - `Stack.TwentyLayersZ10`: z centre of layer 10 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ11',twentyLayersZ11,-3.3_dp)
+        !! - `Stack.TwentyLayersZ11`: z centre of layer 11 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ12',twentyLayersZ12,-0.0_dp)
+        !! - `Stack.TwentyLayersZ12`: z centre of layer 12 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ13',twentyLayersZ13,3.3_dp)
+        !! - `Stack.TwentyLayersZ13`: z centre of layer 13 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ14',twentyLayersZ14,6.6_dp)
+        !! - `Stack.TwentyLayersZ14`: z centre of layer 14 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ15',twentyLayersZ15,6.6_dp)
+        !! - `Stack.TwentyLayersZ15`: z centre of layer 15 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ16',twentyLayersZ16,6.6_dp)
+        !! - `Stack.TwentyLayersZ16`: z centre of layer 16 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ17',twentyLayersZ17,6.6_dp)
+        !! - `Stack.TwentyLayersZ17`: z centre of layer 17 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ18',twentyLayersZ18,6.6_dp)
+        !! - `Stack.TwentyLayersZ18`: z centre of layer 18 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ19',twentyLayersZ19,6.6_dp)
+        !! - `Stack.TwentyLayersZ19`: z centre of layer 19 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.TwentyLayersZ20',twentyLayersZ20,6.6_dp)
+        !! - `Stack.TwentyLayersZ20`: z centre of layer 20 [Angstrom] for the stack flags that use the Stack.TwentyLayersZ*
+        !!   windows; an atom goes to the layer whose window holds it (only the midpoints between neighbouring centres matter).
       call MIO_InputParameter('Stack.GBNtwoLayers',GBNtwoLayers,.false.)
+        !! - `Stack.GBNtwoLayers`: Stack model flag (ham.F90). Here: graphene (Species 1, 2) is layer 1, everything else layer 2.
       call MIO_InputParameter('Stack.T2GBN',t2GBN,.false.)
+        !! - `Stack.T2GBN`: Stack model flag (ham.F90). Here: layer index from Stack.ThreeLayersZ1..Z3.
       call MIO_InputParameter('Stack.T2BG',t2BG,.false.)
+        !! - `Stack.T2BG`: Stack model flag (ham.F90); read here but not used for the layer index.
       call MIO_InputParameter('Stack.T3BG',t3BG,.false.)
+        !! - `Stack.T3BG`: Stack model flag (ham.F90). Here: layer index from Stack.SixLayersZ1..Z6.
       call MIO_InputParameter('Stack.EncapsulatedFourLayers',encapsulatedFourLayers,.false.)
+        !! - `Stack.EncapsulatedFourLayers`: Stack model flag (ham.F90). Here: layer index from Stack.FourLayersZ1..Z4.
       call MIO_InputParameter('Structure.ReadLayerIndex',readLayerIndex,.false.)
       if (readLayerIndex) then
           call MIO_Print('Layer indices read from layerIndex.dat (Structure.ReadLayerIndex)','atoms')
@@ -1714,6 +1924,8 @@ subroutine AtomsOrder()
    call MIO_Debug('AtomsSort',0)
 #endif /* DEBUG */
    call MIO_InputParameter('Structure.AtomsOrderDeactivated',AtomsOrderDeactivated,.true.)
+     !! - `Structure.AtomsOrderDeactivated`: Keep the atoms in input order (default). .false. reorders them in spatial bins for the
+     !!   parallel decomposition; refused for ReadXYZ, whose per-atom files are in file order.
    if (.NOT. AtomsOrderDeactivated)then
       ! the per-atom files of ReadXYZ (layer index, sublattices, displacements, rigid positions, Hamiltonian dumps)
       ! are in file order, and some are read after this point

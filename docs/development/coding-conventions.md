@@ -100,7 +100,18 @@ October 2026 showed to be necessary.
 **Services of the MIO library**
 
 - Input: `call MIO_InputParameter('Key',variable,default)`; blocks with
-  `MIO_InputFindBlock` and `MIO_InputBlock`.
+  `MIO_InputFindBlock` and `MIO_InputBlock`. The line that reads a key is
+  followed by its description, a FORD documentation comment written as a
+  Markdown item: what the key does, its unit, and what it needs.
+
+  ```fortran
+  call MIO_InputParameter('Kubo.Epsilon',eps,0.01_dp)
+    !! - `Kubo.Epsilon`: Recursion DOS: broadening eta of the continued fraction [eV].
+  ```
+
+  FORD adds it to the documentation of the routine, and
+  `tools/input/list_input_keys.py` copies it into the Description column of
+  `docs/user-guide/input-keys.md`.
 - Output: `call MIO_Print('text','module')`. No bare `print *` or
   `write(*,*)` in finished code.
 - Errors: `call MIO_Kill('what is wrong and what to do','module','Routine')`.
