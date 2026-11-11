@@ -12,7 +12,7 @@ cells (densities of states of systems with hundreds of thousands to millions
 of atoms).
 
 > **Status.** This repository is a release candidate that has not yet been
-> announced. Four example calculations are supported and reproducible; the
+> announced. Nine example calculations are supported and reproducible; the
 > remaining functionality is research code of varying maturity (see
 > [What is supported](#what-is-supported)).
 
@@ -147,15 +147,18 @@ describes every check; measured results for both compilers are in
 
 ## Known limitations
 
-- One MPI process only; a run with more is refused. Parallelism is by OpenMP,
-  with the Intel build.
+- One MPI process only; a run with more is refused. Parallelism is by OpenMP.
 - The Kubo solver is stochastic: results vary from run to run unless
-  `setSeed .true.` and `seedValue` are given.
-- The effective moire-potential model of graphene on hBN assembles a hopping
-  table that is not exactly Hermitian; the solver reports the size of the
-  asymmetry. See the validation document.
-- Many input keywords exist only for research workflows and are undocumented.
-  The example inputs and READMEs are the reference for the supported ones.
+  `Kubo.SetSeed .true.` and `Kubo.SeedValue` are given.
+- The bond term of the effective moire-potential model of graphene on hBN
+  (`Moire.OffDiag`) gives a hopping table that is not exactly Hermitian; the
+  solver reports the size of the asymmetry. `Moire.OffDiagMidpoint .true.`
+  evaluates the term at the bond midpoint and makes it Hermitian. See the
+  validation document.
+- Many input keys exist only for research workflows. Nearly all have a one-line
+  description in [`docs/user-guide/input-keys.md`](docs/user-guide/input-keys.md),
+  but only the keys of the examples are tested; the example inputs and READMEs
+  are the reference for the supported ones.
 
 ## Documentation
 
@@ -220,3 +223,9 @@ the choice of license is recorded in
 
 Please report reproducible problems through the GitHub issue tracker of the
 repository, with the commit hash, compiler version, input file, and log.
+
+Before changing the code, read [`AGENTS.md`](AGENTS.md): the rules a change
+must follow and the validation a pull request must show. It is written for
+coding agents and human contributors alike; the full conventions are in
+[`docs/development/coding-conventions.md`](docs/development/coding-conventions.md)
+and [`docs/development/output-style.md`](docs/development/output-style.md).
