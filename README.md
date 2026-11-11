@@ -11,33 +11,37 @@ bilayers, and multilayers, and solves them either by exact diagonalization
 cells (densities of states of systems with hundreds of thousands to millions
 of atoms).
 
-> **Status.** This repository is a release candidate that has not yet been
-> announced. Nine example calculations are supported and reproducible; the
-> remaining functionality is research code of varying maturity (see
-> [What is supported](#what-is-supported)).
+> **Status.** GRABNES is under active development. There is no numbered
+> release yet, so please cite the commit you used. The examples in
+> [`examples/`](examples/) are tested on every change and reproduce their
+> reference data; other functionality is research code of varying maturity
+> (see [What is supported](#what-is-supported)).
 
 ## Capabilities
 
 Demonstrated by the supported examples and covered by regression tests:
 
-- Tight-binding Hamiltonians of pristine graphene and of commensurate
-  twisted-bilayer graphene, with nearest-neighbor or longer-range intralayer
-  hopping and a distance-dependent two-center interlayer hopping.
+- Tight-binding Hamiltonians of pristine graphene, of commensurate
+  twisted-bilayer graphene (down to the magic angle) and of alternating-twist
+  trilayer graphene read from a structure file, with nearest-neighbor or
+  longer-range intralayer hopping and a distance-dependent two-center
+  interlayer hopping.
+- The effective moire-potential model of graphene aligned or twisted on hBN.
 - Band structures along a k-path and densities of states by exact
-  diagonalization.
-- Density of states of large cells by Lanczos recursion with a random-phase
-  state (the "Kubo" solver), reproducible with a fixed seed.
+  diagonalization, and bands of one valley in the plane-wave reduction (TAPW).
+- Density of states of large cells, up to millions of atoms, by Lanczos
+  recursion with a random-phase state (the "Kubo" solver), with and without a
+  perpendicular magnetic field; reproducible with a fixed seed.
 
 Implemented in the source, but not part of the supported set (use only after
 your own validation):
 
 - Kubo time evolution, diffusion, and conductivity.
-- Hexagonal boron nitride and graphene/hBN systems, including an effective
-  moire-potential model of graphene on hBN, and multilayer, encapsulated, and
-  bulk geometries.
-- Plane-wave-reduced Hamiltonians (TAPW), spin-orbit terms, Berry curvature
-  and Chern numbers, spectral functions, sparse diagonalization, magnetic
-  fields.
+- Atomistic hexagonal boron nitride and graphene/hBN systems, and multilayer,
+  encapsulated, and bulk geometries.
+- TAPW beyond the inputs of the examples (both valleys, relaxed cells),
+  spin-orbit terms, Berry curvature and Chern numbers, spectral functions,
+  sparse diagonalization.
 
 [`docs/development/functionality-status.md`](docs/development/functionality-status.md)
 states for each capability what evidence exists.
@@ -142,8 +146,8 @@ describes every check; measured results for both compilers are in
 | Level | Meaning | Applies to |
 | --- | --- | --- |
 | Supported | Runs, is documented, and is reproduced by the test suite | The nine examples above (06 to 09 by `run_long_examples.sh`) |
-| Independently validated | Additionally checked against an analytic result or a second implementation | Hamiltonian assembly and bands of graphene, hBN monolayer, and twisted bilayers; Kubo DOS of graphene |
-| Research / experimental | Present in the source without sufficient validation for general use | Everything else, including transport, TAPW, spin-orbit, Berry curvature, graphene/hBN and multilayer models |
+| Independently validated | Additionally checked against an analytic result or a second implementation | Hamiltonian assembly and bands of graphene, hBN monolayer, and twisted bilayers; Kubo DOS of graphene; TAPW bands of examples 05, 08 and 09 against exact diagonalization |
+| Research / experimental | Present in the source without sufficient validation for general use | Everything else, including transport, spin-orbit, Berry curvature, atomistic graphene/hBN, and the models of the examples used with other inputs |
 
 ## Known limitations
 
@@ -203,9 +207,64 @@ GitHub displays under "Cite this repository":
 > commit `<hash>`.
 
 A software paper and an archived release with a DOI do not exist yet; this
-section will name them when they do. Please also cite the publications behind
-the models you use; those of the supported examples are named in their
-READMEs.
+section will name them when they do.
+
+### Publications to cite with the code
+
+Please also cite the publications behind the methods and models you use.
+
+Methods of the code (real-space lattice models, Lanczos recursion):
+
+- N. Leconte, A. Ferreira, and J. Jung, *Efficient multiscale lattice
+  simulations of strained and disordered graphene*, Semicond. Semimet. **95**,
+  35-99 (2016), [doi:10.1016/bs.semsem.2016.04.002](https://doi.org/10.1016/bs.semsem.2016.04.002).
+
+Twisted and multilayer graphene:
+
+- N. Leconte, S. Javvaji, J. An, A. Samudrala, and J. Jung, *Relaxation effects
+  in twisted bilayer graphene: A multiscale approach*, Phys. Rev. B **106**,
+  115410 (2022), [doi:10.1103/PhysRevB.106.115410](https://doi.org/10.1103/PhysRevB.106.115410)
+  (twisted-bilayer model; example 08).
+- N. Leconte, Y. Park, J. An, A. Samudrala, and J. Jung, *Electronic structure
+  of lattice relaxed alternating twist tNG-multilayer graphene: from few layers
+  to bulk AT-graphite*, 2D Mater. **9**, 044002 (2022),
+  [doi:10.1088/2053-1583/ac8a00](https://doi.org/10.1088/2053-1583/ac8a00)
+  (alternating-twist multilayers; example 09).
+- K. Shin, N. Leconte, J. Jung, and H. Min, *Supermoire reconstruction and
+  domain-resolved valley topology in helical multilayer graphene*, 2D Mater.
+  **13**, 045021 (2026), [doi:10.1088/2053-1583/aeb140](https://doi.org/10.1088/2053-1583/aeb140)
+  (helical multilayers).
+- P. Moon and M. Koshino, *Energy spectrum and quantum Hall effect in twisted
+  bilayer graphene*, Phys. Rev. B **85**, 195458 (2012),
+  [doi:10.1103/PhysRevB.85.195458](https://doi.org/10.1103/PhysRevB.85.195458)
+  (two-center interlayer hopping; examples 03 and 04).
+
+Graphene on hexagonal boron nitride:
+
+- J. Jung, A. Raoux, Z. Qiao, and A. H. MacDonald, *Ab initio theory of moire
+  superlattice bands in layered two-dimensional materials*, Phys. Rev. B **89**,
+  205414 (2014), [doi:10.1103/PhysRevB.89.205414](https://doi.org/10.1103/PhysRevB.89.205414)
+  (effective moire-potential model; examples 05 to 07).
+- N. Leconte and J. Jung, *Commensurate and incommensurate double moire
+  interference in graphene encapsulated by hexagonal boron nitride*, 2D Mater.
+  **7**, 031005 (2020), [doi:10.1088/2053-1583/ab891a](https://doi.org/10.1088/2053-1583/ab891a)
+  (graphene encapsulated by hBN, double moire).
+- J. An, N. Leconte, S. Javvaji, Y. Park, and J. Jung, *Atomistic substrate
+  relaxation effects in the band gaps of graphene on hexagonal boron nitride*,
+  [arXiv:2602.18893](https://arxiv.org/abs/2602.18893) (2026) (atomistic
+  graphene/hBN with a relaxed substrate).
+- W. Shi, S. Kahn, N. Leconte, T. Taniguchi, K. Watanabe, M. Crommie, J. Jung,
+  and A. Zettl, *High-order fractal quantum oscillations in graphene/BN
+  superlattices in the extreme doping limit*, Phys. Rev. Lett. **130**, 186204
+  (2023), [doi:10.1103/PhysRevLett.130.186204](https://doi.org/10.1103/PhysRevLett.130.186204)
+  (graphene/hBN in a magnetic field).
+- Z. Wang, P. M. Perez-Piskunow, C. P. Y. Wong, M. Holwill, H. Sun, W. Fu,
+  J. Hu, Y. Zheng, X. Zhang, T. Taniguchi, K. Watanabe, A. Ariando, G. Yu,
+  L. Lin, K. E. J. Goh, S. Roche, J. Jung, K. S. Novoselov, and N. Leconte,
+  *Beyond the flat-band paradigm: open orbits as a route to correlated states
+  in dispersive moire minibands*, Proc. Natl. Acad. Sci. USA, accepted (2026),
+  [arXiv:2610.06110](https://arxiv.org/abs/2610.06110) (graphene/hBN
+  minibands and their orbits in a magnetic field).
 
 ## License
 

@@ -1,5 +1,10 @@
 # Release-readiness checklist
 
+> **Historical (October 2026).** This checklist describes the state before the
+> consolidation and bug-fix work of October and November 2026; the code freeze it
+> lists no longer applies. It is kept for the record and will be replaced when a
+> numbered release is prepared.
+
 State of the repository for a first announced release, October 2026.
 Each item is marked **Complete**, **Maintainer decision**, **Technical work**,
 or **Optional**. The acceptance criterion for this release is that the four
