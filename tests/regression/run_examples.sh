@@ -30,6 +30,7 @@ run_shell_control_checks
 run_kubo_check
 run_mpi_guard_check
 run_physics_checks
+run_hermann_checks
 run_model_survey
 run_generated_files_check
 

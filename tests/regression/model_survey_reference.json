@@ -615,6 +615,10 @@
   "fingerprint": "8fed9d7010aa8289",
   "status": "ok"
  },
+ "sys_Graphene_Over_BN+moire_cell_signed": {
+  "fingerprint": "48862270b9d138b1",
+  "status": "NONHERM"
+ },
  "sys_Graphene_Over_BN+realStrain": {
   "fingerprint": "8446fe27ff4b0d20",
   "status": "ok"
@@ -1090,6 +1094,18 @@
  "tbg+invertDisplacements": {
   "fingerprint": "3aa2c16153f9803a",
   "status": "ok"
+ },
+ "tbg+moire_cell_nonprimitive": {
+  "fingerprint": "ecf59b865058afa9",
+  "status": "ok"
+ },
+ "tbg+moire_cell_signed": {
+  "fingerprint": "9f31f25281d61590",
+  "status": "ok"
+ },
+ "tbg+moire_cell_zero_pair": {
+  "fingerprint": "b0105768cc6f82db",
+  "status": "REFUSED"
  },
  "tbg+nonBulkSmall": {
   "fingerprint": "2bc664a989c22727",

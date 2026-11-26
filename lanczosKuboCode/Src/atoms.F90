@@ -1569,8 +1569,14 @@ subroutine AtomsConstruct(X,mm,angle,label,d,yShift)
    do i1=1,ncell*2
       !if (i1==10) print*, i1
       !if (i1==10) print*, "Xdiff", X(2,i1)-X(1,i1)
-      f(2) = Rcell(1,1)*(X(2,i1)-X(1,i1)*Rcell(2,1)/Rcell(1,1))/(Rcell(2,2)*Rcell(1,1)-Rcell(1,2)*Rcell(2,1))
-      f(1) = (X(1,i1)-f(2)*Rcell(1,2))/Rcell(1,1)
+      if (abs(Rcell(1,1)) > 1.0e-6_dp*abs(Rcell(2,1))) then
+         f(2) = Rcell(1,1)*(X(2,i1)-X(1,i1)*Rcell(2,1)/Rcell(1,1))/(Rcell(2,2)*Rcell(1,1)-Rcell(1,2)*Rcell(2,1))
+         f(1) = (X(1,i1)-f(2)*Rcell(1,2))/Rcell(1,1)
+      else
+         ! first cell vector along y (indices such as (m, -2m)): Cramer's rule, the expression above divides by zero
+         f(1) = (X(1,i1)*Rcell(2,2)-X(2,i1)*Rcell(1,2))/(Rcell(1,1)*Rcell(2,2)-Rcell(1,2)*Rcell(2,1))
+         f(2) = (X(2,i1)*Rcell(1,1)-X(1,i1)*Rcell(2,1))/(Rcell(1,1)*Rcell(2,2)-Rcell(1,2)*Rcell(2,1))
+      end if
       !if (i1==10) print*, "f", f
       !if (X(1,i1)<0.0_dp) X(1,i1) = mod(X(1,i1) + 1.0_dp,1.0_dp) ! this is if f(1) was giving a negative value in previous line
       !if (X(2,i1)<0.0_dp) X(2,i1) = mod(X(2,i1) + 1.0_dp,1.0_dp)
@@ -2060,12 +2066,18 @@ elemental function gcd(i1,i2)
     integer, intent(in) :: i1,i2
     integer :: a,b
 
-    a = i1
-    b = i2
+    ! non-negative for indices of any sign (Structure.MoireCellParameters may be negative): a negative value made
+    ! the atom loops of AtomsConstruct empty
+    a = abs(i1)
+    b = abs(i2)
     if (a > b) then
         gcd = a
         a = b
         b = gcd
+    end if
+    if (a == 0) then
+        gcd = b
+        return
     end if
 
     do

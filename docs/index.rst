@@ -11,6 +11,7 @@ examples linked from the repository README.
 
    user-guide/input-file
    user-guide/input-keys
+   user-guide/commensurate-cells
    user-guide/tapw-soc-input
    development/building-documentation
    development/cluster-build-and-validation
