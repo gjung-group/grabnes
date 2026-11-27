@@ -178,6 +178,9 @@ describes every check; measured results for both compilers are in
   default, and the routine that reads it (generated from the source).
 - [`docs/user-guide/stacking-displacements.md`](docs/user-guide/stacking-displacements.md): the stacking
   displacements of the moiré terms (convention, and computing them from the rigid and relaxed structures).
+- [`docs/user-guide/commensurate-cells.md`](docs/user-guide/commensurate-cells.md): commensurate cells from the
+  four indices of `Structure.MoireCellParameters` (signed indices, primitive and non-primitive cells, the cell
+  search of `GenMoire.f90`).
 - [`docs/user-guide/`](docs/user-guide/) and [`docs/theory/`](docs/theory/):
   notes on TAPW and spin-orbit input (research functionality).
 - [`tools/`](tools/): analysis scripts, including the independent Hamiltonian

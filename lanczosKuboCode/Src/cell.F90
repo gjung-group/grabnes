@@ -80,10 +80,20 @@ subroutine CellGet()
           uc(:,2) = (/aG/2.0_dp,sqrt(3.0_dp)*aG/2.0_dp/)
           call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
             !! - `Structure.MoireCellParameters`: Four integers m1 m2 m3 m4 of the commensurate moire cell: a1 = m1 a + m2 b on the
-            !!   first lattice, (m3, m4) on the second; the twist angle and lattice ratio follow from them and are printed.
+            !!   first lattice, (m3, m4) on the second; the twist angle and lattice ratio follow from them and are printed. Any
+            !!   signs (negative written 0-1), both pairs nonzero; a non-primitive cell is built as given
+            !!   (docs/user-guide/commensurate-cells.md).
           call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
             '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
             'cell')
+          ! the atoms of MoireEncapsulatedBilayer / TwistedBilayer are built on CellSize x CellSize cells (AtomsPos),
+          ! not in this cell: the layers did not fill it
+          if (MIO_StringComp(str,'MoireEncapsulatedBilayer') .or. MIO_StringComp(str,'TwistedBilayer')) &
+            call MIO_Kill('Structure.BasedOnMoireCellParameters is not implemented for TypeOfSystem '//trim(str)// &
+              ': its atoms are built on Structure.CellSize cells, not in the cell of Structure.MoireCellParameters. '// &
+              'Use TypeOfSystem TwistedBilayerBasedOnMoireCell or MoireEncapsulatedBilayerBasedOnMoireCell',&
+              'cell','CellGet')
+          call CellMoireReport(m,.false.)
           g = m(1)**2 + m(2)**2 + m(1)*m(2)
           delta = sqrt(real(m(3)**2 + m(4)**2 + m(3)*m(4))/g)
           phi = acos((2.0_dp*m(1)*m(3)+2.0_dp*m(2)*m(4) + m(1)*m(4) + m(2)*m(3))/(2.0_dp*delta*g))
@@ -133,6 +143,7 @@ subroutine CellGet()
       call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
+      call CellMoireReport(m,.true.)
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
       delta = sqrt(real(m(3)**2 + m(4)**2 + m(3)*m(4))/g)
       phi = acos((2.0_dp*m(1)*m(3)+2.0_dp*m(2)*m(4) + m(1)*m(4) + m(2)*m(3))/(2.0_dp*delta*g))
@@ -166,6 +177,7 @@ subroutine CellGet()
       call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
+      call CellMoireReport(m,.true.)
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
       delta = sqrt(real(m(3)**2 + m(4)**2 + m(3)*m(4))/g)
       phi = acos((2.0_dp*m(1)*m(3)+2.0_dp*m(2)*m(4) + m(1)*m(4) + m(2)*m(3))/(2.0_dp*delta*g))
@@ -199,6 +211,7 @@ subroutine CellGet()
       call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
+      call CellMoireReport(m,.true.)
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
       delta = sqrt(real(m(3)**2 + m(4)**2 + m(3)*m(4))/g)
       phi = acos((2.0_dp*m(1)*m(3)+2.0_dp*m(2)*m(4) + m(1)*m(4) + m(2)*m(3))/(2.0_dp*delta*g))
@@ -232,6 +245,7 @@ subroutine CellGet()
       call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
+      call CellMoireReport(m,.true.)
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
       delta = sqrt(real(m(3)**2 + m(4)**2 + m(3)*m(4))/g)
       phi = acos((2.0_dp*m(1)*m(3)+2.0_dp*m(2)*m(4) + m(1)*m(4) + m(2)*m(3))/(2.0_dp*delta*g))
@@ -265,6 +279,7 @@ subroutine CellGet()
       call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
+      call CellMoireReport(m,.true.)
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
       delta = sqrt(real(m(3)**2 + m(4)**2 + m(3)*m(4))/g)
       phi = acos((2.0_dp*m(1)*m(3)+2.0_dp*m(2)*m(4) + m(1)*m(4) + m(2)*m(3))/(2.0_dp*delta*g))
@@ -298,6 +313,7 @@ subroutine CellGet()
       call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
         '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
         'cell')
+      call CellMoireReport(m,.true.)
       g = m(1)**2 + m(2)**2 + m(1)*m(2)
       delta = sqrt(real(m(3)**2 + m(4)**2 + m(3)*m(4))/g)
       phi = acos((2.0_dp*m(1)*m(3)+2.0_dp*m(2)*m(4) + m(1)*m(4) + m(2)*m(3))/(2.0_dp*delta*g))
@@ -393,5 +409,152 @@ subroutine CellGet()
 #endif /* DEBUG */
 
 end subroutine CellGet
+
+!> Check and describe the commensurate cell of Structure.MoireCellParameters m1 m2 m3 m4 (Hermann's four indices).
+!! With tau = exp(i pi/3), the supercell vector A1 = m1 a1 + m2 a2 of the first lattice is the Eisenstein integer
+!! alpha = m1 + m2 tau (in units of that lattice constant), and the same vector on the second lattice is
+!! beta = m3 + m4 tau; A2 is A1 turned by +60 degrees. Any nonzero alpha, beta (signs and zeros allowed) define a
+!! commensurate pair: the second lattice is the first one scaled by |alpha/beta| and turned by theta = arg(alpha/beta).
+!! The coincidence lattice of the two layers is (alpha/gcd(alpha,beta)) Z[tau], gcd in the Eisenstein integers, so the
+!! cell is primitive iff gcd(alpha,beta) is a unit; otherwise it holds N(gcd) = |gcd|^2 primitive cells. A common
+!! integer factor of the four indices is only one case: (4,1,1,4) has none and holds 3 primitive cells.
+!! The cell is reported, never reduced: a non-primitive cell is built as given (supercells for symmetry breaking).
+!! twoLayers: both pairs build atoms (a zero pair is refused); otherwise one layer is built and a zero pair is noted.
+subroutine CellMoireReport(m, twoLayers)
+
+   use constants,            only : pi
+
+   ! Arguments
+   integer, intent(in) :: m(4)
+   logical, intent(in) :: twoLayers
+
+   ! Named constants
+   integer, parameter :: ik = selected_int_kind(18)
+   integer(ik), parameter :: units(2,6) = reshape([1_ik,0_ik, 0_ik,1_ik, -1_ik,1_ik, -1_ik,0_ik, 0_ik,-1_ik, 1_ik,-1_ik], &
+                                                  [2,6])
+
+   ! Other local variables
+   integer :: k
+   integer(ik) :: al(2), be(2), gc(2), ap(2), bp(2), x(2)
+   real(dp) :: theta, za(2), zb(2)
+   logical :: swapped
+
+   al = int(m(1:2),ik)
+   be = int(m(3:4),ik)
+   if (EisNorm(al) == 0 .or. EisNorm(be) == 0) then
+      if (twoLayers) call MIO_Kill('Structure.MoireCellParameters: (m1, m2) and (m3, m4) must both be nonzero, '// &
+         'a zero pair defines no cell (negative indices are written 0-1)','cell','CellMoireReport')
+      call MIO_Print('Hermann cell: one index pair is zero; the twist angle and the lattice ratio are undefined',&
+         'cell')
+      return
+   end if
+   ! Cartesian components of alpha, beta in units of the lattice constant; theta = arg(alpha conj(beta))
+   za = [real(al(1),dp) + 0.5_dp*real(al(2),dp), sqrt(3.0_dp)/2.0_dp*real(al(2),dp)]
+   zb = [real(be(1),dp) + 0.5_dp*real(be(2),dp), sqrt(3.0_dp)/2.0_dp*real(be(2),dp)]
+   theta = atan2(za(2)*zb(1) - za(1)*zb(2), za(1)*zb(1) + za(2)*zb(2))*180.0_dp/pi
+   call MIO_Print('Hermann cell: the (m3, m4) lattice is the (m1, m2) lattice turned by '//trim(num2str(theta,6))// &
+      ' deg (signed, counterclockwise)','cell')
+   ! The layers are built with the pair of the larger norm first (the pairs are exchanged when N(beta) >= N(alpha)):
+   ! the layer built second is turned by theta, or by -theta after the exchange
+   swapped = EisNorm(be) >= EisNorm(al)
+   if (twoLayers) then
+      if (swapped) then
+         call MIO_Print('Hermann cell: layer 1 (upper) is built from (m3, m4), layer 2 from (m1, m2), turned by '// &
+            trim(num2str(-theta,6))//' deg with respect to layer 1','cell')
+      else
+         call MIO_Print('Hermann cell: layer 1 (upper) is built from (m1, m2), layer 2 from (m3, m4), turned by '// &
+            trim(num2str(theta,6))//' deg with respect to layer 1','cell')
+      end if
+   end if
+   ! Terms that take the angle of the cell use the unsigned angle, i.e. the sense of the (a, b, b, a) cells with a > b
+   if ((swapped .and. theta > 1.0e-9_dp) .or. (.not. swapped .and. theta < -1.0e-9_dp)) then
+      call MIO_Warning('Structure.MoireCellParameters: layer 2 of this cell is turned clockwise. The structure is '// &
+         'built as the indices say, but the terms that take the angle of the cell, if used (moire effective model '// &
+         'with Structure.BasedOnMoireCellParameters, Spectral.RotateReferenceSystem, the analytic twisted-bilayer '// &
+         'terms), use the unsigned angle, the sense of the (a, b, b, a) cells with a > b. The mirror cell (m1+m2, -m2, '// &
+         'm3+m4, -m4) = '//trim(num2str(m(1)+m(2)))//' '//trim(num2str(-m(2)))//' '//trim(num2str(m(3)+m(4)))//' '// &
+         trim(num2str(-m(4)))//' is turned counterclockwise','cell')
+   end if
+   gc = EisGcd(al,be)
+   if (EisNorm(gc) == 1) then
+      call MIO_Print('Hermann cell: primitive (the layers have no smaller common cell)','cell')
+   else
+      ap = EisDivExact(al,gc)
+      bp = EisDivExact(be,gc)
+      ! the unit multiple with (m1, m2) in the 60-degree sector m1 > 0, m2 >= 0 (the same cell)
+      do k=1,6
+         x = EisMul(units(:,k),ap)
+         if (x(1) > 0 .and. x(2) >= 0) exit
+      end do
+      bp = EisMul(units(:,k),bp)
+      ap = x
+      call MIO_Print('Hermann cell: NOT primitive, it holds '//trim(num2str(int(EisNorm(gc))))//' primitive cells '// &
+         '(built as given). Primitive cell with the same twist: '//trim(num2str(int(ap(1))))//' '// &
+         trim(num2str(int(ap(2))))//' '//trim(num2str(int(bp(1))))//' '//trim(num2str(int(bp(2)))),'cell')
+   end if
+
+end subroutine CellMoireReport
+
+!> Norm |a + b tau|^2 = a^2 + a b + b^2 of an Eisenstein integer (tau = exp(i pi/3)).
+pure function EisNorm(x) result(n)
+   integer, parameter :: ik = selected_int_kind(18)
+   integer(ik), intent(in) :: x(2)
+   integer(ik) :: n
+   n = x(1)*x(1) + x(1)*x(2) + x(2)*x(2)
+end function EisNorm
+
+!> Product (a + b tau)(c + d tau), with tau^2 = tau - 1.
+pure function EisMul(x,y) result(z)
+   integer, parameter :: ik = selected_int_kind(18)
+   integer(ik), intent(in) :: x(2), y(2)
+   integer(ik) :: z(2)
+   z = [x(1)*y(1) - x(2)*y(2), x(1)*y(2) + x(2)*y(1) + x(2)*y(2)]
+end function EisMul
+
+!> Euclidean division x = q y + r, N(r) < N(y): q is the lattice point nearest to x/y = x conj(y)/N(y).
+pure subroutine EisDivMod(x,y,q,r)
+   integer, parameter :: ik = selected_int_kind(18)
+   integer(ik), intent(in) :: x(2), y(2)
+   integer(ik), intent(out) :: q(2), r(2)
+   integer(ik) :: num(2), q0(2), qq(2), rr(2), ny
+   integer :: da, db
+   num = EisMul(x,[y(1)+y(2),-y(2)])
+   ny = EisNorm(y)
+   q0 = nint(real(num,dp)/real(ny,dp),ik)
+   q = q0
+   r = x - EisMul(q0,y)
+   ! rounding in the skew basis is not always the nearest point: try the neighbours
+   do da=-1,1; do db=-1,1
+      qq = q0 + [int(da,ik),int(db,ik)]
+      rr = x - EisMul(qq,y)
+      if (EisNorm(rr) < EisNorm(r)) then
+         q = qq
+         r = rr
+      end if
+   end do; end do
+end subroutine EisDivMod
+
+!> Quotient of an exact division in the Eisenstein integers.
+pure function EisDivExact(x,y) result(q)
+   integer, parameter :: ik = selected_int_kind(18)
+   integer(ik), intent(in) :: x(2), y(2)
+   integer(ik) :: q(2), r(2)
+   call EisDivMod(x,y,q,r)
+end function EisDivExact
+
+!> Greatest common divisor in the Eisenstein integers (Euclid's algorithm; defined up to a unit).
+pure function EisGcd(x,y) result(g)
+   integer, parameter :: ik = selected_int_kind(18)
+   integer(ik), intent(in) :: x(2), y(2)
+   integer(ik) :: g(2), a(2), b(2), q(2), r(2)
+   a = x
+   b = y
+   do while (EisNorm(b) /= 0)
+      call EisDivMod(a,b,q,r)
+      a = b
+      b = r
+   end do
+   g = a
+end function EisGcd
 
 end module cell

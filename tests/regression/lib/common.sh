@@ -300,6 +300,47 @@ run_physics_checks() {
     fi
 }
 
+# Cells built from Hermann's four indices (signed indices, primitive and non-primitive cells, heterostructures):
+# structures checked from the positions and neighbour tables; the index arithmetic in tools/structure/hermann.py;
+# the cell search of GenMoire.f90 when a Fortran compiler is at hand
+run_hermann_checks() {
+    if ! python3 -c 'import numpy' >/dev/null 2>&1; then
+        printf '\n%s\n%s\n' "== hermann cells" "  SKIP: NumPy is not available"
+        return 0
+    fi
+    repo_root=$(cd "$harness_dir/../.." && pwd)
+    printf '\n%s\n' "== hermann index arithmetic (tools/structure/hermann.py --selftest)"
+    if python3 "$repo_root/tools/structure/hermann.py" --selftest > "$work_dir/hermann_selftest.log" 2>&1; then
+        printf '%s\n' "  PASS: $(grep -c '^PASS' "$work_dir/hermann_selftest.log") checks"
+    else
+        grep '^FAIL' "$work_dir/hermann_selftest.log" | sed 's/^/  /'
+        printf '%s\n' "  FAIL: see $work_dir/hermann_selftest.log"
+        failures=$((failures + 1))
+    fi
+    hermann_status=0
+    python3 "$harness_dir/check_hermann_cells.py" --bin "$grabnes_bin" --work "$work_dir/hermann" \
+        --launcher "${GRABNES_LAUNCHER:-}" > "$work_dir/hermann.log" 2>&1 || hermann_status=$?
+    printf '\n%s\n' "== hermann cells (check_hermann_cells.py)"
+    awk '/^== /{buf=$0; next} {buf=buf "\n" $0} /^  FAIL/{print buf}' "$work_dir/hermann.log"
+    printf '%s\n' "  $(grep -c '^  PASS' "$work_dir/hermann.log") Hermann cell checks passed"
+    failures=$((failures + $(grep -c '^  FAIL' "$work_dir/hermann.log" || true)))
+    if [ "$hermann_status" -ne 0 ] && ! grep -q '^  FAIL' "$work_dir/hermann.log"; then
+        printf '%s\n' "  FAIL: see $work_dir/hermann.log"
+        failures=$((failures + 1))
+    fi
+    fc=$(command -v gfortran || true)
+    if [ -n "$fc" ]; then
+        printf '\n%s\n' "== GenMoire.f90 cell search"
+        if python3 "$repo_root/tools/structure/check_genmoire.py" --work "$work_dir/genmoire" --fc "$fc" \
+                > "$work_dir/genmoire.log" 2>&1; then
+            printf '%s\n' "  PASS: $(grep '^GenMoire:' "$work_dir/genmoire.log")"
+        else
+            printf '%s\n' "  FAIL: see $work_dir/genmoire.log"
+            failures=$((failures + 1))
+        fi
+    fi
+}
+
 # Files generated from the sources must match them: the key reference (docs/user-guide/input-keys.md) and
 # the key names (every name of the renaming table applied, none left to change).
 run_generated_files_check() {

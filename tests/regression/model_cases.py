@@ -223,6 +223,15 @@ sys_case("sys_Hybrid", "Hybrid", template="CellSize 6\n" + COMMON)
 case("graphene+SuperCell2", "graphene", SuperCell="2")
 case("graphene+SuperCellAsymmetric", "graphene", SuperCellAsymmetric=T, SuperCellX="2", SuperCellY="1")
 case("tbg+basedOnMoireCellParameters", "tbg", basedOnMoireCellParameters=T)
+# Hermann indices of any sign (November 2026; check_hermann_cells.py checks the structures themselves): the primitive
+# cell of 4 1 1 4 (38.2 deg) needs a negative index; 4 1 1 4 itself holds three primitive cells and is built as given;
+# a mismatched pair whose first cell vector points along y; a zero pair is refused
+case("tbg+moire_cell_signed", "tbg", MoireCellParameters="3 0-1 2 1")
+case("tbg+moire_cell_nonprimitive", "tbg", MoireCellParameters="4 1 1 4")
+# NONHERM as every lattice-mismatched cell of this legacy model (5 0 4 0 and 2 2 3 0, the same cell with indices >= 0,
+# have the same 0.93 g0 interlayer asymmetry): a property of its interlayer terms, not of the indices
+case("sys_Graphene_Over_BN+moire_cell_signed", "sys_Graphene_Over_BN", MoireCellParameters="3 0 2 0-4")
+case("tbg+moire_cell_zero_pair", "tbg", MoireCellParameters="0 0 1 2")
 
 # ================================================================== B. layer stacks read from a file
 xyz_case("xyz1", "x1", oneLayer=T)
