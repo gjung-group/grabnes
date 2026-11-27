@@ -70,7 +70,7 @@ class TestTokens:
         assert fmt_token(parse_token('-0.01')) == '0-0.01'
 
     def test_negative_integer_written_with_zero_prefix(self) -> None:
-        # the solver stops on a bare -5 ("Bad real number") and reads 0-5 (checked on Kubo.SeedValue)
+        # binaries before 2026-11-27 stop on a bare -5 ("Bad real number"); every binary reads 0-5
         assert parse_token('0-5') == ('integer', -5)
         assert fmt_token(('integer', -5)) == '0-5'
         assert fmt_token(parse_token('-5')) == '0-5'

@@ -26,7 +26,7 @@ a (m + n tau): the pair is the two Eisenstein integers alpha = m1 + m2 tau and b
 **Any** four integers with (m1, m2) and (m3, m4) both nonzero define a valid cell: signs and zeros are allowed,
 there is no restriction to the form (a, b, b, a), and the lattice ratio follows from the indices (the second lattice
 constant is set to aG |alpha/beta|; `Structure.LatticeParameterBN` is overwritten). A zero pair is refused.
-Negative integers are written `0-1` in `Gendata.in` (a bare `-1` aborts the input parser).
+Negative indices are written as usual (`1 2 -1 3`); binaries built before 2026-11-27 need the form `0-1`.
 
 Equivalent index sets: (u alpha, u beta) for a unit u (the six powers of tau: (1,0), (0,1), (-1,1), (-1,0), (0,-1),
 (1,-1) multiply as Eisenstein integers) is the same cell with A1 turned by a multiple of 60 degrees. Exchanging the
@@ -42,7 +42,7 @@ define. `job.out` has, besides the former lines (`cell: Angle:` is the unsigned 
 cell: Hermann cell: the (m3, m4) lattice is the (m1, m2) lattice turned by -38.213211 deg (signed, counterclockwise)
 cell: Hermann cell: layer 1 (upper) is built from (m3, m4), layer 2 from (m1, m2), turned by 38.213211 deg ...
 cell: Hermann cell: NOT primitive, it holds 3 primitive cells (built as given). Primitive cell with the same
-      twist: 3 -1 2 1
+      twist: 1 2 -1 3
 ```
 
 ## Primitive and non-primitive cells
@@ -63,13 +63,13 @@ with the **same** twist is
 with 3 times fewer atoms. (The same expression with the two pairs exchanged, ((a+2b)/3, (a-b)/3, (2a+b)/3, (b-a)/3),
 has the same |theta| and atom count but the opposite twist: it is the mirror structure.)
 
-| angle (deg) | (a, b, b, a) | atoms | primitive, same twist | atoms |
+| angle (deg) | (a, b, b, a) | atoms | primitive, same twist, as job.out prints it (= the formula up to a unit) | atoms |
 |---|---|---:|---|---:|
 | 21.7868 | 2 1 1 2 | 28 | 2 1 1 2 | 28 |
-| 38.2132 | 4 1 1 4 | 84 | 3 -1 2 1 | 28 |
-| 27.7958 | 5 2 2 5 | 156 | 4 -1 3 1 | 52 |
-| 46.8264 | 7 1 1 7 | 228 | 5 -2 3 2 | 76 |
-| 17.8966 | 7 4 4 7 | 372 | 6 -1 5 1 | 124 |
+| 38.2132 | 4 1 1 4 | 84 | 1 2 -1 3 | 28 |
+| 27.7958 | 5 2 2 5 | 156 | 1 3 -1 4 | 52 |
+| 46.8264 | 7 1 1 7 | 228 | 2 3 -2 5 | 76 |
+| 17.8966 | 7 4 4 7 | 372 | 1 5 -1 6 | 124 |
 
 **The solver never reduces a cell.** A non-primitive cell is built exactly as requested (the job.out line above
 says so and gives the primitive indices): such supercells are needed for states that break the translation symmetry

@@ -29,9 +29,10 @@ Diag.Calc             .true.
   forms of false).
 - A block starts with `&begin Name N`, where `N` is the number of lines that
   follow, and ends with `&end Name`.
-- **A negative number is written `0-0.01`.** A bare `-0.01` stops the run with
-  "Bad real number". This also holds for integers (`0-5`, not `-5`) and for the
-  numbers inside a block.
+- Negative numbers can be written as usual (`-0.01`, `-5`, also inside a block
+  and in expressions such as `2*-3` or `exp(-1)`). Binaries built before
+  2026-11-27 stop with "Bad real number" on a bare minus sign; the form `0-0.01`
+  works with every binary.
 - **If a key appears twice, the first value is used.** The solver prints a
   warning that names the key. When an input file is adapted from another one,
   edit the existing line instead of appending a new one.
