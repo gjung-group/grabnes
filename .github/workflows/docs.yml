@@ -1,0 +1,72 @@
+# Builds the documentation website (MyST-MD project in website/) and deploys it
+# to GitHub Pages (Settings -> Pages -> Source: "GitHub Actions"). The site is
+# served under /<repository name>/, e.g. https://gjung-group.github.io/grabnes/.
+name: docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # the site uses these folders of the repository directly
+      - "website/**"
+      - "docs/**"
+      - "examples/**"
+      - "lanczosKuboCode/docs/**"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "website/**"
+      - "docs/**"
+      - "examples/**"
+      - "lanczosKuboCode/docs/**"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: website
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.12"
+          working-directory: website
+      - run: uv sync
+      # the tutorial pages must hold the original notebook cells (plus the
+      # front matter cell and the documented render fixes)
+      - run: uv run python tools/notebook_pages.py --check
+      # MyST-MD static site, served under /<repository name>/; --strict fails
+      # the build on any warning
+      - run: uv run myst build --html --strict --ci
+        env:
+          BASE_URL: /${{ github.event.repository.name }}
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: website/_build/html
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

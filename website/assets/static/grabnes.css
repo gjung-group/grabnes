@@ -1,0 +1,190 @@
+/* GRABNES site style, loaded by MyST-MD's book-theme (site.options.style in
+ * myst.yml). It only overrides the theme's own colour tokens and adds a few
+ * accents and the page transition; the layout is the theme's.
+ *
+ * Palette from the GRABNES wordmark (assets/static/logo1.png):
+ * maroon #800000 ("GRA"), green #008000 ("BN"), blue #0000ff ("ES").
+ */
+
+:root {
+  --grabnes-maroon: #9b1b1b;
+  --grabnes-green: #12873f;
+  --grabnes-blue: #1f3fe0;
+  --grabnes-gradient: linear-gradient(90deg, var(--grabnes-maroon), var(--grabnes-green) 50%, var(--grabnes-blue));
+
+  --myst-color-link: #1f3fe0;
+  --myst-color-link-hover: #12873f;
+  --myst-color-link-underline: #9fb0ff;
+  --myst-color-active: #1f3fe0;
+  --myst-color-active-bg: #1f3fe01f;
+  --myst-color-active-surface: #eef1ff;
+  --myst-color-primary: #1f3fe0;
+  --myst-color-primary-hover: #12873f;
+  --myst-color-focus-ring: #1f3fe0;
+  --myst-color-focus-outline: #c3ccff;
+  --myst-color-accent-text: #14248a;
+  --myst-color-accent-surface: #eef1ff;
+  --myst-color-accent-surface-border: #c3ccff;
+  --myst-color-accent-surface-text: #14248a;
+  --myst-color-inverse-bg: #14248a;
+  --myst-color-code: #9b1b1b;
+  --myst-color-info: #1f3fe0;
+  --myst-color-info-bg: #eef1ff;
+  --myst-color-info-text: #1f3fe0;
+  --myst-color-success: #12873f;
+  --myst-color-success-bg: #ecf8ef;
+  --myst-color-success-text: #12873f;
+  --myst-color-danger: #9b1b1b;
+  --myst-color-danger-bg: #fbeeee;
+  --myst-color-danger-text: #9b1b1b;
+}
+
+.dark {
+  --grabnes-maroon: #ff7a7a;
+  --grabnes-green: #5be08a;
+  --grabnes-blue: #8ea2ff;
+
+  --myst-color-link: #8ea2ff;
+  --myst-color-link-hover: #5be08a;
+  --myst-color-link-underline: #4a5fd6;
+  --myst-color-active: #8ea2ff;
+  --myst-color-active-bg: #8ea2ff26;
+  --myst-color-active-surface: #1b2140;
+  --myst-color-primary: #3f5cf0;
+  --myst-color-primary-hover: #12873f;
+  --myst-color-focus-ring: #8ea2ff;
+  --myst-color-focus-outline: #8ea2ff;
+  --myst-color-accent-text: #dfe4ff;
+  --myst-color-accent-surface: #1f3fe033;
+  --myst-color-accent-surface-border: #3249c4;
+  --myst-color-code: #ff8f8f;
+  --myst-color-info: #8ea2ff;
+  --myst-color-info-text: #8ea2ff;
+  --myst-color-success: #5be08a;
+  --myst-color-success-text: #5be08a;
+  --myst-color-danger: #ff7a7a;
+  --myst-color-danger-text: #ff7a7a;
+}
+
+/* -- Page transitions --------------------------------------------------------
+ * Links inside the site are followed without a page reload and the page
+ * content is rendered anew, so the entrance animation plays on every page.
+ * Full page loads use the browser's cross-document view transition. */
+@view-transition {
+  navigation: auto;
+}
+
+main.article-grid > article {
+  animation: grabnes-enter 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes grabnes-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* -- Accents --------------------------------------------------------------- */
+
+/* brand-gradient page title */
+.myst-fm-block-title {
+  background: var(--grabnes-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* thin brand-gradient line under the top bar */
+.myst-top-nav {
+  border-bottom: 3px solid transparent;
+  border-image: var(--grabnes-gradient) 1;
+}
+
+/* links and table-of-contents entries change colour smoothly */
+a,
+.myst-toc-item {
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+/* the current page in the sidebar */
+.myst-toc-item.active {
+  box-shadow: inset 3px 0 0 var(--myst-color-active);
+  font-weight: 600;
+}
+
+/* buttons: brand gradient, lift on hover */
+a.button,
+span.button {
+  background: linear-gradient(90deg, var(--grabnes-blue), var(--grabnes-green));
+  border-radius: 999px;
+  box-shadow: 0 2px 8px #1f3fe040;
+  color: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+a.button:hover,
+span.button:hover {
+  color: #fff;
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px #1f3fe055;
+}
+
+/* cards: coloured top edge, lift on hover */
+.myst-card {
+  background-image: var(--grabnes-gradient);
+  background-position: top;
+  background-repeat: no-repeat;
+  background-size: 100% 3px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+a.myst-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px #1f3fe026;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+
+  main.article-grid > article {
+    animation: none;
+  }
+
+  a.button:hover,
+  span.button:hover,
+  a.myst-card:hover {
+    transform: none;
+  }
+}
+
+/* -- Header ------------------------------------------------------------------
+ * A light wash of the brand colours behind the (translucent) top bar. */
+.myst-top-nav {
+  background-image: linear-gradient(90deg, #9b1b1b1f, #12873f1f 50%, #1f3fe01f);
+}
+
+.dark .myst-top-nav {
+  background-image: linear-gradient(90deg, #ff7a7a26, #5be08a1f 50%, #8ea2ff2e);
+}
+
+/* external link in the top bar: a text arrow (U+2197 with the text-style
+ * variation selector, so it is not drawn as an emoji) */
+.myst-top-nav a[href^="https://github.com/"]::after {
+  content: "\2197\FE0E";
+  margin-left: 0.25em;
+  font-size: 0.9em;
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.myst-top-nav a[href^="https://github.com/"]:hover::after {
+  transform: translate(2px, -2px);
+}

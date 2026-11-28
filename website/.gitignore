@@ -1,0 +1,19 @@
+# MyST-MD build output
+/_build/
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Old (2022) sphinx tree and its archive — kept on disk as migration input
+# only, removed in the final migration commit
+grabnes/
+grabnes.tar.gz

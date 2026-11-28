@@ -1,0 +1,26 @@
+{
+  "commit": "1e390c6ead7c835389ae89a599cb1f39e3fc691e",
+  "trees": {
+    "CITATION.cff": "a71d46eebace789c4d725ac285aa1a708a260f87",
+    "README.md": "1e5dab50053b52acdebc1ed36e437ce82431bd53",
+    "docs/development/README.md": "2892d7dccfed70319c7a49613807fb335153711d",
+    "docs/theory/tapw-procedure.tex": "bd481e7cd412fd143a7656e7c2dfe006bfb1b6a9",
+    "examples/01_graphene_bands/README.md": "be83294b0247b27f16f9949dc23df3e1e2a7e23b",
+    "examples/02_graphene_dos/README.md": "53654b855e5afa238dbfde518e3aadc14d670321",
+    "examples/03_twisted_bilayer_bands/README.md": "db30d2f61a0576dd15df8bb32cb9079469cc7d95",
+    "examples/04_twisted_bilayer_dos/README.md": "43234c343fca5dc6bf3b5519828d11b923d7d20d",
+    "examples/05_graphene_hbn_bands/README.md": "3d0e46a07000e32782691ba601c2749ee6d0cdc3",
+    "examples/06_graphene_hbn_landau_levels/README.md": "d65800c762115a764c5d91db038ed5f49cadd85e",
+    "examples/07_graphene_hbn_twist_series/README.md": "69c75d88e20317bf5d69fbc08191a2c24407aff4",
+    "examples/08_magic_angle_twisted_bilayer/README.md": "79cf8d033d9c8f7a7d98ea17d0011e7cbb50a722",
+    "examples/09_alternating_twist_trilayer/README.md": "09ffb888fe705f86aeb64cbe1c2ddf061550e253",
+    "examples/10_twisted_bilayer_spectral_function/README.md": "d4e63c700d172f8146a60ef3168efd4c4a538484",
+    "examples/11_alternating_twist_trilayer_spectral_function/README.md": "05731153af488b4e376821fe86312c32d43925e8",
+    "examples/README.md": "ffd3664d6636b4e649f35d5d85feb2e7656aa480",
+    "lanczosKuboCode/README.md": "a582e4a8beacaa8ea71033dd109073ca77130349",
+    "lanczosKuboCode/Src": "c8cc5fb8a6c54932e274c660a81c597841656c31",
+    "tools/input/gendata.py": "3aac0aa910f3e027dd90462648869cd9ea2af6a7",
+    "tools/input/gendata_schema.py": "e7f3ae53f6b48a73550fd6abf6d887356398d18a",
+    "tools/input/parser.py": "39bcd0f1cf161092f549ba420680ebf8e51b5934"
+  }
+}
