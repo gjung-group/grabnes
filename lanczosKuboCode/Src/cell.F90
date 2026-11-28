@@ -81,7 +81,7 @@ subroutine CellGet()
           call MIO_InputParameter('Structure.MoireCellParameters',m,[0,0,0,0])
             !! - `Structure.MoireCellParameters`: Four integers m1 m2 m3 m4 of the commensurate moire cell: a1 = m1 a + m2 b on the
             !!   first lattice, (m3, m4) on the second; the twist angle and lattice ratio follow from them and are printed. Any
-            !!   signs (negative written 0-1), both pairs nonzero; a non-primitive cell is built as given
+            !!   signs, both pairs nonzero; a non-primitive cell is built as given
             !!   (docs/user-guide/commensurate-cells.md).
           call MIO_Print('Moire cell indices (m1 m2 m3 m4): '//trim(num2str(m(1)))//&
             '  '//trim(num2str(m(2)))//'  '//trim(num2str(m(3)))//'  '//trim(num2str(m(4))),&
@@ -443,7 +443,7 @@ subroutine CellMoireReport(m, twoLayers)
    be = int(m(3:4),ik)
    if (EisNorm(al) == 0 .or. EisNorm(be) == 0) then
       if (twoLayers) call MIO_Kill('Structure.MoireCellParameters: (m1, m2) and (m3, m4) must both be nonzero, '// &
-         'a zero pair defines no cell (negative indices are written 0-1)','cell','CellMoireReport')
+         'a zero pair defines no cell','cell','CellMoireReport')
       call MIO_Print('Hermann cell: one index pair is zero; the twist angle and the lattice ratio are undefined',&
          'cell')
       return

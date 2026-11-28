@@ -105,8 +105,8 @@ KEY_WIDTH = 24
 def fmt_token(token: Token) -> str:
     """A parsed token in the .in spelling: .true., and the 0-5 / 0-0.01 form of negative numbers.
 
-    The solver reads integers with the same expression parser as reals, so a bare -5 stops a
-    run with "Bad real number" just like -0.01.
+    The solver reads integers with the same expression parser as reals. Binaries built before
+    2026-11-27 stop on a bare -5 or -0.01 with "Bad real number"; the 0- form works with every binary.
     """
     kind, value = token
     if kind == 'logical':

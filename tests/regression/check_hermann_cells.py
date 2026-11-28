@@ -82,6 +82,9 @@ CASES = {
     "tbg_5_m2_3_2": ("TwistedBilayerBasedOnMoireCell", (5, -2, 3, 2), BILAYER, "sf"),
     "tbg_7_4_4_7": ("TwistedBilayerBasedOnMoireCell", (7, 4, 4, 7), BILAYER, "sf"),
     "tbg_6_m1_5_1": ("TwistedBilayerBasedOnMoireCell", (6, -1, 5, 1), BILAYER, "sf"),
+    # the primitive indices job.out prints for 4 1 1 4 and 7 1 1 7, written with a bare minus sign (*_bare)
+    "tbg_1_2_m1_3_bare": ("TwistedBilayerBasedOnMoireCell", (1, 2, -1, 3), BILAYER, "sf"),
+    "tbg_2_3_m2_5_bare": ("TwistedBilayerBasedOnMoireCell", (2, 3, -2, 5), BILAYER, "sf"),
     # equivalent representations: unit multiples (same cell), layer exchange and mirror (opposite twist)
     "tbg_m2_m1_m1_m2": ("TwistedBilayerBasedOnMoireCell", (-2, -1, -1, -2), BILAYER, "sf"),
     "tbg_m1_3_m2_3": ("TwistedBilayerBasedOnMoireCell", (-1, 3, -2, 3), BILAYER, "sf"),
@@ -130,7 +133,8 @@ MIRROR = [("tbg_2_1_1_2", "tbg_3_m1_2_1"), ("tbg_3_1_4_m1", "tbg_4_m1_3_1"), ("t
 # (primitive, non-primitive, n): the non-primitive structure is n copies of the primitive one (positions modulo the
 # primitive cell); the primitive cells are the same-handedness ones ((2a+b)/3, (b-a)/3, (a+2b)/3, (a-b)/3)
 COPIES = [("tbg_3_m1_2_1", "tbg_4_1_1_4", 3), ("tbg_4_m1_3_1", "tbg_5_2_2_5", 3), ("tbg_5_m2_3_2", "tbg_7_1_1_7", 3),
-          ("tbg_6_m1_5_1", "tbg_7_4_4_7", 3), ("tbg_2_1_1_2", "tbg_4_2_2_4", 4), ("gbn_5_0_4_0", "gbn_10_0_8_0", 4)]
+          ("tbg_6_m1_5_1", "tbg_7_4_4_7", 3), ("tbg_1_2_m1_3_bare", "tbg_4_1_1_4", 3),
+          ("tbg_2_3_m2_5_bare", "tbg_7_1_1_7", 3), ("tbg_2_1_1_2", "tbg_4_2_2_4", 4), ("gbn_5_0_4_0", "gbn_10_0_8_0", 4)]
 REFUSAL = {"refuse_zero_first": "must both be nonzero", "refuse_zero_second": "must both be nonzero",
            "refuse_twistedbilayer_basedon": "not implemented for TypeOfSystem TwistedBilayer"}
 
@@ -143,7 +147,8 @@ def run(a, name, typ, m, extra):
     d = os.path.join(a.work, name)
     shutil.rmtree(d, ignore_errors=True)
     os.makedirs(d)
-    text = RUN + f"TypeOfSystem {typ}\nMoireCellParameters {' '.join(int_in(x) for x in m)}\n" + extra
+    fmt = str if name.endswith("_bare") else int_in     # -1, or the 0-1 form older binaries need
+    text = RUN + f"TypeOfSystem {typ}\nMoireCellParameters {' '.join(fmt(x) for x in m)}\n" + extra
     open(os.path.join(d, "Gendata.in"), "w").write(text)
     with open(os.path.join(d, "job.out"), "w") as out:
         rc = subprocess.run(a.launcher.split() + [os.path.abspath(a.bin), "Gendata.in"], cwd=d, stdout=out,

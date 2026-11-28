@@ -545,6 +545,7 @@ recursive subroutine ParserProcess(string,value,error,reset)
    character(len=32) :: s
    integer :: iop2, indx0, ii
    real(dp) :: val1, val2
+   logical :: lpow
 
    if (present(reset)) then
       if (reset) then
@@ -689,6 +690,66 @@ l1:do iop=1,ndec
          end if
       end if
    end do
+
+   ! Unary sign: '-1', '-2*x', '2*-3', and through the recursion '(-1)' and 'exp(-x)'. Every such string was
+   ! refused before (empty left operand: "Bad real number"), so no expression that parsed changes its value.
+   ! A leading sign applies to everything after it ('-2**2' = -4, as in Fortran); a minus after an operator applies
+   ! to the one operand that follows, and is left refused when that operand is raised to a power ('2*-3**2').
+   str = adjustl(str)
+   if (str(1:1)=='-' .or. str(1:1)=='+') str = '0'//str
+   i = 2
+   do while (i < len_trim(str))
+      if (str(i:i)=='-' .and. index('*/+-',str(i-1:i-1))/=0) then
+         indx2 = len_trim(str)+1
+         do ii=i+1,len_trim(str)
+            if (index('*/+-',str(ii:ii))/=0) then
+               indx2 = ii
+               exit
+            end if
+         end do
+         lpow = .false.
+         if (indx2 < len_trim(str)) lpow = str(indx2:indx2+1) == '**'
+         if (indx2 == i+1 .or. lpow) then
+            i = i + 1
+            cycle
+         end if
+         s = str(i+1:indx2-1)
+         if (s(1:1)=='@') then
+            indx0 = index(s(2:),'@')
+            if (indx0==0) then
+               call SysKill('Wrong format for saved values','parser','ParserProcess')
+            end if
+            read(s(2:indx0),*) indx
+            val1 = v(indx)
+         else
+            read(s,*,IOSTAT=err) val1
+            if (err/=0) then
+               err=15
+               exit
+            end if
+         end if
+         iv = iv+1
+         if (iv > nvalues) then
+            call SysKill("Cannot parse expression. Try increasing "// &
+              "'nvalues' in parser.f90 and recompile",'parser','ParserProcess')
+         end if
+         v(iv) = -val1
+         write(s,'(a,i0,a)') '@',iv,'@'
+         str = str(:i-1)//trim(s)//str(indx2:)
+         i = i + len_trim(s)
+      else
+         i = i + 1
+      end if
+   end do
+
+   if (err/=0) then
+      if (present(error)) then
+         error = err
+         return
+      else
+         call SysIOErr(err,'parser','ParserProcess')
+      end if
+   end if
 
 l2:do iop = 1,narit
       indx = 1
