@@ -27,7 +27,7 @@ uv run python tools/gen_api_reference.py [--src PATH] [--out PATH]   # regenerat
 
 There are no tests or linters; "passes" means `uv run myst build --html --strict` succeeds (the "Removing matplotlib string from outputs" notices are informational and do not fail it) and `uv run python tools/notebook_pages.py --check` reports no difference.
 
-CI (`.github/workflows/docs.yml` at the code-repository root, steps run in `website/`, only when `website/**`, `docs/**`, `examples/**`, `lanczosKuboCode/docs/**` or the workflow changes): push to `main` → setup-node (24) → `uv sync` → `notebook_pages.py --check` → `BASE_URL=/<repository name> uv run myst build --html --strict --ci` → `upload-pages-artifact` (`website/_build/html`) → GitHub Pages (Settings → Pages → "GitHub Actions"). Also builds on PRs; deploys on push to `main` or `workflow_dispatch` (the `github-pages` environment allows `main` only). Live site: <https://gjung-group.github.io/grabnes/>.
+CI (`.github/workflows/docs.yml` at the code-repository root, steps run in `website/`, only when `website/**`, `docs/**`, `examples/**`, `lanczosKuboCode/docs/**` or the workflow changes): push to `main` → setup-node (24) → `uv sync` → `notebook_pages.py --check` → `BASE_URL=/<repository name> uv run myst build --html --strict --ci` → `upload-pages-artifact` (`website/_build/html`) → GitHub Pages (Settings → Pages → "GitHub Actions"). Also builds on PRs; deploys on push to `main` or `main-webpage` (the published site is built from `main-webpage`; the `github-pages` environment must allow that branch) or `workflow_dispatch`. Live site: <https://gjung-group.github.io/grabnes/>.
 
 ## 3. Current contents of this repo
 

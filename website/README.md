@@ -119,7 +119,8 @@ The CI build treats warnings as errors; check with
 The live site is at <https://gjung-group.github.io/grabnes/>.
 `.github/workflows/docs.yml` at the root of the code repository builds the site to `website/_build/html/`
 (with `BASE_URL=/<repository name>`) on every push to
-`main` (or when run by hand from the Actions tab) and deploys it to GitHub
-Pages (Settings → Pages → "GitHub Actions"). Pull requests are built too
+`main-webpage` (the branch the published site is built from) or `main`, or when run by hand
+from the Actions tab, and deploys it to GitHub Pages (Settings → Pages → "GitHub Actions";
+the `github-pages` environment must allow the branch). Pull requests are built too
 (with `--strict`) but not deployed. Page URLs have no `.html` suffix
 (e.g. `reference/api/sys/syskill`).

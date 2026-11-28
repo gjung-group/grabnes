@@ -5,7 +5,8 @@ name: docs
 
 on:
   push:
-    branches: [main]
+    # the published site is built from main-webpage
+    branches: [main, main-webpage]
     paths:
       # the site uses these folders of the repository directly
       - "website/**"
